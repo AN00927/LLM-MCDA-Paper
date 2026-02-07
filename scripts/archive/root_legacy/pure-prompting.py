@@ -19,7 +19,7 @@ logging.basicConfig(
 
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-    "model": "google/gemini-flash-1.5-8b",
+    "model": "mistralai/mistral-small-3.2",
     "max_tokens": 500,
     "temperature": 0.3  # Need determinism for reliability
 }
@@ -391,7 +391,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
     success_rate = cumulative_diagnostics["successful_calls"] / max(cumulative_diagnostics["total_api_calls"], 1)
 
-    # Estimate cost (Gemini Flash is typically free or very cheap, but we'll track tokens)
     cumulative_diagnostics["avg_latency_ms"] = avg_latency
     cumulative_diagnostics["success_rate"] = success_rate
 
@@ -400,7 +399,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
         fieldnames = [
             "scenario_id", "question", "location", "outdoor_temp",
             "alternative", "energy_cost", "environmental", "comfort", "practicality",
-            "rank", "topsis_score"
+            "rank", "weighted_score"  # ✅ FIXED: Changed from topsis_score to weighted_score
         ]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -411,23 +410,21 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             location = result["location"]
             outdoor_temp = result["outdoor_temp"]
 
-            # Get ranking
+            # Get ranking results
             ranked_alts = result["ranking_results"]["ranked_alternatives"]
             ranks = result["ranking_results"]["ranks"]
-            topsis_scores = result["ranking_results"]["topsis_scores"]
+            weighted_scores = result["ranking_results"]["weighted_scores"]  # ✅ FIXED: Correct key name
+
+            # Get list of alternatives in original order
+            alternatives = [alt["alternative"] for alt in result["alternatives_scores"]]
 
             # Write each alternative as a row
-            for alt_scores in result["alternatives_scores"]:
+            for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
                 alt = alt_scores["alternative"]
 
-                # Find rank for this alternative
-                try:
-                    alt_index = result["ranking_results"]["ranked_alternatives"].index(alt)
-                    rank = alt_index + 1
-                    topsis_score = topsis_scores[alt_index]
-                except ValueError:
-                    rank = "N/A"
-                    topsis_score = "N/A"
+                # ✅ FIXED: Use original index to get rank and score
+                rank = ranks[alt_idx]
+                weighted_score = weighted_scores[alt_idx]
 
                 writer.writerow({
                     "scenario_id": scenario_id,
@@ -440,7 +437,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     "comfort": alt_scores["comfort"],
                     "practicality": alt_scores["practicality"],
                     "rank": rank,
-                    "topsis_score": topsis_score
+                    "weighted_score": weighted_score  # ✅ FIXED: Using correct variable
                 })
 
     logging.info(f"Results saved to {output_csv_path}")
