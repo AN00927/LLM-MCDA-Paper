@@ -113,27 +113,51 @@ def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, D
     return None, diagnostics
 
 
-
 def build_user_prompt(scenario: Dict, alternative: str) -> str:
-    return f"""Score this alternative: "{alternative}"
+    decision_type = scenario.get('Decision Type', 'HVAC')
+    prompt = f'Score this alternative: "{alternative}"\n\n'
+    prompt += f'For the decision: "{scenario.get("Question", "N/A")}"\n\n'
+    prompt += "SCENARIO CONTEXT:\n"
+    prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
 
-For the decision: "{scenario.get('Question', 'N/A')}"
+    if decision_type == 'HVAC':
+        # HVAC-specific fields
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
+        prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')} (R-value: {scenario.get('R-Value', 'N/A')})\n"
+        prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
+        prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+        prompt += f"- HVAC Age: {scenario.get('HVAC Age', 'N/A')} years\n"
+        prompt += f"- HVAC SEER Rating: {scenario.get('SEER', 'N/A')}\n"
+        prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
-SCENARIO CONTEXT:
-- Location: {scenario.get('Location', 'N/A')}
-- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F
-- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft
-- Insulation Quality: {scenario.get('Insulation', 'N/A')} (R-value: {scenario.get('R-Value', 'N/A')})
-- Household Size: {scenario.get('Household Size', 'N/A')} people
-- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month
-- Housing Type: {scenario.get('Housing Type', 'N/A')}
-- House Age: {scenario.get('House Age', 'N/A')}
-- HVAC Age: {scenario.get('HVAC Age', 'N/A')} years
-- HVAC SEER Rating: {scenario.get('SEER', 'N/A')}
+    elif decision_type == 'Appliance':
+        # Appliance-specific fields
+        prompt += f"- Appliance Type: {scenario.get('Appliance', 'N/A')}\n"
+        prompt += f"- Energy per Cycle: {scenario.get('kwh/cycle', 'N/A')} kWh\n"
+        prompt += f"- Appliance Age: {scenario.get('Appliance Age/Type', 'N/A')}\n"
+        prompt += f"- Baseline Time: {scenario.get('Baseline Time', '7pm')}\n"
+        prompt += f"- Peak Rate: ${scenario.get('Peak Rate', 'N/A')}/kWh\n"
+        prompt += f"- Off-Peak Rate: ${scenario.get('Off-Peak Rate', 'N/A')}/kWh\n"
+        prompt += f"- Household Size: {scenario.get('Occupants', 'N/A')} people\n"
+        prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+        prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
-Provide scores (0-10) for all 4 criteria using the calibrations in the system prompt.
-Consider how this specific alternative performs given the scenario context.
-"""
+    elif decision_type == 'Shower':
+        # Shower-specific fields
+        prompt += f"- Flow Rate: {scenario.get('GPM', 'N/A')} GPM\n"
+        prompt += f"- Water Heater Type: {scenario.get('Water Heater', 'N/A')}\n"
+        prompt += f"- Tank Size: {scenario.get('Tank Size', 'N/A')} gallons\n"
+        prompt += f"- Water Heater Temperature: {scenario.get('Water Heater Temp', 'N/A')}°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Household Size: {scenario.get('Occupants', 'N/A')} people\n"
+        prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+        prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
+
+    prompt += "\nProvide scores (0-10) for all 4 criteria using the calibrations in the system prompt.\n"
+    prompt += "Consider how this specific alternative performs given the scenario context.\n"
+
+    return prompt
 
 
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
@@ -147,24 +171,23 @@ def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
     Returns:
         Tuple of (scores_dict, diagnostics_dict)
     """
-    system_prompt = f"""You are an expert HVAC energy analyst trained on peer-reviewed research. 
-Your task is to score household energy decisions on 4 criteria using research-backed calibrations.
+    system_prompt = f"""You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA). 
+    You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.
 
-CRITICAL INSTRUCTIONS:
-1. Score each criterion on a 0-10 scale
-2. Use the research references to anchor your scores
-3. Consider the specific scenario context (outdoor temperature, insulation, HVAC specs)
-4. Return ONLY valid JSON with this EXACT format:
+Your task is to score alternatives on four criteria:
+1. Energy Cost (0-10): Lower energy costs = higher score
+2. Environmental Impact (0-10): Lower emissions = higher score
+3. Comfort (0-10): Higher user comfort = higher score
+4. Practicality (0-10): Easier to implement/maintain = higher score
 
-{{
-    "energy_cost": X.X,
-    "environmental": X.X,
-    "comfort": X.X,
-    "practicality": X.X,
-    "reasoning": "Brief 1-2 sentence explanation of scores"
-}}
+Scoring guidelines:
+- Use the full 0-10 scale
+- Consider tradeoffs between criteria
+- Base scores on engineering principles, behavioral research, and practical constraints
+- Be consistent across similar scenarios
 
-Each score MUST be a number between 0.0 and 10.0.
+Return ONLY a JSON object with four numeric scores (0-10):
+{"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
     user_prompt = build_user_prompt(scenario, alternative)
 
@@ -467,11 +490,39 @@ def main():
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
     logging.info(f"Temperature: {API_CONFIG['temperature']}")
+    # Validate CSV has required columns
+    import csv as csv_module
+    try:
+        with open(test_csv, 'r', encoding='utf-8') as f:
+            reader = csv_module.DictReader(f)
+            first_row = next(reader)
 
-    # Run test set
+            required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
+            missing_cols = [col for col in required_cols if col not in first_row]
+
+            if missing_cols:
+                logging.error(f"❌ Missing required columns: {missing_cols}")
+                logging.error("CSV must have: Question, Decision Type, Alternative 1, Alternative 2, Alternative 3")
+                logging.error("Plus decision-type-specific columns (see documentation)")
+                return
+
+            # Check decision types
+            f.seek(0)
+            next(reader)  # Skip header
+            decision_types = set([row.get('Decision Type', 'UNKNOWN') for row in reader])
+
+            logging.info(f"✓ CSV validation passed")
+            logging.info(f"  Decision types found: {decision_types}")
+
+    except FileNotFoundError:
+        logging.error(f"❌ Test file not found: {test_csv}")
+        return
+    except Exception as e:
+        logging.error(f"❌ CSV validation error: {e}")
+        return
+
     diagnostics = run_test_set(test_csv, output_csv)
 
-    # Print summary
     logging.info("\n" + "="*60)
     logging.info("PURE PROMPTING TEST COMPLETE")
     logging.info("="*60)

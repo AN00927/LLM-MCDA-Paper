@@ -4,13 +4,15 @@ from typing import Dict, List, Tuple
 
 
 class HVACGroundTruthCalculator:
-    """
-    Calculate physics-based ground truth scores for HVAC decision scenarios.
-    Uses research from Ground Truth Data.pdf and ASHRAE standards.
-    """
+    # EPA eGRID2022: Pennsylvania grid emissions 0.85 lb CO2/kWh
+    # Generation mix: 40-45% gas, 30-35% nuclear, 15-20% coal
+    # Citations: EPA eGRID2022 [Ref 77,81], PA DEP 2021 [Ref 29,32]
+    EMISSIONS_FACTOR_PA = 0.85  # lbs CO2/kWh
 
-    EMISSIONS_FACTOR_PA = 0.6574
-    ELECTRICITY_RATE_PA = 0.14
+    # EIA 2024-2025: Pennsylvania residential average
+    # PPL: 19-20¢, PECO: 17-18¢, Duquesne: 18-19¢
+    # Citations: EIA state data [Ref 29], PA suppliers [Ref 28]
+    ELECTRICITY_RATE_PA = 0.19  # $/kWh
     SUMMER_COMFORT_RANGE = (73, 79)
     SUMMER_OPTIMAL = 76
     WINTER_COMFORT_RANGE = (68, 75)
@@ -81,32 +83,70 @@ class HVACGroundTruthCalculator:
         return max(0, total_load)
 
     def calculate_energy_consumption(self, load_btu_hr: float, seer: int,
-                                     hvac_age: int, hours: float = 8) -> float:
+                                     hvac_age: int, hours: float = 8,
+                                     maintenance_level: str = 'moderate') -> float:
         """
-        Calculate energy consumption in kWh.
+        Calculate energy consumption in kWh with age degradation.
 
-        Citations:
-        - Huyen & Cetin (2019). Energies, 12(1):188
-        - Age degradation: Alves et al. (2016). Energy and Buildings, 130:408-419
+        Q1 Research: Linear capped degradation model
+        - With maintenance: 0.25-1%/year degradation
+        - Without maintenance: 1-2%/year degradation
+        - Pattern: Front-loaded (rapid early drop + slower tail), not exponential
+        - Maximum: 20-30% loss after 20-25 years for working systems
+
+        Citations: NIST/ASHRAE fault studies [Ref 1,2], Parker field evals [Ref 3],
+                   CA utility studies [Ref 4,5]
 
         Args:
             load_btu_hr: Cooling/heating load (BTU/hr)
-            seer: SEER rating
+            seer: Nameplate SEER rating
             hvac_age: System age (years)
             hours: Operating hours
+            maintenance_level: 'good', 'moderate', or 'poor'
 
         Returns:
             Energy consumption in kWh
         """
-        eer_estimated = seer * 0.875
+        # Base degradation rates by maintenance level
+        maintenance_rates = {
+            'good': 0.005,  # 0.5%/year with annual/biannual maintenance
+            'moderate': 0.010,  # 1.0%/year with occasional maintenance
+            'poor': 0.015  # 1.5%/year with little/no maintenance
+        }
 
-        age_degradation_factor = 1 + (hvac_age * 0.01)
+        base_rate = maintenance_rates.get(maintenance_level, 0.010)
 
-        adjusted_load = load_btu_hr * age_degradation_factor
+        # Front-loaded degradation: accelerated first 10 years, slower thereafter
+        if hvac_age <= 10:
+            # Accelerated early loss (1.5× base rate)
+            effective_rate = base_rate * 1.5
+            total_degradation = hvac_age * effective_rate
+        else:
+            # First 10 years at accelerated rate
+            early_degradation = 10 * (base_rate * 1.5)
+            # Remaining years at slower tail rate (0.5× base rate)
+            later_years = hvac_age - 10
+            later_degradation = later_years * (base_rate * 0.5)
+            total_degradation = early_degradation + later_degradation
 
-        kw = (adjusted_load / eer_estimated) / 1000
+        # Cap maximum degradation at 30% (realistic upper bound)
+        total_degradation = min(total_degradation, 0.30)
 
+        # Calculate effective SEER after degradation
+        effective_seer = seer * (1 - total_degradation)
+
+        print(f"  → SEER degradation: {seer} → {effective_seer:.1f} "
+              f"(age={hvac_age}yr, {maintenance_level}, {total_degradation * 100:.1f}% loss)")
+
+        # Convert SEER to EER (approximate relationship)
+        eer_estimated = effective_seer * 0.875
+
+        # Calculate power draw
+        kw = (load_btu_hr / eer_estimated) / 1000
+
+        # Total energy consumption
         total_kwh = kw * hours
+
         print(f"  → Energy consumption: {total_kwh:.2f} kWh over {hours} hours")
         return total_kwh
 
@@ -199,10 +239,10 @@ class HVACGroundTruthCalculator:
         # Stopps & Touchie (2021): Only 40-45% successfully maintain complex schedules
         # Therefore: complex penalty = 0.60 (vs 1.0 for simple)
         if question_type == "complex":
-            base_score *= 0.60  # Changed from 0.85
+            base_score *= 0.60
 
         # Component 3: ΔT operational feasibility
-        # Large ΔT indicates system operating at limits → lower reliability/higher failure risk
+        # Large ΔT indicates system operating at limits; lower reliability/higher failure risk
         delta_t = abs(outdoor_temp - indoor_temp)
         if delta_t < 10:
             delta_t_multiplier = 1.0
@@ -216,6 +256,71 @@ class HVACGroundTruthCalculator:
         base_score *= delta_t_multiplier
 
         return max(0.0, min(10.0, base_score))
+
+    def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 30) -> float:
+        """
+        Convert per-8hr-period cost to estimated monthly cost.
+
+        Args:
+            per_period_cost: Cost per 8-hour period ($)
+            periods_per_month: How many 8-hour periods per month (default 30 days)
+
+        Returns:
+            Estimated monthly cost in dollars
+        """
+        return per_period_cost * periods_per_month
+
+    def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
+        """
+        Calculate budget constraint penalty multiplier for energy cost score.
+
+        Soft exponential penalty prevents infeasible recommendations while preserving
+        MAVT framework.
+
+        Penalty Structure:
+        - <80% budget: No penalty (multiplier = 1.0)
+        - 80-100% budget: Linear decline (approaching limit)
+        - 100-150% budget: Exponential decline (budget violation)
+        - >150% budget: Complete elimination (multiplier = 0.0, infeasible)
+
+        Example: $175 budget
+        - $140 cost (80%): multiplier = 1.0
+        - $175 cost (100%): multiplier = 0.5
+        - $230 cost (131%): multiplier ≈ 0.15
+        - $267 cost (153%): multiplier = 0.0 (eliminated)
+
+        Args:
+            monthly_cost: Estimated monthly energy cost for this alternative
+            monthly_budget: User's monthly utility budget
+
+        Returns:
+            Penalty multiplier (0.0 to 1.0) to apply to energy cost score
+        """
+        if monthly_budget <= 0:
+            return 1.0  # No budget constraint
+
+        utilization = monthly_cost / monthly_budget
+
+        if utilization < 0.80:
+            # Below 80%: Comfortable headroom, no penalty
+            return 1.0
+
+        elif utilization < 1.0:
+            # 80-100%: Linear decline
+            # At 80%: penalty = 1.0
+            # At 100%: penalty = 0.5
+            return 1.0 - 2.5 * (utilization - 0.80)
+
+        elif utilization < 1.5:
+            # 100-150%: Exponential decline
+            # At 100%: penalty = 0.5
+            # At 150%: penalty ≈ 0.01
+            import math
+            return 0.5 * math.exp(-3.0 * (utilization - 1.0))
+
+        else:
+            # >150%: Complete elimination
+            return 0.0
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         """
@@ -233,16 +338,16 @@ class HVACGroundTruthCalculator:
                 'energy_cost': {
         # 5th-95th percentile from actual dataset distribution
         # Captures 90% of realistic alternatives, creates sensitivity in cluster region
-        #
+
         # Min calculation:
         # Huyen & Cetin (2019): "Daily consumption of 6-8.2 kWh for well-insulated
         # homes with SEER 16+ under moderate conditions" (Energies 12(1):188)
         # → 8hr baseline: 2.0 kWh × $0.14/kWh = $0.28
-        #
+
         # Kim et al. (2024): "Each 1°F increase in cooling setpoint reduces consumption
         # by 8-12%" (Building Simulation, DOI: 10.1007/s12273-024-1203-9)
         # → 82°F setpoint (6°F above 76°F): 48% reduction → $0.28 × 0.52 = $0.15
-        #
+
         # Cetin & Novoselac (2015): "HVAC runtime shows significant variation based on
         # setpoint strategy and occupancy patterns" (Energy and Buildings 96:210-220)
         # → Accounting for partial operation: $0.47 (5th percentile from dataset)
@@ -286,8 +391,6 @@ class HVACGroundTruthCalculator:
         x_min = ref['min']
         x_max = ref['max']
 
-        # REMOVED: x = max(x_min, min(x_max, raw_value))
-        # Now use raw_value directly - allow extrapolation
         x = raw_value
 
         vf_type = vf_spec.split(',')[0].strip().lower()
@@ -385,7 +488,7 @@ class HVACGroundTruthCalculator:
                     if numbers:
                         effective_temp = float(numbers[0])
                     else:
-                        print(f"  ⚠ Could not parse alternative: {alt}")
+                        print(f"   Could not parse alternative: {alt}")
                         continue
             else:
                 effective_temp = float(alt)
@@ -483,6 +586,29 @@ class HVACGroundTruthCalculator:
                 print(f"  ✗ Practicality VF ERROR: {e}")
                 practicality_vf = raw['practicality_raw']
 
+            # Apply budget penalty if budget constraint exists
+            if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
+                # Convert 8-hour cost to monthly estimate (30 days)
+                monthly_cost = self.calculate_monthly_cost(
+                    raw['energy_cost_dollars'],
+                    periods_per_month=30
+                )
+
+                budget_penalty = self.calculate_budget_penalty(
+                    monthly_cost,
+                    scenario['utility_budget']
+                )
+
+                # Apply penalty to energy cost score
+                energy_vf_penalized = energy_vf * budget_penalty
+
+                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['utility_budget']:.2f} budget")
+                print(
+                    f"  Utilization: {monthly_cost / scenario['utility_budget'] * 100:.1f}% → penalty: {budget_penalty:.3f}")
+                print(f"  Energy score: {energy_vf:.2f} → {energy_vf_penalized:.2f} (after penalty)")
+
+                energy_vf = energy_vf_penalized
+
             final_scores[alt] = {
                 'energy_cost_score': round(energy_vf, 2),
                 'environmental_score': round(env_vf, 2),
@@ -498,3 +624,97 @@ class HVACGroundTruthCalculator:
                 f"     Energy: {energy_vf:.2f}, Environmental: {env_vf:.2f}, Comfort: {comfort_vf:.2f}, Practicality: {practicality_vf:.2f}\n")
 
         return final_scores
+
+
+def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_filename: str = "ground_truth_hvac.csv"):
+    """
+    Read HVAC scenarios from CSV and calculate ground truth scores for all alternatives.
+
+    Args:
+        csv_filename: Path to CSV file with scenarios
+        output_filename: Where to save ground truth results
+
+    Expected CSV columns:
+        Question, Location, Square Footage, Insulation, Household Size,
+        Utility Budget, Housing Type, Outdoor Temp, House Age, R-Value,
+        HVAC Age, SEER, Alternative 1, Alternative 2, Alternative 3,
+        iscomplex
+    """
+
+    df = pd.read_csv(csv_filename)
+
+    print(f"Found {len(df)} scenarios")
+
+    calculator = HVACGroundTruthCalculator()
+
+    results = []
+
+    for idx, row in df.iterrows():
+        print(f"Processing scenario {idx + 1}/{len(df)}: {row['Location']}")
+        electricity_rate = 0.14
+
+        alternatives = []
+        for alt_col in ['Alternative 1', 'Alternative 2', 'Alternative 3']:
+            alt_val = str(row[alt_col]).strip()
+
+            if pd.isna(row[alt_col]) or alt_val == '' or alt_val == 'nan':
+                continue
+            alternatives.append(alt_val)
+
+        scenario = {
+            'question': row['Question'],
+            'location': row['Location'],
+            'square_footage': int(row['Square Footage']),
+            'r_value': int(row['R-Value']),
+            'household_size': int(row['Household Size']),
+            'outdoor_temp': float(row['Outdoor Temp']),
+            'seer': int(row['SEER']),
+            'hvac_age': int(row['HVAC Age']),
+            'electricity_rate': electricity_rate,
+            'is_complex': row['iscomplex'] == "TRUE",
+            'alternatives': alternatives,
+            'vf_specs': {
+                'energy_cost': HVACGroundTruthCalculator.VF_ENERGY_COST,
+                'environmental': HVACGroundTruthCalculator.VF_ENVIRONMENTAL,
+                'comfort': HVACGroundTruthCalculator.VF_COMFORT,
+                'practicality': HVACGroundTruthCalculator.VF_PRACTICALITY
+            }
+        }
+        try:
+            scores = calculator.calculate_scenario_scores(scenario)
+
+            for alt, alt_scores in scores.items():
+                result_row = {
+                    'scenario_id': idx,
+                    'question': row['Question'],
+                    'location': row['Location'],
+                    'outdoor_temp': row['Outdoor Temp'],
+                    'electricity_rate': electricity_rate,
+                    'alternative': alt,
+                    'energy_cost_score': alt_scores['energy_cost_score'],
+                    'environmental_score': alt_scores['environmental_score'],
+                    'comfort_score': alt_scores['comfort_score'],
+                    'practicality_score': alt_scores['practicality_score'],
+                    'raw_kwh': alt_scores['raw_kwh'],
+                    'raw_cost': alt_scores['raw_cost'],
+                    'raw_emissions': alt_scores['raw_emissions']
+                }
+                results.append(result_row)
+
+        except Exception as e:
+            print(f"ERROR processing scenario {idx}: {e}")
+            continue
+
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(output_filename, index=False)
+
+    print(f"\nGround truth saved to {output_filename}")
+    print(f"Total alternatives scored: {len(results_df)}")
+    return results_df
+
+
+if __name__ == "__main__":
+    process_hvac_scenarios(
+        csv_filename="HVACScenarios.csv",
+        output_filename="ground_truth_hvac.csv"
+    )
