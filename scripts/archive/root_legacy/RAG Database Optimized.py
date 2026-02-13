@@ -51,9 +51,6 @@ except Exception as e:
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                      temperature: float = TEMPERATURE) -> Tuple[Dict, Dict]:
     """
-    Query OpenRouter API with retry logic.
-    EXACT COPY from pure_prompting.py
-
     Returns:
         (response_dict, diagnostics_dict)
     """
@@ -104,10 +101,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 def build_system_prompt() -> str:
     """
     Build system prompt for MCDA scoring.
-    EXACT COPY from pure_prompting.py - NO numerical anchors
     """
-    return """You are an expert decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
-
+    return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
+    You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.
 Your task is to score alternatives on four criteria:
 1. Energy Cost (0-10): Lower energy costs = higher score
 2. Environmental Impact (0-10): Lower emissions = higher score
@@ -128,14 +124,16 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     """
     Convert scenario to text for RAG retrieval.
 
+    CRITICAL FIX: Now reads 'Decision Type' from CSV parameter instead of
+    keyword detection. This ensures correct retrieval filtering.
+
     Returns:
         (scenario_text, decision_type)
     """
-    question = scenario.get('Description', '').lower()
-# AHAAN THIS IS INCORRECT; THE DECISION TYPE WILL BE INCLUDED AS ANOTHER PARAMETER, IT DOESNT HAVE TO DO THIS!
-# Update input variables later
-    if any(keyword in question for keyword in ['temperature', 'thermostat', 'ac', 'heat', 'hvac']):
-        decision_type = 'HVAC'
+    # Read decision type from CSV (not keyword detection)
+    decision_type = scenario.get('Decision Type', 'HVAC')
+
+    if decision_type == 'HVAC':
         scenario_text = (
             f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Insulation', 'N/A')} insulation R-{scenario.get('R-Value', 'N/A')}, "
@@ -145,30 +143,34 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
             f"{scenario.get('Housing Type', 'N/A')}"
         )
 
-    elif any(keyword in question for keyword in ['dishwasher', 'washer', 'dryer', 'appliance', 'run at', 'wash at']):
-        decision_type = 'Appliance'
+    elif decision_type == 'Appliance':
         scenario_text = (
             f"{scenario.get('Appliance', 'N/A')}, "
             f"{scenario.get('kwh/cycle', 'N/A')} kWh/cycle, "
-            f"{scenario.get('Appliance Age/Type', 'N/A')} years old, "
+            f"{scenario.get('Appliance Age/Type', 'N/A')}, "
             f"{scenario.get('Occupants', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
-            f"peak ${scenario.get('Peak Rate', 'N/A')}/kWh"
+            f"peak ${scenario.get('Peak Rate', 'N/A')}/kWh, "
+            f"off-peak ${scenario.get('Off-Peak Rate', 'N/A')}/kWh"
         )
 
-    else:
-        decision_type = 'Shower'
+    elif decision_type == 'Shower':
         scenario_text = (
             f"{scenario.get('GPM', 'N/A')} GPM, "
             f"{scenario.get('Water Heater', 'N/A')} water heater, "
             f"{scenario.get('Tank Size', 'N/A')} gal tank, "
+            f"{scenario.get('Water Heater Temp', 'N/A')}°F heater temp, "
             f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Occupants', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}"
         )
 
-    return scenario_text, decision_type
+    else:
+        # Fallback for unknown decision type
+        scenario_text = f"Unknown decision type: {decision_type}"
+        print(f"  ⚠ Warning: Unknown decision type '{decision_type}'")
 
+    return scenario_text, decision_type
 
 def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict]:
     """
@@ -289,6 +291,8 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str,
     """
     Build user prompt with RAG context + scenario details.
 
+    Reuses format_scenario_text_for_retrieval to avoid duplication.
+
     Args:
         scenario: Scenario dict
         alternative: Alternative to score
@@ -297,20 +301,15 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str,
     Returns:
         Complete user prompt string
     """
-    # RAG context comes first as context
     prompt = rag_context
 
-    # Then the scoring task (same structure as Pure Prompting)
     prompt += f'Score this alternative: "{alternative}"\n\n'
-    prompt += f'For the decision: "{scenario.get("Description", "N/A")}"\n\n'
+    prompt += f'For the decision: "{scenario.get("Question", "N/A")}"\n\n'
     prompt += "SCENARIO CONTEXT:\n"
 
-    for key, value in scenario.items():
-        if key not in ['Description', 'Alternative 1', 'Alternative 2', 'Alternative 3']:
-            prompt += f"- {key}: {value}\n"
-
+    scenario_text, decision_type = format_scenario_text_for_retrieval(scenario)
+    prompt += scenario_text
     return prompt
-
 
 def parse_llm_scores(response_text: str) -> Dict[str, float]:
     """
@@ -421,9 +420,7 @@ def run_scenario(scenario: Dict) -> Dict:
     Returns:
         Dict with scores and ranking results
     """
-    print(f"\n{'=' * 70}")
-    print(f"SCENARIO: {scenario.get('Description', 'N/A')}")
-    print(f"{'=' * 70}")
+    print(f"SCENARIO: {scenario.get('Question', 'N/A')}")
 
     alternatives_scores = []
     total_diagnostics = {
@@ -466,11 +463,182 @@ def run_scenario(scenario: Dict) -> Dict:
         print(f"  {i}. {alt} (weighted score: {score:.2f})")
 
     return {
-        'scenario': scenario.get('Description', 'N/A'),
+        'scenario': scenario.get('Question', 'N/A'),
         'alternatives_scores': alternatives_scores,
         'ranking_result': ranking_result,
         'diagnostics': total_diagnostics
     }
 
-#add a run Test set based on the scenarios once they are finished
-#do this for other two architectures asw
+
+def run_test_set(test_csv_path: str, output_csv_path: str,
+                 output_diagnostics_path: str) -> Dict:
+    """
+    Run RAG-Enhanced on full test set.
+
+    Args:
+        test_csv_path: Path to test scenarios CSV
+        output_csv_path: Path to save results CSV
+        output_diagnostics_path: Path to save diagnostics JSON
+
+    Returns:
+        Summary statistics dict
+    """
+    import csv as csv_module
+
+    # Validate CSV
+    print(f"\n{'=' * 70}")
+    print(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
+    print(f"{'=' * 70}\n")
+
+    print(f"Loading test scenarios from: {test_csv_path}")
+
+    scenarios = []
+    with open(test_csv_path, 'r', encoding='utf-8') as f:
+        reader = csv_module.DictReader(f)
+        first_row = next(reader)
+
+        # Validate required columns
+        required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
+        missing_cols = [col for col in required_cols if col not in first_row]
+
+        if missing_cols:
+            raise ValueError(f"❌ Missing required columns: {missing_cols}")
+
+        scenarios.append(first_row)
+        scenarios.extend(list(reader))
+
+    print(f"✓ Loaded {len(scenarios)} test scenarios")
+    print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
+
+    # Process all scenarios
+    all_results = []
+    cumulative_diagnostics = {
+        'total_scenarios': len(scenarios),
+        'total_api_calls': 0,
+        'total_tokens': 0,
+        'total_latency': 0.0,
+        'rag_retrieved_total': 0,
+        'by_decision_type': {}
+    }
+
+    for i, scenario in enumerate(scenarios):
+        print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
+
+        result = run_scenario(scenario)
+        all_results.append(result)
+
+        # Aggregate diagnostics
+        diag = result['diagnostics']
+        cumulative_diagnostics['total_api_calls'] += diag['api_calls']
+        cumulative_diagnostics['total_tokens'] += diag['total_tokens']
+        cumulative_diagnostics['total_latency'] += diag['total_latency']
+        cumulative_diagnostics['rag_retrieved_total'] += diag['rag_retrieved_total']
+
+        # Track by decision type
+        decision_type = scenario.get('Decision Type', 'UNKNOWN')
+        if decision_type not in cumulative_diagnostics['by_decision_type']:
+            cumulative_diagnostics['by_decision_type'][decision_type] = {
+                'count': 0,
+                'api_calls': 0,
+                'rag_retrieved': 0
+            }
+
+        cumulative_diagnostics['by_decision_type'][decision_type]['count'] += 1
+        cumulative_diagnostics['by_decision_type'][decision_type]['api_calls'] += diag['api_calls']
+        cumulative_diagnostics['by_decision_type'][decision_type]['rag_retrieved'] += diag['rag_retrieved_total']
+
+    # Save results to CSV
+    print(f"\nSaving results to: {output_csv_path}")
+
+    with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
+        fieldnames = [
+            'scenario_id', 'question', 'location', 'decision_type',
+            'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
+            'rank', 'weighted_score'
+        ]
+        writer = csv_module.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for scenario_id, result in enumerate(all_results, 1):
+            question = result['scenario']
+            decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
+            location = scenarios[scenario_id - 1].get('Location', 'N/A')
+
+            # Get ranking details
+            ranked_alts = result['ranking_result']['ranked_alternatives']
+            weighted_scores = result['ranking_result']['weighted_scores']
+
+            # Write each alternative
+            for alt_idx, alt_data in enumerate(result['alternatives_scores']):
+                alternative = alt_data['alternative']
+                scores = alt_data['scores']
+
+                # Find rank (1-based)
+                rank = ranked_alts.index(alternative) + 1
+                weighted_score = weighted_scores[ranked_alts.index(alternative)]
+
+                writer.writerow({
+                    'scenario_id': scenario_id,
+                    'question': question,
+                    'location': location,
+                    'decision_type': decision_type,
+                    'alternative': alternative,
+                    'energy_cost': scores['energy_cost'],
+                    'environmental': scores['environmental'],
+                    'comfort': scores['comfort'],
+                    'practicality': scores['practicality'],
+                    'rank': rank,
+                    'weighted_score': weighted_score
+                })
+
+    print(f"✓ Results saved to: {output_csv_path}")
+
+    # Save diagnostics
+    print(f"Saving diagnostics to: {output_diagnostics_path}")
+
+    with open(output_diagnostics_path, 'w', encoding='utf-8') as f:
+        json.dump(cumulative_diagnostics, f, indent=2)
+
+    print(f"✓ Diagnostics saved to: {output_diagnostics_path}")
+
+    # Print summary
+    print(f"\n{'=' * 70}")
+    print(f"RAG-ENHANCED TEST COMPLETE")
+    print(f"{'=' * 70}")
+    print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
+    print(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
+    print(f"Total tokens: {cumulative_diagnostics['total_tokens']}")
+    print(f"Total RAG retrievals: {cumulative_diagnostics['rag_retrieved_total']}")
+    print(
+        f"Avg latency per call: {cumulative_diagnostics['total_latency'] / max(cumulative_diagnostics['total_api_calls'], 1):.2f}s")
+    print(f"\nBy Decision Type:")
+    for dt, stats in cumulative_diagnostics['by_decision_type'].items():
+        print(f"  {dt}: {stats['count']} scenarios, {stats['api_calls']} calls, {stats['rag_retrieved']} retrieved")
+    print(f"{'=' * 70}\n")
+
+    return cumulative_diagnostics
+
+
+# Add main execution block
+if __name__ == "__main__":
+    import sys
+
+    # Check for required files
+    test_csv = '/mnt/user-data/uploads/test_scenarios.csv'
+
+    if not os.path.exists(test_csv):
+        print(f"❌ ERROR: Test scenarios file not found: {test_csv}")
+        print("Please upload your test scenarios CSV first.")
+        sys.exit(1)
+
+    if chroma_collection is None:
+        print(f"❌ ERROR: RAG database not available.")
+        print("Please run build_rag_database.py first to create the RAG database.")
+        sys.exit(1)
+
+    # Run test set
+    run_test_set(
+        test_csv_path=test_csv,
+        output_csv_path=OUTPUT_CSV,
+        output_diagnostics_path=OUTPUT_DIAGNOSTICS
+    )

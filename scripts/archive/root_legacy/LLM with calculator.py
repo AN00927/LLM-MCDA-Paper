@@ -12,15 +12,12 @@ try:
     )
 except ModuleNotFoundError:
     print("couldnt get HVAC ground truth calculator")
-
 try:
     from ApplianceGroundTruthCalculator import (
         ApplianceGroundTruthCalculator
     )
 except ModuleNotFoundError:
     print("couldnt get appliance  ground truth calculator")
-
-
 try:
     from ShowerGroundTruthCalculator import (
         ShowerGroundTruthCalculator
@@ -48,10 +45,8 @@ RETRY_DELAY = 2
 EXTRACTION_MAX_RETRIES = 1
 OUTPUT_CSV = '/mnt/user-data/outputs/hybrid_results.csv'
 OUTPUT_DIAGNOSTICS = '/mnt/user-data/outputs/hybrid_diagnostics.json'
-
-UNIFIED_EXTRACTION_PROMPT = """[PLACEHOLDER ]
-
-You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
+#AHAAN CHECK THE APPLIANCE AGE TYPE COLUMN AND WHAT WE SAID ABOUT HAVING TWO DIFF TYPES
+UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
 
 SCENARIO:
 {scenario_text}
@@ -59,9 +54,10 @@ SCENARIO:
 QUESTION: {question}
 
 YOUR TASK:
-1. Classify the decision type (HVAC, Appliance, or Shower)
+1. Read the Decision Type from the scenario (HVAC, Appliance, or Shower)
 2. Extract the specific parameters needed for that decision type
 3. Select the appropriate ground truth calculator
+4. Format alternatives exactly as shown below
 
 Return ONLY valid JSON with this structure:
 
@@ -70,10 +66,17 @@ For HVAC decisions:
   "decision_type": "HVAC",
   "calculator": "HVACGroundTruthCalculator",
   "parameters": {{
-    "r_value": <number>,
-    "hvac_age": <number>,
-    "seer": <number>,
-    "alternatives": ["XF", "XF", "XF"]
+    "Location": "<city, state>",
+    "Square Footage": <number>,
+    "Insulation": "<Poor/Medium/Good>",
+    "R-Value": <number>,
+    "Household Size": <number>,
+    "Outdoor Temp": <number>,
+    "SEER": <number>,
+    "HVAC Age": <number>,
+    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "Utility Budget": <number>,
+    "alternatives": ["<temp>", "<temp>", "<temp>"]
   }}
 }}
 
@@ -82,10 +85,17 @@ For Appliance decisions:
   "decision_type": "Appliance",
   "calculator": "ApplianceGroundTruthCalculator",
   "parameters": {{
-    "appliance_type": "Dishwasher|Washer|Dryer",
-    "kwh_per_cycle": <number>,
-    "appliance_age": <number>,
-    "alternatives": ["Run at Xpm", "Run at Xpm", "Run at Xpm"]
+    "Location": "<city, state>",
+    "Appliance": "Dishwasher|Washer|Dryer",
+    "kwh/cycle": <number>,
+    "Appliance Age/Type": "<age> OR <type>",
+    "Baseline Time": "<time like 7pm, 8am, 9am>",
+    "Peak Rate": <number>,
+    "Off-Peak Rate": <number>,
+    "Occupants": <number>,
+    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "Utility Budget": <number>,
+    "alternatives": ["<time>", "<time>", "<time>"]
   }}
 }}
 
@@ -94,13 +104,23 @@ For Shower decisions:
   "decision_type": "Shower",
   "calculator": "ShowerGroundTruthCalculator",
   "parameters": {{
-    "gpm": <number>,
-    "water_heater_type": "Electric|Gas",
-    "tank_size": <number>,
-    "water_heater_temp": <number>,
-    "alternatives": [<number>, <number>, <number>]
+    "Location": "<city, state>",
+    "GPM": <number>,
+    "Water Heater": "<Electric> or <Gas>",
+    "Tank Size": <number>,
+    "Water Heater Temp": <number>,
+    "Outdoor Temp": <number>,
+    "Occupants": <number>,
+    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "Utility Budget": <number>,
+    "alternatives": ["<minutes>", "<minutes>", "<minutes>"]
   }}
 }}
+
+CRITICAL: Alternative formats must match exactly:
+- HVAC: "72", "76", "80" (No suffix)
+- Appliance: "7pm", "10pm", "2am" 
+- Shower: "5", "10", "15" (No suffix)
 
 Return ONLY the JSON, no explanation.
 """
@@ -235,13 +255,18 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
                     params = extracted['parameters']
                     decision_type = extracted['decision_type']
 
-                    if decision_type == 'HVAC':
-                        required_params = ['r_value', 'hvac_age', 'seer', 'alternatives']
-                    elif decision_type == 'Appliance':
-                        required_params = ['appliance_type', 'kwh_per_cycle', 'appliance_age', 'alternatives']
-                    elif decision_type == 'Shower':
-                        required_params = ['gpm', 'water_heater_type', 'tank_size', 'water_heater_temp', 'alternatives']
+                    params = extracted['parameters']
+                    decision_type = extracted['decision_type']
 
+                    if decision_type == 'HVAC':
+                        required_params = ['Location', 'Square Footage', 'Insulation', 'R-Value',
+                                           'SEER', 'HVAC Age', 'Outdoor Temp', 'alternatives']
+                    elif decision_type == 'Appliance':
+                        required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
+                                           'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
+                    elif decision_type == 'Shower':
+                        required_params = ['Location', 'GPM', 'Water Heater', 'Tank Size',
+                                           'Water Heater Temp', 'Outdoor Temp', 'alternatives']
                     if all(k in params for k in required_params):
                         extraction_diagnostics['success'] = True
                         extraction_diagnostics.update(api_diagnostics)
@@ -312,7 +337,6 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """
     Apply MAVT weighted sum to rank alternatives.
-    EXACT COPY from pure_prompting.py and rag_enhanced.py
     """
     weighted_scores = []
 
@@ -465,4 +489,207 @@ def run_scenario(scenario: Dict) -> Dict:
         'extraction_diagnostics': extraction_diag
     }
 
-#as for the RAG optimized, we have to code the actually test set running
+
+def run_test_set(test_csv_path: str, output_csv_path: str,
+                 output_diagnostics_path: str) -> Dict:
+    """
+    Run Hybrid approach on full test set.
+
+    Args:
+        test_csv_path: Path to test scenarios CSV
+        output_csv_path: Path to save results CSV
+        output_diagnostics_path: Path to save diagnostics JSON
+
+    Returns:
+        Summary statistics dict
+    """
+    import csv as csv_module
+
+    # Validate CSV
+    print(f"\n{'=' * 70}")
+    print(f"HYBRID MCDA ARCHITECTURE - TEST SET")
+    print(f"{'=' * 70}\n")
+
+    print(f"Loading test scenarios from: {test_csv_path}")
+
+    scenarios = []
+    with open(test_csv_path, 'r', encoding='utf-8') as f:
+        reader = csv_module.DictReader(f)
+        first_row = next(reader)
+
+        # Validate required columns
+        required_cols = ['Question', 'Decision Type']
+        missing_cols = [col for col in required_cols if col not in first_row]
+
+        if missing_cols:
+            raise ValueError(f"❌ Missing required columns: {missing_cols}")
+
+        scenarios.append(first_row)
+        scenarios.extend(list(reader))
+
+    print(f"✓ Loaded {len(scenarios)} test scenarios")
+    print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
+
+    # Process all scenarios
+    all_results = []
+    cumulative_diagnostics = {
+        'total_scenarios': len(scenarios),
+        'total_extraction_calls': 0,
+        'successful_extractions': 0,
+        'failed_extractions': 0,
+        'failed_gt_calculations': 0,
+        'total_tokens': 0,
+        'total_latency': 0.0,
+        'by_decision_type': {}
+    }
+
+    for i, scenario in enumerate(scenarios):
+        print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
+
+        result = run_scenario(scenario)
+        all_results.append(result)
+
+        # Aggregate diagnostics
+        decision_type = scenario.get('Decision Type', 'UNKNOWN')
+
+        if decision_type not in cumulative_diagnostics['by_decision_type']:
+            cumulative_diagnostics['by_decision_type'][decision_type] = {
+                'count': 0,
+                'extraction_success': 0,
+                'extraction_failed': 0,
+                'gt_calculation_failed': 0
+            }
+
+        cumulative_diagnostics['by_decision_type'][decision_type]['count'] += 1
+        cumulative_diagnostics['total_extraction_calls'] += 1
+
+        if result.get('extraction_failed', False):
+            cumulative_diagnostics['failed_extractions'] += 1
+            cumulative_diagnostics['by_decision_type'][decision_type]['extraction_failed'] += 1
+        elif result.get('gt_calculation_failed', False):
+            cumulative_diagnostics['successful_extractions'] += 1
+            cumulative_diagnostics['failed_gt_calculations'] += 1
+            cumulative_diagnostics['by_decision_type'][decision_type]['gt_calculation_failed'] += 1
+        else:
+            cumulative_diagnostics['successful_extractions'] += 1
+            cumulative_diagnostics['by_decision_type'][decision_type]['extraction_success'] += 1
+
+        # Extract token/latency from extraction diagnostics
+        ext_diag = result.get('extraction_diagnostics', {})
+        cumulative_diagnostics['total_tokens'] += ext_diag.get('total_tokens', 0)
+        cumulative_diagnostics['total_latency'] += ext_diag.get('latency_seconds', 0.0)
+
+    # Save results to CSV
+    print(f"\nSaving results to: {output_csv_path}")
+
+    with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
+        fieldnames = [
+            'scenario_id', 'question', 'location', 'decision_type', 'calculator',
+            'extraction_failed', 'gt_calculation_failed',
+            'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
+            'rank', 'weighted_score'
+        ]
+        writer = csv_module.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for scenario_id, result in enumerate(all_results, 1):
+            question = result['scenario']
+            decision_type = result['decision_type']
+            calculator = result['calculator']
+            extraction_failed = result.get('extraction_failed', False)
+            gt_calc_failed = result.get('gt_calculation_failed', False)
+
+            location = scenarios[scenario_id - 1].get('Location', 'N/A')
+
+            # Get ranking details
+            ranked_alts = result['ranking_result']['ranked_alternatives']
+            weighted_scores = result['ranking_result']['weighted_scores']
+
+            # Write each alternative
+            for alt_idx, alt_data in enumerate(result['alternatives_scores']):
+                alternative = alt_data['alternative']
+                scores = alt_data['scores']
+
+                # Find rank (1-based)
+                rank = ranked_alts.index(alternative) + 1
+                weighted_score = weighted_scores[ranked_alts.index(alternative)]
+
+                writer.writerow({
+                    'scenario_id': scenario_id,
+                    'question': question,
+                    'location': location,
+                    'decision_type': decision_type,
+                    'calculator': calculator,
+                    'extraction_failed': extraction_failed,
+                    'gt_calculation_failed': gt_calc_failed,
+                    'alternative': alternative,
+                    'energy_cost': scores['energy_cost'],
+                    'environmental': scores['environmental'],
+                    'comfort': scores['comfort'],
+                    'practicality': scores['practicality'],
+                    'rank': rank,
+                    'weighted_score': weighted_score
+                })
+
+    print(f"✓ Results saved to: {output_csv_path}")
+
+    # Save diagnostics
+    print(f"Saving diagnostics to: {output_diagnostics_path}")
+
+    with open(output_diagnostics_path, 'w', encoding='utf-8') as f:
+        json.dump(cumulative_diagnostics, f, indent=2)
+
+    print(f"✓ Diagnostics saved to: {output_diagnostics_path}")
+
+    # Print summary
+    print(f"\n{'=' * 70}")
+    print(f"HYBRID TEST COMPLETE")
+    print(f"{'=' * 70}")
+    print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
+    print(f"Total extraction calls: {cumulative_diagnostics['total_extraction_calls']}")
+    print(f"Successful extractions: {cumulative_diagnostics['successful_extractions']}")
+    print(f"Failed extractions: {cumulative_diagnostics['failed_extractions']}")
+    print(f"Failed GT calculations: {cumulative_diagnostics['failed_gt_calculations']}")
+    print(f"Total tokens: {cumulative_diagnostics['total_tokens']}")
+    print(
+        f"Avg latency per call: {cumulative_diagnostics['total_latency'] / max(cumulative_diagnostics['total_extraction_calls'], 1):.2f}s")
+    print(f"\nBy Decision Type:")
+    for dt, stats in cumulative_diagnostics['by_decision_type'].items():
+        print(f"  {dt}: {stats['count']} scenarios, {stats['extraction_success']} success, "
+              f"{stats['extraction_failed']} extraction fail, {stats['gt_calculation_failed']} GT calc fail")
+    print(f"{'=' * 70}\n")
+
+    return cumulative_diagnostics
+
+
+# Add main execution block
+if __name__ == "__main__":
+    import sys
+
+    # Check for required files
+    test_csv = '/mnt/user-data/uploads/test_scenarios.csv'
+
+    if not os.path.exists(test_csv):
+        print(f"❌ ERROR: Test scenarios file not found: {test_csv}")
+        print("Please upload your test scenarios CSV first.")
+        sys.exit(1)
+
+    # Check ground truth calculators are available
+    try:
+        from HVACGroundTruthCalculator import HVACGroundTruthCalculator
+        from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
+        from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
+
+        print("✓ Ground truth calculators loaded")
+    except ImportError as e:
+        print(f"❌ ERROR: Could not load ground truth calculators: {e}")
+        print("Please ensure HVACGroundTruthCalculator.py, ApplianceGroundTruthCalculator.py,")
+        print("and ShowerGroundTruthCalculator.py are in the same directory.")
+        sys.exit(1)
+
+    # Run test set
+    run_test_set(
+        test_csv_path=test_csv,
+        output_csv_path=OUTPUT_CSV,
+        output_diagnostics_path=OUTPUT_DIAGNOSTICS
+    )
