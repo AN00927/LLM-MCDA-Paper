@@ -7,6 +7,11 @@ from typing import Dict, List, Tuple
 import numpy as np
 import requests
 from dotenv import load_dotenv
+import pandas as pd
+
+df = pd.read_csv('test_scenarios.csv', encoding='utf-8-sig')
+print("Columns found:", df.columns.tolist())
+print("First column repr():", repr(df.columns[0]))
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +24,7 @@ logging.basicConfig(
 
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-    "model": "mistralai/mistral-small-3.2",
+    "model": "mistralai/mistral-small-3.2-24b-instruct",
     "max_tokens": 500,
     "temperature": 0.3  # Need determinism for reliability
 }
@@ -28,14 +33,6 @@ CRITERION_WEIGHTS = {
     "environmental": 0.30,
     "comfort": 0.20,
     "practicality": 0.15
-}
-
-# Criterion polarities for TOPSIS
-CRITERION_POLARITIES = {
-    "energy_cost": "maximize",
-    "environmental": "maximize",
-    "comfort": "maximize",
-    "practicality": "maximize"
 }
 def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, Dict]:
     """
@@ -128,6 +125,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- HVAC Age: {scenario.get('HVAC Age', 'N/A')} years\n"
+        prompt += f"- Occupancy Pattern: {scenario.get('Occupancy Context', 'N/A')}\n"
         prompt += f"- HVAC SEER Rating: {scenario.get('SEER', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
@@ -146,7 +144,6 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
     elif decision_type == 'Shower':
         # Shower-specific fields
         prompt += f"- Flow Rate: {scenario.get('GPM', 'N/A')} GPM\n"
-        prompt += f"- Water Heater Type: {scenario.get('Water Heater', 'N/A')}\n"
         prompt += f"- Tank Size: {scenario.get('Tank Size', 'N/A')} gallons\n"
         prompt += f"- Water Heater Temperature: {scenario.get('Water Heater Temp', 'N/A')}°F\n"
         prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
@@ -187,7 +184,7 @@ Scoring guidelines:
 - Be consistent across similar scenarios
 
 Return ONLY a JSON object with four numeric scores (0-10):
-{"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
+{{"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}}
 """
     user_prompt = build_user_prompt(scenario, alternative)
 
@@ -375,7 +372,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     """
     # Load test scenarios
     scenarios = []
-    with open(test_csv_path, 'r', encoding='utf-8') as f:
+    with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             row['scenario_id'] = i + 1
@@ -418,7 +415,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     cumulative_diagnostics["success_rate"] = success_rate
 
     # Save results to CSV
-    with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
+    with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
             "scenario_id", "question", "location", "outdoor_temp",
             "alternative", "energy_cost", "environmental", "comfort", "practicality",
@@ -484,8 +481,8 @@ def main():
         return
 
     # Example: Run on test set
-    test_csv = "/mnt/user-data/uploads/test_scenarios.csv"  # User will provide this
-    output_csv = "/mnt/user-data/outputs/pure_prompting_results.csv"
+    test_csv = "test_scenarios.csv"  # User will provide this
+    output_csv = "pure_prompting_results.csv"
 
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
@@ -493,7 +490,7 @@ def main():
     # Validate CSV has required columns
     import csv as csv_module
     try:
-        with open(test_csv, 'r', encoding='utf-8') as f:
+        with open(test_csv, 'r', encoding='utf-8-sig') as f:
             reader = csv_module.DictReader(f)
             first_row = next(reader)
 

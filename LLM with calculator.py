@@ -31,7 +31,7 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
 
-MODEL_ID = "mistralai/mistral-small-3.2"
+MODEL_ID = "mistralai/mistral-small-3.2-24b-instruct"
 TEMPERATURE = 0.3
 CRITERION_WEIGHTS = {
     'energy_cost': 0.35,
@@ -43,8 +43,8 @@ CRITERION_WEIGHTS = {
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 EXTRACTION_MAX_RETRIES = 1
-OUTPUT_CSV = '/mnt/user-data/outputs/hybrid_results.csv'
-OUTPUT_DIAGNOSTICS = '/mnt/user-data/outputs/hybrid_diagnostics.json'
+OUTPUT_CSV = 'hybrid_results.csv'
+OUTPUT_DIAGNOSTICS = 'hybrid_diagnostics.json'
 #AHAAN CHECK THE APPLIANCE AGE TYPE COLUMN AND WHAT WE SAID ABOUT HAVING TWO DIFF TYPES
 UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
 
@@ -56,6 +56,7 @@ QUESTION: {question}
 YOUR TASK:
 1. Read the Decision Type from the scenario (HVAC, Appliance, or Shower)
 2. Extract the specific parameters needed for that decision type
+3. No field should be left blank; if a value is not apparent, it is mandatory to reasonably estimate it based off of available information
 3. Select the appropriate ground truth calculator
 4. Format alternatives exactly as shown below
 
@@ -67,15 +68,16 @@ For HVAC decisions:
   "calculator": "HVACGroundTruthCalculator",
   "parameters": {{
     "Location": "<city, state>",
-    "Square Footage": <number>,
+    "square_footage": <number>,
     "Insulation": "<Poor/Medium/Good>",
-    "R-Value": <number>,
-    "Household Size": <number>,
-    "Outdoor Temp": <number>,
-    "SEER": <number>,
-    "HVAC Age": <number>,
-    "Housing Type": "<Apartment/Single-family/Townhouse>",
-    "Utility Budget": <number>,
+    "r_value": <number>,
+    "household_size": <number>,
+    "outdoor_temp": <number>,
+    "seer": <number>,
+    "hvac_age": <number>,
+    "household type": "<Apartment/Single-family/Townhouse>",
+    "utility_budget": <number>
+    "Occupancy Context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
     "alternatives": ["<temp>", "<temp>", "<temp>"]
   }}
 }}
@@ -94,7 +96,7 @@ For Appliance decisions:
     "Off-Peak Rate": <number>,
     "Occupants": <number>,
     "Housing Type": "<Apartment/Single-family/Townhouse>",
-    "Utility Budget": <number>,
+    "utility_budget": <number>,
     "alternatives": ["<time>", "<time>", "<time>"]
   }}
 }}
@@ -106,13 +108,12 @@ For Shower decisions:
   "parameters": {{
     "Location": "<city, state>",
     "GPM": <number>,
-    "Water Heater": "<Electric> or <Gas>",
     "Tank Size": <number>,
     "Water Heater Temp": <number>,
-    "Outdoor Temp": <number>,
+    "outdoor_temp": <number>,
     "Occupants": <number>,
     "Housing Type": "<Apartment/Single-family/Townhouse>",
-    "Utility Budget": <number>,
+    "utility_budget": <number>,
     "alternatives": ["<minutes>", "<minutes>", "<minutes>"]
   }}
 }}
@@ -259,17 +260,21 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
                     decision_type = extracted['decision_type']
 
                     if decision_type == 'HVAC':
-                        required_params = ['Location', 'Square Footage', 'Insulation', 'R-Value',
-                                           'SEER', 'HVAC Age', 'Outdoor Temp', 'alternatives']
+                        required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
+                                           'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
                     elif decision_type == 'Appliance':
                         required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
                                            'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
                     elif decision_type == 'Shower':
-                        required_params = ['Location', 'GPM', 'Water Heater', 'Tank Size',
-                                           'Water Heater Temp', 'Outdoor Temp', 'alternatives']
+                        required_params = ['Location', 'GPM', 'Tank Size',
+                                           'Water Heater Temp', 'outdoor_temp', 'alternatives']
                     if all(k in params for k in required_params):
                         extraction_diagnostics['success'] = True
-                        extraction_diagnostics.update(api_diagnostics)
+                        extraction_diagnostics.update({
+                            'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                            'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                            'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                        })
                         return extracted, extraction_diagnostics
                     else:
                         print(f"Missing required parameters for {decision_type}")
@@ -287,50 +292,55 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     return None, extraction_diagnostics
 
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
-    """
-    Feed extracted parameters to AI-selected ground truth calculator.
-    Calculator was already chosen by AI in extraction step.
-
-    Args:
-        extracted_result: Output from extract_all_with_ai()
-            {
-                'decision_type': 'HVAC',
-                'calculator': 'HVACGroundTruthCalculator',
-                'parameters': {...}
-            }
-        scenario: Original scenario dict
-
-    Returns:
-        List of alternatives with scores
-    """
     gt_scenario = {**scenario, **extracted_result['parameters']}
 
-    # Add alternatives as separate keys (required by GT calculators)
     alternatives = extracted_result['parameters'].get('alternatives', [])
     for i, alt in enumerate(alternatives[:3], 1):
         gt_scenario[f'Alternative {i}'] = alt
 
-    # Use AI-selected calculator
     calculator_name = extracted_result['calculator']
     print(f"  Using AI-selected calculator: {calculator_name}")
+    print(f"  DEBUG: gt_scenario keys = {sorted(gt_scenario.keys())}")
+    print(
+        f"  DEBUG: Types - household_size: {type(gt_scenario.get('household_size'))}, outdoor_temp: {type(gt_scenario.get('outdoor_temp'))}")
 
     if calculator_name == 'HVACGroundTruthCalculator':
-        result = HVACGroundTruthCalculator.calculate_scenario_scores(gt_scenario)
+        calc = HVACGroundTruthCalculator()
+        result = calc.calculate_scenario_scores(gt_scenario)
+        print(f"  DEBUG: result.keys() = {result.keys()}")
+        print(f"  DEBUG: 'alternatives' in result? {('alternatives' in result)}")
+        if 'alternatives' in result:
+            print(f"  DEBUG: result['alternatives'][0] keys = {result['alternatives'][0].keys()}")
     elif calculator_name == 'ApplianceGroundTruthCalculator':
-        result = ApplianceGroundTruthCalculator.calculate_scenario_scores(gt_scenario)
+        calc = ApplianceGroundTruthCalculator()
+        result = calc.calculate_scenario_scores(gt_scenario)
     elif calculator_name == 'ShowerGroundTruthCalculator':
-        result = ShowerGroundTruthCalculator.calculate_scenario_scores(gt_scenario)
+        calc = ShowerGroundTruthCalculator()
+        result = calc.calculate_scenario_scores(gt_scenario)
     else:
         raise ValueError(f"Unknown calculator: {calculator_name}")
 
-    # Extract scores from result
     alternatives_scores = []
-    for alt_data in result['alternatives']:
-        alternatives_scores.append({
-            'alternative': alt_data['alternative'],
-            'scores': alt_data['transformed_values']
-        })
+    if calculator_name == 'ShowerGroundTruthCalculator':
+        for alt_data in result['alternatives']:
+            alternatives_scores.append({
+                'alternative': str(alt_data['alternative']),
+                'scores': alt_data['transformed_values']
+            })
+    else:
+        for alt_key, alt_data in result.items():
+            alternatives_scores.append({
+                'alternative': str(alt_key),
+                'scores': {
+                    'energy_cost': alt_data['energy_cost_score'],
+                    'environmental': alt_data['environmental_score'],
+                    'comfort': alt_data['comfort_score'],
+                    'practicality': alt_data['practicality_score']
+                }
+            })
 
+    print(f"  DEBUG: Calculator result keys = {result.keys() if isinstance(result, dict) else 'NOT A DICT'}")
+    print(f"  DEBUG: Result structure = {json.dumps(result, indent=2)[:500]}")  # First 500 chars
     return alternatives_scores
 
 
@@ -513,7 +523,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
-    with open(test_csv_path, 'r', encoding='utf-8') as f:
+    with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
         reader = csv_module.DictReader(f)
         first_row = next(reader)
 
@@ -534,55 +544,42 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     all_results = []
     cumulative_diagnostics = {
         'total_scenarios': len(scenarios),
-        'total_extraction_calls': 0,
-        'successful_extractions': 0,
-        'failed_extractions': 0,
-        'failed_gt_calculations': 0,
-        'total_tokens': 0,
-        'total_latency': 0.0,
-        'by_decision_type': {}
+        'total_api_calls': 0,
+        'total_latency_ms': 0.0,
+        'total_tokens_input': 0,
+        'total_tokens_output': 0,
+        'successful_calls': 0,
+        'failed_calls': 0
     }
-
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
 
         result = run_scenario(scenario)
         all_results.append(result)
 
-        # Aggregate diagnostics
-        decision_type = scenario.get('Decision Type', 'UNKNOWN')
+        cumulative_diagnostics['total_api_calls'] += 1
 
-        if decision_type not in cumulative_diagnostics['by_decision_type']:
-            cumulative_diagnostics['by_decision_type'][decision_type] = {
-                'count': 0,
-                'extraction_success': 0,
-                'extraction_failed': 0,
-                'gt_calculation_failed': 0
-            }
-
-        cumulative_diagnostics['by_decision_type'][decision_type]['count'] += 1
-        cumulative_diagnostics['total_extraction_calls'] += 1
-
-        if result.get('extraction_failed', False):
-            cumulative_diagnostics['failed_extractions'] += 1
-            cumulative_diagnostics['by_decision_type'][decision_type]['extraction_failed'] += 1
-        elif result.get('gt_calculation_failed', False):
-            cumulative_diagnostics['successful_extractions'] += 1
-            cumulative_diagnostics['failed_gt_calculations'] += 1
-            cumulative_diagnostics['by_decision_type'][decision_type]['gt_calculation_failed'] += 1
-        else:
-            cumulative_diagnostics['successful_extractions'] += 1
-            cumulative_diagnostics['by_decision_type'][decision_type]['extraction_success'] += 1
-
-        # Extract token/latency from extraction diagnostics
         ext_diag = result.get('extraction_diagnostics', {})
-        cumulative_diagnostics['total_tokens'] += ext_diag.get('total_tokens', 0)
-        cumulative_diagnostics['total_latency'] += ext_diag.get('latency_seconds', 0.0)
+        cumulative_diagnostics['total_tokens_input'] += ext_diag.get('prompt_tokens', 0)
+        cumulative_diagnostics['total_tokens_output'] += ext_diag.get('completion_tokens', 0)
+        cumulative_diagnostics['total_latency_ms'] += ext_diag.get('latency_ms', 0.0)
 
+        if result.get('extraction_failed', False) or result.get('gt_calculation_failed', False):
+            cumulative_diagnostics['failed_calls'] += 1
+        else:
+            cumulative_diagnostics['successful_calls'] += 1
+    cumulative_diagnostics['avg_latency_ms'] = (
+            cumulative_diagnostics['total_latency_ms'] /
+            max(cumulative_diagnostics['total_api_calls'], 1)
+    )
+    cumulative_diagnostics['success_rate'] = (
+            cumulative_diagnostics['successful_calls'] /
+            max(cumulative_diagnostics['total_api_calls'], 1)
+    )
     # Save results to CSV
     print(f"\nSaving results to: {output_csv_path}")
 
-    with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
+    with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
             'scenario_id', 'question', 'location', 'decision_type', 'calculator',
             'extraction_failed', 'gt_calculation_failed',
@@ -636,7 +633,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     # Save diagnostics
     print(f"Saving diagnostics to: {output_diagnostics_path}")
 
-    with open(output_diagnostics_path, 'w', encoding='utf-8') as f:
+    with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
 
     print(f"✓ Diagnostics saved to: {output_diagnostics_path}")
@@ -645,19 +642,15 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f"\n{'=' * 70}")
     print(f"HYBRID TEST COMPLETE")
     print(f"{'=' * 70}")
+    # REPLACE the print statements with:
     print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
-    print(f"Total extraction calls: {cumulative_diagnostics['total_extraction_calls']}")
-    print(f"Successful extractions: {cumulative_diagnostics['successful_extractions']}")
-    print(f"Failed extractions: {cumulative_diagnostics['failed_extractions']}")
-    print(f"Failed GT calculations: {cumulative_diagnostics['failed_gt_calculations']}")
-    print(f"Total tokens: {cumulative_diagnostics['total_tokens']}")
-    print(
-        f"Avg latency per call: {cumulative_diagnostics['total_latency'] / max(cumulative_diagnostics['total_extraction_calls'], 1):.2f}s")
-    print(f"\nBy Decision Type:")
-    for dt, stats in cumulative_diagnostics['by_decision_type'].items():
-        print(f"  {dt}: {stats['count']} scenarios, {stats['extraction_success']} success, "
-              f"{stats['extraction_failed']} extraction fail, {stats['gt_calculation_failed']} GT calc fail")
-    print(f"{'=' * 70}\n")
+    print(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
+    print(f"Successful calls: {cumulative_diagnostics['successful_calls']}")
+    print(f"Failed calls: {cumulative_diagnostics['failed_calls']}")
+    print(f"Total tokens (input): {cumulative_diagnostics['total_tokens_input']}")
+    print(f"Total tokens (output): {cumulative_diagnostics['total_tokens_output']}")
+    print(f"Average latency: {cumulative_diagnostics['avg_latency_ms']:.0f} ms")
+    print(f"Success rate: {cumulative_diagnostics['success_rate']:.1%}")
 
     return cumulative_diagnostics
 
@@ -667,7 +660,7 @@ if __name__ == "__main__":
     import sys
 
     # Check for required files
-    test_csv = '/mnt/user-data/uploads/test_scenarios.csv'
+    test_csv = 'test_scenarios.csv'
 
     if not os.path.exists(test_csv):
         print(f"❌ ERROR: Test scenarios file not found: {test_csv}")
