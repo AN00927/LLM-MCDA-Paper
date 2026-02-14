@@ -15,7 +15,7 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
 
-MODEL_ID = "mistralai/mistral-small-3.2"
+MODEL_ID = "mistralai/mistral-small-3.2-24b-instruct"
 TEMPERATURE = 0.3
 CRITERION_WEIGHTS = {
     'energy_cost': 0.35,
@@ -32,8 +32,8 @@ RETRIEVE_K = 3  # Number of similar scenarios to retrieve
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 
-OUTPUT_CSV = '/mnt/user-data/outputs/rag_enhanced_results.csv'
-OUTPUT_DIAGNOSTICS = '/mnt/user-data/outputs/rag_enhanced_diagnostics.json'
+OUTPUT_CSV = 'rag_enhanced_results.csv'
+OUTPUT_DIAGNOSTICS = 'rag_enhanced_diagnostics.json'
 
 print("Loading ChromaDB and embedding model")
 try:
@@ -66,6 +66,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         "temperature": temperature
     }
 
+    last_error = None
+    response = None
+
     for attempt in range(MAX_RETRIES):
         try:
             start_time = time.time()
@@ -80,23 +83,24 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                     'prompt_tokens': usage.get('prompt_tokens', 0),
                     'completion_tokens': usage.get('completion_tokens', 0),
                     'total_tokens': usage.get('total_tokens', 0),
-                    'latency_seconds': latency,
+                    'latency_ms': latency *1000,
                     'model': model
                 }
 
                 return data, diagnostics
             else:
+                last_error = f"Status {response.status_code}: {response.text}"
                 print(f"  API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(RETRY_DELAY)
 
         except Exception as e:
+            last_error = str(e)
             print(f"  Request failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
 
-    raise Exception(f"Failed to get response after {MAX_RETRIES} attempts")
-
+    raise Exception(f"Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
     """
@@ -138,6 +142,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
             f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Insulation', 'N/A')} insulation R-{scenario.get('R-Value', 'N/A')}, "
             f"SEER {scenario.get('SEER', 'N/A')}, "
+            f"- Occupancy Pattern: {scenario.get('Occupancy Context', 'N/A')}\n"
             f"{scenario.get('Square Footage', 'N/A')} sqft, "
             f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}"
@@ -157,7 +162,6 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     elif decision_type == 'Shower':
         scenario_text = (
             f"{scenario.get('GPM', 'N/A')} GPM, "
-            f"{scenario.get('Water Heater', 'N/A')} water heater, "
             f"{scenario.get('Tank Size', 'N/A')} gal tank, "
             f"{scenario.get('Water Heater Temp', 'N/A')}°F heater temp, "
             f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
@@ -370,7 +374,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     # Step 5: Parse scores
     response_text = response['choices'][0]['message']['content']
     scores = parse_llm_scores(response_text)
-
+    diagnostics['success'] = True
     # Add RAG metadata to diagnostics
     diagnostics['rag_retrieved_count'] = len(retrieved)
     diagnostics['rag_context_length'] = len(rag_context)
@@ -425,9 +429,11 @@ def run_scenario(scenario: Dict) -> Dict:
     alternatives_scores = []
     total_diagnostics = {
         'api_calls': 0,
-        'total_tokens': 0,
-        'total_latency': 0.0,
-        'rag_retrieved_total': 0
+        'total_tokens_input': 0,
+        'total_tokens_output': 0,
+        'total_latency_ms': 0.0,
+        'successful_calls': 0,
+        'failed_calls': 0
     }
     for i in range(1, 4):
         alt_key = f'Alternative {i}'
@@ -450,9 +456,14 @@ def run_scenario(scenario: Dict) -> Dict:
             'scores': scores
         })
         total_diagnostics['api_calls'] += 1
-        total_diagnostics['total_tokens'] += diagnostics.get('total_tokens', 0)
-        total_diagnostics['total_latency'] += diagnostics.get('latency_seconds', 0.0)
-        total_diagnostics['rag_retrieved_total'] += diagnostics.get('rag_retrieved_count', 0)
+        total_diagnostics['total_tokens_input'] += diagnostics.get('prompt_tokens', 0)
+        total_diagnostics['total_tokens_output'] += diagnostics.get('completion_tokens', 0)
+        total_diagnostics['total_latency_ms'] += diagnostics.get('latency_ms', 0.0)
+
+        if diagnostics.get('success', True):
+            total_diagnostics['successful_calls'] += 1
+        else:
+            total_diagnostics['failed_calls'] += 1
     ranking_result = apply_mavt_ranking(alternatives_scores)
 
     print(f"\nRANKING:")
@@ -493,7 +504,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
-    with open(test_csv_path, 'r', encoding='utf-8') as f:
+    with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
         reader = csv_module.DictReader(f)
         first_row = next(reader)
 
@@ -515,12 +526,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     cumulative_diagnostics = {
         'total_scenarios': len(scenarios),
         'total_api_calls': 0,
-        'total_tokens': 0,
-        'total_latency': 0.0,
-        'rag_retrieved_total': 0,
-        'by_decision_type': {}
+        'total_latency_ms': 0.0,
+        'total_tokens_input': 0,
+        'total_tokens_output': 0,
+        'successful_calls': 0,
+        'failed_calls': 0
     }
-
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
 
@@ -530,27 +541,25 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         # Aggregate diagnostics
         diag = result['diagnostics']
         cumulative_diagnostics['total_api_calls'] += diag['api_calls']
-        cumulative_diagnostics['total_tokens'] += diag['total_tokens']
-        cumulative_diagnostics['total_latency'] += diag['total_latency']
-        cumulative_diagnostics['rag_retrieved_total'] += diag['rag_retrieved_total']
-
+        cumulative_diagnostics['total_tokens_input'] += diag['total_tokens_input']
+        cumulative_diagnostics['total_tokens_output'] += diag['total_tokens_output']
+        cumulative_diagnostics['total_latency_ms'] += diag['total_latency_ms']
+        cumulative_diagnostics['successful_calls'] += diag['successful_calls']
+        cumulative_diagnostics['failed_calls'] += diag['failed_calls']
         # Track by decision type
-        decision_type = scenario.get('Decision Type', 'UNKNOWN')
-        if decision_type not in cumulative_diagnostics['by_decision_type']:
-            cumulative_diagnostics['by_decision_type'][decision_type] = {
-                'count': 0,
-                'api_calls': 0,
-                'rag_retrieved': 0
-            }
 
-        cumulative_diagnostics['by_decision_type'][decision_type]['count'] += 1
-        cumulative_diagnostics['by_decision_type'][decision_type]['api_calls'] += diag['api_calls']
-        cumulative_diagnostics['by_decision_type'][decision_type]['rag_retrieved'] += diag['rag_retrieved_total']
-
+        cumulative_diagnostics['avg_latency_ms'] = (
+            cumulative_diagnostics['total_latency_ms'] /
+            max(cumulative_diagnostics['total_api_calls'], 1)
+    )
+    cumulative_diagnostics['success_rate'] = (
+            cumulative_diagnostics['successful_calls'] /
+            max(cumulative_diagnostics['total_api_calls'], 1)
+    )
     # Save results to CSV
     print(f"\nSaving results to: {output_csv_path}")
 
-    with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
+    with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
             'scenario_id', 'question', 'location', 'decision_type',
             'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
@@ -596,7 +605,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     # Save diagnostics
     print(f"Saving diagnostics to: {output_diagnostics_path}")
 
-    with open(output_diagnostics_path, 'w', encoding='utf-8') as f:
+    with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
 
     print(f"✓ Diagnostics saved to: {output_diagnostics_path}")
@@ -605,16 +614,15 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f"\n{'=' * 70}")
     print(f"RAG-ENHANCED TEST COMPLETE")
     print(f"{'=' * 70}")
+    # REPLACE with:
     print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
     print(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
-    print(f"Total tokens: {cumulative_diagnostics['total_tokens']}")
-    print(f"Total RAG retrievals: {cumulative_diagnostics['rag_retrieved_total']}")
-    print(
-        f"Avg latency per call: {cumulative_diagnostics['total_latency'] / max(cumulative_diagnostics['total_api_calls'], 1):.2f}s")
-    print(f"\nBy Decision Type:")
-    for dt, stats in cumulative_diagnostics['by_decision_type'].items():
-        print(f"  {dt}: {stats['count']} scenarios, {stats['api_calls']} calls, {stats['rag_retrieved']} retrieved")
-    print(f"{'=' * 70}\n")
+    print(f"Successful calls: {cumulative_diagnostics['successful_calls']}")
+    print(f"Failed calls: {cumulative_diagnostics['failed_calls']}")
+    print(f"Total tokens (input): {cumulative_diagnostics['total_tokens_input']}")
+    print(f"Total tokens (output): {cumulative_diagnostics['total_tokens_output']}")
+    print(f"Average latency: {cumulative_diagnostics['avg_latency_ms']:.0f} ms")
+    print(f"Success rate: {cumulative_diagnostics['success_rate']:.1%}")
 
     return cumulative_diagnostics
 
@@ -624,7 +632,7 @@ if __name__ == "__main__":
     import sys
 
     # Check for required files
-    test_csv = '/mnt/user-data/uploads/test_scenarios.csv'
+    test_csv = 'test_scenarios.csv'
 
     if not os.path.exists(test_csv):
         print(f"❌ ERROR: Test scenarios file not found: {test_csv}")

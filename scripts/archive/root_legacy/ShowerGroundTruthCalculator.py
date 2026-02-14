@@ -69,9 +69,7 @@ class ShowerGroundTruthCalculator:
 
     # test if needs adjustment
     VF_COMFORT = "logarithmic, a=1.5"
-
-    # Linear VF for practicality - adoption rates show approximately linear relationship
-    VF_PRACTICALITY = "linear"
+    VF_PRACTICALITY = "logarithmic, a=1.2"
 
     REFERENCE_RANGES = {
         'energy_cost': {
@@ -270,14 +268,20 @@ class ShowerGroundTruthCalculator:
             Practicality score (0-10)
         """
         # Component 1: Behavioral adoption likelihood
-        if duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_MIN:
-            base_practicality = 3.0  # Very difficult to maintain consistently
-        elif duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_OPTIMAL:
-            base_practicality = 6.0  # Moderately difficult - at or below average
-        elif duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_MAX:
-            base_practicality = 9.0  # Easy to maintain - typical range
+        if duration <= 5:
+            return 2.0 + (duration - 3.0) * 0.5
+
+        elif duration <= 8:
+            return 3.0 + (duration - 5.0) * (4.0 / 3.0)
+
+        elif duration <= 12:
+            return 7.0 + (duration - 8.0) * 0.5
+
+        elif duration <= 15:
+            return 9.0 - (duration - 12.0) * (0.5 / 3.0)
+
         else:
-            base_practicality = 8.0  # Still easy, but wasteful from conservation standpoint
+            return max(7.0, 8.5 - (duration - 15.0) * 0.1)
 
         # Component 2: Hot water capacity constraint (HARD CUTOFF)
         # Calculate total hot water needed if all occupants shower back-to-back
@@ -335,39 +339,6 @@ class ShowerGroundTruthCalculator:
         else:
             return 0.0
 
-    @staticmethod
-    def parse_alternative(alt: str) -> float:
-        """
-        Parse shower duration from alternative string.
-
-        Expected formats:
-        - "5" → 5 minutes
-        - "8" → 8 minutes
-        - "12" → 12 minutes
-
-        Args:
-            alt: Alternative string
-
-        Returns:
-            Duration in minutes
-        """
-        # Simple numeric extraction
-        alt_clean = alt.strip().lower()
-
-        # Handle numeric-only strings
-        try:
-            duration = float(alt_clean)
-            return duration
-        except ValueError:
-            pass
-
-        # Extract first number found
-        import re
-        match = re.search(r'(\d+(?:\.\d+)?)', alt_clean)
-        if match:
-            return float(match.group(1))
-
-        raise ValueError(f"Could not parse duration from alternative: {alt}")
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         """
@@ -459,7 +430,6 @@ class ShowerGroundTruthCalculator:
 
         # This is the only point where we prevent extrapolation
         return max(0.0, min(10.0, u_x * 10.0))
-
     def calculate_scenario_scores(self, scenario: dict) -> dict:
         """
         Calculate ground truth scores for all alternatives in a shower scenario.
@@ -473,7 +443,6 @@ class ShowerGroundTruthCalculator:
         # Extract scenario parameters
         location = scenario.get('Location', 'Unknown')
         occupants = int(scenario.get('Occupants', 2))
-        water_heater = scenario.get('Water Heater', 'Electric')
         tank_size = float(scenario.get('Tank Size', 40))
         gpm = float(scenario.get('GPM', 2.5))
         outdoor_temp = float(scenario.get('Outdoor Temp', 50))
@@ -491,19 +460,14 @@ class ShowerGroundTruthCalculator:
         for i in range(1, 4):
             alt_key = f'Alternative {i}'
             if alt_key in scenario:
-                try:
-                    duration = ShowerGroundTruthCalculator.parse_alternative(scenario[alt_key])
-                    alternatives.append({
-                        'name': scenario[alt_key],
-                        'duration': duration
-                    })
-                except Exception as e:
-                    print(f"Warning: Could not parse {alt_key}: {scenario[alt_key]} - {e}")
-
+                duration = float(scenario[alt_key])
+                alternatives.append({
+                    'name': scenario[alt_key],
+                    'duration': duration
+                })
         if not alternatives:
             raise ValueError("No valid alternatives found in scenario")
 
-        # Calculate scores for each alternative
         results = []
 
         for alt in alternatives:
@@ -546,7 +510,6 @@ class ShowerGroundTruthCalculator:
 
             print(f"\nApplying value functions for: {alt}")
 
-            # Get VF specs from scenario (or use defaults)
             vf_specs = scenario.get('vf_specs', {
                 'energy_cost': self.VF_ENERGY_COST,
                 'environmental': self.VF_ENVIRONMENTAL,
@@ -557,7 +520,7 @@ class ShowerGroundTruthCalculator:
             try:
                 energy_vf = self.apply_value_function(
                     raw['energy_cost'],
-                    vf_specs['energy_cost'],
+                    self.VF_ENERGY_COST,
                     'energy_cost'
                 )
                 print(f"  After VF ({vf_specs['energy_cost']}): Energy = {energy_vf:.2f}/10")
@@ -568,7 +531,7 @@ class ShowerGroundTruthCalculator:
             try:
                 env_vf = self.apply_value_function(
                     raw['environmental'],
-                    vf_specs['environmental'],
+                    self.VF_ENVIRONMENTAL,
                     'environmental'
                 )
                 print(f"  After VF ({vf_specs['environmental']}): Environmental = {env_vf:.2f}/10")
@@ -579,7 +542,7 @@ class ShowerGroundTruthCalculator:
             try:
                 comfort_vf = self.apply_value_function(
                     raw['comfort'],
-                    vf_specs['comfort'],
+                    self.VF_COMFORT,
                     'comfort'
                 )
                 print(f"  After VF ({vf_specs['comfort']}): Comfort = {comfort_vf:.2f}/10")
@@ -590,10 +553,10 @@ class ShowerGroundTruthCalculator:
             try:
                 practicality_vf = self.apply_value_function(
                     raw['practicality'],
-                    vf_specs['practicality'],
+                    self.VF_PRACTICALITY,
                     'practicality'
                 )
-                print(f"  After VF ({vf_specs['practicality']}): Practicality = {practicality_vf:.2f}/10")
+
             except Exception as e:
                 print(f"  ✗ Practicality VF ERROR: {e}")
                 practicality_vf = raw['practicality']  # Already 0-10
@@ -645,3 +608,92 @@ class ShowerGroundTruthCalculator:
             'alternatives': results
         }
 
+
+def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
+                             output_filename: str = "ground_truth_shower.csv"):
+    """
+    Read Shower scenarios from CSV and calculate ground truth scores for all alternatives.
+
+    Args:
+        csv_filename: Path to CSV file with scenarios
+        output_filename: Where to save ground truth results
+
+    Expected CSV columns:
+        Description, Location, Occupants, Water Heater, Tank Size, GPM,
+        Utility Budget, Housing Type, Outdoor Temp, Water Heater Temp,
+        Alternative 1, Alternative 2, Alternative 3
+    """
+    import pandas as pd
+
+    df = pd.read_csv(csv_filename)
+    print(f"Found {len(df)} shower scenarios")
+
+    calculator = ShowerGroundTruthCalculator()
+    results = []
+
+    for idx, row in df.iterrows():
+        print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['Location']}")
+
+        # Build scenario dict matching expected format
+        scenario = {
+            'Description': row['Description'],
+            'Location': row['Location'],
+            'Occupants': int(row['Occupants']),
+            'Tank Size': float(row['Tank Size']),
+            'GPM': float(row['GPM']),
+            'Utility Budget': float(row['Utility Budget']),
+            'Housing Type': row['Housing Type'],
+            'Outdoor Temp': float(row['Outdoor Temp']),
+            'Water Heater Temp': float(row['Water Heater Temp']),
+            'Alternative 1': row['Alternative 1'],
+            'Alternative 2': row['Alternative 2'],
+            'Alternative 3': row['Alternative 3'],
+        }
+
+        try:
+            result = calculator.calculate_scenario_scores(scenario)
+
+            # Extract scores from result and flatten to CSV rows
+            for alt_data in result['alternatives']:
+                result_row = {
+                    'scenario_id': idx,
+                    'description': row['Description'],
+                    'location': row['Location'],
+                    'occupants': row['Occupants'],
+                    'tank_size': row['Tank Size'],
+                    'gpm': row['GPM'],
+                    'outdoor_temp': row['Outdoor Temp'],
+                    'water_heater_temp': row['Water Heater Temp'],
+                    'alternative': alt_data['alternative'],
+                    'duration_min': alt_data['duration'],
+                    'energy_cost_score': alt_data['transformed_values']['energy_cost'],
+                    'environmental_score': alt_data['transformed_values']['environmental'],
+                    'comfort_score': alt_data['transformed_values']['comfort'],
+                    'practicality_score': alt_data['transformed_values']['practicality'],
+                    'raw_kwh': alt_data['raw_values']['energy_kwh'],
+                    'raw_cost': alt_data['raw_values']['energy_cost'],
+                    'raw_emissions': alt_data['raw_values']['environmental']
+                }
+                results.append(result_row)
+
+        except Exception as e:
+            print(f"ERROR processing scenario {idx}: {e}")
+            import traceback
+            traceback.print_exc()
+            continue
+
+    # Save results to CSV
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(output_filename, index=False)
+
+    print(f"\nGround truth saved to {output_filename}")
+    print(f"Total alternatives scored: {len(results_df)}")
+    return results_df
+
+
+# Main execution block
+if __name__ == "__main__":
+    process_shower_scenarios(
+        csv_filename="ShowerScenarios.csv",
+        output_filename="ground_truth_shower.csv"
+    )

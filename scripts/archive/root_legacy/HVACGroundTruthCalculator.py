@@ -31,8 +31,7 @@ class HVACGroundTruthCalculator:
     # (J. Environmental Economics and Management 54(1):100-123)
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
-    VF_PRACTICALITY = "linear"
-
+    VF_PRACTICALITY = "logarithmic, a=1.2"
     def calculate_cooling_load(self, outdoor_temp: float, indoor_temp: float,
                                square_footage: int, r_value: int) -> float:
         """
@@ -83,7 +82,7 @@ class HVACGroundTruthCalculator:
         return max(0, total_load)
 
     def calculate_energy_consumption(self, load_btu_hr: float, seer: int,
-                                     hvac_age: int, hours: float = 8,
+                                     hvac_age: int, occupancy_context: str, hours: float = 8,
                                      maintenance_level: str = 'moderate') -> float:
         """
         Calculate energy consumption in kWh with age degradation.
@@ -143,9 +142,16 @@ class HVACGroundTruthCalculator:
 
         # Calculate power draw
         kw = (load_btu_hr / eer_estimated) / 1000
-
-        # Total energy consumption
-        total_kwh = kw * hours
+        if occupancy_context == "occupied_all_day":
+            runtime_multiplier = 1.0
+        elif occupancy_context.startswith("unoccupied_"):
+            hours_away = int(occupancy_context.split("_")[1])
+            runtime_multiplier = 1.0 - (hours_away / 24) * 0.5
+        elif occupancy_context == "occupied_sleep":
+            runtime_multiplier = 0.75
+        else:
+            runtime_multiplier = 1.0
+        total_kwh = kw * hours * runtime_multiplier
 
         print(f"  → Energy consumption: {total_kwh:.2f} kWh over {hours} hours")
         return total_kwh
@@ -215,26 +221,27 @@ class HVACGroundTruthCalculator:
 
         if outdoor_temp > 75:  # Cooling mode
             if indoor_temp >= 82:
-                extremity_penalty = (indoor_temp - 82) * 1.0  # Reduced from 1.2
+                # INCREASED: 1.0 → 1.5 per degree above 82°F
+                extremity_penalty = (indoor_temp - 82) * 1.5
             elif indoor_temp <= 71:
-                extremity_penalty = (71 - indoor_temp) * 0.6  # Reduced from 0.8
+                # INCREASED: 0.6 → 1.0 per degree below 71°F
+                extremity_penalty = (71 - indoor_temp) * 1.0
             else:
                 extremity_penalty = 0
         else:  # Heating mode
             if indoor_temp <= 63:
-                # Softer penalty acknowledges that extreme setpoints may be necessary
-                # for specific contexts (vacation, pipe freeze prevention)
-                # Stopps & Touchie (2021): "Setback adoption varies by necessity context"
-                extremity_penalty = (63 - indoor_temp) * 1.0  # Reduced from 1.5
+                # INCREASED: 1.0 → 1.8 per degree below 63°F
+                extremity_penalty = (63 - indoor_temp) * 1.8
             elif indoor_temp >= 76:
-                extremity_penalty = (indoor_temp - 76) * 0.5  # Reduced from 0.7
+                # INCREASED: 0.5 → 0.8 per degree above 76°F
+                extremity_penalty = (indoor_temp - 76) * 0.8
             else:
                 extremity_penalty = 0
 
         base_score = 10 - extremity_penalty
 
-        # Apply minimum floor for practicaliy, because Even impractical alternatives have SOME non-zero likelihood
-        base_score = max(1.5, base_score)
+        # LOWER FLOOR: 1.5 → 0.5 to allow more penalty
+        base_score = max(0.5, base_score)
         # Component 2: Schedule complexity penalty
         # Stopps & Touchie (2021): Only 40-45% successfully maintain complex schedules
         # Therefore: complex penalty = 0.60 (vs 1.0 for simple)
@@ -511,7 +518,9 @@ class HVACGroundTruthCalculator:
             kwh = self.calculate_energy_consumption(
                 load,
                 scenario['seer'],
-                scenario['hvac_age']
+                scenario['hvac_age'],
+                occupancy_context=scenario.get('occupancy_context', 'occupied_all_day'),
+                maintenance_level=scenario.get('maintenance_level', 'moderate')
             )
 
             energy_cost = kwh * scenario.get('electricity_rate', self.ELECTRICITY_RATE_PA)
@@ -545,10 +554,10 @@ class HVACGroundTruthCalculator:
             try:
                 energy_vf = self.apply_value_function(
                     raw['energy_cost_dollars'],
-                    scenario['vf_specs']['energy_cost'],
+                    self.VF_ENERGY_COST,
                     'energy_cost'
                 )
-                print(f"  After VF ({scenario['vf_specs']['energy_cost']}): Energy = {energy_vf:.2f}/10")
+
             except Exception as e:
                 print(f"  ✗ Energy VF ERROR: {e}")
                 energy_vf = 5.0
@@ -556,10 +565,10 @@ class HVACGroundTruthCalculator:
             try:
                 env_vf = self.apply_value_function(
                     raw['emissions_lbs'],
-                    scenario['vf_specs']['environmental'],
+                    self.VF_ENVIRONMENTAL,
                     'environmental'
                 )
-                print(f"  After VF ({scenario['vf_specs']['environmental']}): Environmental = {env_vf:.2f}/10")
+
             except Exception as e:
                 print(f"  ✗ Environmental VF ERROR: {e}")
                 env_vf = 5.0
@@ -567,10 +576,10 @@ class HVACGroundTruthCalculator:
             try:
                 comfort_vf = self.apply_value_function(
                     raw['comfort_raw'],
-                    scenario['vf_specs']['comfort'],
+                    self.VF_COMFORT,
                     'comfort'
                 )
-                print(f"  After VF ({scenario['vf_specs']['comfort']}): Comfort = {comfort_vf:.2f}/10")
+
             except Exception as e:
                 print(f"  ✗ Comfort VF ERROR: {e}")
                 comfort_vf = raw['comfort_raw']
@@ -578,10 +587,10 @@ class HVACGroundTruthCalculator:
             try:
                 practicality_vf = self.apply_value_function(
                     raw['practicality_raw'],
-                    scenario['vf_specs']['practicality'],
+                    self.VF_PRACTICALITY,
                     'practicality'
                 )
-                print(f"  After VF ({scenario['vf_specs']['practicality']}): Practicality = {practicality_vf:.2f}/10")
+
             except Exception as e:
                 print(f"  ✗ Practicality VF ERROR: {e}")
                 practicality_vf = raw['practicality_raw']
@@ -670,15 +679,9 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
             'outdoor_temp': float(row['Outdoor Temp']),
             'seer': int(row['SEER']),
             'hvac_age': int(row['HVAC Age']),
+            'occupancy_context': row.get('Occupancy Context', 'occupied_all_day'),
             'electricity_rate': electricity_rate,
-            'is_complex': row['iscomplex'] == "TRUE",
             'alternatives': alternatives,
-            'vf_specs': {
-                'energy_cost': HVACGroundTruthCalculator.VF_ENERGY_COST,
-                'environmental': HVACGroundTruthCalculator.VF_ENVIRONMENTAL,
-                'comfort': HVACGroundTruthCalculator.VF_COMFORT,
-                'practicality': HVACGroundTruthCalculator.VF_PRACTICALITY
-            }
         }
         try:
             scores = calculator.calculate_scenario_scores(scenario)

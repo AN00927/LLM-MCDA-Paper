@@ -58,9 +58,7 @@ class ApplianceGroundTruthCalculator:
 
     # test if needs adjustment
     VF_COMFORT = "logarithmic, a=1.5"
-
-    # Linear VF for practicality - adoption rates show approximately linear relationship
-    VF_PRACTICALITY = "linear"
+    VF_PRACTICALITY = "logarithmic, a=1.2"
 
     def determine_rate_period(self, run_time_hour: int) -> str:
         """
@@ -175,17 +173,16 @@ class ApplianceGroundTruthCalculator:
 
         # Component 2: Noise disruption penalty
         # Depends on: time of day + housing type + appliance noise
-        noise_penalty = 0.0
 
         if appliance_type.lower() == "dishwasher":
-            appliance_noise = self.NOISE_DISHWASHER
+            appliance_noise = 45
         elif appliance_type.lower() == "washer" or "washing" in appliance_type.lower():
-            appliance_noise = self.NOISE_WASHER
+            appliance_noise = 50
         elif appliance_type.lower() == "dryer":
-            appliance_noise = self.NOISE_DRYER
+            appliance_noise = 55
         else:
             appliance_noise = 50
-
+        noise_penalty = 0.0
             # Late night running (10pm-7am)
         # Decibel Pro: "Time limits usually apply after 10 pm and until 7 am"
         if 22 <= run_time_hour or run_time_hour < 7:
@@ -581,6 +578,14 @@ class ApplianceGroundTruthCalculator:
             # Gathergood (2012): 150% debt threshold for consumer stress
             return 0.0
 
+    def calculate_monthly_cost(self, per_cycle_cost: float, cycles_per_month: int = 30) -> float:
+        """
+        Convert per-cycle cost to monthly cost.
+        Standard: 30 cycles/month for dishwasher/washer/dryer.
+        Citations: Porras et al. (2020), Chen-Yu & Emmel (2018)
+        """
+        return per_cycle_cost * cycles_per_month
+
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
         """
         Calculate complete ground truth scores for appliance scenario with all alternatives.
@@ -688,7 +693,7 @@ class ApplianceGroundTruthCalculator:
             try:
                 energy_vf = self.apply_value_function(
                     raw['energy_cost_dollars'],
-                    scenario['vf_specs']['energy_cost'],
+                    self.VF_ENERGY_COST,
                     'energy_cost'
                 )
                 print(f"  After VF ({scenario['vf_specs']['energy_cost']}): Energy = {energy_vf:.2f}/10")
@@ -721,7 +726,7 @@ class ApplianceGroundTruthCalculator:
             try:
                 env_vf = self.apply_value_function(
                     raw['emissions_lbs'],
-                    scenario['vf_specs']['environmental'],
+                    self.VF_ENVIRONMENTAL,
                     'environmental'
                 )
                 print(f"  After VF ({scenario['vf_specs']['environmental']}): Environmental = {env_vf:.2f}/10")
@@ -732,7 +737,7 @@ class ApplianceGroundTruthCalculator:
             try:
                 comfort_vf = self.apply_value_function(
                     raw['comfort_raw'],
-                    scenario['vf_specs']['comfort'],
+                    self.VF_COMFORT,
                     'comfort'
                 )
                 print(f"  After VF ({scenario['vf_specs']['comfort']}): Comfort = {comfort_vf:.2f}/10")
@@ -743,10 +748,10 @@ class ApplianceGroundTruthCalculator:
             try:
                 practicality_vf = self.apply_value_function(
                     raw['practicality_raw'],
-                    scenario['vf_specs']['practicality'],
+                    self.VF_PRACTICALITY,
                     'practicality'
                 )
-                print(f"  After VF ({scenario['vf_specs']['practicality']}): Practicality = {practicality_vf:.2f}/10")
+
             except Exception as e:
                 print(f"  ✗ Practicality VF ERROR: {e}")
                 practicality_vf = raw['practicality_raw']
@@ -812,16 +817,10 @@ def process_appliance_scenarios(csv_filename: str = "ApplianceScenarios.csv",
             'Off-Peak Rate': float(row['Off-Peak Rate']),
             'kwh/cycle': float(row['kwh/cycle']),
             'Appliance Age/Type': row['Appliance Age/Type'],
-            'Baseline Time': row['Baseline Time'],  # ADD THIS LINE
+            'Baseline Time': row['Baseline Time'],
             'Alternative 1': row['Alternative 1'],
             'Alternative 2': row['Alternative 2'],
             'Alternative 3': row['Alternative 3'],
-            'vf_specs': {
-                'energy_cost': ApplianceGroundTruthCalculator.VF_ENERGY_COST,
-                'environmental': ApplianceGroundTruthCalculator.VF_ENVIRONMENTAL,
-                'comfort': ApplianceGroundTruthCalculator.VF_COMFORT,
-                'practicality': ApplianceGroundTruthCalculator.VF_PRACTICALITY
-            }
         }
 
         try:
