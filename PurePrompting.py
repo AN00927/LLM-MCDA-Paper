@@ -9,7 +9,7 @@ import requests
 from dotenv import load_dotenv
 import pandas as pd
 
-df = pd.read_csv('test_scenarios.csv', encoding='utf-8-sig')
+df = pd.read_csv('TestScenarios.csv', encoding='utf-8-sig')
 print("Columns found:", df.columns.tolist())
 print("First column repr():", repr(df.columns[0]))
 
@@ -481,7 +481,7 @@ def main():
         return
 
     # Example: Run on test set
-    test_csv = "test_scenarios.csv"  # User will provide this
+    test_csv = "TestScenarios.csv"  # User will provide this
     output_csv = "pure_prompting_results.csv"
 
     logging.info("Starting Pure Prompting Architecture Test...")
