@@ -660,7 +660,7 @@ if __name__ == "__main__":
     import sys
 
     # Check for required files
-    test_csv = 'test_scenarios.csv'
+    test_csv = 'TestScenarios.csv'
 
     if not os.path.exists(test_csv):
         print(f"❌ ERROR: Test scenarios file not found: {test_csv}")
