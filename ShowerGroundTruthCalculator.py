@@ -19,7 +19,7 @@ class ShowerGroundTruthCalculator:
 
     # EPA eGRID2022: Pennsylvania grid emissions 0.85 lb CO2/kWh
     # Citations: EPA eGRID2022 [Ref 77,81], PA DEP 2021 [Ref 29,32]
-    EMISSIONS_FACTOR_PA = 0.85  # lbs CO2/kWh
+    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh
 
     # EIA 2024-2025: Pennsylvania residential average
     # Citations: EIA state data [Ref 29], PA suppliers [Ref 28]
@@ -269,37 +269,29 @@ class ShowerGroundTruthCalculator:
         """
         # Component 1: Behavioral adoption likelihood
         if duration <= 5:
-            return 2.0 + (duration - 3.0) * 0.5
-
+            base_practicality = 2.0 + (duration - 3.0) * 0.5
         elif duration <= 8:
-            return 3.0 + (duration - 5.0) * (4.0 / 3.0)
-
+            base_practicality = 3.0 + (duration - 5.0) * (4.0 / 3.0)
         elif duration <= 12:
-            return 7.0 + (duration - 8.0) * 0.5
-
+            base_practicality = 7.0 + (duration - 8.0) * 0.5
         elif duration <= 15:
-            return 9.0 - (duration - 12.0) * (0.5 / 3.0)
-
+            base_practicality = 9.0 - (duration - 12.0) * (0.5 / 3.0)
         else:
-            return max(7.0, 8.5 - (duration - 15.0) * 0.1)
+            base_practicality = max(7.0, 8.5 - (duration - 15.0) * 0.1)
 
-        # Component 2: Hot water capacity constraint (HARD CUTOFF)
-        # Calculate total hot water needed if all occupants shower back-to-back
+        # Component 2: Hot water capacity constraint
         hot_water_per_shower = duration * gpm * ShowerGroundTruthCalculator.HOT_WATER_FRACTION
         total_hot_water_needed = hot_water_per_shower * occupants
-
-        # Available hot water is ~80% of tank (usable fraction)
         available_capacity = tank_size * 0.80
 
         capacity_penalty = 0.0
         if total_hot_water_needed > available_capacity:
-            # Hard cutoff: will run out of hot water
             capacity_penalty = 3.0
 
         total_practicality = base_practicality - capacity_penalty
 
-        # Floor at 1.5 (same as HVAC/Appliance pattern)
         return max(1.5, min(10.0, total_practicality))
+
     @staticmethod
     def calculate_monthly_cost(per_shower_cost: float, occupants: int,
                                showers_per_person_per_day: float = 0.9) -> float:
@@ -660,10 +652,10 @@ def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
                     'description': row['Description'],
                     'location': row['Location'],
                     'occupants': row['Occupants'],
-                    'tank_size': row['Tank Size'],
                     'gpm': row['GPM'],
+                    'utility_budget': row['Utility Budget'],
+                    'housing_type': row['Housing Type'],
                     'outdoor_temp': row['Outdoor Temp'],
-                    'water_heater_temp': row['Water Heater Temp'],
                     'alternative': alt_data['alternative'],
                     'duration_min': alt_data['duration'],
                     'energy_cost_score': alt_data['transformed_values']['energy_cost'],

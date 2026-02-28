@@ -313,6 +313,7 @@ def run_scenario(scenario: Dict) -> Dict:
         scenario.get("Alternative 1", ""),
         scenario.get("Alternative 2", ""),
         scenario.get("Alternative 3", "")
+
     ]
 
     # Score each alternative
@@ -349,7 +350,9 @@ def run_scenario(scenario: Dict) -> Dict:
     ranking_results = apply_mavt_ranking(alternatives_scores)
 
     return {
+        "decision_type": scenario.get("Decision Type", "N/A"),
         "scenario_id": scenario.get("scenario_id", "N/A"),
+
         "question": scenario.get("Question", "N/A"),
         "location": scenario.get("Location", "N/A"),
         "outdoor_temp": scenario.get("Outdoor Temp", "N/A"),
@@ -417,9 +420,9 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     # Save results to CSV
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
-            "scenario_id", "question", "location", "outdoor_temp",
+            "scenario_id", "decision_type", "question", "location", "outdoor_temp",
             "alternative", "energy_cost", "environmental", "comfort", "practicality",
-            "rank", "weighted_score"  # ✅ FIXED: Changed from topsis_score to weighted_score
+            "rank", "weighted_score"
         ]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -429,11 +432,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             question = result["question"]
             location = result["location"]
             outdoor_temp = result["outdoor_temp"]
+            decision_type = result["decision_type"]
 
-            # Get ranking results
-            ranked_alts = result["ranking_results"]["ranked_alternatives"]
             ranks = result["ranking_results"]["ranks"]
-            weighted_scores = result["ranking_results"]["weighted_scores"]  # ✅ FIXED: Correct key name
+            weighted_scores = result["ranking_results"]["weighted_scores"]
 
             # Get list of alternatives in original order
             alternatives = [alt["alternative"] for alt in result["alternatives_scores"]]
@@ -442,12 +444,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
                 alt = alt_scores["alternative"]
 
-                # ✅ FIXED: Use original index to get rank and score
                 rank = ranks[alt_idx]
                 weighted_score = weighted_scores[alt_idx]
 
                 writer.writerow({
                     "scenario_id": scenario_id,
+                    "decision_type": decision_type,
                     "question": question,
                     "location": location,
                     "outdoor_temp": outdoor_temp,
@@ -457,7 +459,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     "comfort": alt_scores["comfort"],
                     "practicality": alt_scores["practicality"],
                     "rank": rank,
-                    "weighted_score": weighted_score  # ✅ FIXED: Using correct variable
+                    "weighted_score": weighted_score
                 })
 
     logging.info(f"Results saved to {output_csv_path}")

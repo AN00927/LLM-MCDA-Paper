@@ -1,133 +1,136 @@
-scenario_id,description,location,appliance,housing_type,occupants,peak_rate,offpeak_rate,kwh_per_cycle,alternative,energy_cost_score,environmental_score,comfort_score,practicality_score,raw_cost,raw_emissions
-0,When should I run my dishwasher after dinner tonight?,"Philadelphia, PA",dishwasher,Apartment,3,0.19,0.09,1.4,2:00 AM,8.8,7.06,7.83,8.26,0.126,1.19
-0,When should I run my dishwasher after dinner tonight?,"Philadelphia, PA",dishwasher,Apartment,3,0.19,0.09,1.4,3:00 PM,8.8,7.06,4.28,1.2,0.126,1.19
-0,When should I run my dishwasher after dinner tonight?,"Philadelphia, PA",dishwasher,Apartment,3,0.19,0.09,1.4,7:00 PM,8.8,7.06,4.28,1.2,0.126,1.19
-1,What's the best time to run my dishwasher today?,"Lancaster, PA",dishwasher,Single-family,4,0.19,0.1,1.4,12:00 AM,8.64,7.06,8.9,8.26,0.14,1.19
-1,What's the best time to run my dishwasher today?,"Lancaster, PA",dishwasher,Single-family,4,0.19,0.1,1.4,7:00 PM,8.64,7.06,4.28,1.2,0.14,1.19
-1,What's the best time to run my dishwasher today?,"Lancaster, PA",dishwasher,Single-family,4,0.19,0.1,1.4,2:00 PM,8.64,7.06,4.28,1.2,0.14,1.19
-2,Should I delay my dishwasher until off-peak hours?,"Pittsburgh, PA",dishwasher,Apartment,2,0.17,0.08,0.95,10:00 PM,9.36,8.08,10,10,0.076,0.807
-2,Should I delay my dishwasher until off-peak hours?,"Pittsburgh, PA",dishwasher,Apartment,2,0.17,0.08,0.95,3:00 PM,9.36,8.08,10,10,0.076,0.807
-2,Should I delay my dishwasher until off-peak hours?,"Pittsburgh, PA",dishwasher,Apartment,2,0.17,0.08,0.95,2:00 PM,9.36,8.08,10,10,0.076,0.807
-3,When should I run my dishwasher to save money?,"Harrisburg, PA",dishwasher,Townhouse,3,0.17,0.09,1.1,2:00 PM,9.1,7.74,10,10,0.099,0.935
-3,When should I run my dishwasher to save money?,"Harrisburg, PA",dishwasher,Townhouse,3,0.17,0.09,1.1,9:00 PM,9.1,7.74,10,10,0.099,0.935
-3,When should I run my dishwasher to save money?,"Harrisburg, PA",dishwasher,Townhouse,3,0.17,0.09,1.1,4:00 PM,9.1,7.74,10,10,0.099,0.935
-4,What time minimizes my dishwasher electricity cost?,"Allentown, PA",dishwasher,Single-family,2,0.19,0.08,1.25,5:00 PM,9.09,7.4,10,10,0.1,1.062
-4,What time minimizes my dishwasher electricity cost?,"Allentown, PA",dishwasher,Single-family,2,0.19,0.08,1.25,7:00 PM,9.09,7.4,10,10,0.1,1.062
-4,What time minimizes my dishwasher electricity cost?,"Allentown, PA",dishwasher,Single-family,2,0.19,0.08,1.25,4:00 PM,9.09,7.4,10,10,0.1,1.062
-5,When should I run my dishwasher after dinner tonight?,"Erie, PA",dishwasher,Townhouse,2,0.19,0.08,1.25,5:00 PM,9.09,7.4,10,10,0.1,1.062
-5,When should I run my dishwasher after dinner tonight?,"Erie, PA",dishwasher,Townhouse,2,0.19,0.08,1.25,11:00 PM,9.09,7.4,10,10,0.1,1.062
-5,When should I run my dishwasher after dinner tonight?,"Erie, PA",dishwasher,Townhouse,2,0.19,0.08,1.25,4:00 PM,9.09,7.4,10,10,0.1,1.062
-6,What's the best time to run my dishwasher today?,"Scranton, PA",dishwasher,Apartment,2,0.17,0.08,1.25,8:00 PM,9.09,7.4,10,10,0.1,1.062
-6,What's the best time to run my dishwasher today?,"Scranton, PA",dishwasher,Apartment,2,0.17,0.08,1.25,3:00 PM,9.09,7.4,10,10,0.1,1.062
-6,What's the best time to run my dishwasher today?,"Scranton, PA",dishwasher,Apartment,2,0.17,0.08,1.25,4:00 PM,9.09,7.4,10,10,0.1,1.062
-7,Should I delay my dishwasher until off-peak hours?,"Bethlehem, PA",dishwasher,Townhouse,4,0.17,0.09,1.55,8:00 PM,8.64,6.72,10,10,0.1395,1.317
-7,Should I delay my dishwasher until off-peak hours?,"Bethlehem, PA",dishwasher,Townhouse,4,0.17,0.09,1.55,4:00 PM,8.64,6.72,10,10,0.1395,1.317
-7,Should I delay my dishwasher until off-peak hours?,"Bethlehem, PA",dishwasher,Townhouse,4,0.17,0.09,1.55,5:00 PM,8.64,6.72,10,10,0.1395,1.317
-8,When should I run my dishwasher to save money?,"Reading, PA",dishwasher,Townhouse,4,0.17,0.09,1.55,2:00 PM,8.64,6.72,10,10,0.1395,1.317
-8,When should I run my dishwasher to save money?,"Reading, PA",dishwasher,Townhouse,4,0.17,0.09,1.55,3:00 PM,8.64,6.72,10,10,0.1395,1.317
-8,When should I run my dishwasher to save money?,"Reading, PA",dishwasher,Townhouse,4,0.17,0.09,1.55,7:00 PM,8.64,6.72,10,10,0.1395,1.317
-9,What time minimizes my dishwasher electricity cost?,"York, PA",dishwasher,Townhouse,4,0.18,0.08,1.4,2:00 PM,8.95,7.06,10,10,0.112,1.19
-9,What time minimizes my dishwasher electricity cost?,"York, PA",dishwasher,Townhouse,4,0.18,0.08,1.4,3:00 PM,8.95,7.06,10,10,0.112,1.19
-9,What time minimizes my dishwasher electricity cost?,"York, PA",dishwasher,Townhouse,4,0.18,0.08,1.4,11:00 PM,8.95,7.06,10,10,0.112,1.19
-10,When should I run my dishwasher after dinner tonight?,"Philadelphia, PA",dishwasher,Townhouse,3,0.18,0.09,1.4,2:00 PM,8.8,7.06,10,10,0.126,1.19
-10,When should I run my dishwasher after dinner tonight?,"Philadelphia, PA",dishwasher,Townhouse,3,0.18,0.09,1.4,10:00 PM,8.8,7.06,10,10,0.126,1.19
-11,What's the best time to run my dishwasher today?,"Lancaster, PA",dishwasher,Single-family,3,0.19,0.1,1.7,7:00 PM,8.3,6.38,10,10,0.17,1.445
-11,What's the best time to run my dishwasher today?,"Lancaster, PA",dishwasher,Single-family,3,0.19,0.1,1.7,5:00 PM,8.3,6.38,10,10,0.17,1.445
-11,What's the best time to run my dishwasher today?,"Lancaster, PA",dishwasher,Single-family,3,0.19,0.1,1.7,4:00 PM,8.3,6.38,10,10,0.17,1.445
-12,Should I delay my dishwasher until off-peak hours?,"Pittsburgh, PA",dishwasher,Single-family,4,0.18,0.1,0.95,8:00 PM,9.15,8.08,10,10,0.095,0.807
-12,Should I delay my dishwasher until off-peak hours?,"Pittsburgh, PA",dishwasher,Single-family,4,0.18,0.1,0.95,5:00 PM,9.15,8.08,10,10,0.095,0.807
-12,Should I delay my dishwasher until off-peak hours?,"Pittsburgh, PA",dishwasher,Single-family,4,0.18,0.1,0.95,1:00 AM,9.15,8.08,2.35,0,0.095,0.807
-13,When should I run my dishwasher to save money?,"Harrisburg, PA",dishwasher,Apartment,3,0.17,0.08,0.95,2:00 PM,9.36,8.08,10,10,0.076,0.807
-13,When should I run my dishwasher to save money?,"Harrisburg, PA",dishwasher,Apartment,3,0.17,0.08,0.95,10:00 PM,9.36,8.08,10,10,0.076,0.807
-13,When should I run my dishwasher to save money?,"Harrisburg, PA",dishwasher,Apartment,3,0.17,0.08,0.95,1:00 AM,9.36,8.08,0.32,0,0.076,0.807
-14,What time minimizes my dishwasher electricity cost?,"Allentown, PA",dishwasher,Townhouse,4,0.19,0.08,1.55,1:00 AM,8.82,6.72,8.3,8.26,0.124,1.317
-14,What time minimizes my dishwasher electricity cost?,"Allentown, PA",dishwasher,Townhouse,4,0.19,0.08,1.55,3:00 PM,8.82,6.72,4.28,1.2,0.124,1.317
-14,What time minimizes my dishwasher electricity cost?,"Allentown, PA",dishwasher,Townhouse,4,0.19,0.08,1.55,11:00 PM,8.82,6.72,4.28,1.2,0.124,1.317
-15,When should I run my washing machine today?,"Philadelphia, PA",washing_machine,Apartment,3,0.18,0.08,0.3,1:00 AM,9.95,9.56,7.83,8.26,0.024,0.255
-15,When should I run my washing machine today?,"Philadelphia, PA",washing_machine,Apartment,3,0.18,0.08,0.3,7:00 PM,9.95,9.56,4.28,1.2,0.024,0.255
-15,When should I run my washing machine today?,"Philadelphia, PA",washing_machine,Apartment,3,0.18,0.08,0.3,3:00 PM,9.95,9.56,4.28,1.2,0.024,0.255
-16,Should I wash clothes in the morning or evening?,"Lancaster, PA",washing_machine,Townhouse,5,0.18,0.09,0.45,5:00 PM,9.77,9.22,10,10,0.0405,0.383
-16,Should I wash clothes in the morning or evening?,"Lancaster, PA",washing_machine,Townhouse,5,0.18,0.09,0.45,2:00 PM,9.77,9.22,10,10,0.0405,0.383
-16,Should I wash clothes in the morning or evening?,"Lancaster, PA",washing_machine,Townhouse,5,0.18,0.09,0.45,10:00 PM,9.77,9.22,10,10,0.0405,0.383
-17,What's the best time for laundry to save energy?,"Pittsburgh, PA",washing_machine,Single-family,5,0.18,0.08,0.22,11:00 PM,10,9.74,10,10,0.0176,0.187
-17,What's the best time for laundry to save energy?,"Pittsburgh, PA",washing_machine,Single-family,5,0.18,0.08,0.22,3:00 PM,10,9.74,10,10,0.0176,0.187
-17,What's the best time for laundry to save energy?,"Pittsburgh, PA",washing_machine,Single-family,5,0.18,0.08,0.22,5:00 PM,10,9.74,10,10,0.0176,0.187
-18,When is the cheapest time to wash clothes?,"Harrisburg, PA",washing_machine,Apartment,3,0.17,0.08,0.28,5:00 PM,9.97,9.6,10,10,0.0224,0.238
-18,When is the cheapest time to wash clothes?,"Harrisburg, PA",washing_machine,Apartment,3,0.17,0.08,0.28,2:00 PM,9.97,9.6,10,10,0.0224,0.238
-18,When is the cheapest time to wash clothes?,"Harrisburg, PA",washing_machine,Apartment,3,0.17,0.08,0.28,9:00 PM,9.97,9.6,10,10,0.0224,0.238
-19,When should I run my washing machine today?,"Allentown, PA",washing_machine,Single-family,3,0.18,0.09,0.45,4:00 PM,9.77,9.22,10,10,0.0405,0.383
-19,When should I run my washing machine today?,"Allentown, PA",washing_machine,Single-family,3,0.18,0.09,0.45,10:00 PM,9.77,9.22,10,10,0.0405,0.383
-20,Should I wash clothes in the morning or evening?,"Erie, PA",washing_machine,Apartment,4,0.18,0.08,0.28,4:00 PM,9.97,9.6,10,10,0.0224,0.238
-20,Should I wash clothes in the morning or evening?,"Erie, PA",washing_machine,Apartment,4,0.18,0.08,0.28,9:00 PM,9.97,9.6,10,10,0.0224,0.238
-21,What's the best time for laundry to save energy?,"Scranton, PA",washing_machine,Townhouse,2,0.18,0.08,0.3,5:00 PM,9.95,9.56,10,10,0.024,0.255
-21,What's the best time for laundry to save energy?,"Scranton, PA",washing_machine,Townhouse,2,0.18,0.08,0.3,1:00 AM,9.95,9.56,2.35,0,0.024,0.255
-21,What's the best time for laundry to save energy?,"Scranton, PA",washing_machine,Townhouse,2,0.18,0.08,0.3,7:00 PM,9.95,9.56,10,10,0.024,0.255
-22,When is the cheapest time to wash clothes?,"Bethlehem, PA",washing_machine,Single-family,3,0.17,0.09,0.45,7:00 PM,9.77,9.22,10,10,0.0405,0.383
-22,When is the cheapest time to wash clothes?,"Bethlehem, PA",washing_machine,Single-family,3,0.17,0.09,0.45,2:00 PM,9.77,9.22,10,10,0.0405,0.383
-22,When is the cheapest time to wash clothes?,"Bethlehem, PA",washing_machine,Single-family,3,0.17,0.09,0.45,1:00 AM,9.77,9.22,2.35,0,0.0405,0.383
-23,When should I run my washing machine today?,"Reading, PA",washing_machine,Townhouse,5,0.17,0.09,0.3,5:00 PM,9.92,9.56,10,10,0.027,0.255
-23,When should I run my washing machine today?,"Reading, PA",washing_machine,Townhouse,5,0.17,0.09,0.3,10:00 PM,9.92,9.56,10,10,0.027,0.255
-23,When should I run my washing machine today?,"Reading, PA",washing_machine,Townhouse,5,0.17,0.09,0.3,1:00 AM,9.92,9.56,0.16,0,0.027,0.255
-24,Should I wash clothes in the morning or evening?,"York, PA",washing_machine,Townhouse,3,0.18,0.08,0.3,9:00 PM,9.95,9.56,10,10,0.024,0.255
-24,Should I wash clothes in the morning or evening?,"York, PA",washing_machine,Townhouse,3,0.18,0.08,0.3,12:00 AM,9.95,9.56,1.24,0,0.024,0.255
-24,Should I wash clothes in the morning or evening?,"York, PA",washing_machine,Townhouse,3,0.18,0.08,0.3,2:00 PM,9.95,9.56,10,10,0.024,0.255
-25,When should I run my dryer today?,"Philadelphia, PA",dryer,Apartment,4,0.17,0.09,2.8,2:00 PM,7.36,3.88,10,10,0.252,2.38
-25,When should I run my dryer today?,"Philadelphia, PA",dryer,Apartment,4,0.17,0.09,2.8,9:00 PM,7.36,3.88,10,10,0.252,2.38
-26,What time should I start my dryer to minimize cost?,"Lancaster, PA",dryer,Apartment,4,0.18,0.09,2.5,2:00 PM,7.67,4.56,10,10,0.225,2.125
-26,What time should I start my dryer to minimize cost?,"Lancaster, PA",dryer,Apartment,4,0.18,0.09,2.5,12:00 AM,7.67,4.56,0.32,0,0.225,2.125
-26,What time should I start my dryer to minimize cost?,"Lancaster, PA",dryer,Apartment,4,0.18,0.09,2.5,11:00 PM,7.67,4.56,10,10,0.225,2.125
-27,When is the cheapest time to run my dryer today?,"Pittsburgh, PA",dryer,Townhouse,4,0.17,0.09,1.2,1:00 AM,9,7.51,8.3,8.26,0.108,1.02
-27,When is the cheapest time to run my dryer today?,"Pittsburgh, PA",dryer,Townhouse,4,0.17,0.09,1.2,2:00 PM,9,7.51,4.28,1.2,0.108,1.02
-27,When is the cheapest time to run my dryer today?,"Pittsburgh, PA",dryer,Townhouse,4,0.17,0.09,1.2,8:00 PM,9,7.51,4.28,1.2,0.108,1.02
-28,What's the best time to run my dryer to save money?,"Harrisburg, PA",dryer,Townhouse,3,0.17,0.09,2.5,8:00 PM,7.67,4.56,10,10,0.225,2.125
-28,What's the best time to run my dryer to save money?,"Harrisburg, PA",dryer,Townhouse,3,0.17,0.09,2.5,4:00 PM,7.67,4.56,10,10,0.225,2.125
-29,When should I run my dryer today?,"Allentown, PA",dryer,Townhouse,3,0.17,0.08,2.5,1:00 AM,7.95,4.56,8.3,8.26,0.2,2.125
-29,When should I run my dryer today?,"Allentown, PA",dryer,Townhouse,3,0.17,0.08,2.5,9:00 PM,7.95,4.56,4.28,1.2,0.2,2.125
-29,When should I run my dryer today?,"Allentown, PA",dryer,Townhouse,3,0.17,0.08,2.5,4:00 PM,7.95,4.56,4.28,1.2,0.2,2.125
-30,What time should I start my dryer to minimize cost?,"Erie, PA",dryer,Apartment,4,0.17,0.08,3.5,12:00 AM,7.05,2.29,7.83,8.26,0.28,2.975
-30,What time should I start my dryer to minimize cost?,"Erie, PA",dryer,Apartment,4,0.17,0.08,3.5,7:00 PM,7.05,2.29,4.28,1.2,0.28,2.975
-30,What time should I start my dryer to minimize cost?,"Erie, PA",dryer,Apartment,4,0.17,0.08,3.5,3:00 PM,7.05,2.29,4.28,1.2,0.28,2.975
-31,When is the cheapest time to run my dryer today?,"Scranton, PA",dryer,Townhouse,2,0.18,0.08,3.5,12:00 AM,7.05,2.29,8.3,8.26,0.28,2.975
-31,When is the cheapest time to run my dryer today?,"Scranton, PA",dryer,Townhouse,2,0.18,0.08,3.5,10:00 PM,7.05,2.29,5.13,2.44,0.28,2.975
-31,When is the cheapest time to run my dryer today?,"Scranton, PA",dryer,Townhouse,2,0.18,0.08,3.5,4:00 PM,7.05,2.29,5.13,2.44,0.28,2.975
-32,What's the best time to run my dryer to save money?,"Bethlehem, PA",dryer,Single-family,2,0.18,0.08,3.5,4:00 PM,7.05,2.29,10,10,0.28,2.975
-32,What's the best time to run my dryer to save money?,"Bethlehem, PA",dryer,Single-family,2,0.18,0.08,3.5,10:00 PM,7.05,2.29,10,10,0.28,2.975
-33,When should I run my dryer today?,"Reading, PA",dryer,Townhouse,2,0.18,0.09,1.15,3:00 PM,9.05,7.63,10,10,0.1035,0.977
-33,When should I run my dryer today?,"Reading, PA",dryer,Townhouse,2,0.18,0.09,1.15,11:00 PM,9.05,7.63,10,10,0.1035,0.977
-33,When should I run my dryer today?,"Reading, PA",dryer,Townhouse,2,0.18,0.09,1.15,1:00 AM,9.05,7.63,2.35,0,0.1035,0.977
-34,What time should I start my dryer to minimize cost?,"York, PA",dryer,Apartment,2,0.18,0.08,2.5,2:00 PM,7.95,4.56,10,10,0.2,2.125
-34,What time should I start my dryer to minimize cost?,"York, PA",dryer,Apartment,2,0.18,0.08,2.5,2:00 AM,7.95,4.56,1.53,0,0.2,2.125
-34,What time should I start my dryer to minimize cost?,"York, PA",dryer,Apartment,2,0.18,0.08,2.5,9:00 PM,7.95,4.56,10,10,0.2,2.125
-35,When should I run my dishwasher after cleaning up tonight?,"York, PA",dishwasher,Townhouse,3,0.18,0.09,1.15,7:00 PM,9.05,7.63,10,10,0.1035,0.977
-35,When should I run my dishwasher after cleaning up tonight?,"York, PA",dishwasher,Townhouse,3,0.18,0.09,1.15,10:00 PM,9.05,7.63,10,10,0.1035,0.977
-35,When should I run my dishwasher after cleaning up tonight?,"York, PA",dishwasher,Townhouse,3,0.18,0.09,1.15,1:00 AM,9.05,7.63,1.24,0,0.1035,0.977
-36,What time should I start my dishwasher to minimize cost?,"Williamsport, PA",dishwasher,Single-family,4,0.17,0.09,0.98,8:00 PM,9.23,8.01,10,10,0.0882,0.833
-36,What time should I start my dishwasher to minimize cost?,"Williamsport, PA",dishwasher,Single-family,4,0.17,0.09,0.98,11:00 PM,9.23,8.01,10,10,0.0882,0.833
-36,What time should I start my dishwasher to minimize cost?,"Williamsport, PA",dishwasher,Single-family,4,0.17,0.09,0.98,2:00 AM,9.23,8.01,2.35,0,0.0882,0.833
-37,When is the best time to run my dishwasher tonight?,"McKeesport, PA",dishwasher,Apartment,2,0.18,0.09,1.55,7:00 PM,8.64,6.72,5.13,2.44,0.1395,1.317
-37,When is the best time to run my dishwasher tonight?,"McKeesport, PA",dishwasher,Apartment,2,0.18,0.09,1.55,10:00 PM,8.64,6.72,5.13,2.44,0.1395,1.317
-37,When is the best time to run my dishwasher tonight?,"McKeesport, PA",dishwasher,Apartment,2,0.18,0.09,1.55,12:00 AM,8.64,6.72,7.83,8.26,0.1395,1.317
-38,What time should I start my washing machine this morning?,"Altoona, PA",washer,Apartment,2,0.17,0.08,0.22,7:00 AM,10,9.74,7.83,8.26,0.0176,0.187
-38,What time should I start my washing machine this morning?,"Altoona, PA",washer,Apartment,2,0.17,0.08,0.22,10:00 AM,10,9.74,7.83,8.26,0.0176,0.187
-38,What time should I start my washing machine this morning?,"Altoona, PA",washer,Apartment,2,0.17,0.08,0.22,1:00 PM,10,9.74,5.13,2.44,0.0176,0.187
-39,When should I run my washer to save on electricity?,"Chester, PA",washer,Townhouse,4,0.18,0.09,0.38,8:00 AM,9.84,9.38,8.3,8.26,0.0342,0.323
-39,When should I run my washer to save on electricity?,"Chester, PA",washer,Townhouse,4,0.18,0.09,0.38,11:00 AM,9.84,9.38,8.3,8.26,0.0342,0.323
-39,When should I run my washer to save on electricity?,"Chester, PA",washer,Townhouse,4,0.18,0.09,0.38,3:00 PM,9.84,9.38,4.28,1.2,0.0342,0.323
-40,What's the cheapest time to do laundry today?,"Easton, PA",washer,Single-family,3,0.17,0.09,0.45,7:00 AM,9.77,9.22,8.9,8.26,0.0405,0.383
-40,What's the cheapest time to do laundry today?,"Easton, PA",washer,Single-family,3,0.17,0.09,0.45,10:00 AM,9.77,9.22,8.9,8.26,0.0405,0.383
-40,What's the cheapest time to do laundry today?,"Easton, PA",washer,Single-family,3,0.17,0.09,0.45,2:00 PM,9.77,9.22,4.28,1.2,0.0405,0.383
-41,When should I start my washing machine for lowest rates?,"Lebanon, PA",washer,Single-family,5,0.18,0.09,0.28,8:00 AM,9.94,9.6,8.9,8.26,0.0252,0.238
-41,When should I start my washing machine for lowest rates?,"Lebanon, PA",washer,Single-family,5,0.18,0.09,0.28,12:00 PM,9.94,9.6,3.48,0,0.0252,0.238
-41,When should I start my washing machine for lowest rates?,"Lebanon, PA",washer,Single-family,5,0.18,0.09,0.28,4:00 PM,9.94,9.6,3.48,0,0.0252,0.238
-42,When should I run my dryer after washing clothes?,"Johnstown, PA",dryer,Townhouse,3,0.17,0.09,2.8,9:00 AM,7.36,3.88,8.3,8.26,0.252,2.38
-42,When should I run my dryer after washing clothes?,"Johnstown, PA",dryer,Townhouse,3,0.17,0.09,2.8,12:00 PM,7.36,3.88,4.28,1.2,0.252,2.38
-42,When should I run my dryer after washing clothes?,"Johnstown, PA",dryer,Townhouse,3,0.17,0.09,2.8,4:00 PM,7.36,3.88,4.28,1.2,0.252,2.38
-43,What time should I start my dryer to minimize cost?,"Hazleton, PA",dryer,Single-family,4,0.18,0.09,1.2,9:00 AM,9,7.51,8.9,8.26,0.108,1.02
-43,What time should I start my dryer to minimize cost?,"Hazleton, PA",dryer,Single-family,4,0.18,0.09,1.2,1:00 PM,9,7.51,4.28,1.2,0.108,1.02
-43,What time should I start my dryer to minimize cost?,"Hazleton, PA",dryer,Single-family,4,0.18,0.09,1.2,5:00 PM,9,7.51,4.28,1.2,0.108,1.02
-44,When is the cheapest time to run my dryer today?,"Scranton, PA",dryer,Apartment,2,0.17,0.08,3.5,9:00 AM,7.05,2.29,7.83,8.26,0.28,2.975
-44,When is the cheapest time to run my dryer today?,"Scranton, PA",dryer,Apartment,2,0.17,0.08,3.5,12:00 PM,7.05,2.29,5.13,2.44,0.28,2.975
-44,When is the cheapest time to run my dryer today?,"Scranton, PA",dryer,Apartment,2,0.17,0.08,3.5,3:00 PM,7.05,2.29,5.13,2.44,0.28,2.975
-45,What's the best time to run my dryer to save money?,"Reading, PA",dryer,Townhouse,3,0.18,0.09,2.6,10:00 AM,7.57,4.33,8.3,8.26,0.234,2.21
-45,What's the best time to run my dryer to save money?,"Reading, PA",dryer,Townhouse,3,0.18,0.09,2.6,1:00 PM,7.57,4.33,4.28,1.2,0.234,2.21
-45,What's the best time to run my dryer to save money?,"Reading, PA",dryer,Townhouse,3,0.18,0.09,2.6,4:00 PM,7.57,4.33,4.28,1.2,0.234,2.21
+scenario_id,description,location,utility_budget,appliance,appliance_age_type,housing_type,occupants,kwh_per_cycle,peak_rate,offpeak_rate,alternative,energy_cost_score,environmental_score,comfort_score,practicality_score,raw_cost,raw_emissions
+0,It's late (around 2 AM) and I need to run the dishwasher. Should I do it now or wait?,"Philadelphia, PA",200,dishwasher,7,Apartment,3,1.4,0.19,0.09,2:00 AM,8.8,7.82,7.83,8.26,0.126,0.904
+0,It's late (around 2 AM) and I need to run the dishwasher. Should I do it now or wait?,"Philadelphia, PA",200,dishwasher,7,Apartment,3,1.4,0.19,0.09,3:00 PM,7.2,7.82,1.71,3.83,0.266,0.904
+0,It's late (around 2 AM) and I need to run the dishwasher. Should I do it now or wait?,"Philadelphia, PA",200,dishwasher,7,Apartment,3,1.4,0.19,0.09,7:00 PM,8.8,7.82,1.33,3.83,0.126,0.904
+1,It's late (around midnight) and I need to run the dishwasher. Should I do it now or wait?,"Lancaster, PA",200,dishwasher,2,Single-family,4,1.4,0.19,0.1,12:00 AM,8.64,7.82,8.9,8.26,0.14,0.904
+1,It's late (around midnight) and I need to run the dishwasher. Should I do it now or wait?,"Lancaster, PA",200,dishwasher,2,Single-family,4,1.4,0.19,0.1,7:00 PM,8.64,7.82,1.14,3.83,0.14,0.904
+1,It's late (around midnight) and I need to run the dishwasher. Should I do it now or wait?,"Lancaster, PA",200,dishwasher,2,Single-family,4,1.4,0.19,0.1,2:00 PM,7.2,7.82,1.62,3.83,0.266,0.904
+2,It's late (around 10 PM) and I need to run the dishwasher. Should I do it now or wait?,"Pittsburgh, PA",120,dishwasher,10,Apartment,2,0.95,0.17,0.08,10:00 PM,9.36,8.6,7.83,9.16,0.076,0.614
+2,It's late (around 10 PM) and I need to run the dishwasher. Should I do it now or wait?,"Pittsburgh, PA",120,dishwasher,10,Apartment,2,0.95,0.17,0.08,3:00 PM,8.39,8.6,2.86,3.83,0.1615,0.614
+2,It's late (around 10 PM) and I need to run the dishwasher. Should I do it now or wait?,"Pittsburgh, PA",120,dishwasher,10,Apartment,2,0.95,0.17,0.08,2:00 PM,8.39,8.6,2.86,3.83,0.1615,0.614
+3,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",200,dishwasher,7,Townhouse,3,1.1,0.17,0.09,2:00 PM,8.1,8.34,10.0,10.0,0.187,0.71
+3,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",200,dishwasher,7,Townhouse,3,1.1,0.17,0.09,9:00 PM,9.1,8.34,6.6,3.88,0.099,0.71
+3,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",200,dishwasher,7,Townhouse,3,1.1,0.17,0.09,4:00 PM,8.1,8.34,8.51,8.13,0.187,0.71
+4,Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Allentown, PA",150,dishwasher,2,Single-family,2,1.25,0.19,0.08,5:00 PM,7.53,8.08,10.0,10.0,0.2375,0.807
+4,Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Allentown, PA",150,dishwasher,2,Single-family,2,1.25,0.19,0.08,7:00 PM,9.09,8.08,8.6,8.26,0.1,0.807
+4,Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Allentown, PA",150,dishwasher,2,Single-family,2,1.25,0.19,0.08,4:00 PM,7.53,8.08,2.86,3.83,0.2375,0.807
+5,Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Erie, PA",175,dishwasher,10,Townhouse,2,1.25,0.19,0.08,5:00 PM,7.53,8.08,10.0,10.0,0.2375,0.807
+5,Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Erie, PA",175,dishwasher,10,Townhouse,2,1.25,0.19,0.08,11:00 PM,9.09,8.08,4.71,3.15,0.1,0.807
+5,Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Erie, PA",175,dishwasher,10,Townhouse,2,1.25,0.19,0.08,4:00 PM,7.53,8.08,2.86,3.83,0.2375,0.807
+6,I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Scranton, PA",150,dishwasher,7,Apartment,2,1.25,0.17,0.08,8:00 PM,9.09,8.08,10.0,10.0,0.1,0.807
+6,I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Scranton, PA",150,dishwasher,7,Apartment,2,1.25,0.17,0.08,3:00 PM,7.81,8.08,2.86,3.83,0.2125,0.807
+6,I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Scranton, PA",150,dishwasher,7,Apartment,2,1.25,0.17,0.08,4:00 PM,7.81,8.08,2.86,3.83,0.2125,0.807
+7,I just finished dinner around 8 PM. When should I run my dishwasher?,"Bethlehem, PA",150,dishwasher,2,Townhouse,4,1.55,0.17,0.09,8:00 PM,8.64,7.56,10.0,10.0,0.1395,1.001
+7,I just finished dinner around 8 PM. When should I run my dishwasher?,"Bethlehem, PA",150,dishwasher,2,Townhouse,4,1.55,0.17,0.09,4:00 PM,7.23,7.56,1.04,3.83,0.2635,1.001
+7,I just finished dinner around 8 PM. When should I run my dishwasher?,"Bethlehem, PA",150,dishwasher,2,Townhouse,4,1.55,0.17,0.09,5:00 PM,7.23,7.56,0.94,3.83,0.2635,1.001
+8,Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Reading, PA",120,dishwasher,10,Townhouse,4,1.55,0.17,0.09,2:00 PM,7.23,7.56,10.0,10.0,0.2635,1.001
+8,Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Reading, PA",120,dishwasher,10,Townhouse,4,1.55,0.17,0.09,3:00 PM,7.23,7.56,8.56,8.2,0.2635,1.001
+8,Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Reading, PA",120,dishwasher,10,Townhouse,4,1.55,0.17,0.09,7:00 PM,8.64,7.56,6.71,4.05,0.1395,1.001
+9,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"York, PA",200,dishwasher,7,Townhouse,4,1.4,0.18,0.08,2:00 PM,7.36,7.82,10.0,10.0,0.252,0.904
+9,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"York, PA",200,dishwasher,7,Townhouse,4,1.4,0.18,0.08,3:00 PM,7.36,7.82,8.56,8.2,0.252,0.904
+9,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"York, PA",200,dishwasher,7,Townhouse,4,1.4,0.18,0.08,11:00 PM,8.95,7.82,1.53,0.0,0.112,0.904
+10,Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Philadelphia, PA",175,dishwasher,6,Townhouse,3,1.4,0.18,0.09,2:00 PM,7.36,7.82,10.0,10.0,0.252,0.904
+10,Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Philadelphia, PA",175,dishwasher,6,Townhouse,3,1.4,0.18,0.09,10:00 PM,8.8,7.82,1.62,2.39,0.126,0.904
+10,Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Philadelphia, PA",175,dishwasher,6,Townhouse,3,1.4,0.18,0.09,9:00 PM,8.8,7.82,6.6,3.88,0.126,0.904
+11,Dinner's done around 7 PM. What's the best time to run the dishwasher?,"Lancaster, PA",150,dishwasher,4,Single-family,3,1.7,0.19,0.1,7:00 PM,8.3,7.31,10.0,10.0,0.17,1.098
+11,Dinner's done around 7 PM. What's the best time to run the dishwasher?,"Lancaster, PA",150,dishwasher,4,Single-family,3,1.7,0.19,0.1,5:00 PM,6.56,7.31,0.84,3.83,0.323,1.098
+11,Dinner's done around 7 PM. What's the best time to run the dishwasher?,"Lancaster, PA",150,dishwasher,4,Single-family,3,1.7,0.19,0.1,4:00 PM,6.56,7.31,0.94,3.83,0.323,1.098
+12,I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Pittsburgh, PA",120,dishwasher,6,Single-family,4,0.95,0.18,0.1,8:00 PM,9.15,8.6,10.0,10.0,0.095,0.614
+12,I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Pittsburgh, PA",120,dishwasher,6,Single-family,4,0.95,0.18,0.1,5:00 PM,8.28,8.6,0.94,3.83,0.171,0.614
+12,I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Pittsburgh, PA",120,dishwasher,6,Single-family,4,0.95,0.18,0.1,1:00 AM,9.15,8.6,5.2,1.14,0.095,0.614
+13,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",120,dishwasher,8,Apartment,3,0.95,0.17,0.08,2:00 PM,8.39,8.6,10.0,10.0,0.1615,0.614
+13,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",120,dishwasher,8,Apartment,3,0.95,0.17,0.08,10:00 PM,9.36,8.6,0.74,2.39,0.076,0.614
+13,I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",120,dishwasher,8,Apartment,3,0.95,0.17,0.08,1:00 AM,9.36,8.6,0.43,0.0,0.076,0.614
+14,The dishwasher is full (around 1 AM). Should I run it now or delay it?,"Allentown, PA",120,dishwasher,4,Townhouse,4,1.55,0.19,0.08,1:00 AM,8.82,7.56,8.3,8.26,0.124,1.001
+14,The dishwasher is full (around 1 AM). Should I run it now or delay it?,"Allentown, PA",120,dishwasher,4,Townhouse,4,1.55,0.19,0.08,3:00 PM,6.88,7.56,1.62,3.83,0.2945,1.001
+14,The dishwasher is full (around 1 AM). Should I run it now or delay it?,"Allentown, PA",120,dishwasher,4,Townhouse,4,1.55,0.19,0.08,11:00 PM,8.82,7.56,0.0,0.0,0.124,1.001
+15,I'm finally getting to laundry (around 1 AM). When should I start the washer?,"Philadelphia, PA",120,washing_machine,6,Apartment,3,0.3,0.18,0.08,1:00 AM,9.95,9.72,7.83,8.26,0.024,0.194
+15,I'm finally getting to laundry (around 1 AM). When should I start the washer?,"Philadelphia, PA",120,washing_machine,6,Apartment,3,0.3,0.18,0.08,7:00 PM,9.95,9.72,1.24,3.83,0.024,0.194
+15,I'm finally getting to laundry (around 1 AM). When should I start the washer?,"Philadelphia, PA",120,washing_machine,6,Apartment,3,0.3,0.18,0.08,3:00 PM,9.61,9.72,1.62,3.83,0.054,0.194
+16,I have time to do laundry this afternoon (around 5 PM). When should I start?,"Lancaster, PA",150,washing_machine,8,Townhouse,5,0.45,0.18,0.09,5:00 PM,9.31,9.46,10.0,10.0,0.081,0.291
+16,I have time to do laundry this afternoon (around 5 PM). When should I start?,"Lancaster, PA",150,washing_machine,8,Townhouse,5,0.45,0.18,0.09,2:00 PM,9.31,9.46,0.0,3.83,0.081,0.291
+16,I have time to do laundry this afternoon (around 5 PM). When should I start?,"Lancaster, PA",150,washing_machine,8,Townhouse,5,0.45,0.18,0.09,10:00 PM,9.77,9.46,4.03,2.25,0.0405,0.291
+17,Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Pittsburgh, PA",175,washing_machine,6,Single-family,5,0.22,0.18,0.08,11:00 PM,10.0,9.86,8.9,9.16,0.0176,0.142
+17,Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Pittsburgh, PA",175,washing_machine,6,Single-family,5,0.22,0.18,0.08,3:00 PM,9.78,9.86,0.0,3.83,0.0396,0.142
+17,Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Pittsburgh, PA",175,washing_machine,6,Single-family,5,0.22,0.18,0.08,5:00 PM,9.78,9.86,0.0,3.83,0.0396,0.142
+18,I have time to do laundry this afternoon (around 5 PM). When should I start?,"Harrisburg, PA",120,washing_machine,4,Apartment,3,0.28,0.17,0.08,5:00 PM,9.69,9.76,10.0,10.0,0.0476,0.181
+18,I have time to do laundry this afternoon (around 5 PM). When should I start?,"Harrisburg, PA",120,washing_machine,4,Apartment,3,0.28,0.17,0.08,2:00 PM,9.69,9.76,0.94,3.83,0.0476,0.181
+18,I have time to do laundry this afternoon (around 5 PM). When should I start?,"Harrisburg, PA",120,washing_machine,4,Apartment,3,0.28,0.17,0.08,9:00 PM,9.97,9.76,6.77,6.49,0.0224,0.181
+19,Thinking of washing clothes around 4 PM. Good timing?,"Allentown, PA",120,washing_machine,8,Single-family,3,0.45,0.18,0.09,4:00 PM,9.31,9.46,10.0,10.0,0.081,0.291
+19,Thinking of washing clothes around 4 PM. Good timing?,"Allentown, PA",120,washing_machine,8,Single-family,3,0.45,0.18,0.09,1:00 AM,9.77,9.46,2.61,0.0,0.0405,0.291
+19,Thinking of washing clothes around 4 PM. Good timing?,"Allentown, PA",120,washing_machine,8,Single-family,3,0.45,0.18,0.09,10:00 PM,9.77,9.46,5.13,2.58,0.0405,0.291
+20,I have time to do laundry this afternoon (around 4 PM). When should I start?,"Erie, PA",175,washing_machine,7,Apartment,4,0.28,0.18,0.08,4:00 PM,9.65,9.76,10.0,10.0,0.0504,0.181
+20,I have time to do laundry this afternoon (around 4 PM). When should I start?,"Erie, PA",175,washing_machine,7,Apartment,4,0.28,0.18,0.08,12:00 PM,9.97,9.76,1.04,3.83,0.0224,0.181
+20,I have time to do laundry this afternoon (around 4 PM). When should I start?,"Erie, PA",175,washing_machine,7,Apartment,4,0.28,0.18,0.08,9:00 PM,9.97,9.76,6.71,4.05,0.0224,0.181
+21,Thinking of washing clothes around 5 PM. Good timing?,"Scranton, PA",120,washing_machine,2,Townhouse,2,0.3,0.18,0.08,5:00 PM,9.61,9.72,10.0,10.0,0.054,0.194
+21,Thinking of washing clothes around 5 PM. Good timing?,"Scranton, PA",120,washing_machine,2,Townhouse,2,0.3,0.18,0.08,1:00 AM,9.95,9.72,2.35,1.67,0.024,0.194
+21,Thinking of washing clothes around 5 PM. Good timing?,"Scranton, PA",120,washing_machine,2,Townhouse,2,0.3,0.18,0.08,7:00 PM,9.95,9.72,8.6,8.26,0.024,0.194
+22,It's late (around 7 PM) but I need to wash clothes. Should I do it now?,"Bethlehem, PA",175,washing_machine,12,Single-family,3,0.45,0.17,0.09,7:00 PM,9.77,9.46,10.0,10.0,0.0405,0.291
+22,It's late (around 7 PM) but I need to wash clothes. Should I do it now?,"Bethlehem, PA",175,washing_machine,12,Single-family,3,0.45,0.17,0.09,2:00 PM,9.36,9.46,1.14,3.83,0.0765,0.291
+22,It's late (around 7 PM) but I need to wash clothes. Should I do it now?,"Bethlehem, PA",175,washing_machine,12,Single-family,3,0.45,0.17,0.09,1:00 AM,9.77,9.46,5.13,1.03,0.0405,0.291
+23,I want to run a load of laundry around 5 PM. When's the best time?,"Reading, PA",175,washing_machine,7,Townhouse,5,0.3,0.17,0.09,5:00 PM,9.65,9.72,10.0,10.0,0.051,0.194
+23,I want to run a load of laundry around 5 PM. When's the best time?,"Reading, PA",175,washing_machine,7,Townhouse,5,0.3,0.17,0.09,10:00 PM,9.92,9.72,4.03,2.25,0.027,0.194
+23,I want to run a load of laundry around 5 PM. When's the best time?,"Reading, PA",175,washing_machine,7,Townhouse,5,0.3,0.17,0.09,1:00 AM,9.92,9.72,0.94,0.0,0.027,0.194
+24,Planning to run the washing machine around 9 PM. Is that okay or should I wait?,"York, PA",150,washing_machine,3,Townhouse,3,0.3,0.18,0.08,9:00 PM,9.95,9.72,10.0,10.0,0.024,0.194
+24,Planning to run the washing machine around 9 PM. Is that okay or should I wait?,"York, PA",150,washing_machine,3,Townhouse,3,0.3,0.18,0.08,12:00 AM,9.95,9.72,6.48,4.22,0.024,0.194
+24,Planning to run the washing machine around 9 PM. Is that okay or should I wait?,"York, PA",150,washing_machine,3,Townhouse,3,0.3,0.18,0.08,2:00 PM,9.61,9.72,1.33,3.83,0.054,0.194
+25,My laundry is ready to dry (around 2 PM). Should I run the dryer now or wait?,"Philadelphia, PA",175,dryer,2,Apartment,4,2.8,0.17,0.09,2:00 PM,4.82,5.41,10.0,10.0,0.476,1.808
+25,My laundry is ready to dry (around 2 PM). Should I run the dryer now or wait?,"Philadelphia, PA",175,dryer,2,Apartment,4,2.8,0.17,0.09,9:00 PM,7.36,5.41,6.6,3.88,0.252,1.808
+25,My laundry is ready to dry (around 2 PM). Should I run the dryer now or wait?,"Philadelphia, PA",175,dryer,2,Apartment,4,2.8,0.17,0.09,5:00 PM,4.82,5.41,8.46,6.56,0.476,1.808
+26,Planning to run the dryer around 2 PM. Is that a good time?,"Lancaster, PA",200,dryer,7,Apartment,4,2.5,0.18,0.09,2:00 PM,5.11,5.92,10.0,10.0,0.45,1.615
+26,Planning to run the dryer around 2 PM. Is that a good time?,"Lancaster, PA",200,dryer,7,Apartment,4,2.5,0.18,0.09,12:00 AM,7.67,5.92,0.53,0.0,0.225,1.615
+26,Planning to run the dryer around 2 PM. Is that a good time?,"Lancaster, PA",200,dryer,7,Apartment,4,2.5,0.18,0.09,11:00 PM,7.67,5.92,0.64,0.0,0.225,1.615
+27,I'm ready to dry clothes (around 1 AM). When should I start the dryer?,"Pittsburgh, PA",175,dryer,12,Townhouse,4,1.2,0.17,0.09,1:00 AM,9.0,8.17,8.3,8.26,0.108,0.775
+27,I'm ready to dry clothes (around 1 AM). When should I start the dryer?,"Pittsburgh, PA",175,dryer,12,Townhouse,4,1.2,0.17,0.09,2:00 PM,7.91,8.17,1.71,3.83,0.204,0.775
+27,I'm ready to dry clothes (around 1 AM). When should I start the dryer?,"Pittsburgh, PA",175,dryer,12,Townhouse,4,1.2,0.17,0.09,8:00 PM,9.0,8.17,1.14,3.83,0.108,0.775
+28,I'm ready to dry clothes (around 8 PM). When should I start the dryer?,"Harrisburg, PA",200,dryer,2,Townhouse,3,2.5,0.17,0.09,8:00 PM,7.67,5.92,10.0,10.0,0.225,1.615
+28,I'm ready to dry clothes (around 8 PM). When should I start the dryer?,"Harrisburg, PA",200,dryer,2,Townhouse,3,2.5,0.17,0.09,10:00 AM,7.67,5.92,1.62,3.83,0.225,1.615
+28,I'm ready to dry clothes (around 8 PM). When should I start the dryer?,"Harrisburg, PA",200,dryer,2,Townhouse,3,2.5,0.17,0.09,4:00 PM,5.4,5.92,1.04,3.83,0.425,1.615
+29,Planning to run the dryer around 1 AM. Is that the best time?,"Allentown, PA",200,dryer,3,Townhouse,3,2.5,0.17,0.08,1:00 AM,7.95,5.92,8.3,8.26,0.2,1.615
+29,Planning to run the dryer around 1 AM. Is that the best time?,"Allentown, PA",200,dryer,3,Townhouse,3,2.5,0.17,0.08,9:00 PM,7.95,5.92,1.04,3.83,0.2,1.615
+29,Planning to run the dryer around 1 AM. Is that the best time?,"Allentown, PA",200,dryer,3,Townhouse,3,2.5,0.17,0.08,4:00 PM,5.4,5.92,1.53,3.83,0.425,1.615
+30,It's late (around midnight) and I need to dry laundry. Should I start now or delay?,"Erie, PA",150,dryer,3,Apartment,4,3.5,0.17,0.08,12:00 AM,7.05,4.2,7.83,8.26,0.28,2.26
+30,It's late (around midnight) and I need to dry laundry. Should I start now or delay?,"Erie, PA",150,dryer,3,Apartment,4,3.5,0.17,0.08,7:00 PM,7.05,4.2,1.14,3.83,0.28,2.26
+30,It's late (around midnight) and I need to dry laundry. Should I start now or delay?,"Erie, PA",150,dryer,3,Apartment,4,3.5,0.17,0.08,3:00 PM,3.47,4.2,1.53,3.83,0.595,2.26
+31,I'm ready to dry clothes (around midnight). When should I start the dryer?,"Scranton, PA",200,dryer,8,Townhouse,2,3.5,0.18,0.08,12:00 AM,7.05,4.2,8.3,8.26,0.28,2.26
+31,I'm ready to dry clothes (around midnight). When should I start the dryer?,"Scranton, PA",200,dryer,8,Townhouse,2,3.5,0.18,0.08,10:00 PM,7.05,4.2,0.0,0.0,0.28,2.26
+31,I'm ready to dry clothes (around midnight). When should I start the dryer?,"Scranton, PA",200,dryer,8,Townhouse,2,3.5,0.18,0.08,4:00 PM,3.07,4.2,2.86,3.83,0.63,2.26
+32,My laundry is ready to dry (around 4 PM). Should I run the dryer now or wait?,"Bethlehem, PA",175,dryer,12,Single-family,2,3.5,0.18,0.08,4:00 PM,3.07,4.2,10.0,10.0,0.63,2.26
+32,My laundry is ready to dry (around 4 PM). Should I run the dryer now or wait?,"Bethlehem, PA",175,dryer,12,Single-family,2,3.5,0.18,0.08,10:00 PM,7.05,4.2,5.53,3.15,0.28,2.26
+32,My laundry is ready to dry (around 4 PM). Should I run the dryer now or wait?,"Bethlehem, PA",175,dryer,12,Single-family,2,3.5,0.18,0.08,6:00 AM,7.05,4.2,0.64,0.0,0.28,2.26
+33,Planning to run the dryer around 3 PM. Is that a good time?,"Reading, PA",200,dryer,15,Townhouse,2,1.15,0.18,0.09,3:00 PM,7.88,8.25,10.0,10.0,0.207,0.743
+33,Planning to run the dryer around 3 PM. Is that a good time?,"Reading, PA",200,dryer,15,Townhouse,2,1.15,0.18,0.09,11:00 PM,9.05,8.25,2.35,3.15,0.1035,0.743
+33,Planning to run the dryer around 3 PM. Is that a good time?,"Reading, PA",200,dryer,15,Townhouse,2,1.15,0.18,0.09,1:00 AM,9.05,8.25,2.35,0.0,0.1035,0.743
+34,I need to dry clothes this afternoon (around 2 PM). When should I start?,"York, PA",150,dryer,5,Apartment,2,2.5,0.18,0.08,2:00 PM,5.11,5.92,10.0,10.0,0.45,1.615
+34,I need to dry clothes this afternoon (around 2 PM). When should I start?,"York, PA",150,dryer,5,Apartment,2,2.5,0.18,0.08,2:00 AM,7.95,5.92,1.53,0.0,0.2,1.615
+34,I need to dry clothes this afternoon (around 2 PM). When should I start?,"York, PA",150,dryer,5,Apartment,2,2.5,0.18,0.08,9:00 PM,7.95,5.92,7.0,4.48,0.2,1.615
+35,When should I do dishes today?,"York, PA",195,dishwasher,6,Townhouse,3,1.15,0.18,0.09,7:00 PM,9.05,8.25,10.0,10.0,0.1035,0.743
+35,When should I do dishes today?,"York, PA",195,dishwasher,6,Townhouse,3,1.15,0.18,0.09,10:00 PM,9.05,8.25,6.48,5.45,0.1035,0.743
+35,When should I do dishes today?,"York, PA",195,dishwasher,6,Townhouse,3,1.15,0.18,0.09,1:00 AM,9.05,8.25,4.28,1.03,0.1035,0.743
+36,When should I do dishes today?,"Williamsport, PA",265,dishwasher,2,Single-family,4,0.98,0.17,0.09,8:00 PM,9.23,8.55,10.0,10.0,0.0882,0.633
+36,When should I do dishes today?,"Williamsport, PA",265,dishwasher,2,Single-family,4,0.98,0.17,0.09,11:00 PM,9.23,8.55,7.18,5.45,0.0882,0.633
+36,When should I do dishes today?,"Williamsport, PA",265,dishwasher,2,Single-family,4,0.98,0.17,0.09,2:00 AM,9.23,8.55,5.13,1.03,0.0882,0.633
+37,When should I do dishes today?,"McKeesport, PA",340,dishwasher,10,Apartment,2,1.55,0.18,0.09,7:00 PM,8.64,7.56,5.13,3.83,0.1395,1.001
+37,When should I do dishes today?,"McKeesport, PA",340,dishwasher,10,Apartment,2,1.55,0.18,0.09,10:00 PM,8.64,7.56,0.0,0.0,0.1395,1.001
+37,When should I do dishes today?,"McKeesport, PA",340,dishwasher,10,Apartment,2,1.55,0.18,0.09,12:00 AM,8.64,7.56,0.0,0.0,0.1395,1.001
+38,When should I do laundry today?,"Altoona, PA",210,washer,2,Apartment,2,0.22,0.17,0.08,7:00 AM,10.0,9.86,2.86,3.83,0.0176,0.142
+38,When should I do laundry today?,"Altoona, PA",210,washer,2,Apartment,2,0.22,0.17,0.08,10:00 AM,10.0,9.86,8.6,8.26,0.0176,0.142
+38,When should I do laundry today?,"Altoona, PA",210,washer,2,Apartment,2,0.22,0.17,0.08,1:00 PM,10.0,9.86,7.0,4.48,0.0176,0.142
+39,When should I do laundry today?,"Chester, PA",295,washer,6,Townhouse,4,0.38,0.18,0.09,8:00 AM,9.84,9.58,8.56,8.2,0.0342,0.245
+39,When should I do laundry today?,"Chester, PA",295,washer,6,Townhouse,4,0.38,0.18,0.09,11:00 AM,9.84,9.58,6.77,6.49,0.0342,0.245
+39,When should I do laundry today?,"Chester, PA",295,washer,6,Townhouse,4,0.38,0.18,0.09,3:00 PM,9.45,9.58,4.57,3.83,0.0684,0.245
+40,When should I do laundry today?,"Easton, PA",175,washer,10,Single-family,3,0.45,0.17,0.09,7:00 AM,9.77,9.46,0.74,3.83,0.0405,0.291
+40,When should I do laundry today?,"Easton, PA",175,washer,10,Single-family,3,0.45,0.17,0.09,10:00 AM,9.77,9.46,8.51,8.13,0.0405,0.291
+40,When should I do laundry today?,"Easton, PA",175,washer,10,Single-family,3,0.45,0.17,0.09,2:00 PM,9.36,9.46,6.65,3.97,0.0765,0.291
+41,When should I do laundry today?,"Lebanon, PA",385,washer,2,Single-family,5,0.28,0.18,0.09,8:00 AM,9.94,9.76,0.0,3.83,0.0252,0.181
+41,When should I do laundry today?,"Lebanon, PA",385,washer,2,Single-family,5,0.28,0.18,0.09,12:00 PM,9.94,9.76,8.32,6.37,0.0252,0.181
+41,When should I do laundry today?,"Lebanon, PA",385,washer,2,Single-family,5,0.28,0.18,0.09,4:00 PM,9.65,9.76,6.22,3.83,0.0504,0.181
+42,When should I run my dryer after washing clothes?,"Johnstown, PA",260,dryer,6,Townhouse,3,2.8,0.17,0.09,9:00 AM,7.36,5.41,0.74,3.83,0.252,1.808
+42,When should I run my dryer after washing clothes?,"Johnstown, PA",260,dryer,6,Townhouse,3,2.8,0.17,0.09,12:00 PM,7.36,5.41,8.51,8.13,0.252,1.808
+42,When should I run my dryer after washing clothes?,"Johnstown, PA",260,dryer,6,Townhouse,3,2.8,0.17,0.09,4:00 PM,4.82,5.41,6.65,3.97,0.476,1.808
+43,When should I run my dryer after washing clothes?,"Hazleton, PA",320,dryer,2,Single-family,4,1.2,0.18,0.09,9:00 AM,9.0,8.17,10.0,10.0,0.108,0.775
+43,When should I run my dryer after washing clothes?,"Hazleton, PA",320,dryer,2,Single-family,4,1.2,0.18,0.09,1:00 PM,9.0,8.17,6.77,6.49,0.108,0.775
+43,When should I run my dryer after washing clothes?,"Hazleton, PA",320,dryer,2,Single-family,4,1.2,0.18,0.09,5:00 PM,7.77,8.17,4.57,3.83,0.216,0.775
+44,When should I run my dryer after washing clothes?,"Scranton, PA",195,dryer,10,Apartment,2,3.5,0.17,0.08,9:00 AM,7.05,4.2,10.0,10.0,0.28,2.26
+44,When should I run my dryer after washing clothes?,"Scranton, PA",195,dryer,10,Apartment,2,3.5,0.17,0.08,12:00 PM,7.05,4.2,8.6,6.77,0.28,2.26
+44,When should I run my dryer after washing clothes?,"Scranton, PA",195,dryer,10,Apartment,2,3.5,0.17,0.08,3:00 PM,3.47,4.2,7.0,4.48,0.595,2.26

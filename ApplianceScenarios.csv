@@ -9,7 +9,7 @@ I'm ready to run the dishwasher after dinner (around 8 PM). When should I start 
 I just finished dinner around 8 PM. When should I run my dishwasher?,"Bethlehem, PA",150,dishwasher,Townhouse,4,0.17,0.09,1.55,2,8:00 PM,8:00 PM,4:00 PM,5:00 PM
 Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Reading, PA",120,dishwasher,Townhouse,4,0.17,0.09,1.55,10,2:00 PM,2:00 PM,3:00 PM,7:00 PM
 I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"York, PA",200,dishwasher,Townhouse,4,0.18,0.08,1.4,7,2:00 PM,2:00 PM,3:00 PM,11:00 PM
-Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Philadelphia, PA",175,dishwasher,Townhouse,3,0.18,0.09,1.4,6,2:00 PM,2:00 PM,10:00 PM,2:00 PM
+Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?,"Philadelphia, PA",175,dishwasher,Townhouse,3,0.18,0.09,1.4,6,2:00 PM,2:00 PM,10:00 PM,9:00 PM
 Dinner's done around 7 PM. What's the best time to run the dishwasher?,"Lancaster, PA",150,dishwasher,Single-family,3,0.19,0.1,1.7,4,7:00 PM,7:00 PM,5:00 PM,4:00 PM
 I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Pittsburgh, PA",120,dishwasher,Single-family,4,0.18,0.1,0.95,6,8:00 PM,8:00 PM,5:00 PM,1:00 AM
 I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",120,dishwasher,Apartment,3,0.17,0.08,0.95,8,2:00 PM,2:00 PM,10:00 PM,1:00 AM
@@ -18,20 +18,20 @@ I'm finally getting to laundry (around 1 AM). When should I start the washer?,"P
 I have time to do laundry this afternoon (around 5 PM). When should I start?,"Lancaster, PA",150,washing_machine,Townhouse,5,0.18,0.09,0.45,8,5:00 PM,5:00 PM,2:00 PM,10:00 PM
 Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Pittsburgh, PA",175,washing_machine,Single-family,5,0.18,0.08,0.22,6,11:00 PM,11:00 PM,3:00 PM,5:00 PM
 I have time to do laundry this afternoon (around 5 PM). When should I start?,"Harrisburg, PA",120,washing_machine,Apartment,3,0.17,0.08,0.28,4,5:00 PM,5:00 PM,2:00 PM,9:00 PM
-Thinking of washing clothes around 4 PM. Good timing?,"Allentown, PA",120,washing_machine,Single-family,3,0.18,0.09,0.45,8,4:00 PM,4:00 PM,4:00 PM,10:00 PM
-I have time to do laundry this afternoon (around 4 PM). When should I start?,"Erie, PA",175,washing_machine,Apartment,4,0.18,0.08,0.28,7,4:00 PM,4:00 PM,4:00 PM,9:00 PM
+Thinking of washing clothes around 4 PM. Good timing?,"Allentown, PA",120,washing_machine,Single-family,3,0.18,0.09,0.45,8,4:00 PM,4:00 PM,1:00 AM,10:00 PM
+I have time to do laundry this afternoon (around 4 PM). When should I start?,"Erie, PA",175,washing_machine,Apartment,4,0.18,0.08,0.28,7,4:00 PM,4:00 PM,12:00 PM,9:00 PM
 Thinking of washing clothes around 5 PM. Good timing?,"Scranton, PA",120,washing_machine,Townhouse,2,0.18,0.08,0.3,2,5:00 PM,5:00 PM,1:00 AM,7:00 PM
 It's late (around 7 PM) but I need to wash clothes. Should I do it now?,"Bethlehem, PA",175,washing_machine,Single-family,3,0.17,0.09,0.45,12,7:00 PM,7:00 PM,2:00 PM,1:00 AM
 I want to run a load of laundry around 5 PM. When's the best time?,"Reading, PA",175,washing_machine,Townhouse,5,0.17,0.09,0.3,7,5:00 PM,5:00 PM,10:00 PM,1:00 AM
 Planning to run the washing machine around 9 PM. Is that okay or should I wait?,"York, PA",150,washing_machine,Townhouse,3,0.18,0.08,0.3,3,9:00 PM,9:00 PM,12:00 AM,2:00 PM
-My laundry is ready to dry (around 2 PM). Should I run the dryer now or wait?,"Philadelphia, PA",175,dryer,Apartment,4,0.17,0.09,2.8,2,2:00 PM,2:00 PM,9:00 PM,2:00 PM
+My laundry is ready to dry (around 2 PM). Should I run the dryer now or wait?,"Philadelphia, PA",175,dryer,Apartment,4,0.17,0.09,2.8,2,2:00 PM,2:00 PM,9:00 PM,5:00 PM
 Planning to run the dryer around 2 PM. Is that a good time?,"Lancaster, PA",200,dryer,Apartment,4,0.18,0.09,2.5,7,2:00 PM,2:00 PM,12:00 AM,11:00 PM
 I'm ready to dry clothes (around 1 AM). When should I start the dryer?,"Pittsburgh, PA",175,dryer,Townhouse,4,0.17,0.09,1.2,12,1:00 AM,1:00 AM,2:00 PM,8:00 PM
-I'm ready to dry clothes (around 8 PM). When should I start the dryer?,"Harrisburg, PA",200,dryer,Townhouse,3,0.17,0.09,2.5,2,8:00 PM,8:00 PM,4:00 PM,4:00 PM
+I'm ready to dry clothes (around 8 PM). When should I start the dryer?,"Harrisburg, PA",200,dryer,Townhouse,3,0.17,0.09,2.5,2,8:00 PM,8:00 PM,10:00 AM,4:00 PM
 Planning to run the dryer around 1 AM. Is that the best time?,"Allentown, PA",200,dryer,Townhouse,3,0.17,0.08,2.5,3,1:00 AM,1:00 AM,9:00 PM,4:00 PM
 It's late (around midnight) and I need to dry laundry. Should I start now or delay?,"Erie, PA",150,dryer,Apartment,4,0.17,0.08,3.5,3,12:00 AM,12:00 AM,7:00 PM,3:00 PM
 I'm ready to dry clothes (around midnight). When should I start the dryer?,"Scranton, PA",200,dryer,Townhouse,2,0.18,0.08,3.5,8,12:00 AM,12:00 AM,10:00 PM,4:00 PM
-My laundry is ready to dry (around 4 PM). Should I run the dryer now or wait?,"Bethlehem, PA",175,dryer,Single-family,2,0.18,0.08,3.5,12,4:00 PM,4:00 PM,10:00 PM,4:00 PM
+My laundry is ready to dry (around 4 PM). Should I run the dryer now or wait?,"Bethlehem, PA",175,dryer,Single-family,2,0.18,0.08,3.5,12,4:00 PM,4:00 PM,10:00 PM,6:00 AM
 Planning to run the dryer around 3 PM. Is that a good time?,"Reading, PA",200,dryer,Townhouse,2,0.18,0.09,1.15,15,3:00 PM,3:00 PM,11:00 PM,1:00 AM
 I need to dry clothes this afternoon (around 2 PM). When should I start?,"York, PA",150,dryer,Apartment,2,0.18,0.08,2.5,5,2:00 PM,2:00 PM,2:00 AM,9:00 PM
 When should I do dishes today?,"York, PA",195,dishwasher,Townhouse,3,0.18,0.09,1.15,6,7:00 PM,7:00 PM,10:00 PM,1:00 AM
@@ -44,4 +44,3 @@ When should I do laundry today?,"Lebanon, PA",385,washer,Single-family,5,0.18,0.
 When should I run my dryer after washing clothes?,"Johnstown, PA",260,dryer,Townhouse,3,0.17,0.09,2.8,6,10:00 AM,9:00 AM,12:00 PM,4:00 PM
 When should I run my dryer after washing clothes?,"Hazleton, PA",320,dryer,Single-family,4,0.18,0.09,1.2,2,9:00 AM,9:00 AM,1:00 PM,5:00 PM
 When should I run my dryer after washing clothes?,"Scranton, PA",195,dryer,Apartment,2,0.17,0.08,3.5,10,9:00 AM,9:00 AM,12:00 PM,3:00 PM
-When should I run my dryer after washing clothes?,"Reading, PA",230,dryer,Townhouse,3,0.18,0.09,2.6,6,9:00 AM,10:00 AM,1:00 PM,4:00 PM

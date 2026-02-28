@@ -59,28 +59,7 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\metrics_comparison.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\pure_prompting_results.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\rag_enhanced_results.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\test_scenarios.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

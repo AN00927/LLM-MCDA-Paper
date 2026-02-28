@@ -17,8 +17,8 @@ The house is unoccupied for 4 hours. What should I set the thermostat to?,"Erie,
 Cold day today with 2 people home. What's a good heating temperature?,"Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,26,23,19,23,13,standard,67,70,73
 It's hot today and we're home as usual. What temperature should I set the AC to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,91,17,19,12,16,standard,72,75,79
 It's cold outside and we're home as usual. What should I set the heat to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,19,17,19,12,16,standard,68,71,74
-Someone's home all day and it's hot outside. What should I set the AC to?,"Media, PA",1700,Medium,3,$240 ,Twin,87,12,13,8,15,occupied_all_day,75,78,81
-Someone's home all day and it's cold. What heating temperature should I use?,"Media, PA",1700,Medium,3,$240 ,Twin,23,12,13,8,15,occupied_all_day,67,70,73
+Someone's home all day and it's hot outside. What should I set the AC to?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,87,12,13,8,15,occupied_all_day,75,78,81
+Someone's home all day and it's cold. What heating temperature should I use?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,23,12,13,8,15,occupied_all_day,67,70,73
 We're all out for 8 hours in the heat. What AC setting makes sense?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,90,5,13,5,16,unoccupied_8hr,76,79,82
 We're all out for 8 hours in cold weather. What heating temperature is best?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,21,5,13,5,16,unoccupied_8hr,66,69,72
 The house will be empty for 12 hours today. What AC temperature should I set?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,94,1,11,1,18,unoccupied_12hr,76,79,82
@@ -79,3 +79,8 @@ I'm setting the thermostat for bedtime. What heating temperature is best for sle
 I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Phoenixville, PA",1750,Medium,2,$250 ,Townhouse,92,14,13,12,14,overnight_sleep,78,81,84
 We're all out for 12 hours in the heat. What AC setting makes sense?,"West Mifflin, PA",2300,Poor,4,$165 ,Single-family,94,30,11,28,11,unoccupied_12hr,79,81,83
 I'm working from home today and it's hot. What AC temperature should I use?,"Cheltenham, PA",2000,Good,3,$450 ,Single-family,88,4,19,3,18,occupied_all_day,73,75,77
+It's a mild spring day but the house feels chilly. What should I set the heat to?,"Norristown, PA",1600,Medium,3,$260 ,Single-family,60,14,13,12,14,standard,68,71,74
+I'm setting the thermostat for bedtime on a cold night. What heating temperature is best?,"Wilkes-Barre, PA",1900,Good,2,$230 ,Single-family,17,9,19,7,16,overnight_sleep,65,68,70
+We're leaving the house for a few hours on a hot day. What should I set the AC to?,"Levittown, PA",1700,Medium,3,$300 ,Single-family,89,32,13,28,10,unoccupied_4hr,78,80,82
+It's a scorching day and we're all home. What AC setting balances comfort and cost with our older system?,"Easton, PA",2200,Poor,4,$165 ,Townhouse,97,35,11,30,9,occupied_all_day,76,78,80
+We're leaving for 12 hours on a very cold day. How far should I set back the heat?,"Stroudsburg, PA",3000,Poor,5,$350 ,Single-family,15,28,11,25,11,unoccupied_12hr,60,63,67

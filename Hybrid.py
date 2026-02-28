@@ -297,7 +297,12 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
     alternatives = extracted_result['parameters'].get('alternatives', [])
     for i, alt in enumerate(alternatives[:3], 1):
         gt_scenario[f'Alternative {i}'] = alt
-
+    for key in ['Utility Budget', 'Occupants', 'Peak Rate', 'Off-Peak Rate', 'kwh/cycle']:
+        if key in gt_scenario and isinstance(gt_scenario[key], str):
+            try:
+                gt_scenario[key] = float(gt_scenario[key])
+            except (ValueError, TypeError):
+                gt_scenario[key] = 0.0
     calculator_name = extracted_result['calculator']
     print(f"  Using AI-selected calculator: {calculator_name}")
     print(f"  DEBUG: gt_scenario keys = {sorted(gt_scenario.keys())}")
@@ -325,7 +330,12 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
         for alt_data in result['alternatives']:
             alternatives_scores.append({
                 'alternative': str(alt_data['alternative']),
-                'scores': alt_data['transformed_values']
+                'scores': {
+    'energy_cost':   alt_data['transformed_values']['energy_cost_score'],
+    'environmental': alt_data['transformed_values']['environmental_score'],
+    'comfort':       alt_data['transformed_values']['comfort_score'],
+    'practicality':  alt_data['transformed_values']['practicality_score']
+}
             })
     else:
         for alt_key, alt_data in result.items():
