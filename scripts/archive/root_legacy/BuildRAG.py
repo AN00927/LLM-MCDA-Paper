@@ -1,18 +1,3 @@
-"""
-Build RAG Database from Ground Truth Scenarios
-===============================================
-
-Reads CSV files containing scenarios with ground truth scores:
-- HVAC: Merges scenario file + GT file
-- Appliance: Uses GT file (contains all data)
-- Shower: Uses scenario file (contains all data)
-
-Builds ChromaDB vector database for similarity-based retrieval in RAG-Enhanced architecture.
-
-Author: Research Project
-Date: 2025
-"""
-
 import pandas as pd
 import chromadb
 from chromadb.config import Settings
@@ -23,9 +8,9 @@ from pathlib import Path
 # ========== CONFIGURATION ==========
 RAG_FILES = {
     'HVAC': {
-        'scenarios': 'HVACRagScenarios.csv',
-        'ground_truth': 'HVACRagScenariosGT.csv',
-        'merge_required': True
+
+        'ground_truth': 'HVACRagScenarios.csv',
+        'merge_required': False
     },
     'Appliance': {
         'ground_truth': 'ApplianceRAGScenariosGT.csv',
@@ -43,50 +28,21 @@ EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 
 
 def load_hvac_data(csv_dir: str) -> pd.DataFrame:
-    """Load and merge HVAC scenarios with ground truth scores."""
-    scenarios_path = os.path.join(csv_dir, RAG_FILES['HVAC']['scenarios'])
+    """Load HVAC data (single file contains everything)."""
     gt_path = os.path.join(csv_dir, RAG_FILES['HVAC']['ground_truth'])
+    df = pd.read_csv(gt_path)
 
-    scenarios = pd.read_csv(scenarios_path)
-    gt = pd.read_csv(gt_path)
+    # Rename columns to match format_scenario_text expectations
+    df['Question'] = df['question']
+    df['Location'] = df['location']
+    df['Square Footage'] = df['square_footage']
+    df['Insulation'] = df['insulation']
+    df['Household Size'] = df['household_size']
+    df['Housing Type'] = df['housing_type']
+    df['Outdoor Temp'] = df['outdoor_temp']
+    df['alternative_num'] = df.groupby('scenario_id').cumcount() + 1
 
-    # Rename GT scenario_id to match (it starts at 0, scenarios at 1)
-    # The GT alternative column contains the actual alternative value (e.g., "78", "80", "83")
-
-    # Create a mapping for alternatives
-    merged_data = []
-
-    for _, scenario in scenarios.iterrows():
-        scenario_id = scenario['scenario_id'] - 1  # Convert to 0-based for GT matching
-
-        # Get the three alternatives
-        alts = [scenario['Alternative 1'], scenario['Alternative 2'], scenario['Alternative 3']]
-
-        for alt_num, alt_value in enumerate(alts, 1):
-            # Find the GT scores for this scenario and alternative
-            gt_row = gt[(gt['scenario_id'] == scenario_id) & (gt['alternative'].astype(str) == str(alt_value))]
-
-            if len(gt_row) > 0:
-                gt_row = gt_row.iloc[0]
-                merged_row = {
-                    'scenario_id': scenario['scenario_id'],
-                    'Question': scenario['Question'],
-                    'Location': scenario['Location'],
-                    'Square Footage': scenario['Square Footage'],
-                    'Insulation': scenario['Insulation'],
-                    'Household Size': scenario['Household Size'],
-                    'Housing Type': scenario['Housing Type'],
-                    'Outdoor Temp': scenario['Outdoor Temp'],
-                    'alternative_num': alt_num,
-                    'alternative': alt_value,
-                    'energy_cost_score': gt_row['energy_cost_score'],
-                    'environmental_score': gt_row['environmental_score'],
-                    'comfort_score': gt_row['comfort_score'],
-                    'practicality_score': gt_row['practicality_score']
-                }
-                merged_data.append(merged_row)
-
-    return pd.DataFrame(merged_data)
+    return df
 
 
 def load_appliance_data(csv_dir: str) -> pd.DataFrame:
@@ -274,7 +230,7 @@ def build_rag_database(csv_dir=r'C:\Users\ishaa\PycharmProjects\LLM-MCDA'):
                 alts_data[f'alt{idx}_energy_cost'] = float(row['energy_cost_score'])
                 alts_data[f'alt{idx}_environmental'] = float(row['environmental_score'])
                 alts_data[f'alt{idx}_comfort'] = float(row['comfort_score'])
-                alts_data[f'alt{idx}_practicality'] = 0.0  # Not in appliance data
+                alts_data[f'alt{idx}_practicality'] = float(row['practicality_score'])
 
             embedding = embedding_model.encode(scenario_text).tolist()
 

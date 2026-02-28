@@ -18,7 +18,7 @@ class ApplianceGroundTruthCalculator:
     """
     # EPA eGRID2022: Pennsylvania grid emissions 0.85 lb CO2/kWh
     # Citations: EPA eGRID2022 [Ref 77,81], PA DEP 2021 [Ref 29,32]
-    EMISSIONS_FACTOR_PA = 0.85  # lbs CO2/kWh
+    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh
 
     # ADD AFTER (new constant):
     # EIA 2024-2025: Pennsylvania residential average
@@ -241,7 +241,13 @@ class ApplianceGroundTruthCalculator:
           PMC11190461
 
         - Shewale et al. (2023): TOU appliance scheduling adoption <20% without automation
-          Arabian Journal for Science and Engineering, DOI: 10.1007/s13369-023-08178-w
+          Arabian Journal for Science and Engineering, DOI: 10.1007/s13369-023-08178-w\
+
+
+        - Floor value: 4.0
+          Indonesia TOU adoption study (PMC11190461, 2024): 63% of respondents willing
+          to opt into TOU scheduling; a 4/10 reflects "feasible with behavior change
+          required," consistent with majority-but-not-universal adoption at acceptable hours.
         """
 
         # Component 1: Base adoption likelihood by delay duration
@@ -292,10 +298,14 @@ class ApplianceGroundTruthCalculator:
         print(f"  → Coordination penalty ({occupants} occupants): -{coordination_penalty:.1f}")
 
         final_practicality = base_practicality - timing_penalty - coordination_penalty
+        DAYTIME_START = 7  # 7am
+        DAYTIME_END = 22  # 10pm
 
-        # CRITICAL: Set minimum floor (even impractical has SOME adoption)
-        # Following HVAC pattern: max(1.5, score)
+        if DAYTIME_START <= run_time_hour < DAYTIME_END:
+            final_practicality = max(final_practicality, 4)
+
         return max(1.5, min(10.0, final_practicality))
+
 
     def parse_alternative(self, alt: str, scenario: Dict) -> Tuple[int, float]:
         """
@@ -314,7 +324,7 @@ class ApplianceGroundTruthCalculator:
         import re
 
         # Extract run time from alternative (e.g., "7pm", "10pm", "2am")
-        time_match = re.search(r'(\d+)\s*(am|pm)', alt, re.IGNORECASE)
+        time_match = re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', alt, re.IGNORECASE)
         if not time_match:
             print(f"  ⚠ Could not parse run time from: {alt}")
             # Return baseline with no delay
@@ -347,7 +357,6 @@ class ApplianceGroundTruthCalculator:
               f"delay={delay_hours}hr from baseline {baseline_str}")
 
         return run_time_hour, delay_hours
-#AHAAN CHECK LOGIC FOR TS
     def _parse_time_to_hour(self, time_str: str) -> int:
         """
         Helper function to convert time string to 24-hour format.
@@ -366,7 +375,7 @@ class ApplianceGroundTruthCalculator:
         """
         import re
 
-        match = re.search(r'(\d+)\s*(am|pm)', time_str, re.IGNORECASE)
+        match =re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', time_str, re.IGNORECASE)
         if not match:
             # Default to 7pm if unparseable
             print(f"  ⚠ Could not parse baseline time '{time_str}', defaulting to 7pm")
@@ -605,12 +614,6 @@ class ApplianceGroundTruthCalculator:
             'Alternative 1': "Run at 7pm",
             'Alternative 2': "Run at 10pm",
             'Alternative 3': "Run at 2am",
-            'vf_specs': {
-                'energy_cost': 'linear',
-                'environmental': 'linear',
-                'comfort': 'linear',
-                'practicality': 'linear'
-            }
         }
 
         Returns:
@@ -696,7 +699,7 @@ class ApplianceGroundTruthCalculator:
                     self.VF_ENERGY_COST,
                     'energy_cost'
                 )
-                print(f"  After VF ({scenario['vf_specs']['energy_cost']}): Energy = {energy_vf:.2f}/10")
+                print(f"  After VF linear: Energy = {energy_vf:.2f}/10")
             except Exception as e:
                 print(f"  ✗ Energy VF ERROR: {e}")
                 energy_vf = 5.0
@@ -729,7 +732,7 @@ class ApplianceGroundTruthCalculator:
                     self.VF_ENVIRONMENTAL,
                     'environmental'
                 )
-                print(f"  After VF ({scenario['vf_specs']['environmental']}): Environmental = {env_vf:.2f}/10")
+                print(f"  After VF LinearL: Environmental = {env_vf:.2f}/10")
             except Exception as e:
                 print(f"  ✗ Environmental VF ERROR: {e}")
                 env_vf = 5.0
@@ -740,7 +743,7 @@ class ApplianceGroundTruthCalculator:
                     self.VF_COMFORT,
                     'comfort'
                 )
-                print(f"  After VF ({scenario['vf_specs']['comfort']}): Comfort = {comfort_vf:.2f}/10")
+                print(f"  After VF logarithmic (a=1.5): Comfort = {comfort_vf:.2f}/10")
             except Exception as e:
                 print(f"  ✗ Comfort VF ERROR: {e}")
                 comfort_vf = raw['comfort_raw']
@@ -751,7 +754,7 @@ class ApplianceGroundTruthCalculator:
                     self.VF_PRACTICALITY,
                     'practicality'
                 )
-
+                print(f"  After VF logarithmic (a=1.2): Practicality = {practicality_vf:.2f}/10")
             except Exception as e:
                 print(f"  ✗ Practicality VF ERROR: {e}")
                 practicality_vf = raw['practicality_raw']
@@ -831,12 +834,14 @@ def process_appliance_scenarios(csv_filename: str = "ApplianceScenarios.csv",
                     'scenario_id': idx,
                     'description': row['Description'],
                     'location': row['Location'],
+                    'utility_budget': row['Utility Budget'],
                     'appliance': row['Appliance'],
+                    'appliance_age_type': row['Appliance Age/Type'],
                     'housing_type': row['Housing Type'],
                     'occupants': row['Occupants'],
+                    'kwh_per_cycle': row['kwh/cycle'],
                     'peak_rate': row['Peak Rate'],
                     'offpeak_rate': row['Off-Peak Rate'],
-                    'kwh_per_cycle': row['kwh/cycle'],
                     'alternative': alt,
                     'energy_cost_score': alt_scores['energy_cost_score'],
                     'environmental_score': alt_scores['environmental_score'],

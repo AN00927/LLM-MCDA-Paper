@@ -31,8 +31,6 @@ RESULT_DT_RANGES = {
 }
 
 
-# ─── Helpers ─────────────────────────────────────────────────────────────────
-
 def norm_alt(x: str) -> str:
     """
     Normalise alternative labels so they can be used as join keys.

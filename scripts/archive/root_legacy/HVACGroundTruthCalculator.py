@@ -7,7 +7,7 @@ class HVACGroundTruthCalculator:
     # EPA eGRID2022: Pennsylvania grid emissions 0.85 lb CO2/kWh
     # Generation mix: 40-45% gas, 30-35% nuclear, 15-20% coal
     # Citations: EPA eGRID2022 [Ref 77,81], PA DEP 2021 [Ref 29,32]
-    EMISSIONS_FACTOR_PA = 0.85  # lbs CO2/kWh
+    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh
 
     # EIA 2024-2025: Pennsylvania residential average
     # PPL: 19-20¢, PECO: 17-18¢, Duquesne: 18-19¢
@@ -691,8 +691,13 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
                     'scenario_id': idx,
                     'question': row['Question'],
                     'location': row['Location'],
+                    'square_footage': row['Square Footage'],
+                    'insulation': row.get('Insulation', ''),
+                    'household_size': row['Household Size'],
+                    'utility_budget': row.get('Utility Budget', ''),
+                    'housing_type': row.get('Housing Type', ''),
                     'outdoor_temp': row['Outdoor Temp'],
-                    'electricity_rate': electricity_rate,
+                    'house_age': row.get('House Age', ''),
                     'alternative': alt,
                     'energy_cost_score': alt_scores['energy_cost_score'],
                     'environmental_score': alt_scores['environmental_score'],
