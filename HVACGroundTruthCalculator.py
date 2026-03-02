@@ -1,5 +1,7 @@
 import pandas as pd
 import math
+import logging
+import numpy as np
 from typing import Dict, List, Tuple
 
 
@@ -242,13 +244,8 @@ class HVACGroundTruthCalculator:
 
         # LOWER FLOOR: 1.5 → 0.5 to allow more penalty
         base_score = max(0.5, base_score)
-        # Component 2: Schedule complexity penalty
-        # Stopps & Touchie (2021): Only 40-45% successfully maintain complex schedules
-        # Therefore: complex penalty = 0.60 (vs 1.0 for simple)
-        if question_type == "complex":
-            base_score *= 0.60
 
-        # Component 3: ΔT operational feasibility
+        # Component 2: ΔT operational feasibility
         # Large ΔT indicates system operating at limits; lower reliability/higher failure risk
         delta_t = abs(outdoor_temp - indoor_temp)
         if delta_t < 10:
@@ -264,7 +261,7 @@ class HVACGroundTruthCalculator:
 
         return max(0.0, min(10.0, base_score))
 
-    def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 30) -> float:
+    def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 90) -> float:
         """
         Convert per-8hr-period cost to estimated monthly cost.
 
@@ -371,15 +368,16 @@ class HVACGroundTruthCalculator:
         'decreasing': True
     },
     'environmental': {
-        # Calculated from energy bounds using PA grid emissions factor
+        # Calculated from energy cost bounds using PA grid emissions factor
         #
         # EPA eGRID (2023): "Pennsylvania state-level CO₂ emission rate of 645.8 lbs
         # CO₂/MWh, or equivalently 0.6458 lbs CO₂/kWh" (eGRID2023 Summary Tables)
         #
-        # Min: (0.47 / 0.14) × 8 hours × 0.6458 = 2.19 lbs CO₂
-        # Max: (3.31 / 0.14) × 8 hours × 0.6458 = 15.45 lbs CO₂
-        'min': 2.19,
-        'max': 15.45,
+        # Formula: (cost / electricity_rate) × emissions_factor
+        # Min: (0.47 / 0.19) × 0.6458 = 2.474 × 0.6458 = 1.60 lbs CO₂
+        # Max: (3.31 / 0.19) × 0.6458 = 17.421 × 0.6458 = 11.25 lbs CO₂
+        'min': 1.60,
+        'max': 11.25,
         'decreasing': True
     },
             'comfort': {
@@ -439,7 +437,7 @@ class HVACGroundTruthCalculator:
             else:
                 # Handle negative x_normalized (better than best case)
                 if a * x_normalized + 1 <= 0:
-                    u_x = 1.0  # Cap at perfect score
+                    u_x = 0.0
                 else:
                     u_x = math.log(a * x_normalized + 1) / math.log(a + 1)
 
@@ -457,7 +455,6 @@ class HVACGroundTruthCalculator:
 
 
         is_cooling = scenario['outdoor_temp'] > 75
-        question_type = "complex" if scenario.get('is_complex', False) else "simple"
 
         raw_results = {}
 
@@ -536,7 +533,6 @@ class HVACGroundTruthCalculator:
             practicality = self.calculate_practicality_score(
                 scenario['outdoor_temp'],
                 effective_temp,
-                question_type
             )
             raw_results[alt] = {
                 'kwh': kwh,
@@ -600,7 +596,7 @@ class HVACGroundTruthCalculator:
                 # Convert 8-hour cost to monthly estimate (30 days)
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost_dollars'],
-                    periods_per_month=30
+                    periods_per_month=90 # 24 hours per day divided by 8 hour decision period
                 )
 
                 budget_penalty = self.calculate_budget_penalty(
@@ -660,7 +656,7 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
 
     for idx, row in df.iterrows():
         print(f"Processing scenario {idx + 1}/{len(df)}: {row['Location']}")
-        electricity_rate = 0.14
+        electricity_rate = 0.19
 
         alternatives = []
         for alt_col in ['Alternative 1', 'Alternative 2', 'Alternative 3']:
@@ -679,13 +675,23 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
             'outdoor_temp': float(row['Outdoor Temp']),
             'seer': int(row['SEER']),
             'hvac_age': int(row['HVAC Age']),
-            'occupancy_context': row.get('Occupancy Context', 'occupied_all_day'),
+            'occupancy_context': row['Occupancy Context'] if 'Occupancy Context' in row.index else 'occupied_all_day',
             'electricity_rate': electricity_rate,
             'alternatives': alternatives,
         }
         try:
             scores = calculator.calculate_scenario_scores(scenario)
-
+            alts_for_ranking = [
+                {
+                    "alternative": alt,
+                    "energy_cost": scores[alt]["energy_cost_score"],
+                    "environmental": scores[alt]["environmental_score"],
+                    "comfort": scores[alt]["comfort_score"],
+                    "practicality": scores[alt]["practicality_score"]
+                }
+                for alt in scores
+            ]
+            ranking_result = apply_mavt_ranking(alts_for_ranking)
             for alt, alt_scores in scores.items():
                 result_row = {
                     'scenario_id': idx,
@@ -703,6 +709,8 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
                     'environmental_score': alt_scores['environmental_score'],
                     'comfort_score': alt_scores['comfort_score'],
                     'practicality_score': alt_scores['practicality_score'],
+                    'mavt_score': ranking_result["weighted_scores"][list(scores.keys()).index(alt)],
+                    'rank': ranking_result["ranks"][list(scores.keys()).index(alt)],
                     'raw_kwh': alt_scores['raw_kwh'],
                     'raw_cost': alt_scores['raw_cost'],
                     'raw_emissions': alt_scores['raw_emissions']
@@ -720,7 +728,80 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
 
+def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
+    """
+    Apply MAVT weighted sum to rank alternatives
 
+    Args:
+        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
+
+    Returns:
+        Dict with ranked_alternatives, ranks, weighted_scores
+    """
+    try:
+        alternatives = [alt["alternative"] for alt in alternatives_scores]
+
+        # Calculate weighted sum for each alternative
+        weighted_scores = []
+        for alt_scores in alternatives_scores:
+            weighted_sum = (
+                    CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
+                    CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
+                    CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
+                    CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
+            )
+            weighted_scores.append(weighted_sum)
+
+        # Rank alternatives (higher weighted sum = better = lower rank number)
+        ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
+        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+
+        # Create rank numbers (1 = best, 2 = second, 3 = third)
+        ranks = [0] * len(alternatives)
+        for rank_position, alt_index in enumerate(ranked_indices):
+            ranks[alt_index] = rank_position + 1
+
+        return {
+            "ranked_alternatives": ranked_alternatives,
+            "ranks": ranks,
+            "weighted_scores": weighted_scores
+        }
+
+    except Exception as e:
+        logging.error(f"MAVT ranking failed: {e}")
+
+        # Fallback: rank by average score
+        avg_scores = []
+        for alt_scores in alternatives_scores:
+            avg = np.mean([
+                alt_scores["energy_cost"],
+                alt_scores["environmental"],
+                alt_scores["comfort"],
+                alt_scores["practicality"]
+            ])
+            avg_scores.append(avg)
+
+        ranked_indices = np.argsort(avg_scores)[::-1]
+        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+
+        ranks = [0] * len(alternatives)
+        for rank_position, alt_index in enumerate(ranked_indices):
+            ranks[alt_index] = rank_position + 1
+
+        return {
+            "ranked_alternatives": ranked_alternatives,
+            "ranks": ranks,
+            "weighted_scores": avg_scores,
+            "error": str(e)
+        }
+
+
+CRITERION_WEIGHTS = {
+    "energy_cost": 0.30,
+    "environmental": 0.35,
+    "comfort": 0.20,
+    "practicality": 0.15
+}
 if __name__ == "__main__":
     process_hvac_scenarios(
         csv_filename="HVACScenarios.csv",

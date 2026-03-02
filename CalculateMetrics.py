@@ -1,401 +1,622 @@
+#!/usr/bin/env python3
+"""
+calculate_metrics.py - Metrics evaluation for MCDA architecture comparison
+Science Fair Project: LLM-assisted MCDA for Household Emissions Optimization
+
+Compares Pure Prompting, RAG-Enhanced, and Hybrid architectures against
+physics-based ground truth using MAVT scoring across HVAC, Appliance,
+and Shower decision scenarios.
+
+Key data quirks handled:
+  - GT files have overlapping scenario_ids (each file starts at 0)
+  - GT HVAC uses 'question', GT Appliance/Shower use 'description'
+  - GT score columns: energy_cost_score, environmental_score, etc.
+  - Arch score columns: energy_cost, environmental, etc.
+  - Appliance alternatives differ in format: GT='2:00 PM', Arch='Run dishwasher at 2:00 PM'
+  - Shower alternatives are numeric (duration in minutes)
+  - HVAC alternatives are numeric (temperature in F)
+  - Matching done by question text + location, then by normalized alternatives
+"""
+
 import pandas as pd
 import numpy as np
+from scipy import stats
 import re
-from scipy.stats import kendalltau, spearmanr
-from typing import Dict, List, Tuple, Optional
+import warnings
 import sys
+from collections import defaultdict
 
-# ─── Ground truth files (one per decision type) ──────────────────────────────
-GROUND_TRUTH_CSVS = {
-    'HVAC':      'ground_truth_hvac.csv',
-    'Shower':    'ground_truth_shower.csv',
-    'Appliance': 'ground_truth_appliance.csv',
+warnings.filterwarnings("ignore")
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+CONFIG = {
+    "ground_truth": {
+        "HVAC": "ground_truth_hvac.csv",
+        "Appliance": "ground_truth_appliance.csv",
+        "Shower": "ground_truth_shower.csv",
+    },
+    "architectures": {
+        "Pure": "pure_prompting_results.csv",
+        "RAG": "RAGResults.csv",
+        "Hybrid": "hybrid_results.csv",
+    },
+    "output_csv": "metrics_summary.csv",
+    "weights": {
+        "environmental": 0.35,
+        "energy_cost": 0.30,
+        "comfort": 0.20,
+        "practicality": 0.15,
+    },
+    "gt_score_cols": {
+        "energy_cost": "energy_cost_score",
+        "environmental": "environmental_score",
+        "comfort": "comfort_score",
+        "practicality": "practicality_score",
+    },
+    "arch_score_cols": {
+        "energy_cost": "energy_cost",
+        "environmental": "environmental",
+        "comfort": "comfort",
+        "practicality": "practicality",
+    },
 }
 
-ARCHITECTURE_CSVS = {
-    'Pure':   'pure_prompting_results.csv',
-    'RAG':    'RAGResults.csv',
-    'Hybrid': 'hybrid_results.csv',
-}
-
-OUTPUT_CSV = 'metrics_comparison.csv'
-
-CRITERIA = ['energy_cost', 'environmental', 'comfort', 'practicality']
-
-# Scenario-ID ranges used in result files to infer decision_type when the
-# result file has no decision_type column (e.g. pure_prompting_results.csv).
-RESULT_DT_RANGES = {
-    'HVAC':      (1,  58),
-    'Appliance': (59, 84),
-    'Shower':    (85, 99),
-}
+CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 
 
-def norm_alt(x: str) -> str:
-    """
-    Normalise alternative labels so they can be used as join keys.
+# ============================================================================
+# ALTERNATIVE NORMALIZATION
+# ============================================================================
 
-    Handles two quirks found in the data:
-      • Temperature alternatives that appear as '72' in one file and '72F'/'72f'
-        in another.
-      • Float-formatted integers stored as '72.0'.
-    Everything else is lowercased and stripped.
-    """
-    s = str(x).strip()
-    s = re.sub(r'[Ff]$', '', s)          # strip trailing °F suffix
-    try:
-        return str(int(float(s)))         # '72.0' → '72'
-    except ValueError:
-        return s.lower()
-
-
-def make_match_key(group_df: pd.DataFrame, alt_col: str = 'alternative') -> str:
-    """
-    Build a deterministic string key: '<location>|<sorted normalised alts>'.
-
-    This is used as the join key between GT and prediction DataFrames instead
-    of scenario_id, because the two sets of files use independent ID spaces.
-    """
-    location = group_df['location'].iloc[0]
-    alts     = tuple(sorted(group_df[alt_col].apply(norm_alt)))
-    return f"{location}|{alts}"
+def extract_time_from_alt(alt_str):
+    """Extract time pattern from alternative string.
+    Handles: '2:00 PM', 'Run dishwasher at 2:00 PM', '4PM', '1AM'."""
+    alt_str = str(alt_str).strip()
+    # Try full format first: '2:00 PM'
+    match = re.search(r'(\d{1,2}:\d{2}\s*[AaPp][Mm])', alt_str)
+    if match:
+        return match.group(1).strip().upper()
+    # Try abbreviated: '4PM', '1AM', '10PM'
+    match = re.search(r'(\d{1,2})\s*([AaPp][Mm])', alt_str)
+    if match:
+        hour = match.group(1)
+        ampm = match.group(2).upper()
+        return f"{hour}:00 {ampm}"
+    return alt_str.strip().upper()
 
 
-def add_decision_type_from_range(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    FIX #6 – pure_prompting_results.csv has no decision_type column.
-    Infer it from the global scenario_id ranges used when the dataset was built.
-    """
-    df = df.copy()
-    df['decision_type'] = 'Unknown'
-    for dt, (lo, hi) in RESULT_DT_RANGES.items():
-        mask = (df['scenario_id'] >= lo) & (df['scenario_id'] <= hi)
-        df.loc[mask, 'decision_type'] = dt
-    return df
-
-
-def load_ground_truth() -> Dict[str, pd.DataFrame]:
-    """
-    Load each GT file, apply all necessary fixes, and return a dict
-    keyed by decision type.
-
-    Fixes applied per file
-    ──────────────────────
-    FIX #1  column renamed from 'scenario_id' to 'scenario_id' (already ok),
-            but 'scenario' does not exist – script previously used 'scenario'.
-    FIX #2  GT files have no 'rank' column; it is computed here from a
-            weighted mean of the four criteria (equal weights, rank 1 = best).
-    FIX #3  Score columns carry a '_score' suffix (e.g. 'energy_cost_score')
-            while the rest of the codebase expects bare names like 'energy_cost'.
-    FIX #5  The HVAC file contains a NaN scenario_id row that is dropped.
-    """
-    print("Loading ground truth files…")
-    gt_tables = {}
-
-    for decision_type, csv_path in GROUND_TRUTH_CSVS.items():
+def normalize_alternative(alt, decision_type):
+    """Normalize alternative values for cross-file matching."""
+    alt = str(alt).strip()
+    if decision_type == "Appliance":
+        return extract_time_from_alt(alt)
+    else:
         try:
-            df = pd.read_csv(csv_path)
-        except FileNotFoundError:
-            print(f"  ❌  {csv_path} not found – skipping {decision_type}")
-            continue
+            return str(int(float(alt)))
+        except ValueError:
+            return alt
 
-        # FIX #5 – drop rows with NaN scenario_id (found in HVAC file)
-        before = len(df)
-        df = df.dropna(subset=['scenario_id']).copy()
-        if len(df) < before:
-            print(f"  ⚠   Dropped {before - len(df)} NaN scenario_id rows from {csv_path}")
 
-        # FIX #3 – rename '*_score' columns to bare criterion names
-        rename_map = {f"{c}_score": c for c in CRITERIA if f"{c}_score" in df.columns}
+# ============================================================================
+# DATA LOADING
+# ============================================================================
+
+def load_ground_truth(config):
+    """Load GT files separately by decision type (IDs overlap across types)."""
+    gt_by_type = {}
+
+    for dtype, filepath in config["ground_truth"].items():
+        df = pd.read_csv(filepath)
+        df["decision_type"] = dtype
+
+        if "description" in df.columns and "question" not in df.columns:
+            df = df.rename(columns={"description": "question"})
+
+        rename_map = {}
+        for criterion, gt_col in config["gt_score_cols"].items():
+            if gt_col in df.columns:
+                rename_map[gt_col] = f"gt_{criterion}"
         df = df.rename(columns=rename_map)
 
-        # Validate required columns are now present
-        missing = [c for c in ['scenario_id', 'location', 'alternative'] + CRITERIA
-                   if c not in df.columns]
-        if missing:
-            print(f"  ❌  {csv_path} still missing columns after rename: {missing}")
-            continue
+        if "rank" in df.columns:
+            df = df.rename(columns={"rank": "gt_rank"})
+        if "mavt_score" in df.columns:
+            df = df.rename(columns={"mavt_score": "gt_mavt_score"})
 
-        # FIX #2 – compute rank within each scenario (rank 1 = highest mean score)
-        df['_weighted'] = df[CRITERIA].mean(axis=1)
-        df['rank'] = (
-            df.groupby('scenario_id')['_weighted']
-              .rank(ascending=False, method='min')
-              .astype(int)
-        )
-        df = df.drop(columns=['_weighted'])
+        df["question"] = df["question"].str.strip()
+        df["location"] = df["location"].str.strip()
+        df["alternative"] = df["alternative"].astype(str).str.strip()
 
-        # Build a match key per scenario for later joining
-        df['match_key'] = (
-            df.groupby('scenario_id', group_keys=False)
-              .apply(lambda g: pd.Series(make_match_key(g), index=g.index))
-        )
+        gt_by_type[dtype] = df
 
-        n_scen = df['scenario_id'].nunique()
-        print(f"  ✓  {csv_path}: {len(df)} rows, {n_scen} scenarios")
-        gt_tables[decision_type] = df
-
-    return gt_tables
+    return gt_by_type
 
 
-def load_prediction(csv_path: str, arch_name: str) -> Optional[pd.DataFrame]:
-    """
-    Load a prediction file, apply column fixes, and return a clean DataFrame.
+def load_architecture(filepath, arch_name):
+    """Load an architecture results file."""
+    df = pd.read_csv(filepath)
+    df["architecture"] = arch_name
+    df["question"] = df["question"].str.strip()
+    df["location"] = df["location"].str.strip()
+    df["alternative"] = df["alternative"].astype(str).str.strip()
 
-    Fixes applied
-    ─────────────
-    FIX #1  'scenario_id' is present (not 'scenario') – validate and keep.
-    FIX #6  If 'decision_type' is absent (Pure Prompting), infer from ID range.
-    """
-    try:
-        df = pd.read_csv(csv_path)
-    except FileNotFoundError:
-        print(f"  ❌  {csv_path} not found – skipping {arch_name}")
-        return None
+    rename_map = {}
+    for criterion in CRITERIA:
+        col = CONFIG["arch_score_cols"][criterion]
+        if col in df.columns:
+            rename_map[col] = f"arch_{criterion}"
+    df = df.rename(columns=rename_map)
 
-    # FIX #1 – ensure we have scenario_id
-    if 'scenario_id' not in df.columns:
-        print(f"  ❌  {csv_path} has no 'scenario_id' column – skipping")
-        return None
+    if "rank" in df.columns:
+        df = df.rename(columns={"rank": "arch_rank"})
+    if "weighted_score" in df.columns:
+        df = df.rename(columns={"weighted_score": "arch_weighted_score"})
 
-    # FIX #6 – add decision_type if missing
-    if 'decision_type' not in df.columns:
-        print(f"  ⚠   {csv_path} has no 'decision_type' column – inferring from ID range")
-        df = add_decision_type_from_range(df)
-
-    # Validate score columns
-    missing = [c for c in CRITERIA + ['rank'] if c not in df.columns]
-    if missing:
-        print(f"  ❌  {csv_path} missing columns: {missing} – skipping")
-        return None
-
-    n_scen = df['scenario_id'].nunique()
-    print(f"  ✓  {csv_path}: {len(df)} rows, {n_scen} scenarios")
     return df
 
 
-# ─── Matching ────────────────────────────────────────────────────────────────
+# ============================================================================
+# SCENARIO MATCHING
+# ============================================================================
 
-def build_match_keys(df: pd.DataFrame) -> pd.DataFrame:
-    """Return a per-scenario DataFrame with a 'match_key' column."""
-    return (
-        df.groupby('scenario_id', group_keys=False)
-          .apply(lambda g: pd.Series({'match_key': make_match_key(g)},
-                                     name=g['scenario_id'].iloc[0]))
-          .reset_index()
-          .rename(columns={'index': 'scenario_id'})
-    )
+def build_gt_lookup(gt_by_type):
+    """Build lookup: (question, location) -> list of GT scenario entries."""
+    gt_lookup = defaultdict(list)
 
+    for dtype, gt_df in gt_by_type.items():
+        for sid in gt_df["scenario_id"].unique():
+            sub = gt_df[gt_df["scenario_id"] == sid]
+            q = sub["question"].iloc[0]
+            loc = sub["location"].iloc[0]
 
-# ─── Metric functions ─────────────────────────────────────────────────────────
+            alt_map = {}
+            for _, row in sub.iterrows():
+                norm_alt = normalize_alternative(row["alternative"], dtype)
+                alt_map[norm_alt] = row
 
-def calculate_kendalls_tau(gt_ranks: List[int], pred_ranks: List[int]) -> float:
-    tau, _ = kendalltau(gt_ranks, pred_ranks)
-    return float(tau)
+            gt_lookup[(q, loc)].append({
+                "gt_sid": sid,
+                "decision_type": dtype,
+                "alt_map": alt_map,
+                "used": False,
+            })
 
-
-def calculate_spearmans_rho(gt_ranks: List[int], pred_ranks: List[int]) -> float:
-    rho, _ = spearmanr(gt_ranks, pred_ranks)
-    return float(rho)
-
-
-def calculate_top1_match(gt_ranks: List[int], pred_ranks: List[int]) -> int:
-    return 1 if gt_ranks.index(1) == pred_ranks.index(1) else 0
-
-
-def calculate_top2_match(gt_ranks: List[int], pred_ranks: List[int]) -> int:
-    pred_top1_pos = pred_ranks.index(1)
-    return 1 if gt_ranks[pred_top1_pos] in [1, 2] else 0
+    return gt_lookup
 
 
-def calculate_mae(gt_scores: List[float], pred_scores: List[float]) -> float:
-    return float(np.mean([abs(p - g) for p, g in zip(pred_scores, gt_scores)]))
+def match_scenarios(gt_lookup, arch_df, arch_name):
+    """Match architecture scenarios to GT by question+location, then alternatives."""
+    matched_rows = []
+    warnings_log = []
+
+    for arch_sid in arch_df["scenario_id"].unique():
+        arch_sub = arch_df[arch_df["scenario_id"] == arch_sid]
+        arch_dtype = arch_sub["decision_type"].iloc[0]
+        q = arch_sub["question"].iloc[0]
+        loc = arch_sub["location"].iloc[0]
+
+        key = (q, loc)
+        if key not in gt_lookup:
+            warnings_log.append(
+                f"No GT match: sid={arch_sid} ({arch_dtype}, '{q[:50]}', '{loc}')"
+            )
+            continue
+
+        # Normalize arch alternatives
+        arch_norm_alts = {}
+        for _, row in arch_sub.iterrows():
+            norm_alt = normalize_alternative(row["alternative"], arch_dtype)
+            arch_norm_alts[norm_alt] = row
+
+        # Find best GT entry: must match decision type, maximize alt overlap
+        best_match = None
+        best_overlap = -1
+        for gt_entry in gt_lookup[key]:
+            if gt_entry["used"]:
+                continue
+            if gt_entry["decision_type"] != arch_dtype:
+                continue
+            overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_match = gt_entry
+
+        if best_match is None or best_overlap == 0:
+            warnings_log.append(
+                f"No alt overlap: sid={arch_sid} ({arch_dtype}, '{q[:50]}', "
+                f"arch_alts={list(arch_norm_alts.keys())})"
+            )
+            continue
+
+        best_match["used"] = True
+
+        for norm_alt, arch_row in arch_norm_alts.items():
+            if norm_alt in best_match["alt_map"]:
+                gt_row = best_match["alt_map"][norm_alt]
+
+                merged = {
+                    "arch_scenario_id": arch_sid,
+                    "gt_scenario_id": best_match["gt_sid"],
+                    "decision_type": arch_dtype,
+                    "alternative": arch_row["alternative"],
+                    "norm_alternative": norm_alt,
+                    "architecture": arch_name,
+                    "question": q,
+                    "location": loc,
+                }
+
+                for c in CRITERIA:
+                    merged[f"gt_{c}"] = gt_row.get(f"gt_{c}", np.nan)
+                    merged[f"arch_{c}"] = arch_row.get(f"arch_{c}", np.nan)
+
+                merged["gt_rank"] = gt_row.get("gt_rank", np.nan)
+                merged["arch_rank"] = arch_row.get("arch_rank", np.nan)
+
+                if "gt_mavt_score" in gt_row.index:
+                    merged["gt_mavt_score"] = gt_row["gt_mavt_score"]
+                if "arch_weighted_score" in arch_row.index:
+                    merged["arch_weighted_score"] = arch_row["arch_weighted_score"]
+
+                if "extraction_failed" in arch_row.index:
+                    merged["extraction_failed"] = arch_row["extraction_failed"]
+                if "gt_calculation_failed" in arch_row.index:
+                    merged["gt_calculation_failed"] = arch_row["gt_calculation_failed"]
+
+                matched_rows.append(merged)
+            else:
+                warnings_log.append(
+                    f"Alt not in GT: sid={arch_sid}, alt='{norm_alt}' "
+                    f"(GT has: {list(best_match['alt_map'].keys())})"
+                )
+
+    # Reset used flags for next architecture
+    for entries in gt_lookup.values():
+        for e in entries:
+            e["used"] = False
+
+    merged_df = pd.DataFrame(matched_rows)
+    n_arch = arch_df["scenario_id"].nunique()
+    n_matched = merged_df["arch_scenario_id"].nunique() if len(merged_df) > 0 else 0
+
+    print(f"\n  [{arch_name}] Matched {n_matched}/{n_arch} scenarios "
+          f"({len(merged_df)} alt rows)")
+
+    if n_matched < n_arch:
+        for dtype in ["HVAC", "Appliance", "Shower"]:
+            arch_sids = set(arch_df[arch_df["decision_type"] == dtype]["scenario_id"].unique())
+            matched_sids = set(
+                merged_df[merged_df["decision_type"] == dtype]["arch_scenario_id"].unique()
+            ) if len(merged_df) > 0 else set()
+            unmatched = arch_sids - matched_sids
+            if unmatched:
+                print(f"    {dtype}: {len(matched_sids)}/{len(arch_sids)} matched, "
+                      f"{len(unmatched)} missing")
+
+    if warnings_log:
+        n_show = min(5, len(warnings_log))
+        print(f"    ({len(warnings_log)} warnings, showing {n_show})")
+        for w in warnings_log[:n_show]:
+            print(f"      {w}")
+
+    return merged_df
 
 
-def calculate_rmse(gt_scores: List[float], pred_scores: List[float]) -> float:
-    return float(np.sqrt(np.mean([(p - g) ** 2 for p, g in zip(pred_scores, gt_scores)])))
+# ============================================================================
+# METRIC CALCULATIONS
+# ============================================================================
 
+def compute_criterion_metrics(merged_df):
+    """Compute MAE and RMSE for each criterion and overall."""
+    results = {}
+    all_abs_errors = []
+    all_sq_errors = []
 
-# ─── Per-scenario calculation ─────────────────────────────────────────────────
+    for c in CRITERIA:
+        gt = merged_df[f"gt_{c}"].astype(float)
+        arch = merged_df[f"arch_{c}"].astype(float)
+        ae = (arch - gt).abs()
+        se = (arch - gt) ** 2
 
-def calculate_scenario_metrics(gt_slice: pd.DataFrame,
-                                pred_slice: pd.DataFrame) -> Dict:
-    """
-    Calculate all metrics for a matched GT / prediction pair.
+        results[f"{c}_MAE"] = round(ae.mean(), 4)
+        results[f"{c}_RMSE"] = round(np.sqrt(se.mean()), 4)
 
-    Both slices must already contain exactly 3 rows (one per alternative),
-    sorted by the normalised alternative label so positions correspond.
-    """
-    gt_s   = gt_slice.copy()
-    pred_s = pred_slice.copy()
+        all_abs_errors.extend(ae.tolist())
+        all_sq_errors.extend(se.tolist())
 
-    # Sort by normalised alternative so positions align
-    gt_s['_alt_norm']   = gt_s['alternative'].apply(norm_alt)
-    pred_s['_alt_norm'] = pred_s['alternative'].apply(norm_alt)
-    gt_s   = gt_s.sort_values('_alt_norm').reset_index(drop=True)
-    pred_s = pred_s.sort_values('_alt_norm').reset_index(drop=True)
-
-    if len(gt_s) != 3 or len(pred_s) != 3:
-        raise ValueError(f"Expected 3 alternatives each, got GT={len(gt_s)} Pred={len(pred_s)}")
-
-    gt_ranks   = gt_s['rank'].tolist()
-    pred_ranks = pred_s['rank'].tolist()
-
-    results = {
-        'kendalls_tau':  calculate_kendalls_tau(gt_ranks, pred_ranks),
-        'spearmans_rho': calculate_spearmans_rho(gt_ranks, pred_ranks),
-        'top1_match':    calculate_top1_match(gt_ranks, pred_ranks),
-        'top2_match':    calculate_top2_match(gt_ranks, pred_ranks),
-    }
-
-    for criterion in CRITERIA:
-        results[f'mae_{criterion}']  = calculate_mae(
-            gt_s[criterion].tolist(), pred_s[criterion].tolist())
-        results[f'rmse_{criterion}'] = calculate_rmse(
-            gt_s[criterion].tolist(), pred_s[criterion].tolist())
-
+    results["overall_MAE"] = round(np.mean(all_abs_errors), 4)
+    results["overall_RMSE"] = round(np.sqrt(np.mean(all_sq_errors)), 4)
     return results
 
 
-# ─── Aggregation ──────────────────────────────────────────────────────────────
+def compute_ranking_metrics(merged_df):
+    """Kendall tau, Spearman rho, Top-1/Top-2 — per-scenario then averaged."""
+    taus, rhos = [], []
+    top1_ok = top2_ok = 0
+    n = 0
 
-def aggregate_metrics(metrics_df: pd.DataFrame, label: str) -> Dict:
-    agg = {
-        'scenario':      label,
-        'kendalls_tau':  metrics_df['kendalls_tau'].mean(),
-        'spearmans_rho': metrics_df['spearmans_rho'].mean(),
-        'top1_match':    metrics_df['top1_match'].mean(),
-        'top2_match':    metrics_df['top2_match'].mean(),
-    }
-    for criterion in CRITERIA:
-        agg[f'mae_{criterion}']  = metrics_df[f'mae_{criterion}'].mean()
-        agg[f'rmse_{criterion}'] = metrics_df[f'rmse_{criterion}'].mean()
-    return agg
-
-
-# ─── Main ─────────────────────────────────────────────────────────────────────
-
-def calculate_all_metrics():
-    print(f"\n{'=' * 70}")
-    print("METRICS CALCULATOR  (fixed version)")
-    print(f"{'=' * 70}\n")
-
-    # FIX #3 + #2 + #5 applied inside load_ground_truth()
-    gt_tables = load_ground_truth()
-    if not gt_tables:
-        print("❌  No ground truth loaded – aborting.")
-        sys.exit(1)
-
-    # Build per-scenario match-key lookup for each GT table
-    # key: (decision_type, match_key) → (scenario_id, sorted GT slice)
-    gt_key_index: Dict[Tuple[str, str], pd.DataFrame] = {}
-    for dt, gt_df in gt_tables.items():
-        for sid, g in gt_df.groupby('scenario_id'):
-            key = g['match_key'].iloc[0]
-            gt_key_index[(dt, key)] = g
-
-    all_rows = []
-
-    for arch_name, arch_csv in ARCHITECTURE_CSVS.items():
-        print(f"\n{'-' * 70}")
-        print(f"Processing: {arch_name}")
-        print(f"{'-' * 70}")
-
-        # FIX #1 + #6 applied inside load_prediction()
-        pred_df = load_prediction(arch_csv, arch_name)
-        if pred_df is None:
+    for sid in merged_df["arch_scenario_id"].unique():
+        sc = merged_df[merged_df["arch_scenario_id"] == sid].copy()
+        if len(sc) < 2:
             continue
 
-        scenario_metrics = []
+        gt_r = sc["gt_rank"].astype(float).values
+        ar_r = sc["arch_rank"].astype(float).values
+        n += 1
 
-        for dt in sorted(pred_df['decision_type'].unique()):
-            if dt not in gt_tables:
-                print(f"  ⚠   No GT table for decision_type '{dt}' – skipping")
+        # Kendall
+        if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+            tau, _ = stats.kendalltau(gt_r, ar_r)
+            taus.append(tau if not np.isnan(tau) else 0.0)
+        else:
+            taus.append(1.0 if np.array_equal(gt_r, ar_r) else 0.0)
+
+        # Spearman
+        if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+            rho, _ = stats.spearmanr(gt_r, ar_r)
+            rhos.append(rho if not np.isnan(rho) else 0.0)
+        else:
+            rhos.append(1.0 if np.array_equal(gt_r, ar_r) else 0.0)
+
+        # Top-1
+        gt_top1 = sc.loc[sc["gt_rank"].astype(float).idxmin(), "norm_alternative"]
+        ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
+        if gt_top1 == ar_top1:
+            top1_ok += 1
+
+        # Top-2
+        ar_top2 = set(sc.sort_values("arch_rank").head(2)["norm_alternative"])
+        if gt_top1 in ar_top2:
+            top2_ok += 1
+
+    return {
+        "kendall_tau": round(np.mean(taus), 4) if taus else np.nan,
+        "spearman_rho": round(np.mean(rhos), 4) if rhos else np.nan,
+        "top1_accuracy": round(top1_ok / n, 4) if n else np.nan,
+        "top2_accuracy": round(top2_ok / n, 4) if n else np.nan,
+        "n_scenarios_evaluated": n,
+    }
+
+
+def compute_failure_rate(arch_df):
+    """Failure rate for Hybrid architecture."""
+    if "extraction_failed" not in arch_df.columns:
+        return {}
+
+    n_total = arch_df["scenario_id"].nunique()
+    n_ef = n_cf = n_any = 0
+
+    for sid in arch_df["scenario_id"].unique():
+        g = arch_df[arch_df["scenario_id"] == sid]
+        ef = g["extraction_failed"].astype(str).str.lower().str.strip().eq("true").any()
+        cf = ("gt_calculation_failed" in g.columns and
+              g["gt_calculation_failed"].astype(str).str.lower().str.strip().eq("true").any())
+        if ef: n_ef += 1
+        if cf: n_cf += 1
+        if ef or cf: n_any += 1
+
+    return {
+        "extraction_failure_rate": round(n_ef / n_total, 4) if n_total else 0,
+        "calculation_failure_rate": round(n_cf / n_total, 4) if n_total else 0,
+        "total_failure_rate": round(n_any / n_total, 4) if n_total else 0,
+        "n_extraction_failures": n_ef,
+        "n_calculation_failures": n_cf,
+        "n_total_arch_scenarios": n_total,
+    }
+
+
+# ============================================================================
+# MAIN EVALUATION
+# ============================================================================
+
+def evaluate_all(config):
+    print("=" * 72)
+    print("  MCDA ARCHITECTURE EVALUATION — METRICS REPORT")
+    print("=" * 72)
+
+    # 1. Load
+    print("\n[1] Loading ground truth...")
+    gt_by_type = load_ground_truth(config)
+    for dt, df in gt_by_type.items():
+        print(f"    {dt}: {df['scenario_id'].nunique()} scenarios, {len(df)} rows")
+
+    print("\n[2] Loading architectures...")
+    arch_dfs = {}
+    for name, path in config["architectures"].items():
+        arch_dfs[name] = load_architecture(path, name)
+        dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
+        print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
+
+    # 2. Match
+    print("\n[3] Matching...")
+    gt_lookup = build_gt_lookup(gt_by_type)
+    print(f"    GT lookup: {len(gt_lookup)} unique (question, location) keys")
+
+    merged_dfs = {}
+    for name, adf in arch_dfs.items():
+        merged_dfs[name] = match_scenarios(gt_lookup, adf, name)
+
+    # 3. Compute and report
+    print(f"\n{'=' * 72}")
+    print("  RESULTS")
+    print(f"{'=' * 72}")
+
+    all_metrics = []
+
+    for arch_name in ["Pure", "RAG", "Hybrid"]:
+        merged = merged_dfs[arch_name]
+        if len(merged) == 0:
+            print(f"\n*** {arch_name}: No matched data ***")
+            continue
+
+        print(f"\n{'─' * 72}")
+        print(f"  {arch_name.upper()}")
+        print(f"{'─' * 72}")
+
+        # Failure rate (Hybrid only)
+        if arch_name == "Hybrid":
+            fail = compute_failure_rate(arch_dfs[arch_name])
+            if fail:
+                print(f"\n  Failures: extraction={fail['n_extraction_failures']}"
+                      f"/{fail['n_total_arch_scenarios']} "
+                      f"({fail['extraction_failure_rate']*100:.1f}%), "
+                      f"calc={fail['n_calculation_failures']}"
+                      f"/{fail['n_total_arch_scenarios']} "
+                      f"({fail['calculation_failure_rate']*100:.1f}%), "
+                      f"total={fail['total_failure_rate']*100:.1f}%")
+                for k, v in fail.items():
+                    all_metrics.append({
+                        "architecture": arch_name,
+                        "decision_type": "Overall",
+                        "metric": k, "value": v,
+                    })
+
+        # ---- Overall metrics ----
+        crit = compute_criterion_metrics(merged)
+        rank = compute_ranking_metrics(merged)
+        n_eval = rank["n_scenarios_evaluated"]
+
+        print(f"\n  OVERALL ({n_eval} scenarios):")
+        print(f"    Criterion MAE / RMSE:")
+        for c in CRITERIA:
+            print(f"      {c:20s}  MAE={crit[f'{c}_MAE']:.4f}  "
+                  f"RMSE={crit[f'{c}_RMSE']:.4f}")
+        print(f"      {'OVERALL':20s}  MAE={crit['overall_MAE']:.4f}  "
+              f"RMSE={crit['overall_RMSE']:.4f}")
+
+        print(f"    Ranking:")
+        print(f"      Kendall τ:  {rank['kendall_tau']:.4f}")
+        print(f"      Spearman ρ: {rank['spearman_rho']:.4f}")
+        print(f"      Top-1:      {rank['top1_accuracy']:.4f} "
+              f"({int(rank['top1_accuracy'] * n_eval)}/{n_eval})")
+        print(f"      Top-2:      {rank['top2_accuracy']:.4f} "
+              f"({int(rank['top2_accuracy'] * n_eval)}/{n_eval})")
+
+        # Store overall
+        for k, v in {**crit, **rank}.items():
+            all_metrics.append({
+                "architecture": arch_name,
+                "decision_type": "Overall",
+                "metric": k, "value": v,
+            })
+
+        # ---- Per decision type ----
+        for dtype in ["HVAC", "Appliance", "Shower"]:
+            dt_data = merged[merged["decision_type"] == dtype]
+            if len(dt_data) == 0:
+                print(f"\n  {dtype}: No matched data")
                 continue
 
-            pred_dt = pred_df[pred_df['decision_type'] == dt]
-            matched_count = 0
-            skipped_count = 0
+            dt_crit = compute_criterion_metrics(dt_data)
+            dt_rank = compute_ranking_metrics(dt_data)
+            n_dt = dt_rank["n_scenarios_evaluated"]
 
-            for sid, pred_slice in pred_dt.groupby('scenario_id'):
-                # FIX #4 – use content-based match key instead of scenario_id
-                pred_key = make_match_key(pred_slice)
-                gt_slice = gt_key_index.get((dt, pred_key))
+            print(f"\n  {dtype} ({n_dt} scenarios, {len(dt_data)} alt rows):")
+            print(f"    MAE:  EC={dt_crit['energy_cost_MAE']:.3f}  "
+                  f"ENV={dt_crit['environmental_MAE']:.3f}  "
+                  f"COM={dt_crit['comfort_MAE']:.3f}  "
+                  f"PRA={dt_crit['practicality_MAE']:.3f}  "
+                  f"All={dt_crit['overall_MAE']:.3f}")
+            print(f"    RMSE: EC={dt_crit['energy_cost_RMSE']:.3f}  "
+                  f"ENV={dt_crit['environmental_RMSE']:.3f}  "
+                  f"COM={dt_crit['comfort_RMSE']:.3f}  "
+                  f"PRA={dt_crit['practicality_RMSE']:.3f}  "
+                  f"All={dt_crit['overall_RMSE']:.3f}")
+            print(f"    τ={dt_rank['kendall_tau']:.4f}  "
+                  f"ρ={dt_rank['spearman_rho']:.4f}  "
+                  f"Top1={dt_rank['top1_accuracy']:.4f} "
+                  f"({int(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
+                  f"Top2={dt_rank['top2_accuracy']:.4f} "
+                  f"({int(dt_rank['top2_accuracy']*n_dt)}/{n_dt})")
 
-                if gt_slice is None:
-                    skipped_count += 1
-                    continue
+            for k, v in {**dt_crit, **dt_rank}.items():
+                all_metrics.append({
+                    "architecture": arch_name,
+                    "decision_type": dtype,
+                    "metric": k, "value": v,
+                })
 
-                try:
-                    metrics = calculate_scenario_metrics(gt_slice, pred_slice)
-                except Exception as e:
-                    print(f"    ❌ scenario_id={sid} ({dt}): {e}")
-                    skipped_count += 1
-                    continue
+    # ---- 4. Comparative summary ----
+    print(f"\n{'=' * 72}")
+    print("  COMPARATIVE SUMMARY")
+    print(f"{'=' * 72}")
 
-                row = {
-                    'architecture': arch_name,
-                    'scenario':     pred_key,     # human-readable composite key
-                    'scenario_id':  sid,
-                    'decision_type': dt,
-                    **metrics,
-                }
-                scenario_metrics.append(row)
-                all_rows.append(row)
-                matched_count += 1
+    def _get(arch, dtype, metric):
+        """Helper to pull a metric value from all_metrics list."""
+        val = next(
+            (m["value"] for m in all_metrics
+             if m["architecture"] == arch
+             and m["decision_type"] == dtype
+             and m["metric"] == metric),
+            np.nan
+        )
+        return val
 
-            print(f"  {dt}: matched {matched_count} scenarios "
-                  f"({skipped_count} skipped – no GT counterpart found)")
+    def _fmt(val, is_int=False):
+        if isinstance(val, float) and np.isnan(val):
+            return f"{'N/A':>10}"
+        return f"{int(val):>10}" if is_int else f"{val:>10.4f}"
 
-        if not scenario_metrics:
-            print(f"  ⚠   No matchable scenarios for {arch_name} – skipping aggregation")
-            continue
+    archs = ["Pure", "RAG", "Hybrid"]
 
-        scenario_df = pd.DataFrame(scenario_metrics)
+    # Overall table
+    header = f"  {'Metric':<24}" + "".join(f"{a:>10}" for a in archs)
+    print(f"\n{header}")
+    print("  " + "-" * (24 + 10 * len(archs)))
 
-        # Overall aggregation
-        overall = aggregate_metrics(scenario_df, 'OVERALL_MEAN')
-        overall['architecture']  = arch_name
-        overall['scenario_id']   = pd.NA
-        overall['decision_type'] = 'all'
-        all_rows.append(overall)
+    for metric in ["overall_MAE", "overall_RMSE", "kendall_tau", "spearman_rho",
+                    "top1_accuracy", "top2_accuracy", "n_scenarios_evaluated"]:
+        is_int = metric == "n_scenarios_evaluated"
+        row = f"  {metric:<24}"
+        for a in archs:
+            row += _fmt(_get(a, "Overall", metric), is_int)
+        print(row)
 
-        print(f"\n  Overall Kendall's tau : {overall['kendalls_tau']:.3f}")
-        print(f"  Overall Spearman's rho: {overall['spearmans_rho']:.3f}")
-        print(f"  Overall Top-1 accuracy: {overall['top1_match']:.1%}")
-        print(f"  Overall Top-2 accuracy: {overall['top2_match']:.1%}")
+    # Per-criterion MAE
+    print(f"\n  {'Criterion MAE':<24}" + "".join(f"{a:>10}" for a in archs))
+    print("  " + "-" * (24 + 10 * len(archs)))
+    for c in CRITERIA:
+        row = f"  {c:<24}"
+        for a in archs:
+            row += _fmt(_get(a, "Overall", f"{c}_MAE"))
+        print(row)
 
-        # Per-decision-type aggregation
-        for dt in sorted(scenario_df['decision_type'].unique()):
-            dt_df  = scenario_df[scenario_df['decision_type'] == dt]
-            dt_agg = aggregate_metrics(dt_df, f'{dt}_MEAN')
-            dt_agg['architecture']  = arch_name
-            dt_agg['scenario_id']   = pd.NA
-            dt_agg['decision_type'] = dt
-            all_rows.append(dt_agg)
-            print(f"  {dt:10s} – Kendall's tau: {dt_agg['kendalls_tau']:.3f}, "
-                  f"Top-1: {dt_agg['top1_match']:.1%}")
+    # Kendall tau by decision type
+    print(f"\n  {'Kendall τ by Type':<24}" + "".join(f"{a:>10}" for a in archs))
+    print("  " + "-" * (24 + 10 * len(archs)))
+    for dtype in ["HVAC", "Appliance", "Shower"]:
+        row = f"  {dtype:<24}"
+        for a in archs:
+            row += _fmt(_get(a, dtype, "kendall_tau"))
+        print(row)
 
-    if not all_rows:
-        print("\n❌  No results to save.")
-        sys.exit(1)
+    # Top-1 by decision type
+    print(f"\n  {'Top-1 by Type':<24}" + "".join(f"{a:>10}" for a in archs))
+    print("  " + "-" * (24 + 10 * len(archs)))
+    for dtype in ["HVAC", "Appliance", "Shower"]:
+        row = f"  {dtype:<24}"
+        for a in archs:
+            row += _fmt(_get(a, dtype, "top1_accuracy"))
+        print(row)
 
-    results_df = pd.DataFrame(all_rows)
+    # ---- 5. Save CSV ----
+    metrics_df = pd.DataFrame(all_metrics)
+    metrics_df.to_csv(config["output_csv"], index=False)
+    print(f"\n\nMetrics saved to: {config['output_csv']}")
+    print(f"Total metric rows: {len(metrics_df)}")
 
-    col_order = ['architecture', 'scenario', 'scenario_id', 'decision_type',
-                 'kendalls_tau', 'spearmans_rho', 'top1_match', 'top2_match']
-    for criterion in CRITERIA:
-        col_order.append(f'mae_{criterion}')
-    for criterion in CRITERIA:
-        col_order.append(f'rmse_{criterion}')
-
-    results_df = results_df[[c for c in col_order if c in results_df.columns]]
-    results_df.to_csv(OUTPUT_CSV, index=False)
-
-    print(f"\n{'=' * 70}")
-    print(f"RESULTS SAVED  →  {OUTPUT_CSV}  ({len(results_df)} rows)")
-    print(f"{'=' * 70}\n")
+    return metrics_df, merged_dfs
 
 
-if __name__ == '__main__':
-    calculate_all_metrics()
+# ============================================================================
+# ENTRY POINT
+# ============================================================================
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("Usage: python calculate_metrics.py")
+        print("  Modify CONFIG dict at top of file to change paths.")
+        sys.exit(0)
+
+    metrics_df, merged_dfs = evaluate_all(CONFIG)

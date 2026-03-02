@@ -3,6 +3,7 @@ import json
 import csv
 import time
 import logging
+import numpy as np
 from typing import Dict, List, Tuple
 import numpy as np
 import requests
@@ -29,8 +30,8 @@ API_CONFIG = {
     "temperature": 0.3  # Need determinism for reliability
 }
 CRITERION_WEIGHTS = {
-    "energy_cost": 0.35,
-    "environmental": 0.30,
+    "energy_cost": 0.30,
+    "environmental": 0.35,
     "comfort": 0.20,
     "practicality": 0.15
 }

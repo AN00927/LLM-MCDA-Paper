@@ -1,5 +1,7 @@
 import pandas as pd
 import math
+import logging
+import numpy as np
 from typing import Dict, List, Tuple
 class ApplianceGroundTruthCalculator:
     """
@@ -486,7 +488,7 @@ class ApplianceGroundTruthCalculator:
             else:
                 # Handle negative x_normalized (better than best case)
                 if a * x_normalized + 1 <= 0:
-                    u_x = 1.0  # Cap at perfect score
+                    u_x = 0.0  # absolutely horrible score
                 else:
                     u_x = math.log(a * x_normalized + 1) / math.log(a + 1)
 
@@ -828,7 +830,17 @@ def process_appliance_scenarios(csv_filename: str = "ApplianceScenarios.csv",
 
         try:
             scores = calculator.calculate_scenario_scores(scenario)
-
+            alts_for_ranking = [
+                {
+                    "alternative": alt,
+                    "energy_cost": scores[alt]["energy_cost_score"],
+                    "environmental": scores[alt]["environmental_score"],
+                    "comfort": scores[alt]["comfort_score"],
+                    "practicality": scores[alt]["practicality_score"]
+                }
+                for alt in scores
+            ]
+            ranking_result = apply_mavt_ranking(alts_for_ranking)
             for alt, alt_scores in scores.items():
                 result_row = {
                     'scenario_id': idx,
@@ -847,6 +859,8 @@ def process_appliance_scenarios(csv_filename: str = "ApplianceScenarios.csv",
                     'environmental_score': alt_scores['environmental_score'],
                     'comfort_score': alt_scores['comfort_score'],
                     'practicality_score': alt_scores['practicality_score'],
+                    'mavt_score': ranking_result["weighted_scores"][list(scores.keys()).index(alt)],
+                    'rank': ranking_result["ranks"][list(scores.keys()).index(alt)],
                     'raw_cost': alt_scores['raw_cost'],
                     'raw_emissions': alt_scores['raw_emissions']
                 }
@@ -864,6 +878,79 @@ def process_appliance_scenarios(csv_filename: str = "ApplianceScenarios.csv",
     print(f"\nGround truth saved to {output_filename}")
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
+
+CRITERION_WEIGHTS = {
+    "energy_cost": 0.30,
+    "environmental": 0.35,
+    "comfort": 0.20,
+    "practicality": 0.15
+}
+def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
+    """
+    Apply MAVT weighted sum to rank alternatives
+
+    Args:
+        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
+
+    Returns:
+        Dict with ranked_alternatives, ranks, weighted_scores
+    """
+    try:
+        alternatives = [alt["alternative"] for alt in alternatives_scores]
+
+        # Calculate weighted sum for each alternative
+        weighted_scores = []
+        for alt_scores in alternatives_scores:
+            weighted_sum = (
+                    CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
+                    CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
+                    CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
+                    CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
+            )
+            weighted_scores.append(weighted_sum)
+
+        # Rank alternatives (higher weighted sum = better = lower rank number)
+        ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
+        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+
+        # Create rank numbers (1 = best, 2 = second, 3 = third)
+        ranks = [0] * len(alternatives)
+        for rank_position, alt_index in enumerate(ranked_indices):
+            ranks[alt_index] = rank_position + 1
+
+        return {
+            "ranked_alternatives": ranked_alternatives,
+            "ranks": ranks,
+            "weighted_scores": weighted_scores
+        }
+
+    except Exception as e:
+        logging.error(f"MAVT ranking failed: {e}")
+
+        # Fallback: rank by average score
+        avg_scores = []
+        for alt_scores in alternatives_scores:
+            avg = np.mean([
+                alt_scores["energy_cost"],
+                alt_scores["environmental"],
+                alt_scores["comfort"],
+                alt_scores["practicality"]
+            ])
+            avg_scores.append(avg)
+
+        ranked_indices = np.argsort(avg_scores)[::-1]
+        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+
+        ranks = [0] * len(alternatives)
+        for rank_position, alt_index in enumerate(ranked_indices):
+            ranks[alt_index] = rank_position + 1
+
+        return {
+            "ranked_alternatives": ranked_alternatives,
+            "ranks": ranks,
+            "weighted_scores": avg_scores,
+            "error": str(e)
+        }
 
 
 if __name__ == "__main__":
