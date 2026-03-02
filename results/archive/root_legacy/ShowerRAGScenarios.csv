@@ -1,16 +1,16 @@
-﻿scenario_id,description,location,occupants,tank_size,gpm,outdoor_temp,water_heater_temp,alternative,duration_min,energy_cost_score,environmental_score,comfort_score,practicality_score
-0,How long should my showers be?,"Pittsburgh, PA",2,40,2.5,35,120,5,5,9.15,10,5.13,2.44
-0,How long should my showers be?,"Pittsburgh, PA",2,40,2.5,35,120,8,8,7.65,8.88,7.83,7.29
-0,How long should my showers be?,"Pittsburgh, PA",2,40,2.5,35,120,12,12,5.64,7.17,10,6.24
-1,How long should my showers be?,"Philadelphia, PA",4,60,2.5,38,120,7,7,8.22,9.36,7.83,5.87
-1,How long should my showers be?,"Philadelphia, PA",4,60,2.5,38,120,10,10,6.74,8.1,9.32,5.09
-1,How long should my showers be?,"Philadelphia, PA",4,60,2.5,38,120,15,15,4.27,6.01,5.63,5.68
-2,What's the ideal shower length?,"Lancaster, PA",3,50,2,55,120,6,6,9.56,10,7.83,4.27
-2,What's the ideal shower length?,"Lancaster, PA",3,50,2,55,120,9,9,8.51,9.61,10,7.78
-2,What's the ideal shower length?,"Lancaster, PA",3,50,2,55,120,12,12,7.45,8.71,10,6.24
-3,How long should my showers be?,"Harrisburg, PA",2,40,2.5,75,120,5,5,9.79,10,5.13,2.44
-3,How long should my showers be?,"Harrisburg, PA",2,40,2.5,75,120,7,7,9.04,10,7.83,5.87
-3,How long should my showers be?,"Harrisburg, PA",2,40,2.5,75,120,10,10,7.91,9.1,10,5.09
-4,How long should my showers be?,"Allentown, PA",3,50,2,50,120,8,8,8.76,9.82,7.83,7.29
-4,How long should my showers be?,"Allentown, PA",3,50,2,50,120,10,10,8.03,9.2,10,8.26
-4,How long should my showers be?,"Allentown, PA",3,50,2,50,120,13,13,6.94,8.27,8.6,6.05
+﻿scenario_id,description,location,occupants,tank_size,gpm,outdoor_temp,water_heater_temp,alternative,duration_min,energy_cost_score,environmental_score,comfort_score,practicality_score,mavt_score,rank,raw_kwh
+0,How long should my showers be?,"Pittsburgh, PA",2,40,2.5,35,120,5,5,9.15,10,5.13,2.44,7.637,2,1.587
+0,How long should my showers be?,"Pittsburgh, PA",2,40,2.5,35,120,8,8,7.65,8.88,7.83,7.29,8.0625,1,2.539
+0,How long should my showers be?,"Pittsburgh, PA",2,40,2.5,35,120,12,12,5.64,7.17,10,6.24,7.1375,3,3.809
+1,How long should my showers be?,"Philadelphia, PA",4,60,2.5,38,120,7,7,8.22,9.36,7.83,5.87,8.1885,1,2.18
+1,How long should my showers be?,"Philadelphia, PA",4,60,2.5,38,120,10,10,6.74,8.1,9.32,5.09,7.4845,2,3.114
+1,How long should my showers be?,"Philadelphia, PA",4,60,2.5,38,120,15,15,4.27,6.01,5.63,4.48,5.1825,3,4.671
+2,What's the ideal shower length?,"Lancaster, PA",3,50,2,55,120,6,6,9.56,10,7.83,4.27,8.5745,2,1.331
+2,What's the ideal shower length?,"Lancaster, PA",3,50,2,55,120,9,9,8.51,9.61,10,7.78,9.0835,1,1.996
+2,What's the ideal shower length?,"Lancaster, PA",3,50,2,55,120,12,12,7.45,8.71,10,6.24,8.2195,3,2.662
+3,How long should my showers be?,"Harrisburg, PA",2,40,2.5,75,120,5,5,9.79,10,5.13,2.44,7.829,3,1.186
+3,How long should my showers be?,"Harrisburg, PA",2,40,2.5,75,120,7,7,9.04,10,7.83,5.87,8.6585,1,1.66
+3,How long should my showers be?,"Harrisburg, PA",2,40,2.5,75,120,10,10,7.91,9.1,10,5.09,8.3215,2,2.372
+4,How long should my showers be?,"Allentown, PA",3,50,2,50,120,8,8,8.76,9.82,7.83,7.29,8.7245,2,1.839
+4,How long should my showers be?,"Allentown, PA",3,50,2,50,120,10,10,8.03,9.2,10,8.26,8.868,1,2.299
+4,How long should my showers be?,"Allentown, PA",3,50,2,50,120,13,13,6.94,8.27,8.6,5.68,7.5485,3,2.988

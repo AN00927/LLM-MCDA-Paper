@@ -34,8 +34,8 @@ if not OPENROUTER_API_KEY:
 MODEL_ID = "mistralai/mistral-small-3.2-24b-instruct"
 TEMPERATURE = 0.3
 CRITERION_WEIGHTS = {
-    'energy_cost': 0.35,
-    'environmental': 0.30,
+    'energy_cost': 0.30,
+    'environmental': 0.35,
     'comfort': 0.20,
     'practicality': 0.15
 }
@@ -45,7 +45,6 @@ RETRY_DELAY = 2
 EXTRACTION_MAX_RETRIES = 1
 OUTPUT_CSV = 'hybrid_results.csv'
 OUTPUT_DIAGNOSTICS = 'hybrid_diagnostics.json'
-#AHAAN CHECK THE APPLIANCE AGE TYPE COLUMN AND WHAT WE SAID ABOUT HAVING TWO DIFF TYPES
 UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
 
 SCENARIO:
@@ -75,7 +74,7 @@ For HVAC decisions:
     "outdoor_temp": <number>,
     "seer": <number>,
     "hvac_age": <number>,
-    "household type": "<Apartment/Single-family/Townhouse>",
+    "Household Type": "<Apartment/Single-family/Townhouse>",
     "utility_budget": <number>
     "Occupancy Context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
     "alternatives": ["<temp>", "<temp>", "<temp>"]
@@ -294,6 +293,8 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
     gt_scenario = {**scenario, **extracted_result['parameters']}
 
+    if 'utility_budget' in gt_scenario:
+        gt_scenario['Utility Budget'] = gt_scenario['utility_budget']
     alternatives = extracted_result['parameters'].get('alternatives', [])
     for i, alt in enumerate(alternatives[:3], 1):
         gt_scenario[f'Alternative {i}'] = alt
@@ -303,6 +304,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                 gt_scenario[key] = float(gt_scenario[key])
             except (ValueError, TypeError):
                 gt_scenario[key] = 0.0
+
     calculator_name = extracted_result['calculator']
     print(f"  Using AI-selected calculator: {calculator_name}")
     print(f"  DEBUG: gt_scenario keys = {sorted(gt_scenario.keys())}")
@@ -312,10 +314,6 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
     if calculator_name == 'HVACGroundTruthCalculator':
         calc = HVACGroundTruthCalculator()
         result = calc.calculate_scenario_scores(gt_scenario)
-        print(f"  DEBUG: result.keys() = {result.keys()}")
-        print(f"  DEBUG: 'alternatives' in result? {('alternatives' in result)}")
-        if 'alternatives' in result:
-            print(f"  DEBUG: result['alternatives'][0] keys = {result['alternatives'][0].keys()}")
     elif calculator_name == 'ApplianceGroundTruthCalculator':
         calc = ApplianceGroundTruthCalculator()
         result = calc.calculate_scenario_scores(gt_scenario)
@@ -324,20 +322,19 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
         result = calc.calculate_scenario_scores(gt_scenario)
     else:
         raise ValueError(f"Unknown calculator: {calculator_name}")
-
     alternatives_scores = []
     if calculator_name == 'ShowerGroundTruthCalculator':
         for alt_data in result['alternatives']:
             alternatives_scores.append({
                 'alternative': str(alt_data['alternative']),
                 'scores': {
-    'energy_cost':   alt_data['transformed_values']['energy_cost_score'],
-    'environmental': alt_data['transformed_values']['environmental_score'],
-    'comfort':       alt_data['transformed_values']['comfort_score'],
-    'practicality':  alt_data['transformed_values']['practicality_score']
-}
+                    'energy_cost': alt_data['transformed_values']['energy_cost'],
+                    'environmental': alt_data['transformed_values']['environmental'],
+                    'comfort': alt_data['transformed_values']['comfort'],
+                    'practicality': alt_data['transformed_values']['practicality']
+                }
             })
-    else:
+    else:  # HVAC and Appliance — identical return structure
         for alt_key, alt_data in result.items():
             alternatives_scores.append({
                 'alternative': str(alt_key),
@@ -348,9 +345,6 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                     'practicality': alt_data['practicality_score']
                 }
             })
-
-    print(f"  DEBUG: Calculator result keys = {result.keys() if isinstance(result, dict) else 'NOT A DICT'}")
-    print(f"  DEBUG: Result structure = {json.dumps(result, indent=2)[:500]}")  # First 500 chars
     return alternatives_scores
 
 

@@ -18,8 +18,8 @@ if not OPENROUTER_API_KEY:
 MODEL_ID = "mistralai/mistral-small-3.2-24b-instruct"
 TEMPERATURE = 0.3
 CRITERION_WEIGHTS = {
-    'energy_cost': 0.35,
-    'environmental': 0.30,
+    'energy_cost': 0.30,
+    'environmental': 0.35,
     'comfort': 0.20,
     'practicality': 0.15
 }
@@ -147,31 +147,24 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
             f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}"
         )
-
     elif decision_type == 'Appliance':
         scenario_text = (
-            f"{scenario.get('Appliance', 'N/A')}, "
-            f"{scenario.get('kwh/cycle', 'N/A')} kWh/cycle, "
-            f"{scenario.get('Appliance Age/Type', 'N/A')}, "
-            f"{scenario.get('Occupants', 'N/A')} occupants, "
+            f"{scenario.get('Question', 'N/A')}, "
+            f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
-            f"peak ${scenario.get('Peak Rate', 'N/A')}/kWh, "
-            f"off-peak ${scenario.get('Off-Peak Rate', 'N/A')}/kWh"
+            f"appliance age range: {scenario.get('Appliance Age', 'N/A')}, "
+            f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
         )
-
     elif decision_type == 'Shower':
         scenario_text = (
-            f"{scenario.get('GPM', 'N/A')} GPM, "
-            f"{scenario.get('Tank Size', 'N/A')} gal tank, "
-            f"{scenario.get('Water Heater Temp', 'N/A')}°F heater temp, "
+            f"{scenario.get('Flow rate', 'N/A')} showerhead, "
             f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
-            f"{scenario.get('Occupants', 'N/A')} occupants, "
-            f"{scenario.get('Housing Type', 'N/A')}"
+            f"{scenario.get('Household Size', 'N/A')} occupants, "
+            f"{scenario.get('Housing Type', 'N/A')}, "
+            f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
         )
-
     else:
-        # Fallback for unknown decision type
-        scenario_text = f"Unknown decision type: {decision_type}"
+        scenario_text = scenario.get('Question', f'Unknown decision type: {decision_type}')
         print(f"  ⚠ Warning: Unknown decision type '{decision_type}'")
 
     return scenario_text, decision_type
@@ -285,34 +278,49 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         context += "\n"
 
     context += "Use these examples as reference, but score based on the specific scenario below.\n"
-    context += "=" * 70 + "\n\n"
+    context += "Just because a reference scenario has an extreme value does not mean that the scenario you are analyzing has the same characteristics.\n"
 
     return context
 
-
-def build_user_prompt_with_rag(scenario: Dict, alternative: str,
-                               rag_context: str) -> str:
-    """
-    Build user prompt with RAG context + scenario details.
-
-    Reuses format_scenario_text_for_retrieval to avoid duplication.
-
-    Args:
-        scenario: Scenario dict
-        alternative: Alternative to score
-        rag_context: Formatted RAG context from retrieved scenarios
-
-    Returns:
-        Complete user prompt string
-    """
+def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: str) -> str:
     prompt = rag_context
-
     prompt += f'Score this alternative: "{alternative}"\n\n'
     prompt += f'For the decision: "{scenario.get("Question", "N/A")}"\n\n'
     prompt += "SCENARIO CONTEXT:\n"
 
-    scenario_text, decision_type = format_scenario_text_for_retrieval(scenario)
-    prompt += scenario_text
+    decision_type = scenario.get('Decision Type', 'HVAC')
+
+    if decision_type == 'HVAC':
+        prompt += (
+            f"- Location: {scenario.get('Location', 'N/A')}\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+            f"- Square Footage: {scenario.get('Square Footage', 'N/A')} sqft\n"
+            f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
+            f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
+            f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+            f"- House Age: {scenario.get('House Age', 'N/A')}\n"
+            f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
+        )
+
+    elif decision_type == 'Appliance':
+        prompt += (
+            f"- Location: {scenario.get('Location', 'N/A')}\n"
+            f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
+            f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+            f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
+            f"- Appliance Age Range: {scenario.get('Appliance Age', 'N/A')} years\n"
+        )
+
+    elif decision_type == 'Shower':
+        prompt += (
+            f"- Location: {scenario.get('Location', 'N/A')}\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+            f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
+            f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+            f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
+            f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
+        )
+
     return prompt
 
 def parse_llm_scores(response_text: str) -> Dict[str, float]:
@@ -335,8 +343,8 @@ def parse_llm_scores(response_text: str) -> Dict[str, float]:
         except:
             pass
 
-    print("culd not parse scores, using defaults")
-    return {'energy_cost': 5.0, 'environmental': 5.0, 'comfort': 5.0, 'practicality': 5.0}
+    print("  ⚠ Could not parse scores — marking as FAILED")
+    return {'energy_cost': None, 'environmental': None, 'comfort': None, 'practicality': None, '_failed': True}
 
 
 def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
@@ -372,9 +380,10 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     response, diagnostics = query_openrouter(messages)
 
     # Step 5: Parse scores
+
     response_text = response['choices'][0]['message']['content']
     scores = parse_llm_scores(response_text)
-    diagnostics['success'] = True
+    diagnostics['success'] = not scores.get('_failed', False)
     # Add RAG metadata to diagnostics
     diagnostics['rag_retrieved_count'] = len(retrieved)
     diagnostics['rag_context_length'] = len(rag_context)
@@ -396,6 +405,8 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     weighted_scores = []
 
     for alt_data in alternatives_scores:
+        if alt_data.get('failed'):
+            continue
         scores = alt_data['scores']
         weighted_sum = (
                 CRITERION_WEIGHTS['energy_cost'] * scores['energy_cost'] +
@@ -444,7 +455,15 @@ def run_scenario(scenario: Dict) -> Dict:
         print(f"\nScoring: {alternative}")
 
         scores, diagnostics = score_alternative_with_rag(scenario, alternative)
-
+        if scores.get('_failed'):
+            print(f"  ✗ FAILED — skipping alternative")
+            total_diagnostics['failed_calls'] += 1
+            alternatives_scores.append({
+                'alternative': alternative,
+                'scores': {'energy_cost': None, 'environmental': None, 'comfort': None, 'practicality': None},
+                'failed': True
+            })
+            continue
         print(f"  Scores: Energy={scores['energy_cost']:.1f}, "
               f"Env={scores['environmental']:.1f}, "
               f"Comfort={scores['comfort']:.1f}, "

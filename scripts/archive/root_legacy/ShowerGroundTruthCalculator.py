@@ -1,6 +1,7 @@
-import pandas as pd
-import math
+import logging
+import numpy as np
 from typing import Dict, List, Tuple
+import pandas as pd
 class ShowerGroundTruthCalculator:
     """
     Calculate physics-based ground truth scores for shower duration decisions.
@@ -183,7 +184,7 @@ class ShowerGroundTruthCalculator:
         Returns:
             Energy cost in dollars
         """
-        rate = electricity_rate if electricity_rate is not None else ShowerGroundTruthCalculator.ELECTRICITY_RATE_PA
+        rate =ShowerGroundTruthCalculator.ELECTRICITY_RATE_PA
         return kwh * rate
 
     @staticmethod
@@ -267,17 +268,27 @@ class ShowerGroundTruthCalculator:
         Returns:
             Practicality score (0-10)
         """
-        # Component 1: Behavioral adoption likelihood
+        # Behavioral adoption likelihood by duration
+        # Harris Poll (2024, n=2000): 33% of US adults shower >15 min; REUS 2016: metered
+        # average 7.8 min suggesting <15 min is normative behavior
+        # Gen Z skews higher (54% >15 min) but metered data suggests self-report overestimation
         if duration <= 5:
+            # Below dermatologist minimum - very low adoption
+            # REUS 2016: well below average, requires significant behavior change
             base_practicality = 2.0 + (duration - 3.0) * 0.5
         elif duration <= 8:
+            # Near REUS 2016 average (7.8 min) - high adoption zone
             base_practicality = 3.0 + (duration - 5.0) * (4.0 / 3.0)
         elif duration <= 12:
+            # Above average but within typical range - moderate adoption
             base_practicality = 7.0 + (duration - 8.0) * 0.5
         elif duration <= 15:
-            base_practicality = 9.0 - (duration - 12.0) * (0.5 / 3.0)
+            # Harris Poll (2024): ~33% of adults here - declining adoption
+            base_practicality = 9.0 - (duration - 12.0) * (1.5 / 3.0)
         else:
-            base_practicality = max(7.0, 8.5 - (duration - 15.0) * 0.1)
+            # Harris Poll (2024): 33% report >15 min but REUS metered data suggests
+            # actual rate much lower - use conservative declining scale
+            base_practicality = max(1.5, 7.5 - (duration - 15.0) * 0.35)
 
         # Component 2: Hot water capacity constraint
         hot_water_per_shower = duration * gpm * ShowerGroundTruthCalculator.HOT_WATER_FRACTION
@@ -413,7 +424,7 @@ class ShowerGroundTruthCalculator:
                 import math
                 # Handle negative x_normalized (better than best case)
                 if a * x_normalized + 1 <= 0:
-                    u_x = 1.0  # Cap at perfect score
+                    u_x = 0.0
                 else:
                     u_x = math.log(a * x_normalized + 1) / math.log(a + 1)
 
@@ -447,12 +458,14 @@ class ShowerGroundTruthCalculator:
         print(f"Outdoor: {outdoor_temp}°F | Heater: {water_heater_temp}°F")
         print(f"{'=' * 60}")
 
-        # Parse alternatives
         alternatives = []
         for i in range(1, 4):
             alt_key = f'Alternative {i}'
             if alt_key in scenario:
-                duration = float(scenario[alt_key])
+                val = scenario[alt_key]
+                if pd.isna(val) if hasattr(pd, 'isna') else str(val).lower() in ('nan', '', 'none'):
+                    continue
+                duration = float(val)
                 alternatives.append({
                     'name': scenario[alt_key],
                     'duration': duration
@@ -644,9 +657,20 @@ def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
 
         try:
             result = calculator.calculate_scenario_scores(scenario)
-
+            alts_for_ranking = [
+                {
+                    "alternative": alt_data['alternative'],
+                    "energy_cost": alt_data['transformed_values']['energy_cost'],
+                    "environmental": alt_data['transformed_values']['environmental'],
+                    "comfort": alt_data['transformed_values']['comfort'],
+                    "practicality": alt_data['transformed_values']['practicality']
+                }
+                for alt_data in result['alternatives']
+            ]
+            ranking_result = apply_mavt_ranking(alts_for_ranking)
             # Extract scores from result and flatten to CSV rows
             for alt_data in result['alternatives']:
+                alt_idx = result['alternatives'].index(alt_data)
                 result_row = {
                     'scenario_id': idx,
                     'description': row['Description'],
@@ -662,6 +686,8 @@ def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
                     'environmental_score': alt_data['transformed_values']['environmental'],
                     'comfort_score': alt_data['transformed_values']['comfort'],
                     'practicality_score': alt_data['transformed_values']['practicality'],
+                    'mavt_score': ranking_result["weighted_scores"][alt_idx],
+                    'rank': ranking_result["ranks"][alt_idx],
                     'raw_kwh': alt_data['raw_values']['energy_kwh'],
                     'raw_cost': alt_data['raw_values']['energy_cost'],
                     'raw_emissions': alt_data['raw_values']['environmental']
@@ -682,7 +708,80 @@ def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
 
+def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
+    """
+    Apply MAVT weighted sum to rank alternatives
 
+    Args:
+        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
+
+    Returns:
+        Dict with ranked_alternatives, ranks, weighted_scores
+    """
+    try:
+        alternatives = [alt["alternative"] for alt in alternatives_scores]
+
+        # Calculate weighted sum for each alternative
+        weighted_scores = []
+        for alt_scores in alternatives_scores:
+            weighted_sum = (
+                    CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
+                    CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
+                    CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
+                    CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
+            )
+            weighted_scores.append(weighted_sum)
+
+        # Rank alternatives (higher weighted sum = better = lower rank number)
+        ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
+        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+
+        # Create rank numbers (1 = best, 2 = second, 3 = third)
+        ranks = [0] * len(alternatives)
+        for rank_position, alt_index in enumerate(ranked_indices):
+            ranks[alt_index] = rank_position + 1
+
+        return {
+            "ranked_alternatives": ranked_alternatives,
+            "ranks": ranks,
+            "weighted_scores": weighted_scores
+        }
+
+    except Exception as e:
+        logging.error(f"MAVT ranking failed: {e}")
+
+        # Fallback: rank by average score
+        avg_scores = []
+        for alt_scores in alternatives_scores:
+            avg = np.mean([
+                alt_scores["energy_cost"],
+                alt_scores["environmental"],
+                alt_scores["comfort"],
+                alt_scores["practicality"]
+            ])
+            avg_scores.append(avg)
+
+        ranked_indices = np.argsort(avg_scores)[::-1]
+        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+
+        ranks = [0] * len(alternatives)
+        for rank_position, alt_index in enumerate(ranked_indices):
+            ranks[alt_index] = rank_position + 1
+
+        return {
+            "ranked_alternatives": ranked_alternatives,
+            "ranks": ranks,
+            "weighted_scores": avg_scores,
+            "error": str(e)
+        }
+
+
+CRITERION_WEIGHTS = {
+    "energy_cost": 0.30,
+    "environmental": 0.35,
+    "comfort": 0.20,
+    "practicality": 0.15
+}
 # Main execution block
 if __name__ == "__main__":
     process_shower_scenarios(

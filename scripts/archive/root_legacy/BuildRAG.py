@@ -369,11 +369,29 @@ def test_retrieval(test_scenario_text: str, decision_type: str, k: int = 3):
 
     print(f"{'=' * 70}\n")
 
-
 if __name__ == "__main__":
     # Build database
     build_rag_database()
 
-    # Test retrieval with example HVAC scenario
-    test_scenario_text = "88°F outdoor, Poor insulation, 1800 sqft, 3 occupants, Condo"
-    test_retrieval(test_scenario_text, 'HVAC', k=3)
+    # Test retrieval with middle 3 appliance scenarios
+    test_cases = [
+        (
+            "dishwasher, 1.4 kWh/cycle, 4 occupants, Townhouse, peak $0.18/kWh, off-peak $0.08/kWh",
+            "Appliance",
+            "Scenario 9: I want to run my dishwasher this afternoon (around 2 PM). When should I start it?"
+        ),
+        (
+            "dishwasher, 1.4 kWh/cycle, 3 occupants, Townhouse, peak $0.18/kWh, off-peak $0.09/kWh",
+            "Appliance",
+            "Scenario 10: Planning to clean up from lunch around 2 PM. When's the best time for the dishwasher?"
+        ),
+        (
+            "dishwasher, 0.98 kWh/cycle, 4 occupants, Single-family, peak $0.17/kWh, off-peak $0.09/kWh",
+            "Appliance",
+            "Scenario 11: When should I do dishes today?"
+        ),
+    ]
+
+    for scenario_text, decision_type, label in test_cases:
+        print(f"\n{label}")
+        test_retrieval(scenario_text, decision_type, k=3)
