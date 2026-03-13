@@ -21,7 +21,7 @@ RAG_FILES = {
     }
 }
 
-CHROMA_DB_PATH = './chroma_rag_db'  # Will be created in current directory
+CHROMA_DB_PATH = '../chroma_rag_db'  # Will be created in current directory
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 
