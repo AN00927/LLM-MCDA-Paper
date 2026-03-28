@@ -1,0 +1,241 @@
+%% floats.tex — standalone skeleton for all floats/equations referenced in the paper
+%% Compile independently with: pdflatex floats.tex
+%%
+%% NOTE: This file is for review and future work only — NOT included in the final draft.
+%% Items 1–4 are fully typeset. Items 5–14 are placeholders.
+%% =====================================================================
+
+\documentclass[a4paper,11pt]{article}
+
+%% --- Required packages ---
+\usepackage{amsmath}
+\usepackage{booktabs}        % professional table rules
+\usepackage{multirow}        % row-spanning table cells
+\usepackage{siunitx}         % number alignment in tables
+\usepackage{xcolor}          % named colors
+\usepackage{pgfplots}        % data visualization
+\usepgfplotslibrary{colormaps,groupplots,statistics}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes.rounded,arrows.meta,positioning,fit,backgrounds,calc}
+\usepackage{todonotes}       % figure placeholders during drafting
+\usepackage{caption}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+%% Named colors for architecture consistency
+\definecolor{colorPure}{RGB}{180,180,180}
+\definecolor{colorRAG}{RGB}{100,149,200}
+\definecolor{colorHybrid}{RGB}{31,73,125}
+
+\title{\texttt{floats.tex} — Float and Equation Skeleton}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%% =====================================================================
+%% ITEM 1 — Notation Table
+%% =====================================================================
+
+\section*{Item 1 — Notation Table}
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Notation used throughout this paper.}
+  \label{tab:item1}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Symbol & Definition \\
+    \midrule
+    $\tau$               & Kendall's rank correlation coefficient \\
+    $\rho$               & Spearman's rank correlation coefficient \\
+    $w_i$                & Weight of criterion $i$ ($i=1\ldots4$), summing to~1 \\
+    $v_i(x)$             & Value function score for criterion $i$ at raw value $x$, range $[0,10]$ \\
+    $\alpha$             & Shape parameter for logarithmic value functions \\
+    $s_j$                & MAVT weighted sum score for alternative $j$ \\
+    $\text{MAE}$         & Mean Absolute Error on MAVT score ($0$--$10$ scale) \\
+    $\text{RMSE}$        & Root Mean Squared Error on MAVT score ($0$--$10$ scale) \\
+    $n$                  & Number of test scenarios evaluated \\
+    $k$                  & Number of retrieved chunks per query in RAG ($k=3$) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% =====================================================================
+%% ITEM 2 — MAVT Equations Block (inline equations, not a float)
+%% =====================================================================
+
+\section*{Item 2 — MAVT Equations Block}
+
+\noindent These three equations appear inline in the Methodology body (not as floats).
+
+\begin{equation}
+  \label{eq:mavt_sum}
+  s_j = \sum_{i=1}^{4} w_i \cdot v_i(x_{ij})
+\end{equation}
+
+\begin{equation}
+  \label{eq:linear_vf}
+  v_i(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \times 10
+\end{equation}
+
+\begin{equation}
+  \label{eq:log_vf}
+  v_i(x) = \frac{\ln\!\left(1 + \alpha \cdot
+  \dfrac{x - x_{\min}}{x_{\max} - x_{\min}}\right)}
+  {\ln(1 + \alpha)} \times 10
+\end{equation}
+
+%% =====================================================================
+%% ITEM 3 — MAVT Framework Specification Table
+%% =====================================================================
+
+\section*{Item 3 — MAVT Framework Specification Table}
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{MAVT criterion specification. Weights sum to 100\% and are held
+    constant across all architectures and the ground truth calculator.}
+  \label{tab:item3}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    Criterion            & Weight (\%) & Value Function & $\alpha$ & Direction \\
+    \midrule
+    Environmental Impact & 35          & Linear         & ---      & Lower raw = better \\
+    Energy Cost          & 30          & Linear         & ---      & Lower raw = better \\
+    Comfort              & 20          & Logarithmic    & 1.5      & Higher raw = better \\
+    Practicality         & 15          & Logarithmic    & 1.2      & Higher raw = better \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% =====================================================================
+%% ITEM 4 — Scenario Corpus and Parameter Asymmetry Table
+%% =====================================================================
+
+\section*{Item 4 — Scenario Corpus and Parameter Asymmetry Table}
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \caption{Left: scenario distribution. Right: parameters available to the ground
+    truth calculator but withheld or generalized for AI input, by decision type.}
+  \label{tab:item4}
+  %% Two sub-tables separated by horizontal space
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    Decision Type & Test Set ($n$) & RAG Set ($n$) & Total ($n$) \\
+    \midrule
+    HVAC          & 60             & 25            & 85 \\
+    Appliance     & 25             & 20            & 45 \\
+    Shower        & 15             & 5             & 20 \\
+    \midrule
+    Total         & 100            & 50            & 150 \\
+    \bottomrule
+  \end{tabular}%
+  \hspace{2em}%
+  \begin{tabular}{@{}p{2cm}p{7cm}p{6.5cm}@{}}
+    \toprule
+    Decision Type & GT Calculator Receives & Withheld / Generalized for AI \\
+    \midrule
+    HVAC &
+      \parbox[t]{7cm}{R-value, SEER, HVAC age, sq.\ ft., insulation, occupancy context} &
+      \parbox[t]{6.5cm}{R-value, HVAC age, SEER, occupancy context
+        (insulation $\to$ good/avg/poor)} \\[6pt]
+    Appliance &
+      \parbox[t]{7cm}{kWh/cycle, peak rate, off-peak rate, baseline time, appliance type} &
+      \parbox[t]{6.5cm}{All five: type, rates, kWh/cycle, baseline time} \\[6pt]
+    Shower &
+      \parbox[t]{7cm}{Tank size, water heater temp, GPM} &
+      \parbox[t]{6.5cm}{Tank size, water heater temp} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 5 — Main Performance Summary Table
+%% =====================================================================
+
+\section*{Item 5 — Main Performance Summary Table}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 5: Main Performance Summary Table}
+
+%% =====================================================================
+%% ITEM 6 — Criterion-Level MAE Table
+%% =====================================================================
+
+\section*{Item 6 — Criterion-Level MAE Table}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 6: Criterion-Level MAE Table}
+
+%% =====================================================================
+%% ITEM 7 — Per-Decision-Type Full Breakdown Table
+%% =====================================================================
+
+\section*{Item 7 — Per-Decision-Type Full Breakdown Table}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 7: Per-Decision-Type Full Breakdown Table}
+
+%% =====================================================================
+%% ITEM 8 — Efficiency and API Usage Table
+%% =====================================================================
+
+\section*{Item 8 — Efficiency and API Usage Table}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 8: Efficiency and API Usage Table}
+
+%% =====================================================================
+%% ITEM 9 — MAE Heatmap (figure*)
+%% =====================================================================
+
+\section*{Item 9 — MAE Heatmap}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 9: MAE Heatmap (figure*)}
+
+%% =====================================================================
+%% ITEM 10 — Grouped Bar Chart: tau by Decision Type
+%% =====================================================================
+
+\section*{Item 10 — Grouped Bar Chart: $\tau$ by Decision Type}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 10: Grouped Bar Chart: tau by Decision Type}
+
+%% =====================================================================
+%% ITEM 11 — Grouped Bar Chart: MAE per Criterion
+%% =====================================================================
+
+\section*{Item 11 — Grouped Bar Chart: MAE per Criterion}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 11: Grouped Bar Chart: MAE per Criterion}
+
+%% =====================================================================
+%% ITEM 12 — Token and Latency Dual-Axis Figure
+%% =====================================================================
+
+\section*{Item 12 — Token and Latency Dual-Axis Figure}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 12: Token and Latency Dual-Axis Figure}
+
+%% =====================================================================
+%% ITEM 13 — Accuracy-Efficiency Tradeoff Scatter
+%% =====================================================================
+
+\section*{Item 13 — Accuracy-Efficiency Tradeoff Scatter}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 13: Accuracy-Efficiency Tradeoff Scatter}
+
+%% =====================================================================
+%% ITEM 14 — Architecture Pipeline Diagram Placeholder
+%% =====================================================================
+
+\section*{Item 14 — Architecture Pipeline Diagram Placeholder}
+% [PLACEHOLDER — to be filled in a subsequent prompt]
+\todo[inline]{Item 14: Architecture Pipeline Diagram Placeholder}
+
+\end{document}
