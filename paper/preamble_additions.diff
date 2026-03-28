@@ -1,0 +1,24 @@
+--- a/paper/elsarticle-template-num.tex
++++ b/paper/elsarticle-template-num.tex
+@@ -6,6 +6,21 @@
+ \modulolinenumbers[5]
+ 
+ \usepackage{amsmath}
++\usepackage{booktabs} % professional table rules
++\usepackage{multirow} % row-spanning table cells
++\usepackage{siunitx} % number alignment in tables
++\usepackage{xcolor} % named colors
++\usepackage{pgfplots} % data visualization
++\usepgfplotslibrary{colormaps,groupplots,statistics}
++\pgfplotsset{compat=1.18}
++\usepackage{tikz}
++\usetikzlibrary{shapes.rounded,arrows.meta,positioning,fit,backgrounds,calc}
++\usepackage{todonotes} % figure placeholders during drafting
++\graphicspath{{./}}
++%% Named colors for architecture consistency
++\definecolor{colorPure}{RGB}{180,180,180}
++\definecolor{colorRAG}{RGB}{100,149,200}
++\definecolor{colorHybrid}{RGB}{31,73,125}
+ 
+ \journal{}
+ 
