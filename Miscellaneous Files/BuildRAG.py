@@ -1,8 +1,6 @@
 import pandas as pd
 import chromadb
-from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
-import os
 from pathlib import Path
 
 RAG_FILES = {
@@ -21,14 +19,16 @@ RAG_FILES = {
     }
 }
 
-CHROMA_DB_PATH = '../chroma_rag_db'  # Will be created in current directory
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
+CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 
 
 def load_hvac_data(csv_dir: str) -> pd.DataFrame:
     """Load HVAC data (single file contains everything)."""
-    gt_path = os.path.join(csv_dir, RAG_FILES['HVAC']['ground_truth'])
+    gt_path = Path(csv_dir) / RAG_FILES['HVAC']['ground_truth']
     df = pd.read_csv(gt_path)
 
     # Rename columns to match   format_scenario_text expectations
@@ -46,7 +46,7 @@ def load_hvac_data(csv_dir: str) -> pd.DataFrame:
 
 def load_appliance_data(csv_dir: str) -> pd.DataFrame:
     """Load Appliance data (GT file contains everything)."""
-    gt_path = os.path.join(csv_dir, RAG_FILES['Appliance']['ground_truth'])
+    gt_path = Path(csv_dir) / RAG_FILES['Appliance']['ground_truth']
     df = pd.read_csv(gt_path)
 
     #rename columns to match expected format
@@ -60,7 +60,7 @@ def load_appliance_data(csv_dir: str) -> pd.DataFrame:
 
 def load_shower_data(csv_dir: str) -> pd.DataFrame:
     """Load Shower data (scenario file contains everything)."""
-    scenarios_path = os.path.join(csv_dir, RAG_FILES['Shower']['scenarios'])
+    scenarios_path = Path(csv_dir) / RAG_FILES['Shower']['scenarios']
     df = pd.read_csv(scenarios_path)
 
     #rename columns to match expected format
@@ -113,7 +113,7 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
         raise ValueError(f"Unknown decision type: {decision_type}")
 
 
-def build_rag_database(csv_dir=r'C:\Users\ishaa\PycharmProjects\LLM-MCDA'):
+def build_rag_database(csv_dir=SCENARIO_DIR):
     """
     Build ChromaDB vector database from RAG scenario CSV files.
     Process:
@@ -133,7 +133,7 @@ def build_rag_database(csv_dir=r'C:\Users\ishaa\PycharmProjects\LLM-MCDA'):
 
     # Initialize ChromaDB
     print(f"\nInitializing ChromaDB at: {CHROMA_DB_PATH}")
-    client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+    client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
 
     # Delete existing collection if it exists (fresh build)
     try:
@@ -320,7 +320,7 @@ def test_retrieval(test_scenario_text: str, decision_type: str, k: int = 3):
     print(f"Retrieving top-{k} similar scenarios...\n")
 
     # Load database
-    client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+    client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     collection = client.get_collection(COLLECTION_NAME)
 
     # Load embedding model

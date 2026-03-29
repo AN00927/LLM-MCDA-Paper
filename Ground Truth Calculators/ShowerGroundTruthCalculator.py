@@ -2,6 +2,12 @@ import logging
 import numpy as np
 from typing import Dict, List, Tuple
 import pandas as pd
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+
 class ShowerGroundTruthCalculator:
     """"Key sources:
 - Residential End Uses of Water, Version 2 (REU2016). Water Research Foundation.
@@ -594,8 +600,9 @@ class ShowerGroundTruthCalculator:
         }
 
 
-def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
-                             output_filename: str = "ground_truth_shower.csv"):
+def process_shower_scenarios(
+    csv_filename: str = str(SCENARIO_DIR / "ShowerScenarios.csv"),
+    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.csv")):
     """
     Read Shower scenarios from CSV and calculate ground truth scores for all alternatives.
 
@@ -610,7 +617,11 @@ def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
     """
     import pandas as pd
 
-    df = pd.read_csv(csv_filename)
+    csv_path = Path(csv_filename)
+    output_path = Path(output_filename)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(csv_path)
     print(f"Found {len(df)} shower scenarios")
 
     calculator = ShowerGroundTruthCalculator()
@@ -682,9 +693,9 @@ def process_shower_scenarios(csv_filename: str = "ShowerScenarios.csv",
 
     # Save results to CSV
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_filename, index=False)
+    results_df.to_csv(output_path, index=False)
 
-    print(f"\nGround truth saved to {output_filename}")
+    print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
 
@@ -764,7 +775,4 @@ CRITERION_WEIGHTS = {
 }
 # Main execution block
 if __name__ == "__main__":
-    process_shower_scenarios(
-        csv_filename="../Scenario Files + Ground Truth/ShowerScenarios.csv",
-        output_filename="../Scenario Files + Ground Truth/ground_truth_shower.csv"
-    )
+    process_shower_scenarios()

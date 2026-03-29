@@ -1,8 +1,11 @@
 import os
+import sys
 import json
 import requests
 import time
+import importlib.util
 from typing import Dict, List, Tuple, Optional
+from pathlib import Path
 from dotenv import load_dotenv
 
 # ── MODEL SELECTOR ─────────────────────────────────────────
@@ -36,27 +39,50 @@ def get_model_id():
     else:
         raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
+OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"
+
+def _load_calculator_class(module_filename: str, class_name: str):
+    module_path = GROUND_TRUTH_CALCULATORS_DIR / module_filename
+    spec = importlib.util.spec_from_file_location(class_name, module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load module spec for {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, class_name)
+
+
+HVACGroundTruthCalculator = None
+ApplianceGroundTruthCalculator = None
+ShowerGroundTruthCalculator = None
+
 try:
-    from HVACGroundTruthCalculator import (
-        HVACGroundTruthCalculator
+    HVACGroundTruthCalculator = _load_calculator_class(
+        "HVACGroundTruthCalculator.py", "HVACGroundTruthCalculator"
     )
-except ModuleNotFoundError:
+except Exception:
     print("couldnt get HVAC ground truth calculator")
+
 try:
-    from ApplianceGroundTruthCalculator import (
-        ApplianceGroundTruthCalculator
+    ApplianceGroundTruthCalculator = _load_calculator_class(
+        "ApplianceGroundTruthCalculator.py", "ApplianceGroundTruthCalculator"
     )
-except ModuleNotFoundError:
+except Exception:
     print("couldnt get appliance  ground truth calculator")
+
 try:
-    from ShowerGroundTruthCalculator import (
-        ShowerGroundTruthCalculator
+    ShowerGroundTruthCalculator = _load_calculator_class(
+        "ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"
     )
-except ModuleNotFoundError:
+except Exception:
     print("couldnt get shower ground truth calculator")
 
 
-load_dotenv()
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
@@ -73,8 +99,8 @@ CRITERION_WEIGHTS = {
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 EXTRACTION_MAX_RETRIES = 1
-OUTPUT_CSV = f"{get_output_folder()}/hybrid_results.csv"
-OUTPUT_DIAGNOSTICS = f"{get_output_folder()}/hybrid_diagnostics.json"
+OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.csv"
+OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_diagnostics.json"
 UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
 
 SCENARIO:
@@ -524,6 +550,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     """
     import csv as csv_module
 
+    test_csv_path = Path(test_csv_path)
+    output_csv_path = Path(output_csv_path)
+    output_diagnostics_path = Path(output_diagnostics_path)
+    output_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    output_diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
+
 
     print(f"Loading test scenarios from: {test_csv_path}")
 
@@ -657,27 +689,24 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
 
 if __name__ == "__main__":
-    import sys
-    test_csv = 'TestScenarios.csv'
+    test_csv = TEST_SCENARIOS_CSV
 
-    if not os.path.exists(test_csv):
+    if not test_csv.exists():
         print(f" ERROR: Test scenarios file not found: {test_csv}")
         print("Please upload your test scenarios CSV first.")
         sys.exit(1)
 
-    try:
-        from HVACGroundTruthCalculator import HVACGroundTruthCalculator
-        from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
-        from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
-
-        print(" Ground truth calculators loaded")
-    except ImportError as e:
-        print(f" ERROR: Could not load ground truth calculators: {e}")
-        print("Please ensure HVACGroundTruthCalculator.py, ApplianceGroundTruthCalculator.py, and ShowerGroundTruthCalculator.py are in the same directory.")
+    if (HVACGroundTruthCalculator is None or
+            ApplianceGroundTruthCalculator is None or
+            ShowerGroundTruthCalculator is None):
+        print(" ERROR: Could not load one or more ground truth calculators.")
+        print("Please ensure HVACGroundTruthCalculator.py, ApplianceGroundTruthCalculator.py, and ShowerGroundTruthCalculator.py are in the Ground Truth Calculators folder.")
         sys.exit(1)
+    else:
+        print(" Ground truth calculators loaded")
 
     run_test_set(
-        test_csv_path=test_csv,
-        output_csv_path=OUTPUT_CSV,
-        output_diagnostics_path=OUTPUT_DIAGNOSTICS
+        test_csv_path=str(test_csv),
+        output_csv_path=str(OUTPUT_CSV),
+        output_diagnostics_path=str(OUTPUT_DIAGNOSTICS)
     )

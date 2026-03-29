@@ -3,6 +3,11 @@ import math
 import logging
 import numpy as np
 from typing import Dict, List, Tuple
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 
 class HVACGroundTruthCalculator:
@@ -593,7 +598,9 @@ class HVACGroundTruthCalculator:
         return final_scores
 
 
-def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_filename: str = "ground_truth_hvac.csv"):
+def process_hvac_scenarios(
+    csv_filename: str = str(SCENARIO_DIR / "HVACScenarios.csv"),
+    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_hvac.csv")):
     """
     Read HVAC scenarios from CSV and calculate ground truth scores for all alternatives.
 
@@ -606,8 +613,11 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
         Utility Budget, Housing Type, Outdoor Temp, House Age, R-Value,
         HVAC Age, SEER, Alternative 1, Alternative 2, Alternative 3
     """
+    csv_path = Path(csv_filename)
+    output_path = Path(output_filename)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(csv_filename)
+    df = pd.read_csv(csv_path)
 
     print(f"Found {len(df)} scenarios")
 
@@ -683,9 +693,9 @@ def process_hvac_scenarios(csv_filename: str = "HVACScenarios.csv",  output_file
             continue
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_filename, index=False)
+    results_df.to_csv(output_path, index=False)
 
-    print(f"\nGround truth saved to {output_filename}")
+    print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
 
@@ -764,7 +774,4 @@ CRITERION_WEIGHTS = {
     "practicality": 0.15
 }
 if __name__ == "__main__":
-    process_hvac_scenarios(
-        csv_filename="../Scenario Files + Ground Truth/HVACScenarios.csv",
-        output_filename="../Scenario Files + Ground Truth/ground_truth_hvac.csv"
-    )
+    process_hvac_scenarios()
