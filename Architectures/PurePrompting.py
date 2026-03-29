@@ -13,7 +13,7 @@ import pandas as pd
 # ── MODEL SELECTOR ─────────────────────────────────────────
 # Change this variable manually before running a new model.
 # Supported values: "mistral" | "qwen" | "claude" | "gemini"
-MODEL_KEY = "mistral"
+MODEL_KEY = "qwen"
 # ───────────────────────────────────────────────────────────
 
 def get_output_folder():
