@@ -10,6 +10,37 @@ import requests
 from dotenv import load_dotenv
 import pandas as pd
 
+# ── MODEL SELECTOR ─────────────────────────────────────────
+# Change this variable manually before running a new model.
+# Supported values: "mistral" | "qwen" | "claude" | "gemini"
+MODEL_KEY = "mistral"
+# ───────────────────────────────────────────────────────────
+
+def get_output_folder():
+    if MODEL_KEY == "mistral":
+        return "Output Files Mistral"
+    elif MODEL_KEY == "qwen":
+        return "Output Files Qwen"
+    elif MODEL_KEY == "claude":
+        return "Output Files Claude"
+    elif MODEL_KEY == "gemini":
+        return "Output Files Gemini"
+    else:
+        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
+
+
+def get_model_id():
+    if MODEL_KEY == "mistral":
+        return "mistralai/mistral-small-3.2-24b-instruct"
+    elif MODEL_KEY == "qwen":
+        return "qwen/qwen-2.5-72b-instruct"
+    elif MODEL_KEY == "claude":
+        return "anthropic/claude-sonnet-4"
+    elif MODEL_KEY == "gemini":
+        return "google/gemini-2.5-pro"
+    else:
+        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
+
 """ACROSS ALL THREE ARCHITECTURES
 These sources were used to help build prompts:
  Prompt engineering components and their citations:
@@ -51,9 +82,11 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+MODEL_ID = get_model_id()
+
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-    "model": "mistralai/mistral-small-3.2-24b-instruct",
+    "model": MODEL_ID,
     "max_tokens": 500,
     "temperature": 0.3  # Need determinism for reliability
 }
@@ -512,7 +545,7 @@ def main():
         return
 
     test_csv = "TestScenarios.csv"
-    output_csv = "pure_prompting_results.csv"
+    output_csv = f"{get_output_folder()}/pure_prompting_results.csv"
 
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
