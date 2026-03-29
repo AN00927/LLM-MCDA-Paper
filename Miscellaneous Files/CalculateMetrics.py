@@ -14,6 +14,7 @@ from scipy import stats
 import re
 import warnings
 import sys
+from pathlib import Path
 from collections import defaultdict
 
 # ── MODEL SELECTOR ─────────────────────────────────────────
@@ -35,18 +36,22 @@ def get_output_folder():
         raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
 
 warnings.filterwarnings("ignore")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
+
 CONFIG = {
     "ground_truth": {
-        "HVAC": "ground_truth_hvac.csv",
-        "Appliance": "ground_truth_appliance.csv",
-        "Shower": "ground_truth_shower.csv",
+        "HVAC": str(GROUND_TRUTH_DIR / "ground_truth_hvac.csv"),
+        "Appliance": str(GROUND_TRUTH_DIR / "ground_truth_appliance.csv"),
+        "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.csv"),
     },
     "architectures": {
-        "Pure": f"{get_output_folder()}/pure_prompting_results.csv",
-        "RAG": f"{get_output_folder()}/RAGResults.csv",
-        "Hybrid": f"{get_output_folder()}/hybrid_results.csv",
+        "Pure": str(OUTPUT_DIR / "pure_prompting_results.csv"),
+        "RAG": str(OUTPUT_DIR / "RAGResults.csv"),
+        "Hybrid": str(OUTPUT_DIR / "hybrid_results.csv"),
     },
-    "output_csv": f"{get_output_folder()}/metrics_summary.csv",
+    "output_csv": str(OUTPUT_DIR / "metrics_summary.csv"),
     "weights": {
         "environmental": 0.35,
         "energy_cost": 0.30,
@@ -570,6 +575,7 @@ def evaluate_all(config):
             row += _fmt(_get(a, dtype, "top1_accuracy"))
         print(row)
     metrics_df = pd.DataFrame(all_metrics)
+    Path(config["output_csv"]).parent.mkdir(parents=True, exist_ok=True)
     metrics_df.to_csv(config["output_csv"], index=False)
     print(f"\n\nMetrics saved to: {config['output_csv']}")
     print(f"Total metric rows: {len(metrics_df)}")
