@@ -1,0 +1,985 @@
+%%
+%% Copyright 2007-2020 Elsevier Ltd
+%%
+%% This file is part of the 'Elsarticle Bundle'.
+%% ---------------------------------------------
+%%
+%% It may be distributed under the conditions of the LaTeX Project Public
+%% License, either version 1.3 of this license or (at your option) any
+%% later version.  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 1999/12/01 or later.
+%%
+%% The list of all files belonging to the 'Elsarticle Bundle' is
+%% given in the file `manifest.txt'.
+%%
+%% Template article for Elsevier's document class `elsarticle'
+%% with numbered style bibliographic references
+%% SP 2008/03/01
+%% $Id: elsarticle-template-num.tex 213 2021-11-17 03:42:37Z apu.v $
+%%
+%\documentclass[preprint,12pt]{elsarticle}
+%% Use the option review to obtain double line spacing
+%% \documentclass[authoryear,preprint,review,12pt]{elsarticle}
+%% Use the options 1p,twocolumn; 3p; 3p,twocolumn; 5p; or 5p,twocolumn for a journal layout:
+%% \documentclass[final,1p,times]{elsarticle}
+%%\documentclass[final,1p,times,twocolumn]{elsarticle}
+%% \documentclass[final,3p,times]{elsarticle}
+%%\documentclass[final,3p,times,twocolumn]{elsarticle}
+\documentclass[final,5p,times,twocolumn]{elsarticle}
+%% \documentclass[final,5p,times]{elsarticle}
+%% For including figures, graphicx.sty has been loaded in
+%% elsarticle.cls. If you prefer to use the old commands
+%% please give \usepackage{epsfig}
+%% The amssymb package provides various useful mathematical symbols
+ \usepackage{amssymb}
+ %% The amsmath package provides various useful equation environments.
+ \usepackage{amsmath}
+\usepackage{booktabs} % professional table rules
+\usepackage{multirow} % row-spanning table cells
+\usepackage{siunitx} % number alignment in tables
+\usepackage{xcolor} % named colors
+\usepackage{pgfplots} % data visualization
+\usepgfplotslibrary{colormaps,groupplots,statistics}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes.rounded,arrows.meta,positioning,fit,backgrounds,calc}
+\usepackage{todonotes} % figure placeholders during drafting
+\graphicspath{{./}}
+%% Named colors for architecture consistency
+\definecolor{colorPure}{RGB}{180,180,180}
+\definecolor{colorRAG}{RGB}{100,149,200}
+\definecolor{colorHybrid}{RGB}{31,73,125}
+ %% The amsthm package provides extended theorem environments
+ %% \usepackage{amsthm}
+ %% The lineno packages adds line numbers. Start line numbering with
+ \journal{Nuclear Physics B}
+\begin{document}
+\begin{frontmatter}
+%% Title, authors and addresses
+%% use the tnoteref command within \title for footnotes;
+%% use the tnotetext command for theassociated footnote;
+%% use the fnref command within \author or \affiliation for footnotes;
+%% use the fntext command for theassociated footnote;
+%% use the corref command within \author for corresponding author footnotes;
+%% use the cortext command for theassociated footnote;
+%% use the ead command for the email address,
+%% and the form \ead[url] for the home page:
+%% \title{Title\tnoteref{label1}}
+%% \tnotetext[label1]{}
+%% \author{Name\corref{cor1}\fnref{label2}}
+%% \ead{email address}
+%% \ead[url]{home page}
+%% \fntext[label2]{}
+%% \cortext[cor1]{}
+%% \affiliation{organization={},
+%%             addressline={},
+%%             city={},
+%%             postcode={},
+%%             state={},
+%%             country={}}
+%% \fntext[label3]{}
+\title{Benchmarking LLM Integration Strategies for MCDA-Assisted Household Energy Decision Support}
+%% use optional labels to link authors explicitly to addresses:
+%% \author[label1,label2]{}
+%% \affiliation[label1]{organization={},
+%%             addressline={},
+%%             city={},
+%%             postcode={},
+%%             state={},
+%%             country={}}
+%%
+%% \affiliation[label2]{organization={},
+%%             addressline={},
+%%             city={},
+%%             postcode={},
+%%             state={},
+%%             country={}}
+\author{Ahaan Nigam} %% Author name
+%% Author affiliation
+\affiliation{organization={Downingtown East High School},%Department and Organization
+            addressline={},
+            city={Exton},
+            postcode={},
+            state={PA},
+            country={USA}}
+%% Abstract
+\begin{abstract}
+%% Text of abstract
+Households contribute 13\% of U.S.\ carbon emissions, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Pure Prompting, Retrieval-Augmented Generation (RAG-Enhanced) Scoring, and a Hybrid of LLM parameter extraction with calculation. Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. A total of 60 HVAC, 25 Appliance, and 15 Shower test scenarios were scored by each architecture, each with three alternatives scored on Environmental Impact, Energy Cost, Comfort, and Practicality with varying decision contexts. Hybrid achieved the strongest performance: Kendall's $\tau = 0.80$ and Spearman's $\rho = 0.82$, versus Pure Prompting's near-random $\tau = -0.06$ and $\rho = -0.055$. Top-1 accuracy reached 83\% for Hybrid versus 58\% for RAG-Enhanced and 30\% for Pure. Hybrid also achieved the lowest Mean Absolute Error (MAE) $= 0.69$ and Root Mean Squared Error (RMSE) $= 1.52$, fewest total tokens (98,016 vs.\ RAG-Enhanced's highest of 308,637), and lowest total latency (275.6s versus Pure's highest of 437.1s), despite higher per-call complexity. These results confirm that independent LLMs cannot be used to replicate MCDA creation, and that using LLMs to extract parameters for calculation is both the most accurate and most efficient path toward accessible household energy decision support.
+\end{abstract}
+%% Keywords
+\begin{keyword}
+%% keywords here, in the form: keyword \sep keyword
+%% PACS codes here, in the form: \PACS code \sep code
+%% MSC codes here, in the form: \MSC code \sep code
+%% or \MSC[2008] code \sep code (2000 is the default)
+Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute Value Theory \sep Household energy \sep Decision support systems \sep Retrieval-Augmented Generation \sep Sustainability
+\end{keyword}
+\end{frontmatter}
+%% Add \usepackage{lineno} before \begin{document} and uncomment
+%% following line to enable line numbers
+%% \linenumbers
+%% main text
+%%
+%% Use \section commands to start a section
+\section{Introduction}
+\label{sec1}
+
+The average U.S.\ household emits 8,744 pounds of CO$_2$e \cite{} and uses 10,791 Kilowatt Hours of energy \cite{} annually. Including transportation, food, etc., per capita, the numbers change to about 17.9 tons of CO$_2$e \cite{}, and 81,767 Kilowatt Hours of energy annually \cite{}. The average U.S.\ household can save \$200--\$400 annually by optimizing their house to ENERGY STAR recommendations \cite{}.
+
+Unfortunately, most Americans are not aware of the areas where they could be reducing their impact, thus large amounts of waste. This suggests a need for tools that combine optimization, behavioral insight, and decision support.
+
+Multiple studies have shown that MCDAs, Life Cycle Assessments (LCA), and models for prediction such as Pareto Analysis have been effectively implemented to track and reduce environmental impact in larger sample sizes \cite{}. Many researchers recommend using Multi-Attribute Value Theory (MAVT) for well-defined decisions, especially ones focused on sustainability \cite{}. While engineering frameworks can potentially optimize decisions, producing them requires complexity and time: the Hilbert-Huang transform, among other conversion methods, are not rapid \cite{}. In order to streamline the process, He Huang and his associates created a calculator that used multiple different accepted methods to get a reliable output \cite{}. The problem is, even with the simplicity of the calculator, some knowledge of MCDAs and creating a file to be utilized by the calculator is required; an LLM can instead process human wording, create alternatives, criteria, and weightings, and choose the best choice.
+
+The two largest barriers to sustainable choices are both psychological. Even with access to extensive information, consumers often fail to make optimal decisions. Anja Kollmuss and Julian Agyeman (2002) proposed a generalized model that incorporates personal values, knowledge, emotional involvement, and external factors like institutional support and social norms \cite{}. Kollmuss and Agyeman based it off of previous works \cite{,,,}, including Stern and associates' initial VBN theory \cite{}, which states that customers' decisions were influenced by their values, beliefs about environmental threats, and their ability to mitigate them, along with personal norms. All authors underlined the large gap between intention and implementation.
+
+As expected, this can be partially attributed to the lack (or excess) of unfiltered information. As seen in studies on energy labels on products, sustainable choices were made more frequently when the benefits were easily apparent to the consumer: the EU label, for instance, underperformed due to poor clarity and limited consumer trust \cite{}.
+
+The decisions for which this tool would be utilized, such as setting a thermostat or charging devices at certain times, are usually made using heuristics (e.g.\ quick decision making).
+
+Heuristics often lead to errors; multiple studies have found that under time pressure, people default to ``satisficing'' (choosing the first option that meets minimum criteria) or using dominant past behaviors, even if they are not ideal \cite{,,}. Additionally, when these time constraints are combined with information overload, decision errors increase by approximately 20\% more errors in judgement \cite{}. Since energy-use decisions often occur in high-distraction environments, tools that rely on sustained attention or complex input formats may fail to influence user behavior effectively. Additionally, heuristics do not accommodate for long-term benefits, unless they are immediately apparent and use appeals to monetary or environmental gain \cite{,,}. However, they often make the most sense in household decisions, since researching and fact-checking decisions daily is impractical.
+
+An LLM-assisted MCDA tool would reduce the impact of each of these factors. Since the input format would be a simple one-sentence description of the situation, and the recommendation would also include the environmental and financial benefits, an individual could easily use this whenever they needed, and quickly make a decision with an adequate amount of information. This removes the psychological time barrier, which ensures that usage of this tool would not usually be passed up in favor of heuristics. It also provides a detailed explanation on what specific benefits making the recommended choice would have, also bypassing the barrier of having poor clarity and reasoning to make these decisions.
+
+Although structured decision-making frameworks such as MCDAs and Life Cycle Assessment (LCA) have been shown to improve sustainability outcomes in fields like engineering, finance, and supply chain management, little empirical research has tested their use in everyday households. Existing studies on sustainable behavior primarily focus on consumer purchasing decisions or organizational strategy, leaving a gap in understanding how structured approaches can influence the routine, small-scale choices that drive much of a household's environmental footprint, especially important due to the percentage of emissions that derive directly from them. At the same time, psychological research demonstrates that household decisions are often guided by intuition, habits, or heuristics, which can lead to suboptimal outcomes under time pressure or information overload.
+
+This study, based on these theoretical benefits, addresses the gap by comparing three tool architectures: pure-prompting, RAG database optimized, and a hybrid model where the LLM works with a hard-coded calculator to determine which is the most optimal for the environmental sustainability of daily household decisions. This study also provides evidence to back up usage of such a tool, which increases the likelihood that usage of such a tool may become widespread and thus reduce the amount of emissions from households on a significant scale.
+
+\section{Methodology}
+\label{sec2}
+
+2.1 Decision Types and Scenario Corpus
+
+- Three types: HVAC, Appliance, Shower
+- 100 test scenarios (60/25/15), 50 RAG-only (25/20/5)
+- Parameter tables: what GT calculator received vs. what AI received
+
+2.2 MAVT Framework Design
+
+- Criteria, weights, rationale
+- Value function selection per criterion (cite Dyer & Sarin 1979, Belton & Stewart 2002)
+- Reference ranges (5th–95th percentile) — one sentence, point to Appendix B for full table
+
+2.3 Ground Truth Calculators
+
+- Describe what each calculator computes (energy cost in $, environmental impact in lbs CO2, comfort, practicality)
+- Cite sources for each formula (ASHRAE, Domanski, NREL, EPA eGRID, PECO TOU)
+- Full derivations in Appendix A
+
+2.4 Architecture Implementations
+
+- 2.4.1 Pure Prompting
+- 2.4.2 RAG-Enhanced (ChromaDB, sentence-transformers/all-MiniLM-L6-v2, k=3)
+- 2.4.3 Hybrid
+- LLM: Mistral Small 3.2 24B, T=0.3, OpenRouter
+- API call structure: 3 calls/scenario (Pure, RAG) vs. 1 call/scenario (Hybrid)
+
+2.5 Evaluation Metrics
+
+- Accuracy: Kendall's τ, Spearman's ρ, Top-1, Top-2, MAE, RMSE
+- Efficiency: total tokens, total latency
+
+Appendix A — Ground Truth Calculator Formulas
+
+A.1 HVAC Calculator (cooling load, heating load, SEER degradation, TOU)
+A.2 Appliance Calculator (kWh/cycle, TOU pricing tiers, budget penalty)
+A.3 Shower Calculator (water heating energy, GPM × duration)
+
+Appendix B — Reference Ranges and Constants
+
+- Table of all 5th–95th percentile reference ranges by decision type and criterion
+- PA constants (emissions factor, electricity rate, TOU multipliers)
+
+\section{Results}
+\label{sec3}
+
+3.1 Overall Ranking Accuracy
+
+- Summary table: τ, ρ, Top-1, Top-2 for all three architectures
+    (Hybrid: τ=0.80, ρ=0.82, Top-1=83%, Top-2=97%)
+    (RAG: τ=0.43, Top-1=58%, Top-2=89%)
+    (Pure: τ=-0.06, Top-1=30%, Top-2=62%)
+- Statement that Hybrid dominates on all ranking metrics; Pure is near-random
+- Note that RAG shows meaningful improvement over Pure,
+    confirming retrieval context adds signal but not sufficient alone
+
+3.2 Criterion-Level Error (MAE and RMSE)
+
+- Table: MAE and RMSE per criterion × architecture
+- Call out anomalies:
+        - Hybrid HVAC Comfort + Practicality MAE = 0.0
+            (deterministic from occupancy context — fully correct)
+        - RAG Appliance Comfort MAE = 3.88 (worst in dataset —
+            subjective criterion with no formula anchor)
+        - Pure Shower Environmental MAE = 4.04 (second worst —
+            no retrieval, no calculator for GPM/heating math)
+- Note that quantitative criteria (Energy Cost, Environmental)
+    show the largest gap between Hybrid and the other two
+
+3.3 Performance by Decision Type
+
+- Table or grouped bar chart: τ by architecture × decision type
+    (Hybrid HVAC τ=0.90 vs. Appliance τ=0.68 vs. Shower τ=0.60)
+    (RAG HVAC Top-1=63% as best RAG result)
+    (Pure Appliance gap vs. Hybrid is largest — MAE 3.31 vs. 0.97)
+- Explanation that HVAC is the most structured decision type,
+    benefiting both RAG (clean energy tradeoffs map to database)
+    and Hybrid (deterministic comfort/practicality extraction)
+- Appliance and shower performance gaps explained by absence
+    of a structural anchor equivalent to occupancy context
+
+3.4 Token Usage and Latency
+
+- Table: total tokens + total latency per architecture
+    (Hybrid: 98,016 tokens, 275.6s)
+    (Pure: 124,709 tokens, 437.1s)
+    (RAG: 308,637 tokens, 480.8s)
+- Note the counterintuitive result: Hybrid is token-cheapest
+    despite structured output requirements — 100 calls vs. 300
+    for Pure/RAG more than compensates for per-call complexity
+- RAG is most token-expensive due to retrieval context
+    appended to every prompt
+- Hybrid is simultaneously the fastest, most accurate,
+    and most token-efficient architecture
+
+\section{Discussion}
+\label{sec4}
+
+4.1 Why Hybrid Works: Architecture Separates NL from Math
+
+- Core argument: LLMs are strong at extracting structured
+    parameters from natural language; they are not reliable
+    at physics-based quantitative scoring end-to-end
+- Hybrid's design exploits the LLM's actual strength
+    (extraction) while offloading its weakness (formula math)
+    to the calculator
+- Single API call per scenario is both architecturally simpler
+    and empirically faster — not a bias but a design advantage
+- Svoboda & Lande (2024) showed LLMs can produce coherent MCDA
+    structures — this study extends that: coherent structure is
+    not the same as accurate quantitative scoring
+
+4.2 Why Pure Prompting Fails
+
+- Near-random τ = -0.06 confirms LLMs cannot self-generate
+    physics-based MAVT scores from scenario text alone
+- No grounding in reference ranges → uncalibrated 0–10 scores
+    that are internally consistent per call but not comparable
+    across alternatives or criteria
+- Risk point: a tool built on Pure Prompting would produce
+    confident but wrong recommendations — potentially worse than
+    no tool at all (cite back to Introduction's framing)
+
+4.3 Why RAG Is Intermediate — and Where It Helps
+
+- Retrieval adds meaningful signal for structured decision types
+    (HVAC: τ jumps from near-random to 0.52 for RAG)
+- Retrieval cannot substitute formula-based reasoning for
+    criteria that require exact TOU rate math or GPM calculations
+- RAG's Top-2 = 89% suggests it could be a useful low-cost
+    fallback where getting the top-2 correct is acceptable and
+    building a full calculator is not feasible
+- Token cost (308,637) is the main practical barrier for RAG
+
+4.4 Efficiency as a Practical Constraint
+
+- Real household decision support requires low latency —
+    Hybrid's 275.6s across 100 scenarios scales to ~2.8s/decision
+- Token efficiency directly maps to API cost — Hybrid is the
+    only architecture viable at scale without significant cost
+- Tradeoff: Hybrid requires upfront investment to build the
+    physics-based calculators; RAG does not
+
+4.5 Limitations
+
+- Single LLM (Mistral Small 3.2 24B): unknown if Hybrid
+    advantage holds for stronger models or closes for weaker ones
+- Single region (Pennsylvania): emissions factor 0.6458 lbs
+    CO₂/kWh and PPL TOU structure — results may not generalize
+    to high-renewables grids where environmental score
+    compression changes which architecture performs best
+- Researcher designed both ground truth and Hybrid calculator —
+    this is the most critical validity threat; Hybrid's advantage
+    may reflect design alignment rather than architecture
+    superiority (must be foregrounded, not buried)
+- No statistical significance testing on τ differences between
+    architectures — genuine gap, not currently quantifiable
+    as statistically significant
+- Temperature fixed at 0.3 with single run per scenario —
+    no variance measurement across runs
+
+\subsection{Limitations and Future Work}
+
+4.6 Future Work
+
+- Scenario-type-specific extraction prompts for Hybrid to
+    address appliance/shower performance gap (τ=0.68/0.60 vs.
+    HVAC τ=0.90)
+- Multi-region generalization using all EPA eGRID subregions
+    + EIA real-time utility rate API
+- Multi-model benchmarking: run same 100 scenarios against
+    frontier models (GPT-4o, Claude 3.5) to isolate whether
+    advantage is architecture or model-class specific
+- Real-world deployment study: mobile interface for PA
+    households, longitudinal tracking of actual decisions
+    vs. tool recommendations
+
+\section{Conclusion}
+\label{sec5}
+
+- Restate research question: which LLM integration architecture
+    most accurately replicates physics-based MAVT ground truth
+    for household energy decisions?
+- Direct answer: Hybrid (τ=0.80, Top-1=83%, MAE=0.69)
+    outperforms RAG (τ=0.43, Top-1=58%) and Pure (τ=-0.06, Top-1=30%)
+    on every accuracy and efficiency metric simultaneously
+- Core finding: LLMs used end-to-end cannot replicate MCDA
+    scoring; LLMs used for parameter extraction can
+- Efficiency finding: Hybrid is simultaneously the most accurate
+    and least resource-intensive architecture — the expected
+    token/efficiency tradeoff did not materialize
+- Practical implication: the architecture that requires the most
+    upfront research investment (building the physics calculators)
+    is the only one suitable for a real household decision tool —
+    but once built, it is fast and cheap to run per decision
+- Broader significance: this study provides the first empirical
+    comparison of three LLM-MCDA integration strategies for
+    individual household energy decisions, filling the gap between
+    organizational-scale MCDA literature and routine household choice
+- Call to action: the results support investment in LLM-assisted
+    MCDA tools as a pathway to closing the intention-behavior gap
+    in household sustainability decisions — but only when grounded
+    in deterministic calculation
+
+%% -----------------------------------------------------------------------
+%% TEMPLATE REFERENCE MATERIAL (unused sections preserved for future use)
+%% -----------------------------------------------------------------------
+
+%% \subsection{Example Subsection}
+%% \label{subsec1}
+%% Subsection text.
+
+%% \subsubsection{Mathematics}
+%% This is an example for the symbol $\alpha$ tagged as inline mathematics.
+%%
+%% \begin{equation}
+%% f(x) = (x+a)(x+b)
+%% \end{equation}
+%%
+%% \begin{equation*}
+%% f(x) = (x+a)(x+b)
+%% \end{equation*}
+%%
+%% \begin{align}
+%%  f(x) &= (x+a)(x+b) \\
+%%       &= x^2 + (a+b)x + ab
+%% \end{align}
+%%
+%% \begin{eqnarray}
+%%  f(x) &=& (x+a)(x+b) \nonumber\\
+%%       &=& x^2 + (a+b)x + ab
+%% \end{eqnarray}
+%%
+%% \begin{align*}
+%%  f(x) &= (x+a)(x+b) \\
+%%       &= x^2 + (a+b)x + ab
+%% \end{align*}
+%%
+%% \begin{eqnarray*}
+%%  f(x)&=& (x+a)(x+b) \\
+%%      &=& x^2 + (a+b)x + ab
+%% \end{eqnarray*}
+
+%% \begin{table}[t]
+%% \centering
+%% \begin{tabular}{l c r}
+%%   1 & 2 & 3 \\
+%%   4 & 5 & 6 \\
+%%   7 & 8 & 9 \\
+%% \end{tabular}
+%% \caption{Table Caption}\label{table1}
+%% \end{table}
+
+%% \begin{figure}[t]
+%% \centering
+%% \includegraphics[width=0.5\textwidth]{example-image-a}
+%% \caption{Figure Caption}\label{fig1}
+%% \end{figure}
+
+%% -----------------------------------------------------------------------
+%% END TEMPLATE REFERENCE MATERIAL
+%% -----------------------------------------------------------------------
+
+%% The Appendices part is started with the command \appendix;
+%% appendix sections are then done as normal sections
+%% \appendix
+%% \section{Example Appendix Section}
+%% \label{app1}
+%% Appendix text.
+
+%% For citations use:
+%%       \cite{<label>} ==> [1]
+%%
+%% If you have bib database file and want bibtex to generate the
+%% bibitems, please use
+%%
+%%  \bibliographystyle{elsarticle-num}
+%%  \bibliography{<your bibdatabase>}
+%% else use the following coding to input the bibitems directly in the
+%% TeX file.
+%% Refer following link for more details about bibliography and citations.
+%% https://en.wikibooks.org/wiki/LaTeX/Bibliography_Management
+\clearpage
+\clearpage
+\begin{thebibliography}{99}
+\bibliographystyle{elsarticle-num}
+\bibliography{cas-refs}
+\end{thebibliography}
+
+%% =====================================================================
+%% ITEM 1 -- Notation Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{ll}
+\toprule
+Symbol & Definition \\
+\midrule
+$\tau$ & Kendall's rank correlation coefficient \\
+$\rho$ & Spearman's rank correlation coefficient \\
+$w_i$ & weight of criterion $i$ ($i=1\ldots4$), summing to 1 \\
+$v_i(x)$ & value function score for criterion $i$ at raw value $x$, range $[0,10]$ \\
+$\alpha$ & shape parameter for logarithmic value functions \\
+$s_j$ & MAVT weighted sum score for alternative $j$ \\
+$\text{MAE}$ & Mean Absolute Error on MAVT score (0--10 scale) \\
+$\text{RMSE}$ & Root Mean Squared Error on MAVT score (0--10 scale) \\
+$n$ & number of test scenarios evaluated \\
+$k$ & number of retrieved chunks per query in RAG ($k=3$) \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{Notation used throughout this paper.}
+\label{tab:item1}
+\end{table}
+
+%% =====================================================================
+%% ITEM 2 -- MAVT Equations Block
+%% =====================================================================
+\begin{equation}
+\label{eq:mavt_sum}
+s_j = \sum_{i=1}^{4} w_i \cdot v_i(x_{ij})
+\end{equation}
+
+\begin{equation}
+\label{eq:linear_vf}
+v_i(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \times 10
+\end{equation}
+
+\begin{equation}
+\label{eq:log_vf}
+v_i(x) = \frac{\ln\!\left(1 + \alpha \cdot \frac{x - x_{\min}}{x_{\max} - x_{\min}}\right)}{\ln(1 + \alpha)} \times 10
+\end{equation}
+
+%% =====================================================================
+%% ITEM 3 -- MAVT Framework Specification Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lllll}
+\toprule
+Criterion & Weight (\%) & Value Function & $\alpha$ & Direction \\
+\midrule
+Environmental Impact & 35 & Linear & \textemdash & Lower raw = better \\
+Energy Cost & 30 & Linear & \textemdash & Lower raw = better \\
+Comfort & 20 & Logarithmic & 1.5 & Higher raw = better \\
+Practicality & 15 & Logarithmic & 1.2 & Higher raw = better \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{MAVT criterion specification. Weights sum to 100\% and are held constant across all architectures and the ground truth calculator.}
+\label{tab:item3}
+\end{table}
+
+%% =====================================================================
+%% ITEM 4 -- Scenario Corpus and Parameter Asymmetry Table
+%% =====================================================================
+\begin{table*}[t]
+\footnotesize
+\centering
+\begin{minipage}[t]{0.34\textwidth}
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Decision Type & Test Set ($n$) & RAG Set ($n$) & Total ($n$) \\
+\midrule
+HVAC & 60 & 25 & 85 \\
+Appliance & 25 & 20 & 45 \\
+Shower & 15 & 5 & 20 \\
+\midrule
+Total & 100 & 50 & 150 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{minipage}
+\hspace{2em}
+\begin{minipage}[t]{0.60\textwidth}
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lll}
+\toprule
+Decision Type & GT Calculator Receives & Withheld / Generalized for AI \\
+\midrule
+HVAC & \parbox[t]{0.26\textwidth}{R-value, SEER, HVAC age, sq.\ ft., insulation, occupancy context} & \parbox[t]{0.26\textwidth}{R-value, HVAC age, SEER, occupancy context (insulation $\rightarrow$ good/avg/poor)} \\
+Appliance & \parbox[t]{0.26\textwidth}{kWh/cycle, peak rate, off-peak rate, baseline time, appliance type} & \parbox[t]{0.26\textwidth}{All five: type, rates, kWh/cycle, baseline time} \\
+Shower & \parbox[t]{0.26\textwidth}{Tank size, water heater temp, GPM} & \parbox[t]{0.26\textwidth}{Tank size, water heater temp} \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{minipage}
+\caption{Left: scenario distribution. Right: parameters available to the ground truth calculator but withheld or generalized for AI input, by decision type.}
+\label{tab:item4}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 5 -- Main Performance Summary Table
+%% =====================================================================
+\begin{table*}[t]
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Metric & Pure Prompting & RAG-Enhanced & Hybrid \\
+\midrule
+\multicolumn{4}{l}{\textbf{Ranking Accuracy}} \\
+Kendall's $\tau$ & -0.06 & 0.43 & \textbf{0.80} \\
+Spearman's $\rho$ & -0.055 & 0.49 & \textbf{0.82} \\
+Top-1 Accuracy (\%) & 30.00\% & 58.00\% & \textbf{83.00\%} \\
+Top-2 Accuracy (\%) & 62.00\% & 89.00\% & \textbf{97.00\%} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Score Error}} \\
+Overall MAE & 2.52 & 1.61 & \textbf{0.69} \\
+Overall RMSE & 3.07 & 2.40 & \textbf{1.52} \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\\[2pt]
+{\small Scores on 0--10 MAVT scale. $n = 100$ scenarios.}
+\caption{Overall performance comparison across all 100 test scenarios. Best value per metric in bold.}
+\label{tab:item5}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 6 -- Criterion-Level MAE Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Criterion & Pure Prompting & RAG-Enhanced & Hybrid \\
+\midrule
+Energy Cost & 2.60 & 1.60 & \textbf{0.96} \\
+Environmental Impact & 2.80 & 1.59 & \textbf{1.02} \\
+Comfort & 2.51 & 1.97 & \textbf{0.32} \\
+Practicality & 2.16 & 1.29 & \textbf{0.43} \\
+\midrule
+Overall & 2.52 & 1.61 & \textbf{0.69} \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\\[2pt]
+{\small $^\dagger$Hybrid HVAC Comfort MAE = 0.00 and Practicality MAE = 0.00 (fully deterministic); reported separately in Table~\ref{tab:item7}.}
+\caption{MAE per criterion by architecture (Overall, $n=100$, score 0--10). Best per criterion in bold.}
+\label{tab:item6}
+\end{table}
+
+%% =====================================================================
+%% ITEM 7 -- Per-Decision-Type Full Breakdown Table
+%% =====================================================================
+\begin{table*}[t]
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccccccccc}
+\toprule
+ & \multicolumn{3}{c}{Pure Prompting} & \multicolumn{3}{c}{RAG-Enhanced} & \multicolumn{3}{c}{Hybrid} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Decision Type & $\tau$ & Top-1 (\%) & Top-2 (\%) & $\tau$ & Top-1 (\%) & Top-2 (\%) & $\tau$ & Top-1 (\%) & Top-2 (\%) \\
+\midrule
+HVAC ($n=60$) & -0.11 & 25.00\% & 56.67\% & 0.52 & 63.33\% & 93.33\% & \textbf{0.90} & \textbf{91.67\%} & 100.00\% \\
+Appliance ($n=25$) & 0.09 & 40.00\% & 72.00\% & 0.41 & 56.00\% & 88.00\% & \textbf{0.68} & \textbf{72.00\%} & 92.00\% \\
+Shower ($n=15$) & -0.11 & 33.33\% & 66.67\% & 0.11 & 40.00\% & 73.33\% & \textbf{0.60} & \textbf{66.67\%} & 93.33\% \\
+\midrule
+Overall ($n=100$) & -0.06 & 30.00\% & 62.00\% & 0.43 & 58.00\% & 89.00\% & \textbf{0.80} & \textbf{83.00\%} & 97.00\% \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{Ranking accuracy by decision type. Best $\tau$ and Top-1 per row in bold.}
+\label{tab:item7}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 8 -- Efficiency and API Usage Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Metric & Pure Prompting & RAG-Enhanced & Hybrid \\
+\midrule
+Total API Calls & 300 & 300 & 100 \\
+Input Tokens & 114739 & 295174 & 81741 \\
+Output Tokens & 9970 & 13463 & 16275 \\
+Total Tokens & 124709 & 308637 & \textbf{98016} \\
+\midrule
+Total Latency (s) & 437.1 & 480.8 & \textbf{275.6} \\
+Avg.\ Latency/Call (ms) & 1456.9 & 1602.6 & 2755.9 \\
+\midrule
+Success Rate (\%) & 100.00\% & 100.00\% & 100.00\% \\
+Failure Rate (\%) & 0.00\% & 0.00\% & 0.00\% \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{API usage and efficiency across 100 test scenarios. Token counts cumulative across all API calls per architecture.}
+\label{tab:item8}
+\end{table}
+
+%% =====================================================================
+%% ITEM 9 -- MAE Heatmap (figure*)
+%% =====================================================================
+\begin{figure*}[t]
+\centering
+\pgfplotsset{
+	colormap={maewhitered}{
+		rgb255(0cm)=(255,255,255);
+		rgb255(1cm)=(139,0,0)
+	}
+}
+\begin{tikzpicture}
+\begin{groupplot}[
+	group style={group size=3 by 1, horizontal sep=1.2cm},
+	width=0.29\textwidth,
+	height=0.25\textwidth,
+	xmin=0.5,
+	xmax=3.5,
+	ymin=0.5,
+	ymax=4.5,
+	xtick={1,2,3},
+	xticklabels={HVAC,Appliance,Shower},
+	ytick={1,2,3,4},
+	yticklabels={Practicality,Comfort,Environmental Impact,Energy Cost},
+	tick align=outside,
+	colormap name=maewhitered,
+	point meta min=0,
+	point meta max=5,
+	enlargelimits=false,
+	nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+	every node near coord/.append style={font=\footnotesize, anchor=center, text=black}
+]
+\nextgroupplot[title={\textbf{Pure Prompting}}]
+\addplot[
+	matrix plot*,
+	point meta=explicit,
+	mesh/cols=3
+] coordinates {
+	(1,4) [2.2537] (2,4) [3.0725] (3,4) [3.2227]
+	(1,3) [2.3763] (2,3) [3.0908] (3,3) [4.0384]
+	(1,2) [2.1877] (2,2) [3.5869] (3,2) [2.0349]
+	(1,1) [1.6232] (2,1) [3.4985] (3,1) [2.0891]
+};
+\draw[red, line width=1.5pt] (axis cs:2.5,2.5) rectangle (axis cs:3.5,3.5);
+
+\nextgroupplot[title={\textbf{RAG-Enhanced}}]
+\addplot[
+	matrix plot*,
+	point meta=explicit,
+	mesh/cols=3
+] coordinates {
+	(1,4) [2.0360] (2,4) [0.7987] (3,4) [1.2200]
+	(1,3) [2.0366] (2,3) [0.9119] (3,3) [0.9416]
+	(1,2) [1.4068] (2,2) [3.8840] (3,2) [1.0300]
+	(1,1) [0.3719] (2,1) [2.9940] (3,1) [2.1522]
+};
+\draw[red, line width=1.5pt] (axis cs:1.5,1.5) rectangle (axis cs:2.5,2.5);
+
+\nextgroupplot[title={\textbf{Hybrid}}, colorbar, colorbar style={ylabel={MAE}, ytick={0,1,2,3,4,5}}]
+\addplot[
+	matrix plot*,
+	point meta=explicit,
+	mesh/cols=3
+] coordinates {
+	(1,4) [1.1858] (2,4) [0.7395] (3,4) [0.4393]
+	(1,3) [1.3083] (2,3) [0.7924] (3,3) [0.2711]
+	(1,2) [0.0000] (2,2) [1.2559] (3,2) [0.0573]
+	(1,1) [0.0000] (2,1) [1.0913] (3,1) [1.0693]
+};
+\end{groupplot}
+\end{tikzpicture}
+\caption{MAE heatmap by criterion and decision type (0--10 MAVT scale). Darker = larger error. Red-bordered cells: two worst criterion-level errors.}
+\label{fig:item9}
+\end{figure*}
+%% DATA CHECK (ITEM 9):
+%% Pure HVAC MAE: energy_cost_MAE=2.2537, environmental_MAE=2.3763, comfort_MAE=2.1877, practicality_MAE=1.6232 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Pure Appliance MAE: energy_cost_MAE=3.0725, environmental_MAE=3.0908, comfort_MAE=3.5869, practicality_MAE=3.4985 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Pure Shower MAE: energy_cost_MAE=3.2227, environmental_MAE=4.0384, comfort_MAE=2.0349, practicality_MAE=2.0891 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG HVAC MAE: energy_cost_MAE=2.0360, environmental_MAE=2.0366, comfort_MAE=1.4068, practicality_MAE=0.3719 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG Appliance MAE: energy_cost_MAE=0.7987, environmental_MAE=0.9119, comfort_MAE=3.8840, practicality_MAE=2.9940 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG Shower MAE: energy_cost_MAE=1.2200, environmental_MAE=0.9416, comfort_MAE=1.0300, practicality_MAE=2.1522 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid HVAC MAE: energy_cost_MAE=1.1858, environmental_MAE=1.3083, comfort_MAE=0.0000, practicality_MAE=0.0000 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid Appliance MAE: energy_cost_MAE=0.7395, environmental_MAE=0.7924, comfort_MAE=1.2559, practicality_MAE=1.0913 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid Shower MAE: energy_cost_MAE=0.4393, environmental_MAE=0.2711, comfort_MAE=0.0573, practicality_MAE=1.0693 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Highest two MAE values verified: 4.0384 (Pure, Shower, Environmental), 3.8840 (RAG, Appliance, Comfort)
+
+%% =====================================================================
+%% ITEM 10 -- Grouped Bar Chart: tau by Decision Type
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	ybar,
+	bar width=5pt,
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	symbolic x coords={HVAC,Appliance,Shower,Overall},
+	xtick=data,
+	ymin=-0.20,
+	ymax=1.00,
+	ytick={-0.2,0,0.2,0.4,0.6,0.8,1.0},
+	ylabel={Kendall's $\tau$},
+	enlarge x limits=0.18,
+	legend style={at={(0.02,0.98)}, anchor=north west, font=\footnotesize, draw=none},
+	nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+	point meta=y,
+	every node near coord/.append style={font=\footnotesize}
+]
+\addplot+[
+	draw=colorPure, fill=colorPure, bar shift=-6pt,
+	nodes near coords,
+	every node near coord/.style={
+		font=\footnotesize,
+		/pgfplots/scatter/use mapped color=false,
+		anchor={
+			\ifnum\coordindex=0 north\fi
+			\ifnum\coordindex=1 south\fi
+			\ifnum\coordindex=2 north\fi
+			\ifnum\coordindex=3 north\fi
+		}
+	}
+] coordinates {
+	(HVAC,-0.1111) (Appliance,0.0933) (Shower,-0.1111) (Overall,-0.0600)
+};
+\addlegendentry{Pure Prompting}
+
+\addplot+[draw=colorRAG, fill=colorRAG, bar shift=0pt, nodes near coords, every node near coord/.append style={anchor=south}] coordinates {
+	(HVAC,0.5222) (Appliance,0.4133) (Shower,0.1111) (Overall,0.4333)
+};
+\addlegendentry{RAG-Enhanced}
+
+\addplot+[draw=colorHybrid, fill=colorHybrid, bar shift=6pt, nodes near coords, every node near coord/.append style={anchor=south}] coordinates {
+	(HVAC,0.9000) (Appliance,0.6800) (Shower,0.6000) (Overall,0.8000)
+};
+\addlegendentry{Hybrid}
+
+\addplot[gray, dashed, thick] coordinates {(HVAC,0.00) (Overall,0.00)} node[pos=1, anchor=west, font=\footnotesize]{Random baseline};
+\addplot[darkgray, dotted, thick] coordinates {(HVAC,0.70) (Overall,0.70)} node[pos=1, anchor=west, font=\footnotesize]{Strong correlation};
+\end{axis}
+\end{tikzpicture}
+\caption{Kendall's $\tau$ by decision type and architecture. Dashed: $\tau=0$ (random). Dotted: $\tau=0.7$ (strong threshold).}
+\label{fig:item10}
+\end{figure}
+%% DATA CHECK (ITEM 10):
+%% Pure tau: HVAC=-0.1111, Appliance=0.0933, Shower=-0.1111, Overall=-0.0600 (COMPREHENSIVE METRIC SUMMARY.csv: kendall_tau)
+%% RAG tau: HVAC=0.5222, Appliance=0.4133, Shower=0.1111, Overall=0.4333 (COMPREHENSIVE METRIC SUMMARY.csv: kendall_tau)
+%% Hybrid tau: HVAC=0.9000, Appliance=0.6800, Shower=0.6000, Overall=0.8000 (COMPREHENSIVE METRIC SUMMARY.csv: kendall_tau)
+%% Reference lines: y=0.00, y=0.70 (user-specified thresholds)
+
+%% =====================================================================
+%% ITEM 11 -- Grouped Bar Chart: MAE per Criterion
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	ybar,
+	bar width=5pt,
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	symbolic x coords={Energy Cost,Environmental Impact,Comfort,Practicality},
+	xtick=data,
+	xticklabel style={font=\footnotesize, rotate=20, anchor=east},
+	ymin=0,
+	ymax=4.5,
+	ylabel={MAE},
+	enlarge x limits=0.14,
+	legend style={at={(0.98,0.98)}, anchor=north east, font=\footnotesize, draw=none},
+	nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+	point meta=y,
+	every node near coord/.append style={font=\footnotesize, anchor=south}
+]
+\addplot+[draw=colorPure, fill=colorPure, bar shift=-6pt] coordinates {
+	(Energy Cost,2.6037) (Environmental Impact,2.8042) (Comfort,2.5146) (Practicality,2.1619)
+};
+\addlegendentry{Pure Prompting}
+
+\addplot+[draw=colorRAG, fill=colorRAG, bar shift=0pt] coordinates {
+	(Energy Cost,1.6043) (Environmental Impact,1.5912) (Comfort,1.9696) (Practicality,1.2945)
+};
+\addlegendentry{RAG-Enhanced}
+
+\addplot+[draw=colorHybrid, fill=colorHybrid, bar shift=6pt] coordinates {
+	(Energy Cost,0.9622) (Environmental Impact,1.0238) (Comfort,0.3226) (Practicality,0.4332)
+};
+\addlegendentry{Hybrid}
+\end{axis}
+\end{tikzpicture}
+\caption{MAE per criterion by architecture (Overall, $n=100$, scale 0--10).}
+\label{fig:item11}
+\end{figure}
+%% DATA CHECK (ITEM 11):
+%% Overall Pure MAE: energy_cost=2.6037, environmental=2.8042, comfort=2.5146, practicality=2.1619 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Overall RAG MAE: energy_cost=1.6043, environmental=1.5912, comfort=1.9696, practicality=1.2945 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Overall Hybrid MAE: energy_cost=0.9622, environmental=1.0238, comfort=0.3226, practicality=0.4332 (COMPREHENSIVE METRIC SUMMARY.csv)
+
+%% =====================================================================
+%% ITEM 12 -- Token and Latency Dual-Axis Figure
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+%% DATA VALUES USED (from diagnostics JSON files):
+%% Pure: input_tokens=114739, output_tokens=9970, total_latency_ms=437083.42933654785 -> latency_s=437.08342933654785
+%% RAG: input_tokens=295174, output_tokens=13463, total_latency_ms=480785.8417034149 -> latency_s=480.7858417034149
+%% Hybrid: input_tokens=81741, output_tokens=16275, total_latency_ms=275591.1343097687 -> latency_s=275.5911343097687
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	axis y line*=left,
+	axis x line*=bottom,
+	ybar stacked,
+	bar width=12pt,
+	symbolic x coords={Pure Prompting,RAG-Enhanced,Hybrid},
+	xtick=data,
+	ymin=0,
+	ymax=330,
+	ylabel={Token Count (thousands)},
+	legend style={at={(0.98,0.98)}, anchor=north east, font=\footnotesize, draw=none}
+]
+\addplot+[draw=colorPure, fill=colorPure, fill opacity=0.5] coordinates {(Pure Prompting,114.739)};
+\addlegendentry{Input Tokens}
+\addplot+[draw=colorRAG, fill=colorRAG, fill opacity=0.5, forget plot] coordinates {(RAG-Enhanced,295.174)};
+\addplot+[draw=colorHybrid, fill=colorHybrid, fill opacity=0.5, forget plot] coordinates {(Hybrid,81.741)};
+
+\addplot+[draw=colorPure, fill=colorPure] coordinates {(Pure Prompting,9.970)};
+\addlegendentry{Output Tokens}
+\addplot+[draw=colorRAG, fill=colorRAG, forget plot] coordinates {(RAG-Enhanced,13.463)};
+\addplot+[draw=colorHybrid, fill=colorHybrid, forget plot] coordinates {(Hybrid,16.275)};
+\addlegendimage{black, thick, mark=*, mark options={fill=black}}
+\addlegendentry{Latency (s)}
+
+\node[font=\footnotesize, anchor=south] at (axis cs:Pure Prompting,124.709) {124.7};
+\node[font=\footnotesize, anchor=south] at (axis cs:RAG-Enhanced,308.637) {308.6};
+\node[font=\footnotesize, anchor=south] at (axis cs:Hybrid,98.016) {98.0};
+\end{axis}
+
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	axis y line*=right,
+	axis x line*=none,
+	symbolic x coords={Pure Prompting,RAG-Enhanced,Hybrid},
+	xtick=data,
+	ymin=240,
+	ymax=500,
+	ylabel={Total Latency (s)},
+	xtick=\empty
+]
+\addplot+[black, thick, mark=*, mark options={fill=black}] coordinates {
+	(Pure Prompting,437.08342933654785)
+	(RAG-Enhanced,480.7858417034149)
+	(Hybrid,275.5911343097687)
+};
+\node[font=\footnotesize, anchor=west] at (axis cs:Pure Prompting,437.08342933654785) {437.1};
+\node[font=\footnotesize, anchor=west] at (axis cs:RAG-Enhanced,480.7858417034149) {480.8};
+\node[font=\footnotesize, anchor=west] at (axis cs:Hybrid,275.5911343097687) {275.6};
+\end{axis}
+\end{tikzpicture}
+\caption{Token usage (stacked bars, left axis) and latency (line, right axis) per architecture across 100 scenarios.}
+\label{fig:item12}
+\end{figure}
+%% DATA CHECK (ITEM 12):
+%% Pure tokens: total_tokens_input=114739, total_tokens_output=9970 (pure_prompting_results_diagnostics.json)
+%% RAG tokens: total_tokens_input=295174, total_tokens_output=13463 (RAGDiagnostics.json)
+%% Hybrid tokens: total_tokens_input=81741, total_tokens_output=16275 (hybrid_diagnostics.json)
+%% Pure latency: total_latency_ms=437083.42933654785 -> 437.08342933654785 s (pure_prompting_results_diagnostics.json)
+%% RAG latency: total_latency_ms=480785.8417034149 -> 480.7858417034149 s (RAGDiagnostics.json)
+%% Hybrid latency: total_latency_ms=275591.1343097687 -> 275.5911343097687 s (hybrid_diagnostics.json)
+
+%% =====================================================================
+%% ITEM 13 -- Accuracy-Efficiency Tradeoff Scatter
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	xmin=0,
+	xmax=350,
+	ymin=-0.15,
+	ymax=1.00,
+	xlabel={Total Token Usage (thousands)},
+	ylabel={Kendall's $\tau$}
+]
+\addplot[gray, dashed, thick] coordinates {(0,0) (350,0)} node[pos=1, anchor=west, font=\footnotesize]{Random baseline};
+
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorPure, fill=colorPure] coordinates {(124.709,-0.0600)};
+\node[font=\footnotesize, anchor=south west] at (axis cs:124.709,-0.0600) {Pure Prompting};
+
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorRAG, fill=colorRAG] coordinates {(308.637,0.4333)};
+\node[font=\footnotesize, anchor=south east] at (axis cs:308.637,0.4333) {RAG-Enhanced};
+
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorHybrid, fill=colorHybrid] coordinates {(98.016,0.8000)};
+\node[font=\footnotesize, anchor=south east] at (axis cs:98.016,0.8000) {Hybrid (Pareto-optimal)};
+\end{axis}
+\end{tikzpicture}
+\caption{Accuracy--efficiency tradeoff. Hybrid is Pareto-dominant: highest $\tau$ at lowest token cost.}
+\label{fig:item13}
+\end{figure}
+%% DATA CHECK (ITEM 13):
+%% Pure point: x=(114739+9970)/1000=124.709, y=kendall_tau_overall=-0.0600 (pure_prompting_results_diagnostics.json + COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG point: x=(295174+13463)/1000=308.637, y=kendall_tau_overall=0.4333 (RAGDiagnostics.json + COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid point: x=(81741+16275)/1000=98.016, y=kendall_tau_overall=0.8000 (hybrid_diagnostics.json + COMPREHENSIVE METRIC SUMMARY.csv)
+
+%% =====================================================================
+%% ITEM 14 -- Architecture Pipeline Diagram Placeholder
+%% =====================================================================
+\begin{figure*}[t]
+\centering
+\missingfigure[figwidth=\textwidth]{Side-by-side vertical pipeline flowcharts for three LLM integration architectures. Pure Prompting: 3 LLM calls, one per alternative, no external context. RAG-Enhanced: 3 LLM calls each preceded by ChromaDB retrieval (k=3 chunks). Hybrid: 1 LLM call for parameter extraction, output to physics-based calculator, then MAVT weighted sum.}
+%% ELSEVIER FIGURE REQUIREMENTS FOR FIG3:
+%% - Format: EPS or PDF vector preferred; TIFF/JPEG at >=1000 DPI
+%% - Filename: FIG3.EPS or FIG3.PDF at root level (no subfolders)
+%% - Double-column width: 190mm
+%% - Minimum font size: 7pt (Arial or Helvetica)
+%% - Color space: RGB
+%% - Replace \missingfigure{} with \includegraphics[width=\textwidth]{FIG3}
+\caption{Processing pipeline for each architecture. Pure Prompting and RAG-Enhanced require three API calls per scenario; Hybrid requires one.}
+\label{fig:pipeline}
+\end{figure*}
+
+\end{document}
+\endinput
+%%
+%% End of file `elsarticle-template-num.tex'.

@@ -1,0 +1,293 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section{Ground-Truth Calculator Formula Appendix}
+\label{app:gt-formulas}
+
+\subsection{HVAC Calculator Equations}
+
+\begin{equation}
+\label{eq:hvac_cooling_delta_t}
+\Delta T_{\mathrm{cool}} = T_{\mathrm{out}} - T_{\mathrm{in}}
+\end{equation}
+\noindent\textit{Source note:} where $\Delta T_{\mathrm{cool}}$ stands for cooling temperature difference, $T_{\mathrm{out}}$ stands for outdoor temperature, and $T_{\mathrm{in}}$ stands for indoor temperature setpoint. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy}; Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_envelope_area}
+A_{\mathrm{env}} = 1.4\,S
+\end{equation}
+\noindent\textit{Source note:} where $A_{\mathrm{env}}$ stands for effective building envelope area and $S$ stands for house floor area (square footage). Source: Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_u_factor}
+U = \frac{1}{R}
+\end{equation}
+\noindent\textit{Source note:} where $U$ stands for thermal transmittance (U-factor) and $R$ stands for insulation R-value. Source: Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_conduction_cool}
+Q_{\mathrm{cond,cool}} = U\,A_{\mathrm{env}}\,\Delta T_{\mathrm{cool}}
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{cond,cool}}$ stands for conductive cooling load, $U$ stands for thermal transmittance, $A_{\mathrm{env}}$ stands for envelope area, and $\Delta T_{\mathrm{cool}}$ stands for cooling temperature difference. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy}; Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_solar_gains}
+Q_{\mathrm{solar}} = (0.15\,S)\times 20
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{solar}}$ stands for solar heat gain and $S$ stands for house floor area; $0.15$ is the window-area fraction and $20$ is the solar gain factor used in this model. Source: Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_ventilation_load}
+Q_{\mathrm{vent}} = 0.20\,Q_{\mathrm{cond,cool}}
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{vent}}$ stands for ventilation load and $Q_{\mathrm{cond,cool}}$ stands for conductive cooling load. Source: Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_total_cooling_load}
+Q_{\mathrm{cool}} = Q_{\mathrm{cond,cool}} + 1000 + Q_{\mathrm{solar}} + Q_{\mathrm{vent}}
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{cool}}$ stands for total cooling load, $Q_{\mathrm{cond,cool}}$ stands for conductive cooling load, $Q_{\mathrm{solar}}$ stands for solar gains, $Q_{\mathrm{vent}}$ stands for ventilation load, and $1000$ stands for internal gains used by the model. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy}; Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_heating_delta_t}
+\Delta T_{\mathrm{heat}} = T_{\mathrm{in}} - T_{\mathrm{out}}
+\end{equation}
+\noindent\textit{Source note:} where $\Delta T_{\mathrm{heat}}$ stands for heating temperature difference, $T_{\mathrm{in}}$ stands for indoor temperature setpoint, and $T_{\mathrm{out}}$ stands for outdoor temperature. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy}; Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_conduction_heat}
+Q_{\mathrm{cond,heat}} = U\,A_{\mathrm{env}}\,\Delta T_{\mathrm{heat}}
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{cond,heat}}$ stands for conductive heating loss, $U$ stands for thermal transmittance, $A_{\mathrm{env}}$ stands for envelope area, and $\Delta T_{\mathrm{heat}}$ stands for heating temperature difference. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy}; Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_infiltration_heat}
+Q_{\mathrm{inf}} = 0.25\,Q_{\mathrm{cond,heat}}
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{inf}}$ stands for infiltration loss and $Q_{\mathrm{cond,heat}}$ stands for conductive heating loss. Source: Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_total_heating_load}
+Q_{\mathrm{heat}} = Q_{\mathrm{cond,heat}} + Q_{\mathrm{inf}} - 1000
+\end{equation}
+\noindent\textit{Source note:} where $Q_{\mathrm{heat}}$ stands for total heating load, $Q_{\mathrm{cond,heat}}$ stands for conductive loss, $Q_{\mathrm{inf}}$ stands for infiltration loss, and $1000$ stands for internal gains offset in the model. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy}; Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}.
+
+\begin{equation}
+\label{eq:hvac_degradation_early}
+d_{\mathrm{early}} = 1.5\,r_m\,a,\quad a\le 10
+\end{equation}
+\noindent\textit{Source note:} where $d_{\mathrm{early}}$ stands for early-life degradation fraction, $r_m$ stands for base annual maintenance-linked degradation rate, and $a$ stands for HVAC age in years. Sources: Domanski, P. A.; Henderson, H. I.; Payne, W. V., \emph{Sensitivity Analysis of Installation Faults on Heat Pump Performance}; Davis Energy Group, \emph{HVAC Energy Efficiency Maintenance Study}.
+
+\begin{equation}
+\label{eq:hvac_degradation_late}
+d_{\mathrm{late}} = 1.5\,r_m\,10 + 0.5\,r_m\,(a-10),\quad a>10
+\end{equation}
+\noindent\textit{Source note:} where $d_{\mathrm{late}}$ stands for full-lifecycle degradation fraction for systems older than 10 years, $r_m$ stands for base annual degradation rate, and $a$ stands for HVAC age in years. Sources: Domanski, P. A.; Henderson, H. I.; Payne, W. V., \emph{Sensitivity Analysis of Installation Faults on Heat Pump Performance}; Fenaughty, K.; Parker, D., \emph{Evaluation of Air Conditioning Performance Degradation: Opportunities from Diagnostic Methods}.
+
+\begin{equation}
+\label{eq:hvac_degradation_cap}
+d = \min\{0.30,\,d_{\mathrm{early/late}}\}
+\end{equation}
+\noindent\textit{Source note:} where $d$ stands for capped degradation fraction and $d_{\mathrm{early/late}}$ stands for the uncapped degradation estimate from the age regime formula. Sources: Domanski, P. A.; Henderson, H. I.; Payne, W. V., \emph{Sensitivity Analysis of Installation Faults on Heat Pump Performance}; Davis Energy Group, \emph{HVAC Energy Efficiency Maintenance Study}.
+
+\begin{equation}
+\label{eq:hvac_effective_seer}
+\mathrm{SEER}_{\mathrm{eff}} = \mathrm{SEER}\,(1-d)
+\end{equation}
+\noindent\textit{Source note:} where $\mathrm{SEER}_{\mathrm{eff}}$ stands for effective SEER after degradation, $\mathrm{SEER}$ stands for nameplate SEER, and $d$ stands for degradation fraction. Source: Domanski, P. A.; Henderson, H. I.; Payne, W. V., \emph{Sensitivity Analysis of Installation Faults on Heat Pump Performance}.
+
+\begin{equation}
+\label{eq:hvac_eer_estimate}
+\mathrm{EER}_{\mathrm{eff}} = 0.875\,\mathrm{SEER}_{\mathrm{eff}}
+\end{equation}
+\noindent\textit{Source note:} where $\mathrm{EER}_{\mathrm{eff}}$ stands for effective EER and $\mathrm{SEER}_{\mathrm{eff}}$ stands for effective SEER. Sources: Krarti, M.; Howarth, N., \emph{Transitioning to high efficiency air conditioning in Saudi Arabia: A benefit cost analysis for residential buildings}; Alves, O.; Monteiro, E.; Brito, P.; Romano, P., \emph{Measurement and classification of energy efficiency in HVAC systems}.
+
+\begin{equation}
+\label{eq:hvac_kw}
+P_{\mathrm{kW}} = \frac{Q_{\mathrm{load}}}{\mathrm{EER}_{\mathrm{eff}}\times 1000}
+\end{equation}
+\noindent\textit{Source note:} where $P_{\mathrm{kW}}$ stands for electrical power draw in kW, $Q_{\mathrm{load}}$ stands for thermal load (BTU/hr), and $\mathrm{EER}_{\mathrm{eff}}$ stands for effective EER. Sources: Wu, W.; Skye, H. M.; Domanski, P. A., \emph{Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings}; Krarti, M.; Howarth, N., \emph{Transitioning to high efficiency air conditioning in Saudi Arabia: A benefit cost analysis for residential buildings}.
+
+\begin{equation}
+\label{eq:hvac_kwh_total}
+E_{\mathrm{kWh}} = P_{\mathrm{kW}}\,h\,m_{\mathrm{occ}}
+\end{equation}
+\noindent\textit{Source note:} where $E_{\mathrm{kWh}}$ stands for energy use in kWh, $P_{\mathrm{kW}}$ stands for electrical power in kW, $h$ stands for operation hours, and $m_{\mathrm{occ}}$ stands for occupancy runtime multiplier. Sources: Cetin, K. S.; Novoselac, A., \emph{Single and multi-family residential central all-air HVAC system operational characteristics in cooling-dominated climate}; Huyen, T. T.; Cetin, K., \emph{Energy consumption of high-efficiency residential HVAC systems under moderate conditions}.
+
+\begin{equation}
+\label{eq:hvac_cost}
+C_{\$} = E_{\mathrm{kWh}}\,p_e
+\end{equation}
+\noindent\textit{Source note:} where $C_{\$}$ stands for energy cost in dollars, $E_{\mathrm{kWh}}$ stands for energy use in kWh, and $p_e$ stands for electricity price per kWh. Source: U.S. Energy Information Administration, \emph{Frequently asked questions (FAQs)}.
+
+\begin{equation}
+\label{eq:hvac_emissions}
+\mathrm{CO2}_{\mathrm{lbs}} = E_{\mathrm{kWh}}\,\gamma_{\mathrm{PA}}
+\end{equation}
+\noindent\textit{Source note:} where $\mathrm{CO2}_{\mathrm{lbs}}$ stands for emitted pounds of CO2, $E_{\mathrm{kWh}}$ stands for energy use in kWh, and $\gamma_{\mathrm{PA}}$ stands for Pennsylvania grid emissions factor (lbs CO2/kWh). Source: U.S. EPA, \emph{eGRID2023 Detailed Data (Version 2)}.
+
+\subsection{Appliance Calculator Equations}
+
+\begin{equation}
+\label{eq:app_tou_period}
+\text{period}(t)=
+\begin{cases}
+\text{peak}, & 14\le t < 18\\
+\text{offpeak}, & \text{otherwise}
+\end{cases}
+\end{equation}
+\noindent\textit{Source note:} where $\text{period}(t)$ stands for TOU period classification at run hour $t$, and $t$ stands for hour-of-day in 24-hour format. Source: PECO Energy Company, \emph{How Time-Of-Use pricing works with interconnection to solar or net metering}.
+
+\begin{equation}
+\label{eq:app_cycle_cost}
+C_{\mathrm{cycle}} = E_{\mathrm{cycle}}\,p_{\mathrm{period}(t)}
+\end{equation}
+\noindent\textit{Source note:} where $C_{\mathrm{cycle}}$ stands for per-cycle electricity cost, $E_{\mathrm{cycle}}$ stands for per-cycle electricity use (kWh), and $p_{\mathrm{period}(t)}$ stands for TOU electricity price for the run period. Sources: Winfield, D. et al., \emph{Measured Performance of Heat Pump Clothes Dryers}; Northeast Energy Efficiency Partnerships, \emph{New study unearths energy baseline for clothes dryers in the Northeast}; Porras, G.; Keoleian, G.; Lewis, G.; Seeba, N., \emph{A guide to household manual and machine dishwashing through a life cycle perspective}; Chen-Yu, J.; Emmel, J., \emph{Comparisons of fabric care performances between conventional and high-efficiency washers and dryers}; Hustvedt, G.; Ahn, M.; Emmel, J., \emph{The adoption of sustainable laundry technologies by US consumers}.
+
+\begin{equation}
+\label{eq:app_cycle_emissions}
+\mathrm{CO2}_{\mathrm{cycle}} = E_{\mathrm{cycle}}\,\gamma_{\mathrm{PA}}
+\end{equation}
+\noindent\textit{Source note:} where $\mathrm{CO2}_{\mathrm{cycle}}$ stands for per-cycle CO2 emissions, $E_{\mathrm{cycle}}$ stands for per-cycle energy use in kWh, and $\gamma_{\mathrm{PA}}$ stands for Pennsylvania grid emissions factor. Source: U.S. EPA, \emph{eGRID2023 Detailed Data (Version 2)}.
+
+\begin{equation}
+\label{eq:app_delay_hours}
+\Delta h =
+\begin{cases}
+t_{\mathrm{run}}-t_{\mathrm{base}}, & t_{\mathrm{run}}\ge t_{\mathrm{base}}\\
+24-t_{\mathrm{base}}+t_{\mathrm{run}}, & t_{\mathrm{run}}<t_{\mathrm{base}}
+\end{cases}
+\end{equation}
+\noindent\textit{Source note:} where $\Delta h$ stands for delay hours, $t_{\mathrm{run}}$ stands for selected run time, and $t_{\mathrm{base}}$ stands for baseline preferred run time. Source: Paetz, A.; Dutschke, E.; Fichtner, W., \emph{Shifting dish-washer use: A field study on time-of-use tariffs and user acceptance}.
+
+\begin{equation}
+\label{eq:app_monthly_cost}
+C_{\mathrm{month}} = 30\,C_{\mathrm{cycle}}
+\end{equation}
+\noindent\textit{Source note:} where $C_{\mathrm{month}}$ stands for monthly appliance energy cost and $C_{\mathrm{cycle}}$ stands for per-cycle energy cost; $30$ stands for cycles per month assumption. Sources: Porras, G.; Keoleian, G.; Lewis, G.; Seeba, N., \emph{A guide to household manual and machine dishwashing through a life cycle perspective}; Chen-Yu, J.; Emmel, J., \emph{Comparisons of fabric care performances between conventional and high-efficiency washers and dryers}.
+
+\subsection{Shower Calculator Equations}
+
+\begin{equation}
+\label{eq:shower_inlet_temp}
+T_{\mathrm{inlet}}(T_{\mathrm{out}})=
+\begin{cases}
+45, & T_{\mathrm{out}}\le 32\\
+65, & T_{\mathrm{out}}\ge 75\\
+45 + (T_{\mathrm{out}}-32)\dfrac{20}{43}, & 32<T_{\mathrm{out}}<75
+\end{cases}
+\end{equation}
+\noindent\textit{Source note:} where $T_{\mathrm{inlet}}(T_{\mathrm{out}})$ stands for mains inlet water temperature as a function of outdoor temperature $T_{\mathrm{out}}$. Sources: Hendron, R.; Burch, J., \emph{Development of standardized domestic hot water event schedules for residential buildings}; Maguire, J. et al., \emph{Validation of a hot water distribution model using laboratory and field data}.
+
+\begin{equation}
+\label{eq:shower_delta_t}
+\Delta T_{\mathrm{water}} = T_{\mathrm{heater}}-T_{\mathrm{inlet}}
+\end{equation}
+\noindent\textit{Source note:} where $\Delta T_{\mathrm{water}}$ stands for water heating temperature lift, $T_{\mathrm{heater}}$ stands for water heater setpoint, and $T_{\mathrm{inlet}}$ stands for mains inlet temperature. Sources: Hendron, R.; Burch, J., \emph{Development of standardized domestic hot water event schedules for residential buildings}; Centers for Disease Control and Prevention, \emph{Monitoring building water: A vital step for control of Legionella}.
+
+\begin{equation}
+\label{eq:shower_effective_gpm}
+\dot V_{\mathrm{hot}} = 0.65\,\dot V
+\end{equation}
+\noindent\textit{Source note:} where $\dot V_{\mathrm{hot}}$ stands for hot-water flow rate and $\dot V$ stands for total shower flow rate. Sources: Maguire, J. et al., \emph{Validation of a hot water distribution model using laboratory and field data}; Zhang, D.; Mui, K.-W.; Wong, L.-T., \emph{Establishing the relationship between occupants' thermal behavior and energy consumption during showering}.
+
+\begin{equation}
+\label{eq:shower_energy_kwh}
+E_{\mathrm{kWh}} = \frac{\dot V_{\mathrm{hot}}\,(8.33)\,\Delta T_{\mathrm{water}}\,\tau}{3412\,\eta_e}
+\end{equation}
+\noindent\textit{Source note:} where $E_{\mathrm{kWh}}$ stands for shower energy use in kWh, $\dot V_{\mathrm{hot}}$ stands for hot-water flow rate, $8.33$ stands for water density conversion (lbs/gal), $\Delta T_{\mathrm{water}}$ stands for water temperature rise, $\tau$ stands for shower duration, $3412$ stands for BTU-per-kWh conversion, and $\eta_e$ stands for electric heater efficiency. Sources: Hendron, R.; Burch, J., \emph{Development of standardized domestic hot water event schedules for residential buildings}; Maguire, J. et al., \emph{Validation of a hot water distribution model using laboratory and field data}; Rheem Manufacturing Company, \emph{Residential Tank Water Heaters -- product specifications (electric models)}.
+
+\begin{equation}
+\label{eq:shower_cost}
+C_{\$} = E_{\mathrm{kWh}}\,p_e
+\end{equation}
+\noindent\textit{Source note:} where $C_{\$}$ stands for shower energy cost in dollars, $E_{\mathrm{kWh}}$ stands for shower energy use, and $p_e$ stands for electricity price per kWh. Source: U.S. Energy Information Administration, \emph{Frequently asked questions (FAQs)}.
+
+\begin{equation}
+\label{eq:shower_emissions}
+\mathrm{CO2}_{\mathrm{lbs}} = E_{\mathrm{kWh}}\,\gamma_{\mathrm{PA}}
+\end{equation}
+\noindent\textit{Source note:} where $\mathrm{CO2}_{\mathrm{lbs}}$ stands for shower CO2 emissions in pounds, $E_{\mathrm{kWh}}$ stands for shower energy use, and $\gamma_{\mathrm{PA}}$ stands for Pennsylvania emissions factor. Source: U.S. EPA, \emph{eGRID2023 Detailed Data (Version 2)}.
+
+\begin{equation}
+\label{eq:shower_monthly_cost}
+C_{\mathrm{month}} = C_{\mathrm{shower}}\,(0.9)\,N_{\mathrm{occ}}\,(30)
+\end{equation}
+\noindent\textit{Source note:} where $C_{\mathrm{month}}$ stands for monthly shower energy cost, $C_{\mathrm{shower}}$ stands for per-shower cost, $N_{\mathrm{occ}}$ stands for household occupants, $0.9$ stands for showers per person per day, and $30$ stands for days per month. Sources: Water Research Foundation, \emph{Residential End Uses of Water, Version 2 (REU2016)}; The Harris Poll, \emph{Examining Americans' shower habits}.
+
+\subsection{Shared Budget-Penalty Tiers (HVAC, Appliance, Shower)}
+
+\begin{equation}
+\label{eq:budget_utilization}
+u = \frac{C_{\mathrm{month}}}{B_{\mathrm{month}}}
+\end{equation}
+\noindent\textit{Source note:} where $u$ stands for budget utilization ratio, $C_{\mathrm{month}}$ stands for estimated monthly cost, and $B_{\mathrm{month}}$ stands for monthly utility budget. Sources: Thaler, R., \emph{Mental accounting matters}; Heath, C.; Soll, J. B., \emph{Mental budgeting and consumer decisions}.
+
+\begin{equation}
+\label{eq:budget_penalty}
+\phi(u)=
+\begin{cases}
+1.0, & u<0.80\\
+1.0-2.5(u-0.80), & 0.80\le u<1.00\\
+0.5\,e^{-3(u-1.0)}, & 1.00\le u<1.50\\
+0.0, & u\ge 1.50
+\end{cases}
+\end{equation}
+\noindent\textit{Source note:} where $\phi(u)$ stands for budget-penalty multiplier and $u$ stands for monthly budget utilization ratio. Sources: Thaler, R., \emph{Mental accounting matters}; Heath, C.; Soll, J. B., \emph{Mental budgeting and consumer decisions}; Prelec, D.; Loewenstein, G., \emph{The red and the black: Mental accounting of savings and debt}; Heutel, G., \emph{Prospect theory and energy efficiency}; Gathergood, J., \emph{Self-control, financial literacy and consumer over-indebtedness}.
+
+\begin{equation}
+\label{eq:penalized_energy_score}
+s_{\mathrm{energy,pen}} = s_{\mathrm{energy}}\,\phi(u)
+\end{equation}
+\noindent\textit{Source note:} where $s_{\mathrm{energy,pen}}$ stands for penalized energy score, $s_{\mathrm{energy}}$ stands for pre-penalty energy score, and $\phi(u)$ stands for budget-penalty multiplier. Sources: Thaler, R., \emph{Mental accounting matters}; Heath, C.; Soll, J. B., \emph{Mental budgeting and consumer decisions}; Prelec, D.; Loewenstein, G., \emph{The red and the black: Mental accounting of savings and debt}.
+
+\subsection{TOU and MAVT Aggregation Equations}
+
+\begin{equation}
+\label{eq:mavt_weighted_sum_appendix}
+S_j = 0.30\,s_{\mathrm{energy},j} + 0.35\,s_{\mathrm{env},j} + 0.20\,s_{\mathrm{comfort},j} + 0.15\,s_{\mathrm{practicality},j}
+\end{equation}
+\noindent\textit{Source note:} where $S_j$ stands for MAVT weighted score of alternative $j$, and $s_{\mathrm{energy},j}$, $s_{\mathrm{env},j}$, $s_{\mathrm{comfort},j}$, and $s_{\mathrm{practicality},j}$ stand for criterion scores for alternative $j$. Source: Dyer, J. S.; Sarin, R. K., \emph{Measurable multiattribute value functions}.
+
+\begin{equation}
+\label{eq:mavt_rank}
+\operatorname{rank}(j) = 1 + \left|\{k: S_k > S_j\}\right|
+\end{equation}
+\noindent\textit{Source note:} where $\operatorname{rank}(j)$ stands for rank position of alternative $j$, $S_j$ stands for score of alternative $j$, $S_k$ stands for score of comparison alternative $k$, and $\{k: S_k > S_j\}$ stands for alternatives scoring higher than $j$. Sources: Dyer, J. S.; Sarin, R. K., \emph{Measurable multiattribute value functions}; Kotchen, M. J.; Moore, M. R., \emph{Private provision of environmental public goods: Household participation in green-electricity programs}.
+
+\subsection{Reference-Range Value Function Transform}
+
+Let $x$ be a raw criterion value with reference range $[x_{\min}, x_{\max}]$. Define
+\begin{equation}
+\label{eq:vf_normalize_dec}
+z = \frac{x_{\max}-x}{x_{\max}-x_{\min}}\quad\text{(decreasing criteria)}
+\end{equation}
+\noindent\textit{Source note:} where $z$ stands for normalized utility input, $x$ stands for raw criterion value, $x_{\max}$ stands for upper reference bound, and $x_{\min}$ stands for lower reference bound for a decreasing criterion. Sources: Dyer, J. S.; Sarin, R. K., \emph{Measurable multiattribute value functions}; Kotchen, M. J.; Moore, M. R., \emph{Private provision of environmental public goods: Household participation in green-electricity programs}.
+
+\begin{equation}
+\label{eq:vf_normalize_inc}
+z = \frac{x-x_{\min}}{x_{\max}-x_{\min}}\quad\text{(increasing criteria)}
+\end{equation}
+\noindent\textit{Source note:} where $z$ stands for normalized utility input, $x$ stands for raw criterion value, $x_{\min}$ stands for lower reference bound, and $x_{\max}$ stands for upper reference bound for an increasing criterion. Source: Dyer, J. S.; Sarin, R. K., \emph{Measurable multiattribute value functions}.
+
+\begin{equation}
+\label{eq:vf_linear}
+u(z) = z
+\end{equation}
+\noindent\textit{Source note:} where $u(z)$ stands for transformed utility value and $z$ stands for normalized criterion value. Source: Dyer, J. S.; Sarin, R. K., \emph{Measurable multiattribute value functions}.
+
+\begin{equation}
+\label{eq:vf_log}
+u(z) = \frac{\ln(az+1)}{\ln(a+1)}
+\end{equation}
+\noindent\textit{Source note:} where $u(z)$ stands for transformed utility value, $z$ stands for normalized criterion value, and $a$ stands for shape parameter controlling curvature of the logarithmic value function. Sources: Thaler, R., \emph{Mental accounting matters}; Heath, C.; Soll, J. B., \emph{Mental budgeting and consumer decisions}; Prelec, D.; Loewenstein, G., \emph{The red and the black: Mental accounting of savings and debt}.
+
+\begin{equation}
+\label{eq:vf_score_scale}
+s = \min\{10,\max\{0,10u(z)\}\}
+\end{equation}
+\noindent\textit{Source note:} where $s$ stands for final 0--10 criterion score and $u(z)$ stands for transformed utility prior to scaling and clamping. Sources: Dyer, J. S.; Sarin, R. K., \emph{Measurable multiattribute value functions}; Thaler, R., \emph{Mental accounting matters}; Heath, C.; Soll, J. B., \emph{Mental budgeting and consumer decisions}; Prelec, D.; Loewenstein, G., \emph{The red and the black: Mental accounting of savings and debt}.
+
+\end{document}
