@@ -4,6 +4,7 @@ import csv
 import requests
 import time
 from typing import Dict, List, Tuple
+from pathlib import Path
 from dotenv import load_dotenv
 import chromadb
 from sentence_transformers import SentenceTransformer
@@ -40,7 +41,12 @@ def get_model_id():
         raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
 
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
+OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
@@ -55,7 +61,7 @@ CRITERION_WEIGHTS = {
     'practicality': 0.15
 }
 
-CHROMA_DB_PATH = '../chroma_rag_db'
+CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 RETRIEVE_K = 3  # Number of similar scenarios to retrieve
@@ -63,18 +69,18 @@ RETRIEVE_K = 3  # Number of similar scenarios to retrieve
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 
-OUTPUT_CSV = f"{get_output_folder()}/RAGResults.csv"
-OUTPUT_DIAGNOSTICS = f"{get_output_folder()}/RAGDiagnostics.json"
+OUTPUT_CSV = OUTPUT_DIR / "RAGResults.csv"
+OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "RAGDiagnostics.json"
 
 print("Loading ChromaDB and embedding model")
 try:
-    chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+    chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)
     print(f"✓ Loaded RAG database: {chroma_collection.count()} scenarios available")
 except Exception as e:
     print(f" WARNING: Could not load RAG database: {e}")
-    print("  Make sure to run build_rag_database.py first!")
+    print("  Make sure to run Miscellaneous Files/BuildRAG.py first.")
     chroma_collection = None
     embedding_model = None
 
@@ -542,6 +548,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     """
     import csv as csv_module
 
+    test_csv_path = Path(test_csv_path)
+    output_csv_path = Path(output_csv_path)
+    output_diagnostics_path = Path(output_diagnostics_path)
+    output_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    output_diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
+
     print(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
 
     print(f"Loading test scenarios from: {test_csv_path}")
@@ -668,21 +680,21 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 if __name__ == "__main__":
     import sys
 
-    test_csv = 'TestScenarios.csv'
+    test_csv = TEST_SCENARIOS_CSV
 
-    if not os.path.exists(test_csv):
+    if not test_csv.exists():
         print(f"Test scenarios file not found: {test_csv}")
         print("Please upload your test scenarios CSV first.")
         sys.exit(1)
 
     if chroma_collection is None:
         print(f"RAG database not available.")
-        print("Please run build_rag_database.py first to create the RAG database.")
+        print("Please run Miscellaneous Files/BuildRAG.py first to create the RAG database.")
         sys.exit(1)
 
     # Run test set
     run_test_set(
-        test_csv_path=test_csv,
-        output_csv_path=OUTPUT_CSV,
-        output_diagnostics_path=OUTPUT_DIAGNOSTICS
+        test_csv_path=str(test_csv),
+        output_csv_path=str(OUTPUT_CSV),
+        output_diagnostics_path=str(OUTPUT_DIAGNOSTICS)
     )

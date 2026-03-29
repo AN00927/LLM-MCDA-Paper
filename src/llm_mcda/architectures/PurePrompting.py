@@ -5,7 +5,7 @@ import time
 import logging
 import numpy as np
 from typing import Dict, List, Tuple
-import numpy as np
+from pathlib import Path
 import requests
 from dotenv import load_dotenv
 import pandas as pd
@@ -68,13 +68,13 @@ These sources were used to help build prompts:
 
 """
 
-
-df = pd.read_csv('../Scenario Files + Ground Truth/TestScenarios.csv', encoding='utf-8-sig')
-print("Columns found:", df.columns.tolist())
-print("First column repr():", repr(df.columns[0]))
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
+OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
 # Configure logging
 logging.basicConfig(
@@ -435,6 +435,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     Returns:
         Summary statistics dict
     """
+    test_csv_path = Path(test_csv_path)
+    output_csv_path = Path(output_csv_path)
+    output_csv_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Load test scenarios
     scenarios = []
     with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
@@ -527,7 +531,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     logging.info(f"Results saved to {output_csv_path}")
 
     # Save diagnostics
-    diagnostics_path = output_csv_path.replace('.csv', '_diagnostics.json')
+    diagnostics_path = output_csv_path.with_name(f"{output_csv_path.stem}_diagnostics.json")
     with open(diagnostics_path, 'w') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
 
@@ -544,8 +548,8 @@ def main():
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return
 
-    test_csv = "TestScenarios.csv"
-    output_csv = f"{get_output_folder()}/pure_prompting_results.csv"
+    test_csv = TEST_SCENARIOS_CSV
+    output_csv = OUTPUT_DIR / "pure_prompting_results.csv"
 
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
@@ -581,7 +585,7 @@ def main():
         logging.error(f" CSV validation error: {e}")
         return
 
-    diagnostics = run_test_set(test_csv, output_csv)
+    diagnostics = run_test_set(str(test_csv), str(output_csv))
 
     logging.info("PURE PROMPTING TEST COMPLETE")
     logging.info(f"Total scenarios: {diagnostics['total_scenarios']}")
@@ -593,4 +597,5 @@ def main():
 
 
 
-main()
+if __name__ == "__main__":
+    main()
