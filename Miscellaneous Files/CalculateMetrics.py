@@ -16,6 +16,24 @@ import warnings
 import sys
 from collections import defaultdict
 
+# ── MODEL SELECTOR ─────────────────────────────────────────
+# Change this variable manually before running a new model.
+# Supported values: "mistral" | "qwen" | "claude" | "gemini"
+MODEL_KEY = "mistral"
+# ───────────────────────────────────────────────────────────
+
+def get_output_folder():
+    if MODEL_KEY == "mistral":
+        return "Output Files Mistral"
+    elif MODEL_KEY == "qwen":
+        return "Output Files Qwen"
+    elif MODEL_KEY == "claude":
+        return "Output Files Claude"
+    elif MODEL_KEY == "gemini":
+        return "Output Files Gemini"
+    else:
+        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
+
 warnings.filterwarnings("ignore")
 CONFIG = {
     "ground_truth": {
@@ -24,11 +42,11 @@ CONFIG = {
         "Shower": "ground_truth_shower.csv",
     },
     "architectures": {
-        "Pure": "pure_prompting_results.csv",
-        "RAG": "RAGResults.csv",
-        "Hybrid": "hybrid_results.csv",
+        "Pure": f"{get_output_folder()}/pure_prompting_results.csv",
+        "RAG": f"{get_output_folder()}/RAGResults.csv",
+        "Hybrid": f"{get_output_folder()}/hybrid_results.csv",
     },
-    "output_csv": "metrics_summary.csv",
+    "output_csv": f"{get_output_folder()}/metrics_summary.csv",
     "weights": {
         "environmental": 0.35,
         "energy_cost": 0.30,

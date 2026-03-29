@@ -5,6 +5,37 @@ import time
 from typing import Dict, List, Tuple, Optional
 from dotenv import load_dotenv
 
+# ── MODEL SELECTOR ─────────────────────────────────────────
+# Change this variable manually before running a new model.
+# Supported values: "mistral" | "qwen" | "claude" | "gemini"
+MODEL_KEY = "mistral"
+# ───────────────────────────────────────────────────────────
+
+def get_output_folder():
+    if MODEL_KEY == "mistral":
+        return "Output Files Mistral"
+    elif MODEL_KEY == "qwen":
+        return "Output Files Qwen"
+    elif MODEL_KEY == "claude":
+        return "Output Files Claude"
+    elif MODEL_KEY == "gemini":
+        return "Output Files Gemini"
+    else:
+        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
+
+
+def get_model_id():
+    if MODEL_KEY == "mistral":
+        return "mistralai/mistral-small-3.2-24b-instruct"
+    elif MODEL_KEY == "qwen":
+        return "qwen/qwen-2.5-72b-instruct"
+    elif MODEL_KEY == "claude":
+        return "anthropic/claude-sonnet-4"
+    elif MODEL_KEY == "gemini":
+        return "google/gemini-2.5-pro"
+    else:
+        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
+
 try:
     from HVACGroundTruthCalculator import (
         HVACGroundTruthCalculator
@@ -30,7 +61,7 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
 
-MODEL_ID = "mistralai/mistral-small-3.2-24b-instruct"
+MODEL_ID = get_model_id()
 TEMPERATURE = 0.3
 CRITERION_WEIGHTS = {
     'energy_cost': 0.30,
@@ -42,8 +73,8 @@ CRITERION_WEIGHTS = {
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 EXTRACTION_MAX_RETRIES = 1
-OUTPUT_CSV = 'hybrid_results.csv'
-OUTPUT_DIAGNOSTICS = 'hybrid_diagnostics.json'
+OUTPUT_CSV = f"{get_output_folder()}/hybrid_results.csv"
+OUTPUT_DIAGNOSTICS = f"{get_output_folder()}/hybrid_diagnostics.json"
 UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
 
 SCENARIO:
