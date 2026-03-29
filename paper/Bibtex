@@ -1,0 +1,1109 @@
+@article{aktas2012,
+  author = {C.B. Aktas and M.M. Bilec},
+  title = {Impact of lifetime on US residential building LCA results},
+  journal = {Int. J. Life Cycle Assess.},
+  volume = {17},
+  pages = {337--349},
+  year = {2012},
+  doi = {10.1007/s11367-011-0363-x},
+  url = {https://doi.org/10.1007/s11367-011-0363-x},
+}
+
+@techreport{alejandre2022,
+  author = {C. Alejandre and O. Akizu-Gardoki and E. Lizundia},
+  title = {Optimum operational lifespan of household appliances considering manufacturing and use stage improvements via life cycle assessment},
+  institution = {C. Alejandre and O. Akizu-Gardoki and E. Lizundia},
+  note = {Sustain. Prod. Consum. (2022).},
+  year = {2022},
+  doi = {10.1016/j.spc.2022.04.007},
+  url = {https://doi.org/10.1016/j.spc.2022.04.007},
+}
+
+@article{alexandridis2013,
+  author = {A.K. Alexandridis and A.D. Zapranis},
+  title = {Wavelet neural networks: A practical guide},
+  journal = {Neural Netw.},
+  volume = {42},
+  pages = {1--27},
+  year = {2013},
+  doi = {10.1016/j.neunet.2013.01.008},
+  url = {https://doi.org/10.1016/j.neunet.2013.01.008},
+}
+
+@article{allcott2015,
+  author = {H. Allcott and D. Taubinsky},
+  title = {Evaluating behaviorally motivated policy: Experimental evidence from the lightbulb market},
+  journal = {Am. Econ. Rev.},
+  volume = {105},
+  number = {8},
+  pages = {2501--2538},
+  year = {2015},
+}
+
+@article{alves2016,
+  author = {O. Alves and E. Monteiro and P. Brito and P. Romano},
+  title = {Measurement and classification of energy efficiency in HVAC systems},
+  journal = {Energy Build.},
+  volume = {130},
+  pages = {408--419},
+  year = {2016},
+  doi = {10.1016/j.enbuild.2016.08.070},
+  url = {https://doi.org/10.1016/j.enbuild.2016.08.070},
+}
+
+@article{amasyali2021,
+  author = {K. Amasyali and N.M. El-Gohary},
+  title = {Real data-driven occupant-behavior optimization for reduced energy consumption and improved comfort},
+  journal = {Appl. Energy},
+  volume = {302},
+  pages = {117276},
+  year = {2021},
+  doi = {10.1016/j.apenergy.2021.117276},
+  url = {https://doi.org/10.1016/j.apenergy.2021.117276},
+}
+
+@article{andor2020,
+  author = {M.A. Andor and A. Gerster and S. Sommer and Consumer inattention},
+  title = {heuristic thinking and the role of energy labels},
+  journal = {Energy J.},
+  volume = {41},
+  number = {1},
+  pages = {83--112},
+  year = {2020},
+}
+
+@article{aqilah2022,
+  author = {N. Aqilah and H.B. Rijal and S.A. Zaki},
+  title = {A review of thermal comfort in residential buildings: Comfort trends and energy saving potential},
+  journal = {Energies},
+  volume = {15},
+  number = {23},
+  pages = {9012},
+  year = {2022},
+  doi = {10.3390/en15239012},
+  url = {https://doi.org/10.3390/en15239012},
+}
+
+@article{ariely2001,
+  author = {D. Ariely and D. Zakay},
+  title = {A timely account of the role of duration in decision making},
+  journal = {Acta Psychol.},
+  volume = {108},
+  number = {2},
+  pages = {187--207},
+  year = {2001},
+  doi = {10.1016/S0001-6918(01)00034-8},
+  url = {https://doi.org/10.1016/S0001-6918(01)00034-8},
+}
+
+@article{aslanoglu2023,
+  author = {R. Aslanoglu and J.K. Kazak and S. Yekanialibeiglou and P. Pracki and B. Ulusoy},
+  title = {An international survey on residential lighting: Analysis of summer-term results},
+  journal = {Build. Environ.},
+  volume = {232},
+  pages = {109972},
+  year = {2023},
+  doi = {10.1016/j.buildenv.2022.109972},
+  url = {https://doi.org/10.1016/j.buildenv.2022.109972},
+}
+
+@article{attari2010,
+  author = {S.Z. Attari and M.L. DeKay and C.I. Davidson and W. Bruine de Bruin},
+  title = {Public perceptions of energy consumption and savings},
+  journal = {Proc. Natl. Acad. Sci. U.S.A.},
+  volume = {107},
+  number = {37},
+  pages = {16054--16059},
+  year = {2010},
+  doi = {10.1073/pnas.1001509107},
+  url = {https://doi.org/10.1073/pnas.1001509107},
+}
+
+@article{baquero2023,
+  author = {M.T. Baquero and R. Verges and K. Gaspar and N. Forcada},
+  title = {A field investigation of the thermal comfort of older adults in cold winter climates},
+  journal = {Indoor Air},
+  pages = {1--14},
+  year = {2023},
+  doi = {10.1155/2023/9185216},
+  url = {https://doi.org/10.1155/2023/9185216},
+}
+
+@article{belaid2020,
+  author = {F. Belaid and H. Joumni},
+  title = {Behavioral attitudes towards energy saving: Empirical evidence from France},
+  journal = {Energy Policy},
+  volume = {140},
+  pages = {111406},
+  year = {2020},
+  doi = {10.1016/j.enpol.2020.111406},
+  url = {https://doi.org/10.1016/j.enpol.2020.111406},
+}
+
+@article{belhadi2021,
+  author = {A. Belhadi and S. Kamble and S. Wamba and M. Queiroz},
+  title = {Building supply-chain resilience: An artificial intelligence-based technique and decision-making framework},
+  journal = {Int. J. Prod. Res.},
+  volume = {60},
+  pages = {4487--4507},
+  year = {2021},
+  doi = {10.1080/00207543.2021.1950935},
+  url = {https://doi.org/10.1080/00207543.2021.1950935},
+}
+
+@article{bogin2021,
+  author = {D. Bogin and M. Kissinger and E. Erell},
+  title = {Comparison of domestic lifestyle energy consumption clustering approaches},
+  journal = {Energy Build.},
+  volume = {253},
+  pages = {111537},
+  year = {2021},
+  doi = {10.1016/j.enbuild.2021.111537},
+  url = {https://doi.org/10.1016/j.enbuild.2021.111537},
+}
+
+@article{cabral2016,
+  author = {J.B. Cabral and N.A. Luczywo and J.L. Zanazzi},
+  title = {Scikit-Criteria: Coleccion de metodos de analisis multi-criterio integrado al stack cientifico de Python},
+  journal = {in: XLV Jornadas Argentinas de Informatica e Investigacion Operativa (45JAIIO), XIV Simposio Argentino de Investigacion Operativa (SIO), Buenos Aires, 2016, pp. 59--66},
+  year = {2016},
+  url = {http://45jaiio.sadio.org.ar/sites/default/files/Sio-23.pdf},
+}
+
+@techreport{umich2024,
+  author = {Center for Sustainable Systems and University of Michigan and Carbon footprint factsheet},
+  title = {Pub. No. CSS09-05},
+  institution = {Center for Sustainable Systems and University of Michigan and Carbon footprint factsheet},
+  note = {2024.},
+  year = {2024},
+}
+
+@techreport{cdc2026,
+  author = {Centers for Disease Control and Prevention},
+  title = {Monitoring building water: A vital step for control of Legionella},
+  institution = {Centers for Disease Control and Prevention},
+  note = {2026.},
+  year = {2026},
+  url = {https://www.cdc.gov/control-legionella/php/guidance/monitor-water-guidance.html},
+}
+
+@article{cerneviciene2022,
+  author = {J. Cerneviciene and A. Kabasinskas},
+  title = {Review of multi-criteria decision-making methods in finance using explainable artificial intelligence},
+  journal = {Front. Artif. Intell.},
+  volume = {5},
+  year = {2022},
+  doi = {10.3389/frai.2022.827584},
+  url = {https://doi.org/10.3389/frai.2022.827584},
+}
+
+@article{cetin2015,
+  author = {K.S. Cetin and A. Novoselac},
+  title = {Single and multi-family residential central all-air HVAC system operational characteristics in cooling-dominated climate},
+  journal = {Energy Build.},
+  volume = {96},
+  pages = {210--220},
+  year = {2015},
+  doi = {10.1016/j.enbuild.2015.03.039},
+  url = {https://doi.org/10.1016/j.enbuild.2015.03.039},
+}
+
+@article{chen2017,
+  author = {C. Chen and X. Xu and J.K. Day and Thermal comfort or money saving? Exploring intentions to conserve energy among low-income households in the United States},
+  title = {Energy Res. Soc. Sci. 26 (2017) 61--71},
+  year = {2017},
+  doi = {10.1016/j.erss.2017.01.009},
+  url = {https://doi.org/10.1016/j.erss.2017.01.009},
+}
+
+@article{chenyu2018,
+  author = {J. Chen-Yu and J. Emmel},
+  title = {Comparisons of fabric care performances between conventional and high-efficiency washers and dryers},
+  journal = {Fash. Text.},
+  volume = {5},
+  pages = {1--19},
+  year = {2018},
+  doi = {10.1186/s40691-018-0135-3},
+  url = {https://doi.org/10.1186/s40691-018-0135-3},
+}
+
+@article{collinge2014,
+  author = {W.O. Collinge and A.E. Landis and A.K. Jones and L.A. Schaefer and M.M. Bilec},
+  title = {Productivity metrics in dynamic LCA for whole buildings: Using a post-occupancy evaluation of energy and indoor environmental quality tradeoffs},
+  journal = {Build. Environ.},
+  volume = {82},
+  pages = {339--348},
+  year = {2014},
+  doi = {10.1016/j.buildenv.2014.08.032},
+  url = {https://doi.org/10.1016/j.buildenv.2014.08.032},
+}
+
+@techreport{crcwsc2019,
+  author = {CRC for Water Sensitive Cities and The behavioural rebound effect: What is it and why does it matter? CRCWSC Behavioural Rebound Industry Note 1},
+  title = {2019},
+  institution = {CRC for Water Sensitive Cities and The behavioural rebound effect: What is it and why does it matter? CRCWSC Behavioural Rebound Industry Note 1},
+  year = {2019},
+  url = {https://watersensitivecities.org.au/wp-content/uploads/2019/09/190918_V1_CRCWSC-Behavioural-rebound-industry-note-1.pdf},
+}
+
+@techreport{davis2010,
+  author = {Davis Energy Group},
+  title = {HVAC energy efficiency maintenance study},
+  institution = {Davis Energy Group},
+  note = {Prepared for California Investor-Owned Utilities (CALMAC ID HVAC_EE_MAINTENANCE_FINAL), 2010.},
+  year = {2010},
+  url = {https://www.calmac.org/publications/hvac_ee_maintenance_final.pdf},
+}
+
+@techreport{dedear2002,
+  author = {R. de Dear and G. Brager and Thermal comfort in naturally ventilated buildings: Revisions to ASHRAE Standard 55},
+  title = {Energy Build. 34 (2002) 549--561},
+  institution = {R. de Dear and G. Brager and Thermal comfort in naturally ventilated buildings: Revisions to ASHRAE Standard 55},
+  year = {2002},
+  doi = {10.1016/S0378-7788(02)00006-2},
+  url = {https://doi.org/10.1016/S0378-7788(02)00006-2},
+}
+
+@article{dietz2009,
+  author = {T. Dietz and G.T. Gardner and J. Gilligan and P.C. Stern and M.P. Vandenbergh},
+  title = {Household actions can provide a behavioral wedge to rapidly reduce US carbon emissions},
+  journal = {Proc. Natl. Acad. Sci. U.S.A.},
+  volume = {106},
+  number = {44},
+  pages = {18452--18456},
+  year = {2009},
+  doi = {10.1073/pnas.0908738106},
+  url = {https://doi.org/10.1073/pnas.0908738106},
+}
+
+@techreport{domanski2014,
+  author = {P.A. Domanski and H.I. Henderson and W.V. Payne},
+  title = {Sensitivity analysis of installation faults on heat pump performance},
+  institution = {P.A. Domanski and H.I. Henderson and W.V. Payne},
+  note = {NIST Technical Note 1848, National Institute of Standards and Technology, 2014.},
+  year = {2014},
+  url = {https://nvlpubs.nist.gov/nistpubs/technicalnotes/nist.tn.1848.pdf},
+}
+
+@article{dyer1979,
+  author = {J.S. Dyer and R.K. Sarin},
+  title = {Measurable multiattribute value functions},
+  journal = {Manage. Sci.},
+  volume = {26},
+  number = {8},
+  pages = {810--822},
+  year = {1979},
+  doi = {10.1287/mnsc.26.8.810},
+  url = {https://doi.org/10.1287/mnsc.26.8.810},
+}
+
+@article{fenaughty2018,
+  author = {K. Fenaughty and D. Parker},
+  title = {Evaluation of air conditioning performance degradation: Opportunities from diagnostic methods},
+  journal = {FSEC-PF-474-18, Florida Solar Energy Center, 2018},
+  year = {2018},
+  url = {https://publications.energyresearch.ucf.edu/wp-content/uploads/2018/09/FSEC-PF-474-18.pdf},
+}
+
+@techreport{ferretti2014,
+  author = {V. Ferretti and M. Bottero and G. Mondini},
+  title = {From indicators to composite indexes: An application of the multi-attribute value theory for assessing sustainability},
+  institution = {V. Ferretti and M. Bottero and G. Mondini},
+  note = {Adv. Eng. Forum 11 (2014) 536--541.},
+  year = {2014},
+  doi = {10.4028/www.scientific.net/aef.11.536},
+  url = {https://doi.org/10.4028/www.scientific.net/aef.11.536},
+}
+
+@techreport{galaz2021,
+  author = {V. Galaz and M.A. Centeno and P.W. Callahan and A. Causevic and T. Patterson and I. Brass and K. Levy and Artificial intelligence and systemic risks and and sustainability},
+  title = {Technol. Soc. 67 (2021) 101741},
+  institution = {V. Galaz and M.A. Centeno and P.W. Callahan and A. Causevic and T. Patterson and I. Brass and K. Levy and Artificial intelligence and systemic risks and and sustainability},
+  year = {2021},
+  doi = {10.1016/j.techsoc.2021.101741},
+  url = {https://doi.org/10.1016/j.techsoc.2021.101741},
+}
+
+@article{gao2024,
+  author = {J. Gao and C. Duan and J. Song and W. Cai},
+  title = {Now or later: The long tail effect of household income on energy consumption},
+  journal = {Energy Econ.},
+  volume = {129},
+  pages = {107256},
+  year = {2024},
+  doi = {10.1016/j.eneco.2023.107256},
+  url = {https://doi.org/10.1016/j.eneco.2023.107256},
+}
+
+@article{gardner2020,
+  author = {B. Gardner and P. Lally and A. Rebar},
+  title = {Does habit weaken the relationship between intention and behaviour? Revisiting the habit-intention interaction hypothesis},
+  journal = {Soc. Pers. Psychol. Compass},
+  year = {2020},
+  doi = {10.1111/spc3.12553},
+  url = {https://doi.org/10.1111/spc3.12553},
+}
+
+@article{gathergood2012,
+  author = {J. Gathergood},
+  title = {Self-control},
+  journal = {financial literacy and consumer over-indebtedness, J. Econ. Psychol.},
+  volume = {33},
+  number = {3},
+  pages = {590--602},
+  year = {2012},
+  doi = {10.1016/j.joep.2011.11.006},
+  url = {https://doi.org/10.1016/j.joep.2011.11.006},
+}
+
+@article{hahn1992,
+  author = {M. Hahn and R. Lawson and Y.G. Lee and The effects of time pressure and information load on decision quality},
+  title = {Psychol. Mark. 9 (5) (1992)},
+  year = {1992},
+  doi = {10.1002/mar.4220090503},
+  url = {https://doi.org/10.1002/mar.4220090503},
+}
+
+@techreport{harrispoll2024,
+  author = {The Harris Poll},
+  title = {Examining Americans' shower habits},
+  institution = {The Harris Poll},
+  note = {2024.},
+  year = {2024},
+  url = {https://theharrispoll.com/briefs/shower-habits/},
+}
+
+@article{heath1996,
+  author = {C. Heath and J.B. Soll},
+  title = {Mental budgeting and consumer decisions},
+  journal = {J. Consum. Res.},
+  volume = {23},
+  number = {1},
+  pages = {40--52},
+  year = {1996},
+  doi = {10.1086/209465},
+  url = {https://doi.org/10.1086/209465},
+}
+
+@techreport{hendron2008,
+  author = {R. Hendron and J. Burch},
+  title = {Development of standardized domestic hot water event schedules for residential buildings},
+  institution = {R. Hendron and J. Burch},
+  note = {NREL/TP-550-40874, National Renewable Energy Laboratory, 2008.},
+  year = {2008},
+  url = {https://docs.nrel.gov/docs/fy08osti/40874.pdf},
+}
+
+@techreport{heutel2017,
+  author = {G. Heutel},
+  title = {Prospect theory and energy efficiency},
+  institution = {G. Heutel},
+  note = {NBER Working Paper No. 23692, National Bureau of Economic Research, 2017.},
+  year = {2017},
+  doi = {10.3386/w23692},
+  url = {https://doi.org/10.3386/w23692},
+}
+
+@article{hong2024,
+  author = {Y. Hong and A. Al Mamun and M. Masukujjaman and Q. Yang},
+  title = {Significance of the environmental value-belief-norm model and its relationship to green consumption among Chinese youth},
+  journal = {Asia Pac. Manag. Rev.},
+  volume = {29},
+  number = {1},
+  pages = {127--140},
+  year = {2024},
+  doi = {10.1016/j.apmrv.2023.10.002},
+  url = {https://doi.org/10.1016/j.apmrv.2023.10.002},
+}
+
+@techreport{huangburgherr2024,
+  author = {H. Huang and P. Burgherr},
+  title = {MCDA Calculator: A streamlined decision support system for multi-criteria decision analysis},
+  institution = {H. Huang and P. Burgherr},
+  note = {in: S.P. Duarte, et al. (Eds.), Decision Support Systems XIV. ICDSST 2024. Lecture Notes in Business Information Processing, vol. 506, Springer, Cham, 2024.},
+  year = {2024},
+  doi = {10.1007/978-3-031-59376-5_3},
+  url = {https://doi.org/10.1007/978-3-031-59376-5_3},
+}
+
+@article{huang2011,
+  author = {I.B. Huang and J. Keisler and I. Linkov},
+  title = {Multi-criteria decision analysis in environmental sciences: Ten years of applications and trends},
+  journal = {Sci. Total Environ.},
+  volume = {409},
+  number = {19},
+  pages = {3578--3594},
+  year = {2011},
+  doi = {10.1016/j.scitotenv.2011.06.022},
+  url = {https://doi.org/10.1016/j.scitotenv.2011.06.022},
+}
+
+@article{huangrust2020,
+  author = {M. Huang and R. Rust},
+  title = {A strategic framework for artificial intelligence in marketing},
+  journal = {J. Acad. Mark. Sci.},
+  volume = {49},
+  pages = {30--50},
+  year = {2020},
+  doi = {10.1007/s11747-020-00749-9},
+  url = {https://doi.org/10.1007/s11747-020-00749-9},
+}
+
+@article{hustvedt2013,
+  author = {G. Hustvedt and M. Ahn and J. Emmel and The adoption of sustainable laundry technologies by US consumers},
+  title = {Int. J. Consum. Stud. 37 (2013) 291--298},
+  year = {2013},
+  doi = {10.1111/ijcs.12007},
+  url = {https://doi.org/10.1111/ijcs.12007},
+}
+
+@article{huyen2019,
+  author = {T.T. Huyen and K. Cetin},
+  title = {Energy consumption of high-efficiency residential HVAC systems under moderate conditions},
+  journal = {Energies},
+  volume = {12},
+  number = {1},
+  pages = {188},
+  year = {2019},
+  doi = {10.3390/en12010188},
+  url = {https://doi.org/10.3390/en12010188},
+}
+
+@techreport{indonesiatou2024,
+  author = {Indonesia TOU Adoption Study},
+  title = {Willingness and barriers to time-of-use electricity pricing adoption},
+  institution = {Indonesia TOU Adoption Study},
+  note = {2024.},
+  year = {2024},
+  url = {https://pmc.ncbi.nlm.nih.gov/articles/PMC11190461/},
+}
+
+@article{jackson2024,
+  author = {I. Jackson and D. Ivanov and A. Dolgui and J. Namdar},
+  title = {Generative artificial intelligence in supply chain and operations management: A capability-based framework for analysis and implementation},
+  journal = {Int. J. Prod. Res.},
+  volume = {62},
+  pages = {6120--6145},
+  year = {2024},
+  doi = {10.1080/00207543.2024.2309309},
+  url = {https://doi.org/10.1080/00207543.2024.2309309},
+}
+
+@article{jezierski2020,
+  author = {W. Jezierski and B. Sadowska and K. Pawlowski},
+  title = {Impact of changes in the required thermal insulation of building envelope on energy demand},
+  journal = {heating costs, emissions, and temperature in buildings, Energies},
+  volume = {14},
+  number = {1},
+  pages = {56},
+  year = {2020},
+  doi = {10.3390/en14010056},
+  url = {https://doi.org/10.3390/en14010056},
+}
+
+@article{karjalainen2007,
+  author = {S. Karjalainen},
+  title = {Gender differences in thermal comfort and use of thermostats in everyday thermal environments},
+  journal = {Indoor Air},
+  volume = {17},
+  number = {1},
+  pages = {60--67},
+  year = {2007},
+  doi = {10.1111/j.1600-0668.2006.00448},
+  url = {https://doi.org/10.1111/j.1600-0668.2006.00448},
+}
+
+@article{kim2024,
+  author = {J. Kim and et al.},
+  title = {Impacts of thermostat setpoint changes on residential cooling energy use},
+  journal = {Build. Simul.},
+  year = {2024},
+  doi = {10.1007/s12273-024-1203-9},
+  url = {https://doi.org/10.1007/s12273-024-1203-9},
+}
+
+@techreport{klapproth2008,
+  author = {F. Klapproth},
+  title = {Time and decision making in humans},
+  institution = {F. Klapproth},
+  note = {Cogn. Affect. Behav. Neurosci. 8 (2008) 509--524.},
+  year = {2008},
+  doi = {10.3758/CABN.8.4.509},
+  url = {https://doi.org/10.3758/CABN.8.4.509},
+}
+
+@techreport{kny2023,
+  author = {Know Your Numbers: The Cost Savings of Climate Action},
+  title = {1 June 2023. Retrieved 8 May 2025},
+  institution = {Know Your Numbers: The Cost Savings of Climate Action},
+  year = {2023},
+  url = {https://www.fairfaxcounty.gov/environment-energy-coordination/latest-news/know-your-numbers-the-cost-savings-of-climate-action},
+}
+
+@article{kollmuss2002,
+  author = {A. Kollmuss and J. Agyeman},
+  title = {Mind the gap: Why do people act environmentally and what are the barriers to pro-environmental behavior? Environ. Educ. Res. 8 (3) (2002) 239--260},
+  year = {2002},
+  doi = {10.1080/13504620220145401},
+  url = {https://doi.org/10.1080/13504620220145401},
+}
+
+@article{kotchen2007,
+  author = {M.J. Kotchen and M.R. Moore},
+  title = {Private provision of environmental public goods: Household participation in green-electricity programs},
+  journal = {J. Environ. Econ. Manage.},
+  volume = {54},
+  number = {1},
+  pages = {100--123},
+  year = {2007},
+  doi = {10.1016/j.jeem.2007.03.002},
+  url = {https://doi.org/10.1016/j.jeem.2007.03.002},
+}
+
+@article{krarti2020,
+  author = {M. Krarti and N. Howarth},
+  title = {Transitioning to high efficiency air conditioning in Saudi Arabia: A benefit cost analysis for residential buildings},
+  journal = {J. Build. Eng.},
+  volume = {31},
+  pages = {101457},
+  year = {2020},
+  doi = {10.1016/j.jobe.2020.101457},
+  url = {https://doi.org/10.1016/j.jobe.2020.101457},
+}
+
+@article{leclerc1995,
+  author = {F. Leclerc and B.H. Schmitt and L. Dube},
+  title = {Waiting time and decision making: Is time like money? J. Consum. Res. 22 (1) (1995) 110--119},
+  year = {1995},
+}
+
+@article{lee2023,
+  author = {S.S. Lee and Y. Kim and T. Roh},
+  title = {Pro-environmental behavior on electric vehicle use intention: Integrating value-belief-norm theory and theory of planned behavior},
+  journal = {J. Clean. Prod.},
+  volume = {418},
+  pages = {138211},
+  year = {2023},
+  doi = {10.1016/j.jclepro.2023.138211},
+  url = {https://doi.org/10.1016/j.jclepro.2023.138211},
+}
+
+@article{li2022,
+  author = {J. Li and W. Xu and X. Zhang and X. Feng and Z. Chen and B. Qiao and H. Xue},
+  title = {Control method of multi-energy system based on layered control architecture},
+  journal = {Energy Build.},
+  volume = {261},
+  pages = {111963},
+  year = {2022},
+  doi = {10.1016/j.enbuild.2022.111963},
+  url = {https://doi.org/10.1016/j.enbuild.2022.111963},
+}
+
+@article{lind2015,
+  author = {H.B. Lind and T. Nordfjaern and S.H. Jorgensen and T. Rundmo and The value-belief-norm theory},
+  title = {personal norms and sustainable travel mode choice in urban areas},
+  journal = {J. Environ. Psychol.},
+  volume = {44},
+  pages = {119--125},
+  year = {2015},
+  doi = {10.1016/j.jenvp.2015.06.001},
+  url = {https://doi.org/10.1016/j.jenvp.2015.06.001},
+}
+
+@techreport{maguire2013,
+  author = {J. Maguire and et al.},
+  title = {Validation of a hot water distribution model using laboratory and field data},
+  institution = {J. Maguire and et al.},
+  note = {NREL/TP-5500-58756, National Renewable Energy Laboratory, 2013.},
+  year = {2013},
+  url = {https://docs.nrel.gov/docs/fy13osti/58756.pdf},
+}
+
+@book{mavrommati2021,
+  author = {G. Mavrommati and M.E. Borsuk and A.I. Kreiley and C. Larosee and S. Rogers and K. Burford and R.B. Howarth},
+  title = {A methodological framework for understanding shared social values in deliberative valuation},
+  publisher = {G. Mavrommati and M.E. Borsuk and A.I. Kreiley and C. Larosee and S. Rogers and K. Burford and R.B. Howarth},
+  note = {Ecol. Econ. 190 (2021).},
+  year = {2021},
+  doi = {10.1016/j.ecolecon.2021.107185},
+  url = {https://doi.org/10.1016/j.ecolecon.2021.107185},
+}
+
+@article{mergelsberg2020,
+  author = {E. Mergelsberg and B. Mullan and V. Allom and A. Scott},
+  title = {An intervention designed to investigate habit formation in a novel health behaviour},
+  journal = {Psychol. Health},
+  volume = {36},
+  pages = {405--426},
+  year = {2020},
+  doi = {10.1080/08870446.2020.1779272},
+  url = {https://doi.org/10.1080/08870446.2020.1779272},
+}
+
+@article{nadai2017,
+  author = {A. Nadai and O. Labussiere and Landscape commons},
+  title = {following wind power fault lines: The case of Seine-et-Marne (France)},
+  journal = {Energy Policy},
+  volume = {109},
+  pages = {807--816},
+  year = {2017},
+  doi = {10.1016/j.enpol.2017.06.049},
+  url = {https://doi.org/10.1016/j.enpol.2017.06.049},
+}
+
+@article{newell2014,
+  author = {R.G. Newell and J. Siikamaki},
+  title = {Nudging energy efficiency behavior: The role of information labels},
+  journal = {J. Assoc. Environ. Resour. Econ.},
+  volume = {1},
+  number = {4},
+  pages = {555--598},
+  year = {2014},
+  doi = {10.1086/679281},
+  url = {https://doi.org/10.1086/679281},
+}
+
+@article{newsham2010,
+  author = {G.R. Newsham and B.G. Bowker and The effect of utility time-varying pricing and load control strategies on residential summer peak electricity use: A review},
+  title = {Energy Policy 38 (7) (2010) 3289--3296},
+  year = {2010},
+  doi = {10.1016/j.enpol.2009.12.015},
+  url = {https://doi.org/10.1016/j.enpol.2009.12.015},
+}
+
+@article{nishant2020,
+  author = {R. Nishant and M. Kennedy and J. Corbett},
+  title = {Artificial intelligence for sustainability: Challenges},
+  journal = {opportunities, and a research agenda, Int. J. Inf. Manage.},
+  volume = {53},
+  pages = {102104},
+  year = {2020},
+  doi = {10.1016/j.ijinfomgt.2020.102104},
+  url = {https://doi.org/10.1016/j.ijinfomgt.2020.102104},
+}
+
+@article{neep2015,
+  author = {Northeast Energy Efficiency Partnerships},
+  title = {New study unearths energy baseline for clothes dryers in the Northeast},
+  journal = {2015},
+  year = {2015},
+  url = {https://neep.org/blog/new-study-unearths-energy-baseline-clothes-dryers-northeast},
+}
+
+@article{nti2022,
+  author = {E.K. Nti and S.J. Cobbina and E.E. Attafuah and E. Opoku and M.A. Gyan},
+  title = {Environmental sustainability technologies in biodiversity},
+  journal = {energy, transportation and water management using artificial intelligence: A systematic review, Sustain. Futures},
+  volume = {4},
+  pages = {100068},
+  year = {2022},
+  doi = {10.1016/j.sftr.2022.100068},
+  url = {https://doi.org/10.1016/j.sftr.2022.100068},
+}
+
+@techreport{nussbaum2013,
+  author = {D. Nussbaum},
+  title = {Why good things come to those who wait},
+  institution = {D. Nussbaum},
+  note = {22 Nov 2013. Retrieved 28 May 2025.},
+  year = {2013},
+  url = {https://www.chicagobooth.edu/review/why-good-things-come-those-who-wait},
+}
+
+@inproceedings{paetz2012,
+  author = {A. Paetz and E. Dutschke and W. Fichtner},
+  title = {Shifting dish-washer use: A field study on time-of-use tariffs and user acceptance},
+  booktitle = {ACEEE Summer Study on Energy Efficiency in Buildings, Paper 0193-000232, 2012},
+  year = {2012},
+}
+
+@article{park2015,
+  author = {B. Park and W. Srubar and M. Krarti},
+  title = {Energy performance analysis of variable thermal resistance envelopes in residential buildings},
+  journal = {Energy Build.},
+  volume = {103},
+  pages = {317--325},
+  year = {2015},
+  doi = {10.1016/j.enbuild.2015.06.061},
+  url = {https://doi.org/10.1016/j.enbuild.2015.06.061},
+}
+
+@techreport{peco2021,
+  author = {PECO Energy Company},
+  title = {How Time-Of-Use pricing works with interconnection to solar or net metering},
+  institution = {PECO Energy Company},
+  note = {TOU customer documentation, 2021.},
+  year = {2021},
+  url = {https://www.peco.com/cdn/assets/v3/assets/blt1b5616c79bacadb4/blte7bf67602d7799ef/64cb648f5b39c52180713adf/S1-Solar_Net_Metering_Time_of_Use_10212021.pdf},
+}
+
+@article{phillipswren2020,
+  author = {G. Phillips-Wren and M. Adya},
+  title = {Decision making under stress: The role of information overload},
+  journal = {time pressure, complexity, and uncertainty, J. Decis. Syst.},
+  volume = {29},
+  number = {sup1},
+  pages = {213--225},
+  year = {2020},
+  doi = {10.1080/12460125.2020.1768680},
+  url = {https://doi.org/10.1080/12460125.2020.1768680},
+}
+
+@article{porras2020,
+  author = {G. Porras and G. Keoleian and G. Lewis and N. Seeba},
+  title = {A guide to household manual and machine dishwashing through a life cycle perspective},
+  journal = {Environ. Res. Commun.},
+  volume = {2},
+  year = {2020},
+  doi = {10.1088/2515-7620/ab716b},
+  url = {https://doi.org/10.1088/2515-7620/ab716b},
+}
+
+@techreport{prelec1998,
+  author = {D. Prelec and G. Loewenstein and The red and the black: Mental accounting of savings and debt},
+  title = {Mark. Sci. 17 (1) (1998) 4--28},
+  institution = {D. Prelec and G. Loewenstein and The red and the black: Mental accounting of savings and debt},
+  year = {1998},
+  doi = {10.1287/mksc.17.1.4},
+  url = {https://doi.org/10.1287/mksc.17.1.4},
+}
+
+@article{reason2000,
+  author = {J. Reason},
+  title = {Human error: Models and management},
+  journal = {BMJ},
+  volume = {320},
+  number = {7237},
+  pages = {768--770},
+  year = {2000},
+  doi = {10.1136/bmj.320.7237.768},
+  url = {https://doi.org/10.1136/bmj.320.7237.768},
+}
+
+@techreport{reu2016,
+  author = {Residential End Uses of Water},
+  title = {Version 2 (REU2016)},
+  institution = {Residential End Uses of Water},
+  note = {Water Research Foundation.},
+  year = {2016},
+  url = {https://www.waterrf.org/research/projects/residential-end-uses-water-version-2},
+}
+
+@article{rezaei2020,
+  author = {K. Rezaei-Moghaddam and N. Vatankhah and A. Ajili},
+  title = {Adoption of pro-environmental behaviors among farmers: Application of value-belief-norm theory},
+  journal = {Chem. Biol. Technol. Agric.},
+  volume = {7},
+  number = {1},
+  year = {2020},
+  doi = {10.1186/s40538-019-0174-z},
+  url = {https://doi.org/10.1186/s40538-019-0174-z},
+}
+
+@techreport{rheem2025,
+  author = {Rheem Manufacturing Company and Residential tank water heaters -- product specifications (electric models 40--55 gal)},
+  title = {2025},
+  institution = {Rheem Manufacturing Company and Residential tank water heaters -- product specifications (electric models 40--55 gal)},
+  year = {2025},
+  url = {https://www.rheem.com/products/residential/water-heating/tank/},
+}
+
+@article{richter2011,
+  author = {C. Richter},
+  title = {Usage of dishwashers: Observation of consumer habits in the domestic environment},
+  journal = {Int. J. Consum. Stud.},
+  volume = {35},
+  pages = {180--186},
+  year = {2011},
+  doi = {10.1111/j.1470-6431.2010.00973},
+  url = {https://doi.org/10.1111/j.1470-6431.2010.00973},
+}
+
+@techreport{sajid2023,
+  author = {S. Sajid Ullah and V. Oleshchuk and H.S.G. Pussewalage},
+  title = {A survey on blockchain envisioned attribute based access control for internet of things},
+  institution = {S. Sajid Ullah and V. Oleshchuk and H.S.G. Pussewalage},
+  note = {Comput. Netw. 235 (2023) 109994.},
+  year = {2023},
+  doi = {10.1016/j.comnet.2023.109994},
+  url = {https://doi.org/10.1016/j.comnet.2023.109994},
+}
+
+@article{shewale2023,
+  author = {A. Shewale and et al.},
+  title = {Time-of-use appliance scheduling for demand response},
+  journal = {Arab. J. Sci. Eng.},
+  year = {2023},
+  doi = {10.1007/s13369-023-08178-w},
+  url = {https://doi.org/10.1007/s13369-023-08178-w},
+}
+
+@article{shin2024,
+  author = {M. Shin and S. Kim and Y. Kim and A. Song and Y. Kim and H.Y. Kim},
+  title = {Development of an HVAC system control method using weather forecasting data with deep reinforcement learning algorithms},
+  journal = {Build. Environ.},
+  volume = {248},
+  pages = {111069},
+  year = {2024},
+  doi = {10.1016/j.buildenv.2023.111069},
+  url = {https://doi.org/10.1016/j.buildenv.2023.111069},
+}
+
+@techreport{simon2024,
+  author = {M. Simon and S. Kamin and A. Hamper and T. Wittenberg and S. Schmitt-Ruth},
+  title = {Strategizing AI in healthcare: A multidimensional blueprint for transformative decision-making in clinical settings},
+  institution = {M. Simon and S. Kamin and A. Hamper and T. Wittenberg and S. Schmitt-Ruth},
+  note = {Curr. Dir. Biomed. Eng. (2024).},
+  year = {2024},
+  doi = {10.1515/cdbme-2024-2146},
+  url = {https://doi.org/10.1515/cdbme-2024-2146},
+}
+
+@techreport{ashrae55,
+  author = {ASHRAE},
+  title = {Standard 55 -- Thermal environmental conditions for human occupancy},
+  institution = {ASHRAE},
+  url = {https://www.ashrae.org/technical-resources/bookstore/standard-55-thermal-environmental-conditions-for-human-occupancy},
+}
+
+@article{steg2005,
+  author = {L. Steg and L. Dreijerink and W. Abrahamse},
+  title = {Factors influencing the acceptability of energy policies: A test of VBN theory},
+  journal = {J. Environ. Psychol.},
+  volume = {25},
+  number = {4},
+  pages = {415--425},
+  year = {2005},
+  doi = {10.1016/j.jenvp.2005.08.003},
+  url = {https://doi.org/10.1016/j.jenvp.2005.08.003},
+}
+
+@article{stern1999,
+  author = {P.C. Stern and T. Dietz and T.D. Abel and G. Guagnano and L. Kalof},
+  title = {A value-belief-norm theory of support for social movements: The case of environmentalism},
+  journal = {College of the Environment on the Peninsulas Publications},
+  year = {1999},
+  url = {https://cedar.wwu.edu/hcop_facpubs/1},
+}
+
+@article{svoboda2024,
+  author = {I. Svoboda and D. Lande},
+  title = {Enhancing multi-criteria decision analysis with AI: Integrating analytic hierarchy process and GPT-4 for automated decision support},
+  journal = {arXiv preprint arXiv:2402.07404},
+  year = {2024},
+}
+
+@article{tao2020,
+  author = {L. Tao and et al.},
+  title = {Accuracy and effects of clinical decision support systems integrated with BMJ Best Practice-aided diagnosis: Interrupted time series study},
+  journal = {JMIR Med. Inform.},
+  volume = {8},
+  number = {1},
+  pages = {e16912},
+  year = {2020},
+  doi = {10.2196/16912},
+  url = {https://doi.org/10.2196/16912},
+}
+
+@article{teichert2014,
+  author = {T. Teichert and V.P. Ferrera and J. Grinband},
+  title = {Humans optimize decision-making by delaying decision onset},
+  journal = {PLoS ONE},
+  volume = {9},
+  number = {3},
+  pages = {e89638},
+  year = {2014},
+  doi = {10.1371/journal.pone.0089638},
+  url = {https://doi.org/10.1371/journal.pone.0089638},
+}
+
+@article{thaler1999,
+  author = {R. Thaler and Mental accounting matters and J. Behav. Decis. Making 12 (1999) 183--206.},
+  title = {R. Thaler, Mental accounting matters, J. Behav. Decis. Making 12 (1999) 183--206.},
+  year = {1999},
+  doi = {10.1002/(SICI)1099-0771(199909)12:3<183::AID-BDM318>3.0.CO;2-F},
+  url = {https://doi.org/10.1002/(SICI)1099-0771(199909)12:3<183::AID-BDM318>3.0.CO;2-F},
+}
+
+@article{tushar2019,
+  author = {Q. Tushar and M. Bhuiyan and M. Sandanayake and G. Zhang},
+  title = {Optimizing the energy consumption in a residential building at different climate zones: Towards sustainable decision making},
+  journal = {J. Clean. Prod.},
+  year = {2019},
+  doi = {10.1016/j.jclepro.2019.06.093},
+  url = {https://doi.org/10.1016/j.jclepro.2019.06.093},
+}
+
+@article{doe,
+  author = {U.S. Department of Energy},
+  title = {Why energy efficiency matters},
+  url = {https://www.energy.gov/energysaver/why-energy-efficiency-matters},
+}
+
+@techreport{eia2022,
+  author = {U.S. Energy Information Administration},
+  title = {Frequently asked questions (FAQs)},
+  institution = {U.S. Energy Information Administration},
+  note = {2022.},
+  year = {2022},
+  url = {https://www.eia.gov/tools/faqs/faq.php?id=97&t=3},
+}
+
+@techreport{epaegrid2025,
+  author = {U.S. Environmental Protection Agency},
+  title = {eGRID2023: Detailed data (Version 2)},
+  institution = {U.S. Environmental Protection Agency},
+  note = {2025.},
+  year = {2025},
+  url = {https://www.epa.gov/egrid/detailed-data},
+}
+
+@techreport{epa2025,
+  author = {U.S. Environmental Protection Agency},
+  title = {Assumptions and references for household carbon footprint calculator},
+  institution = {U.S. Environmental Protection Agency},
+  note = {20 March 2025.},
+  year = {2025},
+  url = {https://www.epa.gov/ghgemissions/assumptions-and-references-household-carbon-footprint-calculator},
+}
+
+@techreport{ventre2022,
+  author = {V. Ventre and R. Martino and F. Maturo},
+  title = {Subjective perception of time and decision inconsistency in interval effect},
+  institution = {V. Ventre and R. Martino and F. Maturo},
+  note = {Qual. Quant. 57 (2022) 4855--4880.},
+  year = {2022},
+  doi = {10.1007/s11135-022-01581-9},
+  url = {https://doi.org/10.1007/s11135-022-01581-9},
+}
+
+@article{vivek2021,
+  author = {V. Vivek and D. Malghan and K. Mukherjee},
+  title = {Toward achieving persistent behavior change in household water conservation},
+  journal = {Proc. Natl. Acad. Sci. U.S.A.},
+  volume = {118},
+  number = {24},
+  year = {2021},
+  doi = {10.1073/pnas.2023014118},
+  url = {https://doi.org/10.1073/pnas.2023014118},
+}
+
+@article{volland2017,
+  author = {B. Volland and A.W. Ando and J.A. Jedlicka and A. Narwani and E. Barbier and The role of risk and trust attitudes in explaining residential energy demand: Evidence from the United Kingdom},
+  title = {Ecol. Econ. 132 (2017) 14--30},
+  year = {2017},
+  doi = {10.1016/j.ecolecon.2016.10.002},
+  url = {https://doi.org/10.1016/j.ecolecon.2016.10.002},
+}
+
+@article{wanghong2020,
+  author = {Z. Wang and T. Hong},
+  title = {Learning occupants' indoor comfort temperature through a Bayesian inference approach for office buildings in United States},
+  journal = {Renew. Sustain. Energy Rev.},
+  volume = {119},
+  pages = {109593},
+  year = {2020},
+  doi = {10.1016/j.rser.2019.109593},
+  url = {https://doi.org/10.1016/j.rser.2019.109593},
+}
+
+@article{wang2023,
+  author = {C.-P. Wang},
+  title = {Q. Zhang},
+  journal = {P.P.W. Wong, L. Wang, Consumers' green purchase intention to visit green hotels: A value-belief-norm theory perspective, Front. Psychol.},
+  volume = {14},
+  year = {2023},
+  doi = {10.3389/fpsyg.2023.1139116},
+  url = {https://doi.org/10.3389/fpsyg.2023.1139116},
+}
+
+@article{waseem2020,
+  author = {M. Waseem and Z. Lin and S. Liu and I.A. Sajjad and T. Aziz},
+  title = {Optimal GWCSO-based home appliances scheduling for demand response considering end-users comfort},
+  journal = {Electr. Power Syst. Res.},
+  volume = {187},
+  pages = {106477},
+  year = {2020},
+  doi = {10.1016/j.epsr.2020.106477},
+  url = {https://doi.org/10.1016/j.epsr.2020.106477},
+}
+
+@techreport{whitebell2020,
+  author = {C. Whitebell},
+  title = {What is life cycle assessment (LCA)?},
+  institution = {C. Whitebell},
+  note = {2 July 2020.},
+  year = {2020},
+  url = {https://www.rit.edu/sustainabilityinstitute/blog/what-life-cycle-assessment-lca},
+}
+
+@inproceedings{winfield2016,
+  author = {D. Winfield and et al.},
+  title = {Measured performance of heat pump clothes dryers},
+  booktitle = {ACEEE Summer Study on Energy Efficiency in Buildings, 2016},
+  year = {2016},
+  url = {https://www.aceee.org/files/proceedings/2016/data/papers/1_160.pdf},
+}
+
+@article{wu2018,
+  author = {W. Wu and H.M. Skye and P.A. Domanski},
+  title = {Selecting HVAC systems to achieve comfortable and cost-effective residential net-zero energy buildings},
+  journal = {Appl. Energy},
+  volume = {212},
+  pages = {577--591},
+  year = {2018},
+  doi = {10.1016/j.apenergy.2017.12.046},
+  url = {https://doi.org/10.1016/j.apenergy.2017.12.046},
+}
+
+@article{xie2022,
+  author = {X. Xie and Z. Tong and S. Xu},
+  title = {Risk attitudes and household consumption behavior: Evidence from China},
+  journal = {Front. Public Health},
+  volume = {10},
+  year = {2022},
+  doi = {10.3389/fpubh.2022.922690},
+  url = {https://doi.org/10.3389/fpubh.2022.922690},
+}
+
+@article{xu2017,
+  author = {X. Xu and C. Chen and J.K. Day},
+  title = {Investigating willingness to save energy and communication about energy use in the American workplace with the attitude-behavior-context model},
+  journal = {Energy Res. Soc. Sci.},
+  volume = {32},
+  pages = {13--22},
+  year = {2017},
+  doi = {10.1016/j.erss.2017.01.009},
+  url = {https://doi.org/10.1016/j.erss.2017.01.009},
+}
+
+@article{yi2022,
+  author = {C.Y. Yi and C. Childs and C. Peng and D. Robinson and Thermal comfort modelling of older people living in care homes: An evaluation of heat balance and adaptive comfort and and thermographic methods},
+  title = {Build. Environ. 207 (2022) 108550},
+  year = {2022},
+  doi = {10.1016/j.buildenv.2021.108550},
+  url = {https://doi.org/10.1016/j.buildenv.2021.108550},
+}
+
+@article{zhang2023,
+  author = {D. Zhang},
+  title = {K.-W. Mui},
+  journal = {L.-T. Wong, Establishing the relationship between occupants' thermal behavior and energy consumption during showering, Buildings},
+  volume = {13},
+  number = {5},
+  pages = {1300},
+  year = {2023},
+  doi = {10.3390/buildings13051300},
+  url = {https://doi.org/10.3390/buildings13051300},
+}
+
+@article{zhou2024,
+  author = {H. Zhou and W. Yu and K. Zhao and H. Shan and S. Zhou and Y. Zhang and H. Wang and S. Wei},
+  title = {Adaptative thermal comfort analysis in the elderly based on fried frailty classification in residential buildings during summer},
+  journal = {Build. Environ.},
+  volume = {252},
+  pages = {111262},
+  year = {2024},
+  doi = {10.1016/j.buildenv.2024.111262},
+  url = {https://doi.org/10.1016/j.buildenv.2024.111262},
+}
