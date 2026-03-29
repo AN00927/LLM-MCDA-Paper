@@ -30,8 +30,6 @@ def load_hvac_data(csv_dir: str) -> pd.DataFrame:
     """Load HVAC data (single file contains everything)."""
     gt_path = Path(csv_dir) / RAG_FILES['HVAC']['ground_truth']
     df = pd.read_csv(gt_path)
-
-    # Rename columns to match   format_scenario_text expectations
     df['Question'] = df['question']
     df['Location'] = df['location']
     df['Square Footage'] = df['square_footage']

@@ -271,8 +271,12 @@ Return ONLY a JSON object with four numeric scores (0-10):
         return default_scores, diagnostics
 
 
+    diagnostics["success"] = False
+
     try:
         scores = json.loads(response)
+
+        diagnostics["success"] = True
 
         validated_scores = {}
         for criterion in ["energy_cost", "environmental", "comfort", "practicality"]:
@@ -288,7 +292,8 @@ Return ONLY a JSON object with four numeric scores (0-10):
 
         return validated_scores, diagnostics
 
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, ValueError) as e:
+        diagnostics["success"] = False
         logging.error(f"JSON parse failed: {e}. Raw response: {response[:200]}")
         return default_scores, diagnostics
 
