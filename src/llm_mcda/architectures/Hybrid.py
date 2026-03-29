@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # ── MODEL SELECTOR ─────────────────────────────────────────
 # Change this variable manually before running a new model.
 # Supported values: "mistral" | "qwen" | "claude" | "gemini"
-MODEL_KEY = "mistral"
+MODEL_KEY = "qwen"
 # ───────────────────────────────────────────────────────────
 
 def get_output_folder():
@@ -270,54 +270,79 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             import re
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
 
-            if json_match:
+            if not json_match:
+                print(f"Extraction attempt {attempt + 1} failed to parse JSON")
+                extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+                extraction_diagnostics.update({
+                    'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                    'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                    'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                })
+                return None, extraction_diagnostics
+
+            try:
                 extracted = json.loads(json_match.group())
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Extraction attempt {attempt + 1} failed to parse JSON: {e}")
+                extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+                extraction_diagnostics.update({
+                    'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                    'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                    'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                })
+                return None, extraction_diagnostics
 
-                required_top_level = ['decision_type', 'calculator', 'parameters']
-                if all(k in extracted for k in required_top_level):
+            required_top_level = ['decision_type', 'calculator', 'parameters']
+            if all(k in extracted for k in required_top_level):
 
-                    if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
-                        print(f" iinvalid decision_type: {extracted['decision_type']}")
-                        extraction_diagnostics['extraction_error'] = "Invalid decision_type"
-                        continue
+                if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
+                    print(f" iinvalid decision_type: {extracted['decision_type']}")
+                    extraction_diagnostics['extraction_error'] = "Invalid decision_type"
+                    continue
 
-                    valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
-                                         'ShowerGroundTruthCalculator']
-                    if extracted['calculator'] not in valid_calculators:
-                        print(f" invalid calculator: {extracted['calculator']}")
-                        extraction_diagnostics['extraction_error'] = "Invalid calculator"
-                        continue
+                valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
+                                     'ShowerGroundTruthCalculator']
+                if extracted['calculator'] not in valid_calculators:
+                    print(f" invalid calculator: {extracted['calculator']}")
+                    extraction_diagnostics['extraction_error'] = "Invalid calculator"
+                    continue
 
-                    params = extracted['parameters']
-                    decision_type = extracted['decision_type']
+                params = extracted['parameters']
+                decision_type = extracted['decision_type']
 
-                    params = extracted['parameters']
-                    decision_type = extracted['decision_type']
+                params = extracted['parameters']
+                decision_type = extracted['decision_type']
 
-                    if decision_type == 'HVAC':
-                        required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
-                                           'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
-                    elif decision_type == 'Appliance':
-                        required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
-                                           'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
-                    elif decision_type == 'Shower':
-                        required_params = ['Location', 'GPM', 'Tank Size',
-                                           'Water Heater Temp', 'outdoor_temp', 'alternatives']
-                    if all(k in params for k in required_params):
-                        extraction_diagnostics['success'] = True
-                        extraction_diagnostics.update({
-                            'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                            'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                            'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
-                        })
-                        return extracted, extraction_diagnostics
-                    else:
-                        print(f"Missing required parameters for {decision_type}")
-                        extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
-                        continue
+                if decision_type == 'HVAC':
+                    required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
+                                       'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
+                elif decision_type == 'Appliance':
+                    required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
+                                       'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
+                elif decision_type == 'Shower':
+                    required_params = ['Location', 'GPM', 'Tank Size',
+                                       'Water Heater Temp', 'outdoor_temp', 'alternatives']
+                if all(k in params for k in required_params):
+                    extraction_diagnostics['success'] = True
+                    extraction_diagnostics.update({
+                        'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                        'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                        'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                    })
+                    return extracted, extraction_diagnostics
+                else:
+                    print(f"Missing required parameters for {decision_type}")
+                    extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
+                    continue
 
             print(f"Extraction attempt {attempt + 1} failed to parse JSON")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+            extraction_diagnostics.update({
+                'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+            })
+            return None, extraction_diagnostics
 
         except Exception as e:
             print(f"Extraction attempt {attempt + 1} error: {e}")

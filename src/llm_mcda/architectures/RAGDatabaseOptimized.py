@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 # ── MODEL SELECTOR ─────────────────────────────────────────
 # Change this variable manually before running a new model.
 # Supported values: "mistral" | "qwen" | "claude" | "gemini"
-MODEL_KEY = "mistral"
+MODEL_KEY = "qwen"
 # ───────────────────────────────────────────────────────────
 
 def get_output_folder():
@@ -488,6 +488,11 @@ def run_scenario(scenario: Dict) -> Dict:
         print(f"\nScoring: {alternative}")
 
         scores, diagnostics = score_alternative_with_rag(scenario, alternative)
+        total_diagnostics['api_calls'] += 1
+        total_diagnostics['total_tokens_input'] += diagnostics.get('prompt_tokens', 0)
+        total_diagnostics['total_tokens_output'] += diagnostics.get('completion_tokens', 0)
+        total_diagnostics['total_latency_ms'] += diagnostics.get('latency_ms', 0.0)
+
         if scores.get('_failed'):
             print(f" FAILED — skipping alternative")
             total_diagnostics['failed_calls'] += 1
@@ -497,6 +502,7 @@ def run_scenario(scenario: Dict) -> Dict:
                 'failed': True
             })
             continue
+
         print(f"  Scores: Energy={scores['energy_cost']:.1f}, "
               f"Env={scores['environmental']:.1f}, "
               f"Comfort={scores['comfort']:.1f}, "
@@ -507,12 +513,8 @@ def run_scenario(scenario: Dict) -> Dict:
             'alternative': alternative,
             'scores': scores
         })
-        total_diagnostics['api_calls'] += 1
-        total_diagnostics['total_tokens_input'] += diagnostics.get('prompt_tokens', 0)
-        total_diagnostics['total_tokens_output'] += diagnostics.get('completion_tokens', 0)
-        total_diagnostics['total_latency_ms'] += diagnostics.get('latency_ms', 0.0)
 
-        if diagnostics.get('success', True):
+        if diagnostics.get('success', False):
             total_diagnostics['successful_calls'] += 1
         else:
             total_diagnostics['failed_calls'] += 1
