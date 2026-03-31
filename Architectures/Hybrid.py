@@ -98,7 +98,6 @@ CRITERION_WEIGHTS = {
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
-EXTRACTION_MAX_RETRIES = 1
 OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.csv"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_diagnostics.json"
 UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
@@ -260,81 +259,28 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         'success': False,
         'extraction_error': None
     }
+    attempt = 0
+    extraction_diagnostics['attempts'] = 1
 
-    for attempt in range(EXTRACTION_MAX_RETRIES + 1):
-        extraction_diagnostics['attempts'] += 1
+    try:
+        response, api_diagnostics = query_openrouter(messages)
+        extraction_diagnostics.update({
+            'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+            'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+            'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+        })
+        response_text = response['choices'][0]['message']['content']
+        stripped_response = response_text.strip()
+        strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
+        if not strict_json_only:
+            print(f"Extraction attempt {attempt + 1} failed: non-JSON wrapper text detected")
+            extraction_diagnostics['extraction_error'] = "Non-JSON wrapper text detected"
+            return None, extraction_diagnostics
 
-        try:
-            response, api_diagnostics = query_openrouter(messages)
-            response_text = response['choices'][0]['message']['content']
-            import re
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        import re
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
 
-            if not json_match:
-                print(f"Extraction attempt {attempt + 1} failed to parse JSON")
-                extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-                extraction_diagnostics.update({
-                    'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                    'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                    'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
-                })
-                return None, extraction_diagnostics
-
-            try:
-                extracted = json.loads(json_match.group())
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"Extraction attempt {attempt + 1} failed to parse JSON: {e}")
-                extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-                extraction_diagnostics.update({
-                    'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                    'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                    'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
-                })
-                return None, extraction_diagnostics
-
-            required_top_level = ['decision_type', 'calculator', 'parameters']
-            if all(k in extracted for k in required_top_level):
-
-                if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
-                    print(f" iinvalid decision_type: {extracted['decision_type']}")
-                    extraction_diagnostics['extraction_error'] = "Invalid decision_type"
-                    continue
-
-                valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
-                                     'ShowerGroundTruthCalculator']
-                if extracted['calculator'] not in valid_calculators:
-                    print(f" invalid calculator: {extracted['calculator']}")
-                    extraction_diagnostics['extraction_error'] = "Invalid calculator"
-                    continue
-
-                params = extracted['parameters']
-                decision_type = extracted['decision_type']
-
-                params = extracted['parameters']
-                decision_type = extracted['decision_type']
-
-                if decision_type == 'HVAC':
-                    required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
-                                       'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
-                elif decision_type == 'Appliance':
-                    required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
-                                       'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
-                elif decision_type == 'Shower':
-                    required_params = ['Location', 'GPM', 'Tank Size',
-                                       'Water Heater Temp', 'outdoor_temp', 'alternatives']
-                if all(k in params for k in required_params):
-                    extraction_diagnostics['success'] = True
-                    extraction_diagnostics.update({
-                        'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                        'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                        'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
-                    })
-                    return extracted, extraction_diagnostics
-                else:
-                    print(f"Missing required parameters for {decision_type}")
-                    extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
-                    continue
-
+        if not json_match:
             print(f"Extraction attempt {attempt + 1} failed to parse JSON")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
             extraction_diagnostics.update({
@@ -344,12 +290,74 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             })
             return None, extraction_diagnostics
 
-        except Exception as e:
-            print(f"Extraction attempt {attempt + 1} error: {e}")
-            extraction_diagnostics['extraction_error'] = str(e)
+        try:
+            extracted = json.loads(json_match.group())
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Extraction attempt {attempt + 1} failed to parse JSON: {e}")
+            extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+            extraction_diagnostics.update({
+                'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+            })
+            return None, extraction_diagnostics
 
-    print("  extraction fail")
-    return None, extraction_diagnostics
+        required_top_level = ['decision_type', 'calculator', 'parameters']
+        if all(k in extracted for k in required_top_level):
+
+            if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
+                print(f" iinvalid decision_type: {extracted['decision_type']}")
+                extraction_diagnostics['extraction_error'] = "Invalid decision_type"
+                return None, extraction_diagnostics
+
+            valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
+                                 'ShowerGroundTruthCalculator']
+            if extracted['calculator'] not in valid_calculators:
+                print(f" invalid calculator: {extracted['calculator']}")
+                extraction_diagnostics['extraction_error'] = "Invalid calculator"
+                return None, extraction_diagnostics
+
+            params = extracted['parameters']
+            decision_type = extracted['decision_type']
+
+            params = extracted['parameters']
+            decision_type = extracted['decision_type']
+
+            if decision_type == 'HVAC':
+                required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
+                                   'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
+            elif decision_type == 'Appliance':
+                required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
+                                   'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
+            elif decision_type == 'Shower':
+                required_params = ['Location', 'GPM', 'Tank Size',
+                                   'Water Heater Temp', 'outdoor_temp', 'alternatives']
+            if all(k in params for k in required_params):
+                extraction_diagnostics['success'] = True
+                extraction_diagnostics.update({
+                    'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                    'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                    'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                })
+                return extracted, extraction_diagnostics
+
+            print(f"Missing required parameters for {decision_type}")
+            extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
+            return None, extraction_diagnostics
+
+        print(f"Extraction attempt {attempt + 1} failed to parse JSON")
+        extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+        extraction_diagnostics.update({
+            'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+            'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+            'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+        })
+        return None, extraction_diagnostics
+
+    except Exception as e:
+        print(f"Extraction attempt {attempt + 1} error: {e}")
+        extraction_diagnostics['extraction_error'] = str(e)
+        return None, extraction_diagnostics
 
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
     gt_scenario = {**scenario, **extracted_result['parameters']}
@@ -479,6 +487,8 @@ def run_scenario(scenario: Dict) -> Dict:
             'decision_type': 'UNKNOWN',
             'calculator': 'NONE',
             'extraction_failed': True,
+            'gt_calculation_failed': False,
+            'scenario_failed': True,
             'extracted_result': None,
             'alternatives_scores': zero_alternatives,
             'ranking_result': ranking_result,
@@ -530,6 +540,7 @@ def run_scenario(scenario: Dict) -> Dict:
             'calculator': calculator,
             'extraction_failed': False,
             'gt_calculation_failed': True,
+            'scenario_failed': True,
             'extracted_result': extraction_result,
             'alternatives_scores': zero_alternatives,
             'ranking_result': ranking_result,
@@ -553,6 +564,7 @@ def run_scenario(scenario: Dict) -> Dict:
         'calculator': calculator,
         'extraction_failed': False,
         'gt_calculation_failed': False,
+        'scenario_failed': False,
         'extracted_result': extraction_result,
         'alternatives_scores': alternatives_scores,
         'ranking_result': ranking_result,
@@ -611,32 +623,82 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         'total_tokens_input': 0,
         'total_tokens_output': 0,
         'successful_calls': 0,
-        'failed_calls': 0
+        'failed_calls': 0,
+        'successful_scenarios': 0,
+        'failed_scenarios': 0
     }
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
 
-        result = run_scenario(scenario)
+        try:
+            result = run_scenario(scenario)
+        except Exception as e:
+            print(f" Scenario crashed and was marked failed: {e}")
+            fallback_alternatives = [
+                scenario.get('Alternative 1', 'Alt1'),
+                scenario.get('Alternative 2', 'Alt2'),
+                scenario.get('Alternative 3', 'Alt3')
+            ]
+            result = {
+                'scenario': scenario.get('Question', 'N/A'),
+                'decision_type': scenario.get('Decision Type', 'UNKNOWN'),
+                'calculator': 'NONE',
+                'extraction_failed': True,
+                'gt_calculation_failed': False,
+                'scenario_failed': True,
+                'alternatives_scores': [
+                    {
+                        'alternative': str(alt),
+                        'scores': {
+                            'energy_cost': 0.0,
+                            'environmental': 0.0,
+                            'comfort': 0.0,
+                            'practicality': 0.0
+                        }
+                    }
+                    for alt in fallback_alternatives
+                ],
+                'ranking_result': {
+                    'ranked_alternatives': [str(alt) for alt in fallback_alternatives],
+                    'weighted_scores': [0.0, 0.0, 0.0]
+                },
+                'extraction_diagnostics': {
+                    'attempts': 0,
+                    'success': False,
+                    'extraction_error': str(e),
+                    'prompt_tokens': 0,
+                    'completion_tokens': 0,
+                    'latency_ms': 0.0
+                }
+            }
+
         all_results.append(result)
 
-        cumulative_diagnostics['total_api_calls'] += 1
-
         ext_diag = result.get('extraction_diagnostics', {})
+        attempts = ext_diag.get('attempts', 0)
+        try:
+            attempts = int(attempts)
+        except (TypeError, ValueError):
+            attempts = 0
+        cumulative_diagnostics['total_api_calls'] += max(attempts, 0)
+
         cumulative_diagnostics['total_tokens_input'] += ext_diag.get('prompt_tokens', 0)
         cumulative_diagnostics['total_tokens_output'] += ext_diag.get('completion_tokens', 0)
         cumulative_diagnostics['total_latency_ms'] += ext_diag.get('latency_ms', 0.0)
 
-        if result.get('extraction_failed', False) or result.get('gt_calculation_failed', False):
+        if result.get('scenario_failed', False):
             cumulative_diagnostics['failed_calls'] += 1
+            cumulative_diagnostics['failed_scenarios'] += 1
         else:
             cumulative_diagnostics['successful_calls'] += 1
+            cumulative_diagnostics['successful_scenarios'] += 1
     cumulative_diagnostics['avg_latency_ms'] = (
             cumulative_diagnostics['total_latency_ms'] /
             max(cumulative_diagnostics['total_api_calls'], 1)
     )
     cumulative_diagnostics['success_rate'] = (
-            cumulative_diagnostics['successful_calls'] /
-            max(cumulative_diagnostics['total_api_calls'], 1)
+            cumulative_diagnostics['successful_scenarios'] /
+            max(cumulative_diagnostics['total_scenarios'], 1)
     )
     print(f"\nSaving results to: {output_csv_path}")
 

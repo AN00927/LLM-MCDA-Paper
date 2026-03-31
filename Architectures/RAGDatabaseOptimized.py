@@ -410,13 +410,47 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     ]
 
     # Step 4: Query LLM
-    response, diagnostics = query_openrouter(messages)
+    try:
+        response, diagnostics = query_openrouter(messages)
 
-    # Step 5: Parse scores
+        # Step 5: Parse scores
+        response_text = response['choices'][0]['message']['content']
+        stripped_response = response_text.strip()
+        strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
 
-    response_text = response['choices'][0]['message']['content']
-    scores = parse_llm_scores(response_text)
-    diagnostics['success'] = not scores.get('_failed', False)
+        if not strict_json_only:
+            print("   Response included non-JSON wrapper text; marking failed")
+            scores = {
+                'energy_cost': None,
+                'environmental': None,
+                'comfort': None,
+                'practicality': None,
+                '_failed': True
+            }
+            diagnostics['success'] = False
+            diagnostics['format_error'] = 'non_json_wrapper_text'
+        else:
+            scores = parse_llm_scores(response_text)
+            diagnostics['success'] = not scores.get('_failed', False)
+    except Exception as e:
+        print(f"   Scoring failed for alternative '{alternative}': {e}")
+        scores = {
+            'energy_cost': None,
+            'environmental': None,
+            'comfort': None,
+            'practicality': None,
+            '_failed': True
+        }
+        diagnostics = {
+            'prompt_tokens': 0,
+            'completion_tokens': 0,
+            'total_tokens': 0,
+            'latency_ms': 0.0,
+            'model': MODEL_ID,
+            'success': False,
+            'error': str(e)
+        }
+
     # Add RAG metadata to diagnostics
     diagnostics['rag_retrieved_count'] = len(retrieved)
     diagnostics['rag_context_length'] = len(rag_context)
@@ -518,6 +552,8 @@ def run_scenario(scenario: Dict) -> Dict:
             total_diagnostics['successful_calls'] += 1
         else:
             total_diagnostics['failed_calls'] += 1
+
+    total_diagnostics['scenario_failed'] = total_diagnostics['failed_calls'] > 0
     ranking_result = apply_mavt_ranking(alternatives_scores)
 
     print(f"\nRANKING:")
@@ -587,12 +623,53 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         'total_tokens_input': 0,
         'total_tokens_output': 0,
         'successful_calls': 0,
-        'failed_calls': 0
+        'failed_calls': 0,
+        'successful_scenarios': 0,
+        'failed_scenarios': 0
     }
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
 
-        result = run_scenario(scenario)
+        try:
+            result = run_scenario(scenario)
+        except Exception as e:
+            print(f"  Scenario crashed and was marked failed: {e}")
+            fallback_alternatives = [
+                scenario.get('Alternative 1', ''),
+                scenario.get('Alternative 2', ''),
+                scenario.get('Alternative 3', '')
+            ]
+            result = {
+                'scenario': scenario.get('Question', 'N/A'),
+                'alternatives_scores': [
+                    {
+                        'alternative': alt,
+                        'scores': {
+                            'energy_cost': None,
+                            'environmental': None,
+                            'comfort': None,
+                            'practicality': None
+                        },
+                        'failed': True
+                    }
+                    for alt in fallback_alternatives
+                ],
+                'ranking_result': {
+                    'ranked_alternatives': [],
+                    'weighted_scores': []
+                },
+                'diagnostics': {
+                    'api_calls': 0,
+                    'total_tokens_input': 0,
+                    'total_tokens_output': 0,
+                    'total_latency_ms': 0.0,
+                    'successful_calls': 0,
+                    'failed_calls': 0,
+                    'scenario_failed': True,
+                    'scenario_error': str(e)
+                }
+            }
+
         all_results.append(result)
 
         # Aggregate diagnostics
@@ -603,11 +680,14 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         cumulative_diagnostics['total_latency_ms'] += diag['total_latency_ms']
         cumulative_diagnostics['successful_calls'] += diag['successful_calls']
         cumulative_diagnostics['failed_calls'] += diag['failed_calls']
-        # Track by decision type
+        if diag.get('scenario_failed', False):
+            cumulative_diagnostics['failed_scenarios'] += 1
+        else:
+            cumulative_diagnostics['successful_scenarios'] += 1
 
-        cumulative_diagnostics['avg_latency_ms'] = (
-            cumulative_diagnostics['total_latency_ms'] /
-            max(cumulative_diagnostics['total_api_calls'], 1)
+    cumulative_diagnostics['avg_latency_ms'] = (
+        cumulative_diagnostics['total_latency_ms'] /
+        max(cumulative_diagnostics['total_api_calls'], 1)
     )
     cumulative_diagnostics['success_rate'] = (
             cumulative_diagnostics['successful_calls'] /
@@ -633,15 +713,17 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             # Get ranking details
             ranked_alts = result['ranking_result']['ranked_alternatives']
             weighted_scores = result['ranking_result']['weighted_scores']
+            rank_lookup = {alt: idx + 1 for idx, alt in enumerate(ranked_alts)}
+            score_lookup = {alt: weighted_scores[idx] for idx, alt in enumerate(ranked_alts)}
 
             # Write each alternative
             for alt_idx, alt_data in enumerate(result['alternatives_scores']):
                 alternative = alt_data['alternative']
                 scores = alt_data['scores']
 
-                # Find rank (1-based)
-                rank = ranked_alts.index(alternative) + 1
-                weighted_score = weighted_scores[ranked_alts.index(alternative)]
+                # Failed alternatives may not exist in ranked_alts.
+                rank = rank_lookup.get(alternative)
+                weighted_score = score_lookup.get(alternative)
 
                 writer.writerow({
                     'scenario_id': scenario_id,

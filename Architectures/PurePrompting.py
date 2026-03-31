@@ -413,6 +413,8 @@ def run_scenario(scenario: Dict) -> Dict:
         else:
             total_diagnostics["failed_calls"] += 1
 
+    total_diagnostics["scenario_failed"] = total_diagnostics["failed_calls"] > 0
+
     # Rank alternatives using TOPSIS
     ranking_results = apply_mavt_ranking(alternatives_scores)
 
@@ -463,13 +465,58 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
         "total_tokens_input": 0,
         "total_tokens_output": 0,
         "successful_calls": 0,
-        "failed_calls": 0
+        "failed_calls": 0,
+        "successful_scenarios": 0,
+        "failed_scenarios": 0
     }
 
     for i, scenario in enumerate(scenarios):
         logging.info(f"Processing scenario {i + 1}/{len(scenarios)}: {scenario.get('Question', 'N/A')[:50]}...")
 
-        result = run_scenario(scenario)
+        try:
+            result = run_scenario(scenario)
+        except Exception as e:
+            logging.exception(f"Scenario crashed and was marked failed: {e}")
+            fallback_alternatives = [
+                scenario.get("Alternative 1", ""),
+                scenario.get("Alternative 2", ""),
+                scenario.get("Alternative 3", "")
+            ]
+            result = {
+                "decision_type": scenario.get("Decision Type", "N/A"),
+                "scenario_id": scenario.get("scenario_id", "N/A"),
+                "question": scenario.get("Question", "N/A"),
+                "location": scenario.get("Location", "N/A"),
+                "outdoor_temp": scenario.get("Outdoor Temp", "N/A"),
+                "alternatives_scores": [
+                    {
+                        "alternative": alt,
+                        "energy_cost": 0.0,
+                        "environmental": 0.0,
+                        "comfort": 0.0,
+                        "practicality": 0.0,
+                        "reasoning": "Scenario runtime failure"
+                    }
+                    for alt in fallback_alternatives
+                ],
+                "ranking_results": {
+                    "ranked_alternatives": fallback_alternatives,
+                    "ranks": [1, 2, 3],
+                    "weighted_scores": [0.0, 0.0, 0.0],
+                    "error": str(e)
+                },
+                "diagnostics": {
+                    "api_calls": 0,
+                    "total_latency_ms": 0,
+                    "total_tokens_input": 0,
+                    "total_tokens_output": 0,
+                    "successful_calls": 0,
+                    "failed_calls": 0,
+                    "scenario_failed": True,
+                    "scenario_error": str(e)
+                }
+            }
+
         all_results.append(result)
 
         # Aggregate diagnostics
@@ -480,6 +527,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
         cumulative_diagnostics["total_tokens_output"] += diag["total_tokens_output"]
         cumulative_diagnostics["successful_calls"] += diag["successful_calls"]
         cumulative_diagnostics["failed_calls"] += diag["failed_calls"]
+        if diag.get("scenario_failed", False):
+            cumulative_diagnostics["failed_scenarios"] += 1
+        else:
+            cumulative_diagnostics["successful_scenarios"] += 1
 
     # Calculate summary statistics
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
