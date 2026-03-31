@@ -395,6 +395,8 @@ def run_scenario(scenario: Dict) -> Dict:
         "question": scenario.get("Question", "N/A"),
         "location": scenario.get("Location", "N/A"),
         "outdoor_temp": scenario.get("Outdoor Temp", "N/A"),
+        "appliance_age": scenario.get("Appliance Age", ""),
+        "flow_rate": scenario.get("Flow rate", ""),
         "alternatives_scores": alternatives_scores,
         "ranking_results": ranking_results,
         "diagnostics": total_diagnostics
@@ -458,13 +460,15 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                 "question": scenario.get("Question", "N/A"),
                 "location": scenario.get("Location", "N/A"),
                 "outdoor_temp": scenario.get("Outdoor Temp", "N/A"),
+                "appliance_age": scenario.get("Appliance Age", ""),
+                "flow_rate": scenario.get("Flow rate", ""),
                 "alternatives_scores": [
                     {
                         "alternative": alt,
-                        "energy_cost": 0.0,
-                        "environmental": 0.0,
-                        "comfort": 0.0,
-                        "practicality": 0.0,
+                        "energy_cost": None,
+                        "environmental": None,
+                        "comfort": None,
+                        "practicality": None,
                         "reasoning": "Scenario runtime failure"
                     }
                     for alt in fallback_alternatives
@@ -481,7 +485,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     "total_tokens_input": 0,
                     "total_tokens_output": 0,
                     "successful_calls": 0,
-                    "failed_calls": 0,
+                    "failed_calls": len(fallback_alternatives),
                     "scenario_failed": True,
                     "scenario_error": str(e)
                 }
@@ -504,7 +508,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
     # Calculate summary statistics
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
-    success_rate = cumulative_diagnostics["successful_calls"] / max(cumulative_diagnostics["total_api_calls"], 1)
+    success_rate = cumulative_diagnostics["successful_scenarios"] / max(cumulative_diagnostics["total_scenarios"], 1)
 
     cumulative_diagnostics["avg_latency_ms"] = avg_latency
     cumulative_diagnostics["success_rate"] = success_rate
@@ -512,7 +516,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     # Save results to CSV
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
-            "scenario_id", "decision_type", "question", "location", "outdoor_temp",
+            "scenario_id", "decision_type", "question", "location", "outdoor_temp", "appliance_age", "flow_rate",
             "alternative", "energy_cost", "environmental", "comfort", "practicality",
             "rank", "weighted_score"
         ]
@@ -524,7 +528,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             question = result["question"]
             location = result["location"]
             outdoor_temp = result["outdoor_temp"]
+            appliance_age = result["appliance_age"]
+            flow_rate = result["flow_rate"]
             decision_type = result["decision_type"]
+            scenario_failed = result.get("diagnostics", {}).get("scenario_failed", False)
 
             ranks = result["ranking_results"]["ranks"]
             weighted_scores = result["ranking_results"]["weighted_scores"]
@@ -533,8 +540,20 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
                 alt = alt_scores["alternative"]
 
-                rank = ranks[alt_idx]
-                weighted_score = weighted_scores[alt_idx]
+                if scenario_failed:
+                    energy_cost = 9999
+                    environmental = 9999
+                    comfort = 9999
+                    practicality = 9999
+                    rank = 9999
+                    weighted_score = 9999
+                else:
+                    energy_cost = alt_scores["energy_cost"]
+                    environmental = alt_scores["environmental"]
+                    comfort = alt_scores["comfort"]
+                    practicality = alt_scores["practicality"]
+                    rank = ranks[alt_idx]
+                    weighted_score = weighted_scores[alt_idx]
 
                 writer.writerow({
                     "scenario_id": scenario_id,
@@ -542,11 +561,13 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     "question": question,
                     "location": location,
                     "outdoor_temp": outdoor_temp,
+                    "appliance_age": appliance_age,
+                    "flow_rate": flow_rate,
                     "alternative": alt,
-                    "energy_cost": alt_scores["energy_cost"],
-                    "environmental": alt_scores["environmental"],
-                    "comfort": alt_scores["comfort"],
-                    "practicality": alt_scores["practicality"],
+                    "energy_cost": energy_cost,
+                    "environmental": environmental,
+                    "comfort": comfort,
+                    "practicality": practicality,
                     "rank": rank,
                     "weighted_score": weighted_score
                 })

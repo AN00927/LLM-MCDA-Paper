@@ -1,5 +1,3 @@
-# Shared model routing and scoring constants used by architecture runners and metrics.
-
 MODEL_KEY = "qwen"
 
 CRITERION_WEIGHTS = {
@@ -8,8 +6,6 @@ CRITERION_WEIGHTS = {
     "comfort": 0.20,
     "practicality": 0.15,
 }
-
-
 def get_output_folder(model_key: str = MODEL_KEY) -> str:
     if model_key == "mistral":
         return "Output Files Mistral"
