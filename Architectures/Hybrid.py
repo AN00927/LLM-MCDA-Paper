@@ -667,8 +667,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
-            'scenario_id', 'question', 'location', 'decision_type', 'calculator',
-            'extraction_failed', 'gt_calculation_failed',
+            'scenario_id', 'question', 'location', 'decision_type', 'outdoor_temp', 'appliance_age', 'flow_rate',
+            'calculator', 'extraction_failed', 'gt_calculation_failed',
             'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
             'rank', 'weighted_score'
         ]
@@ -681,8 +681,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             calculator = result['calculator']
             extraction_failed = result.get('extraction_failed', False)
             gt_calc_failed = result.get('gt_calculation_failed', False)
+            scenario_failed = result.get('scenario_failed', False)
 
             location = scenarios[scenario_id - 1].get('Location', 'N/A')
+            outdoor_temp = scenarios[scenario_id - 1].get('Outdoor Temp', '')
+            appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
+            flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
 
             # Get ranking details
             ranked_alts = result['ranking_result']['ranked_alternatives']
@@ -693,23 +697,38 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 alternative = alt_data['alternative']
                 scores = alt_data['scores']
 
-                # Find rank (1-based)
-                rank = ranked_alts.index(alternative) + 1
-                weighted_score = weighted_scores[ranked_alts.index(alternative)]
+                if scenario_failed:
+                    energy_cost = 9999
+                    environmental = 9999
+                    comfort = 9999
+                    practicality = 9999
+                    rank = 9999
+                    weighted_score = 9999
+                else:
+                    energy_cost = scores['energy_cost']
+                    environmental = scores['environmental']
+                    comfort = scores['comfort']
+                    practicality = scores['practicality']
+                    # Find rank (1-based)
+                    rank = ranked_alts.index(alternative) + 1
+                    weighted_score = weighted_scores[ranked_alts.index(alternative)]
 
                 writer.writerow({
                     'scenario_id': scenario_id,
                     'question': question,
                     'location': location,
                     'decision_type': decision_type,
+                    'outdoor_temp': outdoor_temp,
+                    'appliance_age': appliance_age,
+                    'flow_rate': flow_rate,
                     'calculator': calculator,
                     'extraction_failed': extraction_failed,
                     'gt_calculation_failed': gt_calc_failed,
                     'alternative': alternative,
-                    'energy_cost': scores['energy_cost'],
-                    'environmental': scores['environmental'],
-                    'comfort': scores['comfort'],
-                    'practicality': scores['practicality'],
+                    'energy_cost': energy_cost,
+                    'environmental': environmental,
+                    'comfort': comfort,
+                    'practicality': practicality,
                     'rank': rank,
                     'weighted_score': weighted_score
                 })
