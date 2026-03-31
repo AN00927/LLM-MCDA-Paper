@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import get_output_folder
+from model_config import get_output_folder, MODEL_KEY
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -38,7 +38,7 @@ CONFIG = {
         "RAG": str(OUTPUT_DIR / "RAGResults.csv"),
         "Hybrid": str(OUTPUT_DIR / "hybrid_results.csv"),
     },
-    "output_csv": str(OUTPUT_DIR / "metrics_summary.csv"),
+    "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.csv"),
     "gt_score_cols": {
         "energy_cost": "energy_cost_score",
         "environmental": "environmental_score",
@@ -54,6 +54,34 @@ CONFIG = {
 }
 
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
+FAIL_SENTINEL = 9999
+
+
+def is_failed_row(row):
+    """Check if a row has the 9999 failure sentinel in any score column."""
+    for c in CRITERIA:
+        val = row.get(f"arch_{c}", np.nan)
+        try:
+            if float(val) == FAIL_SENTINEL:
+                return True
+        except (ValueError, TypeError):
+            pass
+    return False
+
+
+def filter_failed_scenarios(merged_df):
+    """Remove all rows for scenarios that contain any 9999 sentinel values.
+    Returns (clean_df, n_failed_scenarios, n_total_scenarios)."""
+    failed_sids = set()
+    for sid in merged_df["arch_scenario_id"].unique():
+        sc = merged_df[merged_df["arch_scenario_id"] == sid]
+        if sc.apply(is_failed_row, axis=1).any():
+            failed_sids.add(sid)
+
+    n_total = merged_df["arch_scenario_id"].nunique()
+    n_failed = len(failed_sids)
+    clean_df = merged_df[~merged_df["arch_scenario_id"].isin(failed_sids)]
+    return clean_df, n_failed, n_total
 
 
 def extract_time_from_alt(alt_str):
@@ -154,6 +182,10 @@ def build_gt_lookup(gt_by_type):
                 "decision_type": dtype,
                 "alt_map": alt_map,
                 "used": False,
+                # Decision-type-specific disambiguating parameters
+                "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
+                "appliance_age_type": str(sub["appliance_age_type"].iloc[0]).strip() if "appliance_age_type" in sub.columns else "",
+                "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
             })
 
     return gt_lookup
@@ -183,20 +215,43 @@ def match_scenarios(gt_lookup, arch_df, arch_name):
             norm_alt = normalize_alternative(row["alternative"], arch_dtype)
             arch_norm_alts[norm_alt] = row
 
-        # Find best GT entry: must match decision type
+        # Find best GT entry: must match decision type, use extra params as tiebreakers
         best_match = None
-        best_overlap = -1
+        best_score = -1
+
+        # Extract the one disambiguating parameter for this decision type (skip if N/A or blank)
+        def _clean(val):
+            s = str(val).strip()
+            return "" if s.lower() in ("", "n/a", "nan", "none") else s
+
+        if arch_dtype == "HVAC":
+            arch_param = _clean(arch_sub["outdoor_temp"].iloc[0]) if "outdoor_temp" in arch_sub.columns else ""
+            gt_param_key = "outdoor_temp"
+        elif arch_dtype == "Appliance":
+            arch_param = _clean(arch_sub["appliance_age"].iloc[0]) if "appliance_age" in arch_sub.columns else ""
+            gt_param_key = "appliance_age_type"
+        else:  # Shower
+            arch_param = _clean(arch_sub["flow_rate"].iloc[0]) if "flow_rate" in arch_sub.columns else ""
+            gt_param_key = "gpm"
+
         for gt_entry in gt_lookup[key]:
             if gt_entry["used"]:
                 continue
             if gt_entry["decision_type"] != arch_dtype:
                 continue
             overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
-            if overlap > best_overlap:
-                best_overlap = overlap
+            # Tiebreaker: only apply the parameter specific to this decision type,
+            # and only when both arch and GT values are non-blank (not N/A)
+            extra = 0
+            gt_param = _clean(gt_entry.get(gt_param_key, ""))
+            if arch_param and gt_param and arch_param == gt_param:
+                extra += 100
+            score = overlap + extra
+            if score > best_score:
+                best_score = score
                 best_match = gt_entry
 
-        if best_match is None or best_overlap == 0:
+        if best_match is None or best_score == 0:
             warnings_log.append(
                 f"No alt overlap: sid={arch_sid} ({arch_dtype}, '{q[:50]}', "
                 f"arch_alts={list(arch_norm_alts.keys())})"
@@ -348,30 +403,48 @@ def compute_ranking_metrics(merged_df):
 
 
 def compute_failure_rate(arch_df):
-    """Failure rate for Hybrid architecture."""
-    if "extraction_failed" not in arch_df.columns:
-        return {}
-
+    """Failure rate for any architecture. Detects failures via the 9999 sentinel
+    in score columns. For Hybrid, also reports extraction/calculation breakdown."""
     n_total = arch_df["scenario_id"].nunique()
-    n_ef = n_cf = n_any = 0
+    n_failed = 0
 
     for sid in arch_df["scenario_id"].unique():
         g = arch_df[arch_df["scenario_id"] == sid]
-        ef = g["extraction_failed"].astype(str).str.lower().str.strip().eq("true").any()
-        cf = ("gt_calculation_failed" in g.columns and
-              g["gt_calculation_failed"].astype(str).str.lower().str.strip().eq("true").any())
-        if ef: n_ef += 1
-        if cf: n_cf += 1
-        if ef or cf: n_any += 1
+        has_sentinel = False
+        for c in ["energy_cost", "environmental", "comfort", "practicality"]:
+            col = c if c in g.columns else f"arch_{c}"
+            if col in g.columns:
+                try:
+                    if (g[col].astype(float) == FAIL_SENTINEL).any():
+                        has_sentinel = True
+                        break
+                except (ValueError, TypeError):
+                    pass
+        if has_sentinel:
+            n_failed += 1
 
-    return {
-        "extraction_failure_rate": round(n_ef / n_total, 4) if n_total else 0,
-        "calculation_failure_rate": round(n_cf / n_total, 4) if n_total else 0,
-        "total_failure_rate": round(n_any / n_total, 4) if n_total else 0,
-        "n_extraction_failures": n_ef,
-        "n_calculation_failures": n_cf,
+    result = {
+        "n_failed_scenarios": n_failed,
         "n_total_arch_scenarios": n_total,
+        "total_failure_rate": round(n_failed / n_total, 4) if n_total else 0,
     }
+
+    # Hybrid-specific breakdown
+    if "extraction_failed" in arch_df.columns:
+        n_ef = n_cf = 0
+        for sid in arch_df["scenario_id"].unique():
+            g = arch_df[arch_df["scenario_id"] == sid]
+            ef = g["extraction_failed"].astype(str).str.lower().str.strip().eq("true").any()
+            cf = ("gt_calculation_failed" in g.columns and
+                  g["gt_calculation_failed"].astype(str).str.lower().str.strip().eq("true").any())
+            if ef: n_ef += 1
+            if cf: n_cf += 1
+        result["extraction_failure_rate"] = round(n_ef / n_total, 4) if n_total else 0
+        result["calculation_failure_rate"] = round(n_cf / n_total, 4) if n_total else 0
+        result["n_extraction_failures"] = n_ef
+        result["n_calculation_failures"] = n_cf
+
+    return result
 
 def evaluate_all(config):
     print("=" * 72)
@@ -414,23 +487,31 @@ def evaluate_all(config):
 
         print(f"  {arch_name.upper()}")
 
-        # Failure rate (Hybrid only; other two did not have previous failures)
-        if arch_name == "Hybrid":
-            fail = compute_failure_rate(arch_dfs[arch_name])
-            if fail:
-                print(f"\n  Failures: extraction={fail['n_extraction_failures']}"
-                      f"/{fail['n_total_arch_scenarios']} "
-                      f"({fail['extraction_failure_rate']*100:.1f}%), "
-                      f"calc={fail['n_calculation_failures']}"
-                      f"/{fail['n_total_arch_scenarios']} "
-                      f"({fail['calculation_failure_rate']*100:.1f}%), "
-                      f"total={fail['total_failure_rate']*100:.1f}%")
-                for k, v in fail.items():
-                    all_metrics.append({
-                        "architecture": arch_name,
-                        "decision_type": "Overall",
-                        "metric": k, "value": v,
-                    })
+        # Failure rate (all architectures via 9999 sentinel detection)
+        fail = compute_failure_rate(arch_dfs[arch_name])
+        if fail["n_failed_scenarios"] > 0:
+            print(f"\n  Failures: {fail['n_failed_scenarios']}"
+                  f"/{fail['n_total_arch_scenarios']} "
+                  f"({fail['total_failure_rate']*100:.1f}%)")
+            if "n_extraction_failures" in fail:
+                print(f"    extraction={fail['n_extraction_failures']}, "
+                      f"calc={fail['n_calculation_failures']}")
+        for k, v in fail.items():
+            all_metrics.append({
+                "architecture": arch_name,
+                "decision_type": "Overall",
+                "metric": k, "value": v,
+            })
+
+        # Filter out failed scenarios (9999 sentinel) before computing metrics
+        merged, n_failed, n_total = filter_failed_scenarios(merged)
+        if n_failed > 0:
+            print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
+                  f"evaluating {n_total - n_failed} successful scenarios")
+
+        if len(merged) == 0:
+            print(f"  No successful scenarios to evaluate after filtering")
+            continue
 
         crit = compute_criterion_metrics(merged)
         rank = compute_ranking_metrics(merged)

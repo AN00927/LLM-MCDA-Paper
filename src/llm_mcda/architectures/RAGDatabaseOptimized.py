@@ -631,7 +631,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'total_tokens_output': 0,
                     'total_latency_ms': 0.0,
                     'successful_calls': 0,
-                    'failed_calls': 0,
+                    'failed_calls': len(fallback_alternatives),
                     'scenario_failed': True,
                     'scenario_error': str(e)
                 }
@@ -657,15 +657,15 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         max(cumulative_diagnostics['total_api_calls'], 1)
     )
     cumulative_diagnostics['success_rate'] = (
-            cumulative_diagnostics['successful_calls'] /
-            max(cumulative_diagnostics['total_api_calls'], 1)
+            cumulative_diagnostics['successful_scenarios'] /
+            max(cumulative_diagnostics['total_scenarios'], 1)
     )
     # Save results to CSV
     print(f"\nSaving results to: {output_csv_path}")
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
-            'scenario_id', 'question', 'location', 'decision_type',
+            'scenario_id', 'question', 'location', 'decision_type', 'outdoor_temp', 'appliance_age', 'flow_rate',
             'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
             'rank', 'weighted_score'
         ]
@@ -676,6 +676,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             question = result['scenario']
             decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
             location = scenarios[scenario_id - 1].get('Location', 'N/A')
+            outdoor_temp = scenarios[scenario_id - 1].get('Outdoor Temp', '')
+            appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
+            flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
+            scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
 
             # Get ranking details
             ranked_alts = result['ranking_result']['ranked_alternatives']
@@ -688,20 +692,35 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 alternative = alt_data['alternative']
                 scores = alt_data['scores']
 
-                # Failed alternatives may not exist in ranked_alts.
-                rank = rank_lookup.get(alternative)
-                weighted_score = score_lookup.get(alternative)
+                if scenario_failed:
+                    energy_cost = 9999
+                    environmental = 9999
+                    comfort = 9999
+                    practicality = 9999
+                    rank = 9999
+                    weighted_score = 9999
+                else:
+                    energy_cost = scores['energy_cost']
+                    environmental = scores['environmental']
+                    comfort = scores['comfort']
+                    practicality = scores['practicality']
+                    # Failed alternatives may not exist in ranked_alts.
+                    rank = rank_lookup.get(alternative)
+                    weighted_score = score_lookup.get(alternative)
 
                 writer.writerow({
                     'scenario_id': scenario_id,
                     'question': question,
                     'location': location,
                     'decision_type': decision_type,
+                    'outdoor_temp': outdoor_temp,
+                    'appliance_age': appliance_age,
+                    'flow_rate': flow_rate,
                     'alternative': alternative,
-                    'energy_cost': scores['energy_cost'],
-                    'environmental': scores['environmental'],
-                    'comfort': scores['comfort'],
-                    'practicality': scores['practicality'],
+                    'energy_cost': energy_cost,
+                    'environmental': environmental,
+                    'comfort': comfort,
+                    'practicality': practicality,
                     'rank': rank,
                     'weighted_score': weighted_score
                 })
