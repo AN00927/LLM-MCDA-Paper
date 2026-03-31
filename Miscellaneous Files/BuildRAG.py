@@ -2,20 +2,18 @@ import pandas as pd
 import chromadb
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
+import sys
 
 RAG_FILES = {
     'HVAC': {
 
-        'ground_truth': 'HVACRagScenarios.csv',
-        'merge_required': False
+        'ground_truth': 'HVACRagScenarios.csv'
     },
     'Appliance': {
-        'ground_truth': 'ApplianceRAGScenariosGT.csv',
-        'merge_required': False
+        'ground_truth': 'ApplianceRAGScenariosGT.csv'
     },
     'Shower': {
-        'scenarios': 'ShowerRAGScenarios.csv',
-        'merge_required': False
+        'scenarios': 'ShowerRAGScenarios.csv'
     }
 }
 
@@ -354,11 +352,7 @@ def test_retrieval(test_scenario_text: str, decision_type: str, k: int = 3):
         print("No results foun")
 
 
-if __name__ == "__main__":
-    # Build database
-    build_rag_database()
-
-    # Test retrieval with middle 3 appliance scenarios
+def run_demo_retrieval_cases():
     test_cases = [
         (
             "dishwasher, 1.4 kWh/cycle, 4 occupants, Townhouse, peak $0.18/kWh, off-peak $0.08/kWh",
@@ -380,3 +374,9 @@ if __name__ == "__main__":
     for scenario_text, decision_type, label in test_cases:
         print(f"\n{label}")
         test_retrieval(scenario_text, decision_type, k=3)
+
+
+if __name__ == "__main__":
+    build_rag_database()
+    if len(sys.argv) > 1 and sys.argv[1] == "--demo-retrieval":
+        run_demo_retrieval_cases()
