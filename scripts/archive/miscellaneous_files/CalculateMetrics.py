@@ -17,26 +17,13 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-# ── MODEL SELECTOR ─────────────────────────────────────────
-# Change this variable manually before running a new model.
-# Supported values: "mistral" | "qwen" | "claude" | "gemini"
-MODEL_KEY = "qwen"
-# ───────────────────────────────────────────────────────────
-
-def get_output_folder():
-    if MODEL_KEY == "mistral":
-        return "Output Files Mistral"
-    elif MODEL_KEY == "qwen":
-        return "Output Files Qwen"
-    elif MODEL_KEY == "claude":
-        return "Output Files Claude"
-    elif MODEL_KEY == "gemini":
-        return "Output Files Gemini"
-    else:
-        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
-
 warnings.filterwarnings("ignore")
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from model_config import get_output_folder
+
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 
@@ -52,12 +39,6 @@ CONFIG = {
         "Hybrid": str(OUTPUT_DIR / "hybrid_results.csv"),
     },
     "output_csv": str(OUTPUT_DIR / "metrics_summary.csv"),
-    "weights": {
-        "environmental": 0.35,
-        "energy_cost": 0.30,
-        "comfort": 0.20,
-        "practicality": 0.15,
-    },
     "gt_score_cols": {
         "energy_cost": "energy_cost_score",
         "environmental": "environmental_score",

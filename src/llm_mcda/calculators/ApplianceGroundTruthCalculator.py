@@ -17,15 +17,6 @@ class ApplianceGroundTruthCalculator:
     ELECTRICITY_RATE_PA = 0.19  # dollars per/kWh
     # Peak window 2 PM-6 PM from PECO Energy TOU documentation (PECO, 2021).
     PEAK_HOURS = (14, 18)
-
-    APPLIANCE_NOISE_LEVELS = {
-        'dishwasher': 45,
-        'washer': 50,
-        'dryer': 55
-    }
-
-
-    NOISE_LIMIT_DAYTIME = 45     # dBA acceptable during day
     NOISE_LIMIT_EVENING = 35     # dBA acceptable after 10pm
     # Linear VF for energy cost - equal marginal utility across range
     # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,

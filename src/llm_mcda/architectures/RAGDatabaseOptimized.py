@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import csv
 import requests
@@ -8,40 +9,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 import chromadb
 from sentence_transformers import SentenceTransformer
-
-# ── MODEL SELECTOR ─────────────────────────────────────────
-# Change this variable manually before running a new model.
-# Supported values: "mistral" | "qwen" | "claude" | "gemini"
-MODEL_KEY = "qwen"
-# ───────────────────────────────────────────────────────────
-
-def get_output_folder():
-    if MODEL_KEY == "mistral":
-        return "Output Files Mistral"
-    elif MODEL_KEY == "qwen":
-        return "Output Files Qwen"
-    elif MODEL_KEY == "claude":
-        return "Output Files Claude"
-    elif MODEL_KEY == "gemini":
-        return "Output Files Gemini"
-    else:
-        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
-
-
-def get_model_id():
-    if MODEL_KEY == "mistral":
-        return "mistralai/mistral-small-3.2-24b-instruct"
-    elif MODEL_KEY == "qwen":
-        return "qwen/qwen-2.5-72b-instruct"
-    elif MODEL_KEY == "claude":
-        return "anthropic/claude-sonnet-4"
-    elif MODEL_KEY == "gemini":
-        return "google/gemini-2.5-pro"
-    else:
-        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -54,12 +27,6 @@ if not OPENROUTER_API_KEY:
 
 MODEL_ID = get_model_id()
 TEMPERATURE = 0.3
-CRITERION_WEIGHTS = {
-    'energy_cost': 0.30,
-    'environmental': 0.35,
-    'comfort': 0.20,
-    'practicality': 0.15
-}
 
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'

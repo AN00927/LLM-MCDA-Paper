@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import csv
 import time
@@ -9,37 +10,6 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 import pandas as pd
-
-# ── MODEL SELECTOR ─────────────────────────────────────────
-# Change this variable manually before running a new model.
-# Supported values: "mistral" | "qwen" | "claude" | "gemini"
-MODEL_KEY = "qwen"
-# ───────────────────────────────────────────────────────────
-
-def get_output_folder():
-    if MODEL_KEY == "mistral":
-        return "Output Files Mistral"
-    elif MODEL_KEY == "qwen":
-        return "Output Files Qwen"
-    elif MODEL_KEY == "claude":
-        return "Output Files Claude"
-    elif MODEL_KEY == "gemini":
-        return "Output Files Gemini"
-    else:
-        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
-
-
-def get_model_id():
-    if MODEL_KEY == "mistral":
-        return "mistralai/mistral-small-3.2-24b-instruct"
-    elif MODEL_KEY == "qwen":
-        return "qwen/qwen-2.5-72b-instruct"
-    elif MODEL_KEY == "claude":
-        return "anthropic/claude-sonnet-4"
-    elif MODEL_KEY == "gemini":
-        return "google/gemini-2.5-pro"
-    else:
-        raise ValueError(f"Unknown MODEL_KEY: '{MODEL_KEY}'. Must be one of: mistral, qwen, claude, gemini")
 
 """ACROSS ALL THREE ARCHITECTURES
 These sources were used to help build prompts:
@@ -69,6 +39,11 @@ These sources were used to help build prompts:
 """
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -90,12 +65,7 @@ API_CONFIG = {
     "max_tokens": 500,
     "temperature": 0.3  # Need determinism for reliability
 }
-CRITERION_WEIGHTS = {
-    "energy_cost": 0.30,
-    "environmental": 0.35,
-    "comfort": 0.20,
-    "practicality": 0.15
-}
+
 def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, Dict]:
     """
     Query OpenRouter API with retry logic
@@ -558,9 +528,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
             ranks = result["ranking_results"]["ranks"]
             weighted_scores = result["ranking_results"]["weighted_scores"]
-
-            # Get list of alternatives in original order
-            alternatives = [alt["alternative"] for alt in result["alternatives_scores"]]
 
             # Write each alternative as a row
             for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
