@@ -35,9 +35,14 @@ RETRIEVE_K = 3  # Number of similar scenarios to retrieve
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
+TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 OUTPUT_CSV = OUTPUT_DIR / "RAGResults.csv"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "RAGDiagnostics.json"
+
+
+def _is_transient_http_status(status_code: int) -> bool:
+    return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
 print("Loading ChromaDB and embedding model")
 try:
@@ -94,15 +99,30 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                 return data, diagnostics
             else:
                 last_error = f"Status {response.status_code}: {response.text}"
-                print(f"  API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
-                if attempt < MAX_RETRIES - 1:
-                    time.sleep(RETRY_DELAY)
+                if _is_transient_http_status(response.status_code):
+                    print(f"  Transient API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
+                    if attempt < MAX_RETRIES - 1:
+                        time.sleep(RETRY_DELAY)
+                        continue
+                else:
+                    print(f"  Non-retryable API error: {response.status_code}")
+                break
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             last_error = str(e)
             print(f"  Request failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
+                continue
+            break
+
+        except ValueError as e:
+            last_error = f"Invalid API JSON envelope: {e}"
+            print(f"  Invalid API JSON envelope (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+                continue
+            break
 
     raise Exception(f"Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 

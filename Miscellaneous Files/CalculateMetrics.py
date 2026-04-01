@@ -355,7 +355,7 @@ def compute_criterion_metrics(merged_df):
 
 
 def compute_ranking_metrics(merged_df):
-    """Kendall tau, Spearman rho, Top-1/Top-2 — per-scenario then averaged."""
+    """Kendall tau, Spearman rho, Top-1/Top-2 - per-scenario then averaged."""
     taus, rhos = [], []
     top1_ok = top2_ok = 0
     n = 0
@@ -448,7 +448,7 @@ def compute_failure_rate(arch_df):
 
 def evaluate_all(config):
     print("=" * 72)
-    print("  MCDA ARCHITECTURE EVALUATION — METRICS REPORT")
+    print("  MCDA ARCHITECTURE EVALUATION - METRICS REPORT")
     print("=" * 72)
 
     # 1. Load
@@ -526,8 +526,8 @@ def evaluate_all(config):
               f"RMSE={crit['overall_RMSE']:.4f}")
 
         print(f"    Ranking:")
-        print(f"      Kendall τ:  {rank['kendall_tau']:.4f}")
-        print(f"      Spearman ρ: {rank['spearman_rho']:.4f}")
+        print(f"      Kendall tau:  {rank['kendall_tau']:.4f}")
+        print(f"      Spearman rho: {rank['spearman_rho']:.4f}")
         print(f"      Top-1:      {rank['top1_accuracy']:.4f} "
               f"({int(rank['top1_accuracy'] * n_eval)}/{n_eval})")
         print(f"      Top-2:      {rank['top2_accuracy']:.4f} "
@@ -563,8 +563,8 @@ def evaluate_all(config):
                   f"COM={dt_crit['comfort_RMSE']:.3f}  "
                   f"PRA={dt_crit['practicality_RMSE']:.3f}  "
                   f"All={dt_crit['overall_RMSE']:.3f}")
-            print(f"    τ={dt_rank['kendall_tau']:.4f}  "
-                  f"ρ={dt_rank['spearman_rho']:.4f}  "
+            print(f"    tau={dt_rank['kendall_tau']:.4f}  "
+                  f"rho={dt_rank['spearman_rho']:.4f}  "
                   f"Top1={dt_rank['top1_accuracy']:.4f} "
                   f"({int(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
                   f"Top2={dt_rank['top2_accuracy']:.4f} "
@@ -620,7 +620,7 @@ def evaluate_all(config):
         print(row)
 
     # Kendall tau by decision type
-    print(f"\n  {'Kendall τ by Type':<24}" + "".join(f"{a:>10}" for a in archs))
+    print(f"\n  {'Kendall tau by Type':<24}" + "".join(f"{a:>10}" for a in archs))
     print("  " + "-" * (24 + 10 * len(archs)))
     for dtype in ["HVAC", "Appliance", "Shower"]:
         row = f"  {dtype:<24}"

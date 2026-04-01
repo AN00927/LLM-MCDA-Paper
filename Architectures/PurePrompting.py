@@ -66,6 +66,12 @@ API_CONFIG = {
     "temperature": 0.3  # Need determinism for reliability
 }
 
+TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+
+
+def _is_transient_http_status(status_code: int) -> bool:
+    return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
+
 def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, Dict]:
     """
     Query OpenRouter API with retry logic
@@ -127,16 +133,31 @@ def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, D
 
                 return content, diagnostics
             else:
-                logging.warning(f"API error {response.status_code}: {response.text}")
                 diagnostics["retries"] = attempt + 1
+                if _is_transient_http_status(response.status_code):
+                    logging.warning(f"Transient API error {response.status_code}: {response.text}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+                        continue
+                else:
+                    logging.error(f"Non-retryable API error {response.status_code}: {response.text}")
+                break
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logging.warning(f"Request failed (attempt {attempt + 1}/{max_retries}): {e}")
             diagnostics["retries"] = attempt + 1
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            break
 
-        # Exponential backoff
-        if attempt < max_retries - 1:
-            time.sleep(2 ** attempt)
+        except ValueError as e:
+            logging.warning(f"Invalid API JSON envelope (attempt {attempt + 1}/{max_retries}): {e}")
+            diagnostics["retries"] = attempt + 1
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            break
 
     # All retries failed
     return None, diagnostics
