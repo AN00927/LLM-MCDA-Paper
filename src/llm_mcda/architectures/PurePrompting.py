@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import json
 import csv
@@ -17,7 +17,7 @@ These sources were used to help build prompts:
 
  1. Role prompting ("You are an expert in [domain]...")
  Shanahan, M., McDonell, K., & Reynolds, L. (2023).
- Role play with large language models. Nature, 623(7987), 493–498.
+ Role play with large language models. Nature, 623(7987), 493â€“498.
  https://doi.org/10.1038/s41586-023-06647-8
 
  2. Structured output constraint ("return ONLY JSON")
@@ -68,17 +68,35 @@ API_CONFIG = {
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
+PURE_FAILURE_COUNTER_KEYS = [
+    "failed_malformed_json",
+    "failed_missing_score",
+    "failed_out_of_bounds",
+    "failed_invalid_score_type",
+    "failed_unknown"
+]
+
+
+def _init_failure_counters() -> Dict[str, int]:
+    return {key: 0 for key in PURE_FAILURE_COUNTER_KEYS}
+
+
+def _increment_failure_counters(counters: Dict[str, int], failure_types: List[str], increment: int = 1) -> None:
+    for failure_type in set(failure_types):
+        if failure_type in counters:
+            counters[failure_type] += increment
+
 
 def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
-def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, Dict]:
+def query_openrouter(messages: List[Dict], max_retries: int = 0) -> Tuple[str, Dict]:
     """
     Query OpenRouter API with retry logic
 
     Args:
         messages: List of message dicts with role and content
-        max_retries: Number of retry attempts
+        max_retries: Number of retry attempts (0 = retry indefinitely)
 
     Returns:
         Tuple of (response_text, diagnostics_dict)
@@ -108,7 +126,11 @@ def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, D
         "success": False
     }
 
-    for attempt in range(max_retries):
+    attempt = 0
+    retry_forever = max_retries <= 0
+
+    while True:
+        attempt += 1
         try:
             start_time = time.time()
             response = requests.post(
@@ -129,37 +151,39 @@ def query_openrouter(messages: List[Dict], max_retries: int = 3) -> Tuple[str, D
                 diagnostics["tokens_output"] = usage.get("completion_tokens", 0)
                 diagnostics["latency_ms"] = latency
                 diagnostics["success"] = True
-                diagnostics["retries"] = attempt
+                diagnostics["retries"] = attempt - 1
 
                 return content, diagnostics
             else:
-                diagnostics["retries"] = attempt + 1
+                diagnostics["retries"] = attempt
                 if _is_transient_http_status(response.status_code):
                     logging.warning(f"Transient API error {response.status_code}: {response.text}")
-                    if attempt < max_retries - 1:
-                        time.sleep(2 ** attempt)
-                        continue
                 else:
-                    logging.error(f"Non-retryable API error {response.status_code}: {response.text}")
-                break
+                    logging.error(f"API error {response.status_code}: {response.text}")
+
+                if not retry_forever and attempt >= max_retries:
+                    break
+
+                time.sleep(min(2 ** min(attempt - 1, 6), 60))
+                continue
 
         except requests.exceptions.RequestException as e:
-            logging.warning(f"Request failed (attempt {attempt + 1}/{max_retries}): {e}")
-            diagnostics["retries"] = attempt + 1
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-                continue
-            break
+            logging.warning(f"Request failed (attempt {attempt}): {e}")
+            diagnostics["retries"] = attempt
+            if not retry_forever and attempt >= max_retries:
+                break
+            time.sleep(min(2 ** min(attempt - 1, 6), 60))
+            continue
 
         except ValueError as e:
-            logging.warning(f"Invalid API JSON envelope (attempt {attempt + 1}/{max_retries}): {e}")
-            diagnostics["retries"] = attempt + 1
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-                continue
-            break
+            logging.warning(f"Invalid API JSON envelope (attempt {attempt}): {e}")
+            diagnostics["retries"] = attempt
+            if not retry_forever and attempt >= max_retries:
+                break
+            time.sleep(min(2 ** min(attempt - 1, 6), 60))
+            continue
 
-    # All retries failed
+    # Only reachable when finite retries are exhausted.
     return None, diagnostics
 
 
@@ -172,7 +196,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
     if decision_type == 'HVAC':
         # HVAC-specific fields
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
         prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
         prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')} (R-value: {scenario.get('R-Value', 'N/A')})\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
@@ -198,8 +222,8 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
         # Shower-specific fields
         prompt += f"- Flow Rate: {scenario.get('GPM', 'N/A')} GPM\n"
         prompt += f"- Tank Size: {scenario.get('Tank Size', 'N/A')} gallons\n"
-        prompt += f"- Water Heater Temperature: {scenario.get('Water Heater Temp', 'N/A')}°F\n"
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Water Heater Temperature: {scenario.get('Water Heater Temp', 'N/A')}Â°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
         prompt += f"- Household Size: {scenario.get('Occupants', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
@@ -247,19 +271,30 @@ Return ONLY a JSON object with four numeric scores (0-10):
     ]
 
     response, diagnostics = query_openrouter(messages)
+    diagnostics["failure_types"] = []
 
-    # Default scores if API fails
-    default_scores = {
+    # Neutral defaults for infrastructure/API failures.
+    api_fallback_scores = {
         "energy_cost": 5.0,
         "environmental": 5.0,
         "comfort": 5.0,
         "practicality": 5.0,
-        "reasoning": "API failure - using default scores"
+        "reasoning": "API/environment failure - using neutral defaults"
+    }
+
+    # Sentinel defaults used when model output cannot be trusted.
+    parse_failure_scores = {
+        "energy_cost": 1928,
+        "environmental": 1928,
+        "comfort": 1928,
+        "practicality": 1928,
+        "reasoning": "Parsing/validation failure - using sentinel defaults"
     }
 
     if not response:
         logging.error(f"LLM scoring failed for alternative: {alternative}")
-        return default_scores, diagnostics
+        diagnostics["failure_types"] = []
+        return api_fallback_scores, diagnostics
 
 
     diagnostics["success"] = False
@@ -268,25 +303,51 @@ Return ONLY a JSON object with four numeric scores (0-10):
         scores = json.loads(response)
 
         diagnostics["success"] = True
+        validation_failed = False
+        validation_failure_types = set()
 
         validated_scores = {}
         for criterion in ["energy_cost", "environmental", "comfort", "practicality"]:
-            raw_score = scores.get(criterion, 5.0)
+            if criterion not in scores:
+                logging.warning(f"Missing score for {criterion}; using sentinel 1928")
+                validated_scores[criterion] = 1928
+                validation_failed = True
+                validation_failure_types.add("failed_missing_score")
+                continue
+
+            raw_score = scores[criterion]
 
             if isinstance(raw_score, (int, float)):
-                validated_scores[criterion] = max(0.0, min(10.0, float(raw_score)))
+                raw_value = float(raw_score)
+                if 0.0 <= raw_value <= 10.0:
+                    validated_scores[criterion] = raw_value
+                else:
+                    logging.warning(f"Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
+                    validated_scores[criterion] = 1928
+                    validation_failed = True
+                    validation_failure_types.add("failed_out_of_bounds")
             else:
                 logging.warning(f"Invalid score type for {criterion}: {raw_score}")
-                validated_scores[criterion] = 5.0
+                validated_scores[criterion] = 1928
+                validation_failed = True
+                validation_failure_types.add("failed_invalid_score_type")
+
+        if validation_failed:
+            diagnostics["success"] = False
+            diagnostics["failure_types"] = sorted(validation_failure_types) if validation_failure_types else ["failed_unknown"]
+            validated_scores["reasoning"] = "Validation failure - sentinel applied"
+            return validated_scores, diagnostics
 
         validated_scores["reasoning"] = scores.get("reasoning", "No reasoning provided")
+        diagnostics["failure_types"] = []
 
         return validated_scores, diagnostics
 
     except (json.JSONDecodeError, ValueError) as e:
         diagnostics["success"] = False
+        diagnostics["failure_types"] = ["failed_malformed_json"]
         logging.error(f"JSON parse failed: {e}. Raw response: {response[:200]}")
-        return default_scores, diagnostics
+        return parse_failure_scores, diagnostics
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
@@ -301,10 +362,17 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
+        valid_indices = []
 
         # Calculate weighted sum for each alternative
         weighted_scores = []
-        for alt_scores in alternatives_scores:
+        for idx, alt_scores in enumerate(alternatives_scores):
+            has_sentinel = any(
+                alt_scores.get(c) == 1928 for c in ["energy_cost", "environmental", "comfort", "practicality"]
+            )
+            if has_sentinel or alt_scores.get("failed", False):
+                continue
+
             weighted_sum = (
                     CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
                     CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
@@ -312,15 +380,23 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
                     CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
             )
             weighted_scores.append(weighted_sum)
+            valid_indices.append(idx)
+
+        if not valid_indices:
+            return {
+                "ranked_alternatives": [],
+                "ranks": [1928] * len(alternatives),
+                "weighted_scores": []
+            }
 
         # Rank alternatives (higher weighted sum = better = lower rank number)
         ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
-        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+        ranked_alternatives = [alternatives[valid_indices[i]] for i in ranked_indices]
 
         # Create rank numbers (1 = best, 2 = second, 3 = third)
-        ranks = [0] * len(alternatives)
-        for rank_position, alt_index in enumerate(ranked_indices):
-            ranks[alt_index] = rank_position + 1
+        ranks = [1928] * len(alternatives)
+        for rank_position, local_index in enumerate(ranked_indices):
+            ranks[valid_indices[local_index]] = rank_position + 1
 
         return {
             "ranked_alternatives": ranked_alternatives,
@@ -382,14 +458,19 @@ def run_scenario(scenario: Dict) -> Dict:
         "total_tokens_input": 0,
         "total_tokens_output": 0,
         "successful_calls": 0,
-        "failed_calls": 0
+        "failed_calls": 0,
+        **_init_failure_counters()
     }
 
     for alt in alternatives:
         scores, diagnostics = score_alternative(scenario, alt)
+        alt_failed = any(scores.get(c) == 1928 for c in ["energy_cost", "environmental", "comfort", "practicality"])
+        if alt_failed:
+            diagnostics["success"] = False
 
         alternatives_scores.append({
             "alternative": alt,
+            "failed": alt_failed,
             **scores
         })
 
@@ -402,7 +483,13 @@ def run_scenario(scenario: Dict) -> Dict:
         if diagnostics["success"]:
             total_diagnostics["successful_calls"] += 1
         else:
-            total_diagnostics["failed_calls"] += 1
+            failure_types = diagnostics.get("failure_types")
+            if failure_types:
+                total_diagnostics["failed_calls"] += 1
+                _increment_failure_counters(total_diagnostics, failure_types)
+            elif failure_types is None:
+                total_diagnostics["failed_calls"] += 1
+                _increment_failure_counters(total_diagnostics, ["failed_unknown"])
 
     total_diagnostics["scenario_failed"] = total_diagnostics["failed_calls"] > 0
 
@@ -460,7 +547,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
         "successful_calls": 0,
         "failed_calls": 0,
         "successful_scenarios": 0,
-        "failed_scenarios": 0
+        "failed_scenarios": 0,
+        **_init_failure_counters()
     }
 
     for i, scenario in enumerate(scenarios):
@@ -508,7 +596,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     "successful_calls": 0,
                     "failed_calls": len(fallback_alternatives),
                     "scenario_failed": True,
-                    "scenario_error": str(e)
+                    "scenario_error": str(e),
+                    **_init_failure_counters()
                 }
             }
 
@@ -522,6 +611,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
         cumulative_diagnostics["total_tokens_output"] += diag["total_tokens_output"]
         cumulative_diagnostics["successful_calls"] += diag["successful_calls"]
         cumulative_diagnostics["failed_calls"] += diag["failed_calls"]
+        for counter_key in PURE_FAILURE_COUNTER_KEYS:
+            cumulative_diagnostics[counter_key] += diag.get(counter_key, 0)
         if diag.get("scenario_failed", False):
             cumulative_diagnostics["failed_scenarios"] += 1
         else:
@@ -562,12 +653,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                 alt = alt_scores["alternative"]
 
                 if scenario_failed:
-                    energy_cost = 9999
-                    environmental = 9999
-                    comfort = 9999
-                    practicality = 9999
-                    rank = 9999
-                    weighted_score = 9999
+                    energy_cost = 1928
+                    environmental = 1928
+                    comfort = 1928
+                    practicality = 1928
+                    rank = 1928
+                    weighted_score = 1928
                 else:
                     energy_cost = alt_scores["energy_cost"]
                     environmental = alt_scores["environmental"]

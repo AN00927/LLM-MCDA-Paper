@@ -10,7 +10,7 @@ RAG_FILES = {
         'ground_truth': 'HVACRagScenarios.csv'
     },
     'Appliance': {
-        'ground_truth': 'ApplianceRAGScenariosGT.csv'
+        'ground_truth': 'ApplianceRAGScenarios.csv'
     },
     'Shower': {
         'scenarios': 'ShowerRAGScenarios.csv'
