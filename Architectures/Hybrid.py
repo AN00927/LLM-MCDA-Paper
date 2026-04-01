@@ -64,8 +64,15 @@ TEMPERATURE = 0.3
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
+TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.csv"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_diagnostics.json"
+
+
+def _is_transient_http_status(status_code: int) -> bool:
+    return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
+
+
 UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
 
 SCENARIO:
@@ -184,14 +191,28 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 
                 return data, diagnostics
             else:
-                print(f"  API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
-                if attempt < MAX_RETRIES - 1:
-                    time.sleep(RETRY_DELAY)
+                if _is_transient_http_status(response.status_code):
+                    print(f"  Transient API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
+                    if attempt < MAX_RETRIES - 1:
+                        time.sleep(RETRY_DELAY)
+                        continue
+                else:
+                    print(f"  Non-retryable API error: {response.status_code}")
+                break
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print(f"  Request failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
+                continue
+            break
+
+        except ValueError as e:
+            print(f"  Invalid API JSON envelope (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+                continue
+            break
 
     raise Exception(f"Failed to get response after {MAX_RETRIES} attempts")
 
