@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 calculate_metrics.py - Metrics evaluation for MCDA architecture comparison
 Science Fair Project: LLM-assisted MCDA for Household Emissions Optimization
@@ -54,11 +54,11 @@ CONFIG = {
 }
 
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
-FAIL_SENTINEL = 9999
+FAIL_SENTINEL = 1928
 
 
 def is_failed_row(row):
-    """Check if a row has the 9999 failure sentinel in any score column."""
+    """Check if a row has the 1928 failure sentinel in any score column."""
     for c in CRITERIA:
         val = row.get(f"arch_{c}", np.nan)
         try:
@@ -70,7 +70,7 @@ def is_failed_row(row):
 
 
 def filter_failed_scenarios(merged_df):
-    """Remove all rows for scenarios that contain any 9999 sentinel values.
+    """Remove all rows for scenarios that contain any 1928 sentinel values.
     Returns (clean_df, n_failed_scenarios, n_total_scenarios)."""
     failed_sids = set()
     for sid in merged_df["arch_scenario_id"].unique():
@@ -403,7 +403,7 @@ def compute_ranking_metrics(merged_df):
 
 
 def compute_failure_rate(arch_df):
-    """Failure rate for any architecture. Detects failures via the 9999 sentinel
+    """Failure rate for any architecture. Detects failures via the 1928 sentinel
     in score columns. For Hybrid, also reports extraction/calculation breakdown."""
     n_total = arch_df["scenario_id"].nunique()
     n_failed = 0
@@ -487,7 +487,7 @@ def evaluate_all(config):
 
         print(f"  {arch_name.upper()}")
 
-        # Failure rate (all architectures via 9999 sentinel detection)
+        # Failure rate (all architectures via 1928 sentinel detection)
         fail = compute_failure_rate(arch_dfs[arch_name])
         if fail["n_failed_scenarios"] > 0:
             print(f"\n  Failures: {fail['n_failed_scenarios']}"
@@ -503,7 +503,7 @@ def evaluate_all(config):
                 "metric": k, "value": v,
             })
 
-        # Filter out failed scenarios (9999 sentinel) before computing metrics
+        # Filter out failed scenarios (1928 sentinel) before computing metrics
         merged, n_failed, n_total = filter_failed_scenarios(merged)
         if n_failed > 0:
             print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
@@ -651,3 +651,4 @@ if __name__ == "__main__":
         sys.exit(0)
 
     metrics_df, merged_dfs = evaluate_all(CONFIG)
+

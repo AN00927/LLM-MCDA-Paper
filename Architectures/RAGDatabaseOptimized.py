@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import json
 import csv
@@ -31,14 +31,32 @@ TEMPERATURE = 0.3
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-RETRIEVE_K = 3  # Number of similar scenarios to retrieve
+RETRIEVE_K = 3 
 
-MAX_RETRIES = 3
+MAX_RETRIES = 0
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 OUTPUT_CSV = OUTPUT_DIR / "RAGResults.csv"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "RAGDiagnostics.json"
+
+RAG_FAILURE_COUNTER_KEYS = [
+    "failed_malformed_json",
+    "failed_missing_score",
+    "failed_out_of_bounds",
+    "failed_invalid_score_type",
+    "failed_unknown"
+]
+
+
+def _init_failure_counters() -> Dict[str, int]:
+    return {key: 0 for key in RAG_FAILURE_COUNTER_KEYS}
+
+
+def _increment_failure_counters(counters: Dict[str, int], failure_types: List[str], increment: int = 1) -> None:
+    for failure_type in set(failure_types):
+        if failure_type in counters:
+            counters[failure_type] += increment
 
 
 def _is_transient_http_status(status_code: int) -> bool:
@@ -49,7 +67,7 @@ try:
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-    print(f"✓ Loaded RAG database: {chroma_collection.count()} scenarios available")
+    print(f"âœ“ Loaded RAG database: {chroma_collection.count()} scenarios available")
 except Exception as e:
     print(f" WARNING: Could not load RAG database: {e}")
     print("  Make sure to run Miscellaneous Files/BuildRAG.py first.")
@@ -78,7 +96,11 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
     last_error = None
     response = None
 
-    for attempt in range(MAX_RETRIES):
+    attempt = 0
+    retry_forever = MAX_RETRIES <= 0
+
+    while True:
+        attempt += 1
         try:
             start_time = time.time()
             response = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -100,30 +122,33 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             else:
                 last_error = f"Status {response.status_code}: {response.text}"
                 if _is_transient_http_status(response.status_code):
-                    print(f"  Transient API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
-                    if attempt < MAX_RETRIES - 1:
-                        time.sleep(RETRY_DELAY)
-                        continue
+                    print(f"  Transient API error (attempt {attempt}): {response.status_code}")
                 else:
-                    print(f"  Non-retryable API error: {response.status_code}")
-                break
+                    print(f"  API error (attempt {attempt}): {response.status_code}")
+
+                if not retry_forever and attempt >= MAX_RETRIES:
+                    break
+
+                time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+                continue
 
         except requests.exceptions.RequestException as e:
             last_error = str(e)
-            print(f"  Request failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY)
-                continue
-            break
+            print(f"  Request failed (attempt {attempt}): {e}")
+            if not retry_forever and attempt >= MAX_RETRIES:
+                break
+            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            continue
 
         except ValueError as e:
             last_error = f"Invalid API JSON envelope: {e}"
-            print(f"  Invalid API JSON envelope (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY)
-                continue
-            break
+            print(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
+            if not retry_forever and attempt >= MAX_RETRIES:
+                break
+            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            continue
 
+    # Only reachable when finite retries are exhausted.
     raise Exception(f"Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
@@ -159,7 +184,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
 
     if decision_type == 'HVAC':
         scenario_text = (
-            f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
+            f"{scenario.get('Outdoor Temp', 'N/A')}Â°F outdoor, "
             f"{scenario.get('Insulation', 'N/A')} insulation R-{scenario.get('R-Value', 'N/A')}, "
             f"SEER {scenario.get('SEER', 'N/A')}, "
             f"- Occupancy Pattern: {scenario.get('Occupancy Context', 'N/A')}\n"
@@ -178,7 +203,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     elif decision_type == 'Shower':
         scenario_text = (
             f"{scenario.get('Flow rate', 'N/A')} showerhead, "
-            f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
+            f"{scenario.get('Outdoor Temp', 'N/A')}Â°F outdoor, "
             f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
             f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
@@ -289,7 +314,7 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         for alt in scenario['alternatives']:
             scores = alt['scores']
             context += (
-                f"  • {alt['name']}: "
+                f"  â€¢ {alt['name']}: "
                 f"Energy Cost: {scores['energy_cost']:.1f}/10, "
                 f"Environmental: {scores['environmental']:.1f}/10, "
                 f"Comfort: {scores['comfort']:.1f}/10, "
@@ -313,7 +338,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
     if decision_type == 'HVAC':
         prompt += (
             f"- Location: {scenario.get('Location', 'N/A')}\n"
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
             f"- Square Footage: {scenario.get('Square Footage', 'N/A')} sqft\n"
             f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
@@ -334,7 +359,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
     elif decision_type == 'Shower':
         prompt += (
             f"- Location: {scenario.get('Location', 'N/A')}\n"
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
             f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
@@ -343,28 +368,59 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     return prompt
 
-def parse_llm_scores(response_text: str) -> Dict[str, float]:
+def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
     """
     Parse JSON scores from LLM response.
     EXACT COPY from pure_prompting.py
     """
-    import re
-    json_match = re.search(r'\{[^}]+\}', response_text)
+    try:
+        scores = json.loads(response_text)
 
-    if json_match:
-        try:
-            scores = json.loads(json_match.group())
+        validated_scores = {}
+        validation_failed = False
+        validation_failure_types = set()
+        for criterion in ['energy_cost', 'environmental', 'comfort', 'practicality']:
+            if criterion not in scores:
+                print(f"   Missing score for {criterion}; using sentinel 1928")
+                validated_scores[criterion] = 1928
+                validation_failed = True
+                validation_failure_types.add('failed_missing_score')
+                continue
 
-            # Validate keys
-            required_keys = ['energy_cost', 'environmental', 'comfort', 'practicality']
-            if all(k in scores for k in required_keys):
-                # Clamp to [0, 10]
-                return {k: max(0.0, min(10.0, float(scores[k]))) for k in required_keys}
-        except:
-            pass
+            raw_score = scores[criterion]
 
-    print("   Could not parse scores; failed")
-    return {'energy_cost': None, 'environmental': None, 'comfort': None, 'practicality': None, '_failed': True}
+            if isinstance(raw_score, (int, float)):
+                raw_value = float(raw_score)
+                if 0.0 <= raw_value <= 10.0:
+                    validated_scores[criterion] = raw_value
+                else:
+                    print(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
+                    validated_scores[criterion] = 1928
+                    validation_failed = True
+                    validation_failure_types.add('failed_out_of_bounds')
+            else:
+                print(f"   Invalid score type for {criterion}: {raw_score}; using sentinel 1928")
+                validated_scores[criterion] = 1928
+                validation_failed = True
+                validation_failure_types.add('failed_invalid_score_type')
+
+        if validation_failed:
+            validated_scores['_failed'] = True
+            print("   Diagnostic: _failed set to True in parse_llm_scores due to validation failure")
+            return validated_scores, sorted(validation_failure_types) if validation_failure_types else ['failed_unknown']
+
+        return validated_scores, []
+    except (json.JSONDecodeError, ValueError) as e:
+        print("   Could not parse scores; failed")
+        failed_scores = {
+            'energy_cost': 1928,
+            'environmental': 1928,
+            'comfort': 1928,
+            'practicality': 1928,
+            '_failed': True
+        }
+        print(f"   Diagnostic: _failed set to True in parse_llm_scores due to JSON parse error: {e}")
+        return failed_scores, ['failed_malformed_json']
 
 
 def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
@@ -402,32 +458,18 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
         # Step 5: Parse scores
         response_text = response['choices'][0]['message']['content']
-        stripped_response = response_text.strip()
-        strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
-
-        if not strict_json_only:
-            print("   Response included non-JSON wrapper text; marking failed")
-            scores = {
-                'energy_cost': None,
-                'environmental': None,
-                'comfort': None,
-                'practicality': None,
-                '_failed': True
-            }
-            diagnostics['success'] = False
-            diagnostics['format_error'] = 'non_json_wrapper_text'
-        else:
-            scores = parse_llm_scores(response_text)
-            diagnostics['success'] = not scores.get('_failed', False)
+        scores, failure_types = parse_llm_scores(response_text)
+        diagnostics['success'] = not scores.get('_failed', False)
+        diagnostics['failure_types'] = failure_types if scores.get('_failed', False) else []
     except Exception as e:
         print(f"   Scoring failed for alternative '{alternative}': {e}")
         scores = {
-            'energy_cost': None,
-            'environmental': None,
-            'comfort': None,
-            'practicality': None,
-            '_failed': True
+            'energy_cost': 5.0,
+            'environmental': 5.0,
+            'comfort': 5.0,
+            'practicality': 5.0
         }
+        print("   Diagnostic: API/environment failure fallback applied (neutral scores)")
         diagnostics = {
             'prompt_tokens': 0,
             'completion_tokens': 0,
@@ -435,7 +477,8 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'latency_ms': 0.0,
             'model': MODEL_ID,
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'failure_types': []
         }
 
     # Add RAG metadata to diagnostics
@@ -462,6 +505,8 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         if alt_data.get('failed'):
             continue
         scores = alt_data['scores']
+        if any(scores.get(c) == 1928 for c in ['energy_cost', 'environmental', 'comfort', 'practicality']):
+            continue
         weighted_sum = (
                 CRITERION_WEIGHTS['energy_cost'] * scores['energy_cost'] +
                 CRITERION_WEIGHTS['environmental'] * scores['environmental'] +
@@ -498,7 +543,8 @@ def run_scenario(scenario: Dict) -> Dict:
         'total_tokens_output': 0,
         'total_latency_ms': 0.0,
         'successful_calls': 0,
-        'failed_calls': 0
+        'failed_calls': 0,
+        **_init_failure_counters()
     }
     for i in range(1, 4):
         alt_key = f'Alternative {i}'
@@ -515,8 +561,14 @@ def run_scenario(scenario: Dict) -> Dict:
         total_diagnostics['total_latency_ms'] += diagnostics.get('latency_ms', 0.0)
 
         if scores.get('_failed'):
-            print(f" FAILED — skipping alternative")
-            total_diagnostics['failed_calls'] += 1
+            print(f" FAILED â€” skipping alternative")
+            failure_types = diagnostics.get('failure_types')
+            if failure_types:
+                total_diagnostics['failed_calls'] += 1
+                _increment_failure_counters(total_diagnostics, failure_types)
+            elif failure_types is None:
+                total_diagnostics['failed_calls'] += 1
+                _increment_failure_counters(total_diagnostics, ['failed_unknown'])
             alternatives_scores.append({
                 'alternative': alternative,
                 'scores': {'energy_cost': None, 'environmental': None, 'comfort': None, 'practicality': None},
@@ -538,7 +590,13 @@ def run_scenario(scenario: Dict) -> Dict:
         if diagnostics.get('success', False):
             total_diagnostics['successful_calls'] += 1
         else:
-            total_diagnostics['failed_calls'] += 1
+            failure_types = diagnostics.get('failure_types')
+            if failure_types:
+                total_diagnostics['failed_calls'] += 1
+                _increment_failure_counters(total_diagnostics, failure_types)
+            elif failure_types is None:
+                total_diagnostics['failed_calls'] += 1
+                _increment_failure_counters(total_diagnostics, ['failed_unknown'])
 
     total_diagnostics['scenario_failed'] = total_diagnostics['failed_calls'] > 0
     ranking_result = apply_mavt_ranking(alternatives_scores)
@@ -598,7 +656,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         scenarios.append(first_row)
         scenarios.extend(list(reader))
 
-    print(f"✓ Loaded {len(scenarios)} test scenarios")
+    print(f"âœ“ Loaded {len(scenarios)} test scenarios")
     print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
 
     # Process all scenarios
@@ -612,7 +670,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         'successful_calls': 0,
         'failed_calls': 0,
         'successful_scenarios': 0,
-        'failed_scenarios': 0
+        'failed_scenarios': 0,
+        **_init_failure_counters()
     }
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
@@ -653,7 +712,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'successful_calls': 0,
                     'failed_calls': len(fallback_alternatives),
                     'scenario_failed': True,
-                    'scenario_error': str(e)
+                    'scenario_error': str(e),
+                    **_init_failure_counters()
                 }
             }
 
@@ -667,6 +727,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         cumulative_diagnostics['total_latency_ms'] += diag['total_latency_ms']
         cumulative_diagnostics['successful_calls'] += diag['successful_calls']
         cumulative_diagnostics['failed_calls'] += diag['failed_calls']
+        for counter_key in RAG_FAILURE_COUNTER_KEYS:
+            cumulative_diagnostics[counter_key] += diag.get(counter_key, 0)
         if diag.get('scenario_failed', False):
             cumulative_diagnostics['failed_scenarios'] += 1
         else:
@@ -713,12 +775,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 scores = alt_data['scores']
 
                 if scenario_failed:
-                    energy_cost = 9999
-                    environmental = 9999
-                    comfort = 9999
-                    practicality = 9999
-                    rank = 9999
-                    weighted_score = 9999
+                    energy_cost = 1928
+                    environmental = 1928
+                    comfort = 1928
+                    practicality = 1928
+                    rank = 1928
+                    weighted_score = 1928
                 else:
                     energy_cost = scores['energy_cost']
                     environmental = scores['environmental']
@@ -745,7 +807,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'weighted_score': weighted_score
                 })
 
-    print(f"✓ Results saved to: {output_csv_path}")
+    print(f"âœ“ Results saved to: {output_csv_path}")
 
     # Save diagnostics
     print(f"Saving diagnostics to: {output_diagnostics_path}")
@@ -753,7 +815,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
 
-    print(f"✓ Diagnostics saved to: {output_diagnostics_path}")
+    print(f"âœ“ Diagnostics saved to: {output_diagnostics_path}")
 
     print(f"RAG-ENHANCED TEST COMPLETE")
     print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
