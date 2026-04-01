@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import json
 import requests
@@ -62,11 +62,32 @@ if not OPENROUTER_API_KEY:
 MODEL_ID = get_model_id()
 TEMPERATURE = 0.3
 
-MAX_RETRIES = 3
+MAX_RETRIES = 0
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.csv"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_diagnostics.json"
+
+HYBRID_FAILURE_COUNTER_KEYS = [
+    "failed_extraction_non_json_wrapper",
+    "failed_extraction_invalid_json",
+    "failed_extraction_invalid_decision_type",
+    "failed_extraction_invalid_calculator",
+    "failed_extraction_missing_parameters",
+    "failed_extraction_exception",
+    "failed_ground_truth_calculation_exception",
+    "failed_unknown"
+]
+
+
+def _init_failure_counters() -> Dict[str, int]:
+    return {key: 0 for key in HYBRID_FAILURE_COUNTER_KEYS}
+
+
+def _increment_failure_counters(counters: Dict[str, int], failure_types: List[str], increment: int = 1) -> None:
+    for failure_type in set(failure_types):
+        if failure_type in counters:
+            counters[failure_type] += increment
 
 
 def _is_transient_http_status(status_code: int) -> bool:
@@ -171,7 +192,11 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         "temperature": temperature
     }
 
-    for attempt in range(MAX_RETRIES):
+    attempt = 0
+    retry_forever = MAX_RETRIES <= 0
+
+    while True:
+        attempt += 1
         try:
             start_time = time.time()
             response = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -192,28 +217,31 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                 return data, diagnostics
             else:
                 if _is_transient_http_status(response.status_code):
-                    print(f"  Transient API error (attempt {attempt + 1}/{MAX_RETRIES}): {response.status_code}")
-                    if attempt < MAX_RETRIES - 1:
-                        time.sleep(RETRY_DELAY)
-                        continue
+                    print(f"  Transient API error (attempt {attempt}): {response.status_code}")
                 else:
-                    print(f"  Non-retryable API error: {response.status_code}")
-                break
+                    print(f"  API error (attempt {attempt}): {response.status_code}")
+
+                if not retry_forever and attempt >= MAX_RETRIES:
+                    break
+
+                time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+                continue
 
         except requests.exceptions.RequestException as e:
-            print(f"  Request failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY)
-                continue
-            break
+            print(f"  Request failed (attempt {attempt}): {e}")
+            if not retry_forever and attempt >= MAX_RETRIES:
+                break
+            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            continue
 
         except ValueError as e:
-            print(f"  Invalid API JSON envelope (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY)
-                continue
-            break
+            print(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
+            if not retry_forever and attempt >= MAX_RETRIES:
+                break
+            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            continue
 
+    # Only reachable when finite retries are exhausted.
     raise Exception(f"Failed to get response after {MAX_RETRIES} attempts")
 
 
@@ -244,7 +272,8 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     extraction_diagnostics = {
         'attempts': 0,
         'success': False,
-        'extraction_error': None
+        'extraction_error': None,
+        'failure_types': []
     }
     attempt = 0
     extraction_diagnostics['attempts'] = 1
@@ -262,6 +291,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         if not strict_json_only:
             print(f"Extraction attempt {attempt + 1} failed: non-JSON wrapper text detected")
             extraction_diagnostics['extraction_error'] = "Non-JSON wrapper text detected"
+            extraction_diagnostics['failure_types'] = ["failed_extraction_non_json_wrapper"]
             return None, extraction_diagnostics
 
         import re
@@ -270,6 +300,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         if not json_match:
             print(f"Extraction attempt {attempt + 1} failed to parse JSON")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+            extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
             extraction_diagnostics.update({
                 'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                 'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -282,6 +313,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Extraction attempt {attempt + 1} failed to parse JSON: {e}")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+            extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
             extraction_diagnostics.update({
                 'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                 'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -295,6 +327,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
                 print(f" iinvalid decision_type: {extracted['decision_type']}")
                 extraction_diagnostics['extraction_error'] = "Invalid decision_type"
+                extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_decision_type"]
                 return None, extraction_diagnostics
 
             valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
@@ -302,6 +335,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             if extracted['calculator'] not in valid_calculators:
                 print(f" invalid calculator: {extracted['calculator']}")
                 extraction_diagnostics['extraction_error'] = "Invalid calculator"
+                extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_calculator"]
                 return None, extraction_diagnostics
 
             params = extracted['parameters']
@@ -318,6 +352,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
                                    'Water Heater Temp', 'outdoor_temp', 'alternatives']
             if all(k in params for k in required_params):
                 extraction_diagnostics['success'] = True
+                extraction_diagnostics['failure_types'] = []
                 extraction_diagnostics.update({
                     'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                     'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -327,10 +362,12 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
 
             print(f"Missing required parameters for {decision_type}")
             extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
+            extraction_diagnostics['failure_types'] = ["failed_extraction_missing_parameters"]
             return None, extraction_diagnostics
 
         print(f"Extraction attempt {attempt + 1} failed to parse JSON")
         extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+        extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
         extraction_diagnostics.update({
             'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -341,6 +378,11 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     except Exception as e:
         print(f"Extraction attempt {attempt + 1} error: {e}")
         extraction_diagnostics['extraction_error'] = str(e)
+        error_text = str(e).lower()
+        if "failed to get response" in error_text or "request failed" in error_text:
+            extraction_diagnostics['failure_types'] = []
+        else:
+            extraction_diagnostics['failure_types'] = ["failed_extraction_exception"]
         return None, extraction_diagnostics
 
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
@@ -384,7 +426,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                     'practicality': alt_data['transformed_values']['practicality']
                 }
             })
-    else:  # HVAC and Appliance — identical return structure
+    else:  # HVAC and Appliance â€” identical return structure
         for alt_key, alt_data in result.items():
             alternatives_scores.append({
                 'alternative': str(alt_key),
@@ -433,7 +475,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
     Process:
     1. SINGLE AI CALL extracts: decision type + parameters + calculator selection
-    2. If extraction fails → output zeros and mark as failed
+    2. If extraction fails, output sentinel values and mark as failed
     3. Feed to ground truth calculator (AI-selected)
     4. Apply MAVT ranking
 
@@ -449,18 +491,54 @@ def run_scenario(scenario: Dict) -> Dict:
 
     # Step 2: Check if extraction failed
     if extraction_result is None:
-        print(f" EXTRACTION FAILEd. Outputting zero scores")
+        extraction_failure_types = extraction_diag.get('failure_types', [])
+        if not extraction_failure_types:
+            print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using neutral fallback scores")
 
-        # Create zero-score alternatives
+            neutral_alternatives = []
+            for alt in [
+                scenario.get('Alternative 1', 'Alt1'),
+                scenario.get('Alternative 2', 'Alt2'),
+                scenario.get('Alternative 3', 'Alt3')
+            ]:
+                neutral_alternatives.append({
+                    'alternative': str(alt),
+                    'scores': {
+                        'energy_cost': 5.0,
+                        'environmental': 5.0,
+                        'comfort': 5.0,
+                        'practicality': 5.0
+                    }
+                })
+
+            ranking_result = apply_mavt_ranking(neutral_alternatives)
+
+            return {
+                'scenario': scenario.get('Question', 'N/A'),
+                'decision_type': scenario.get('Decision Type', 'UNKNOWN'),
+                'calculator': 'NONE',
+                'extraction_failed': True,
+                'gt_calculation_failed': False,
+                'scenario_failed': False,
+                'failure_types': [],
+                'extracted_result': None,
+                'alternatives_scores': neutral_alternatives,
+                'ranking_result': ranking_result,
+                'extraction_diagnostics': extraction_diag
+            }
+
+        print(f" EXTRACTION FAILEd. Outputting sentinel scores")
+
+        # Create sentinel-score alternatives
         zero_alternatives = []
         for i in range(1, 4):
             zero_alternatives.append({
                 'alternative': f'Alternative {i} (extraction failed)',
                 'scores': {
-                    'energy_cost': 0.0,
-                    'environmental': 0.0,
-                    'comfort': 0.0,
-                    'practicality': 0.0
+                    'energy_cost': 1928,
+                    'environmental': 1928,
+                    'comfort': 1928,
+                    'practicality': 1928
                 }
             })
 
@@ -473,6 +551,7 @@ def run_scenario(scenario: Dict) -> Dict:
             'extraction_failed': True,
             'gt_calculation_failed': False,
             'scenario_failed': True,
+            'failure_types': extraction_failure_types,
             'extracted_result': None,
             'alternatives_scores': zero_alternatives,
             'ranking_result': ranking_result,
@@ -503,16 +582,16 @@ def run_scenario(scenario: Dict) -> Dict:
     except Exception as e:
         print(f" hround truth calculation failed: {e}")
 
-        # Output zeros on GT calculation failure
+        # Output sentinel values on GT calculation failure
         zero_alternatives = []
         for i, alt in enumerate(parameters.get('alternatives', ['Alt1', 'Alt2', 'Alt3'])[:3], 1):
             zero_alternatives.append({
                 'alternative': str(alt),
                 'scores': {
-                    'energy_cost': 0.0,
-                    'environmental': 0.0,
-                    'comfort': 0.0,
-                    'practicality': 0.0
+                    'energy_cost': 1928,
+                    'environmental': 1928,
+                    'comfort': 1928,
+                    'practicality': 1928
                 }
             })
 
@@ -525,6 +604,7 @@ def run_scenario(scenario: Dict) -> Dict:
             'extraction_failed': False,
             'gt_calculation_failed': True,
             'scenario_failed': True,
+            'failure_types': ['failed_ground_truth_calculation_exception'],
             'extracted_result': extraction_result,
             'alternatives_scores': zero_alternatives,
             'ranking_result': ranking_result,
@@ -549,6 +629,7 @@ def run_scenario(scenario: Dict) -> Dict:
         'extraction_failed': False,
         'gt_calculation_failed': False,
         'scenario_failed': False,
+        'failure_types': [],
         'extracted_result': extraction_result,
         'alternatives_scores': alternatives_scores,
         'ranking_result': ranking_result,
@@ -609,7 +690,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         'successful_calls': 0,
         'failed_calls': 0,
         'successful_scenarios': 0,
-        'failed_scenarios': 0
+        'failed_scenarios': 0,
+        **_init_failure_counters()
     }
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
@@ -630,21 +712,22 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 'extraction_failed': True,
                 'gt_calculation_failed': False,
                 'scenario_failed': True,
+                'failure_types': [],
                 'alternatives_scores': [
                     {
                         'alternative': str(alt),
                         'scores': {
-                            'energy_cost': 0.0,
-                            'environmental': 0.0,
-                            'comfort': 0.0,
-                            'practicality': 0.0
+                            'energy_cost': 1928,
+                            'environmental': 1928,
+                            'comfort': 1928,
+                            'practicality': 1928
                         }
                     }
                     for alt in fallback_alternatives
                 ],
                 'ranking_result': {
                     'ranked_alternatives': [str(alt) for alt in fallback_alternatives],
-                    'weighted_scores': [0.0, 0.0, 0.0]
+                    'weighted_scores': [1928, 1928, 1928]
                 },
                 'extraction_diagnostics': {
                     'attempts': 0,
@@ -673,6 +756,11 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         if result.get('scenario_failed', False):
             cumulative_diagnostics['failed_calls'] += 1
             cumulative_diagnostics['failed_scenarios'] += 1
+            failure_types = result.get('failure_types')
+            if failure_types:
+                _increment_failure_counters(cumulative_diagnostics, failure_types)
+            elif failure_types is None:
+                _increment_failure_counters(cumulative_diagnostics, ['failed_unknown'])
         else:
             cumulative_diagnostics['successful_calls'] += 1
             cumulative_diagnostics['successful_scenarios'] += 1
@@ -719,12 +807,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 scores = alt_data['scores']
 
                 if scenario_failed:
-                    energy_cost = 9999
-                    environmental = 9999
-                    comfort = 9999
-                    practicality = 9999
-                    rank = 9999
-                    weighted_score = 9999
+                    energy_cost = 1928
+                    environmental = 1928
+                    comfort = 1928
+                    practicality = 1928
+                    rank = 1928
+                    weighted_score = 1928
                 else:
                     energy_cost = scores['energy_cost']
                     environmental = scores['environmental']
