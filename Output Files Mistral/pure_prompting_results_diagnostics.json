@@ -1,0 +1,13 @@
+{
+  "total_scenarios": 100,
+  "total_api_calls": 300,
+  "total_latency_ms": 496426.0792732239,
+  "total_tokens_input": 114739,
+  "total_tokens_output": 9974,
+  "successful_calls": 300,
+  "failed_calls": 0,
+  "successful_scenarios": 100,
+  "failed_scenarios": 0,
+  "avg_latency_ms": 1654.7535975774128,
+  "success_rate": 1.0
+}
