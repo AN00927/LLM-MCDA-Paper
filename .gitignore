@@ -12,3 +12,5 @@ __pycache__/
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
+# any large scale plannig prompts for while I am waiting for claude to reset
+.github\prompts
