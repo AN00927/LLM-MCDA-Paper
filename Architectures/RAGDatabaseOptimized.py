@@ -67,7 +67,7 @@ try:
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-    print(f"âœ“ Loaded RAG database: {chroma_collection.count()} scenarios available")
+    print(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available")
 except Exception as e:
     print(f" WARNING: Could not load RAG database: {e}")
     print("  Make sure to run Miscellaneous Files/BuildRAG.py first.")
@@ -76,10 +76,10 @@ except Exception as e:
 
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
-                     temperature: float = TEMPERATURE) -> Tuple[Dict, Dict]:
+                     temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
     """
     Returns:
-        (response_dict, diagnostics_dict)
+        (response_text, diagnostics_dict)
     """
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -108,6 +108,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 
             if response.status_code == 200:
                 data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
                 usage = data.get('usage', {})
                 diagnostics = {
@@ -118,7 +119,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                     'model': model
                 }
 
-                return data, diagnostics
+                return content, diagnostics
             else:
                 last_error = f"Status {response.status_code}: {response.text}"
                 if _is_transient_http_status(response.status_code):
@@ -169,7 +170,7 @@ Scoring guidelines:
 - Base scores on engineering principles, behavioral research, and practical constraints
 - Be consistent across similar scenarios
 
-Return ONLY a JSON object with four numeric scores (0-10):
+Return ONLY a JSON object with four numeric scores (0-10). There should be no other text in your response, even for reasoning:
 {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}"""
 
 
@@ -184,7 +185,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
 
     if decision_type == 'HVAC':
         scenario_text = (
-            f"{scenario.get('Outdoor Temp', 'N/A')}Â°F outdoor, "
+            f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Insulation', 'N/A')} insulation R-{scenario.get('R-Value', 'N/A')}, "
             f"SEER {scenario.get('SEER', 'N/A')}, "
             f"- Occupancy Pattern: {scenario.get('Occupancy Context', 'N/A')}\n"
@@ -203,7 +204,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     elif decision_type == 'Shower':
         scenario_text = (
             f"{scenario.get('Flow rate', 'N/A')} showerhead, "
-            f"{scenario.get('Outdoor Temp', 'N/A')}Â°F outdoor, "
+            f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
             f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
@@ -314,7 +315,7 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         for alt in scenario['alternatives']:
             scores = alt['scores']
             context += (
-                f"  â€¢ {alt['name']}: "
+                f"  * {alt['name']}: "
                 f"Energy Cost: {scores['energy_cost']:.1f}/10, "
                 f"Environmental: {scores['environmental']:.1f}/10, "
                 f"Comfort: {scores['comfort']:.1f}/10, "
@@ -332,13 +333,13 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
     prompt += f'Score this alternative: "{alternative}"\n\n'
     prompt += f'For the decision: "{scenario.get("Question", "N/A")}"\n\n'
     prompt += "SCENARIO CONTEXT:\n"
+    prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
 
     decision_type = scenario.get('Decision Type', 'HVAC')
 
     if decision_type == 'HVAC':
         prompt += (
-            f"- Location: {scenario.get('Location', 'N/A')}\n"
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
             f"- Square Footage: {scenario.get('Square Footage', 'N/A')} sqft\n"
             f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
@@ -349,7 +350,6 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     elif decision_type == 'Appliance':
         prompt += (
-            f"- Location: {scenario.get('Location', 'N/A')}\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
@@ -358,13 +358,15 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     elif decision_type == 'Shower':
         prompt += (
-            f"- Location: {scenario.get('Location', 'N/A')}\n"
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
             f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
         )
+
+    prompt += "\nProvide scores (0-10) for all 4 criteria using the calibrations in the system prompt.\n"
+    prompt += "Consider how this specific alternative performs given the scenario context.\n"
 
     return prompt
 
@@ -374,7 +376,14 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
     EXACT COPY from pure_prompting.py
     """
     try:
-        scores = json.loads(response_text)
+        # Strip markdown code fences if present (Claude sometimes wraps JSON in ```json ... ```)
+        text = response_text.strip()
+        if text.startswith("```"):
+            text = text.split("```", 2)[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+        scores = json.loads(text)
 
         validated_scores = {}
         validation_failed = False
@@ -454,20 +463,19 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
     # Step 4: Query LLM
     try:
-        response, diagnostics = query_openrouter(messages)
+        response_text, diagnostics = query_openrouter(messages)
 
         # Step 5: Parse scores
-        response_text = response['choices'][0]['message']['content']
         scores, failure_types = parse_llm_scores(response_text)
         diagnostics['success'] = not scores.get('_failed', False)
         diagnostics['failure_types'] = failure_types if scores.get('_failed', False) else []
     except Exception as e:
         print(f"   Scoring failed for alternative '{alternative}': {e}")
         scores = {
-            'energy_cost': 5.0,
-            'environmental': 5.0,
-            'comfort': 5.0,
-            'practicality': 5.0
+            'energy_cost': 1928,
+            'environmental': 1928,
+            'comfort': 1928,
+            'practicality': 1928
         }
         print("   Diagnostic: API/environment failure fallback applied (neutral scores)")
         diagnostics = {
@@ -561,7 +569,7 @@ def run_scenario(scenario: Dict) -> Dict:
         total_diagnostics['total_latency_ms'] += diagnostics.get('latency_ms', 0.0)
 
         if scores.get('_failed'):
-            print(f" FAILED â€” skipping alternative")
+            print(f" FAILED -- skipping alternative")
             failure_types = diagnostics.get('failure_types')
             if failure_types:
                 total_diagnostics['failed_calls'] += 1
@@ -656,7 +664,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         scenarios.append(first_row)
         scenarios.extend(list(reader))
 
-    print(f"âœ“ Loaded {len(scenarios)} test scenarios")
+    print(f"OK Loaded {len(scenarios)} test scenarios")
     print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
 
     # Process all scenarios
@@ -807,7 +815,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'weighted_score': weighted_score
                 })
 
-    print(f"âœ“ Results saved to: {output_csv_path}")
+    print(f"OK Results saved to: {output_csv_path}")
 
     # Save diagnostics
     print(f"Saving diagnostics to: {output_diagnostics_path}")
@@ -815,7 +823,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
 
-    print(f"âœ“ Diagnostics saved to: {output_diagnostics_path}")
+    print(f"OK Diagnostics saved to: {output_diagnostics_path}")
 
     print(f"RAG-ENHANCED TEST COMPLETE")
     print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")

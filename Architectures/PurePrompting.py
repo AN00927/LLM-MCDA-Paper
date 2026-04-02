@@ -114,8 +114,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 0) -> Tuple[str, D
         "model": API_CONFIG["model"],
         "messages": messages,
         "max_tokens": API_CONFIG["max_tokens"],
-        "temperature": API_CONFIG["temperature"],
-        "response_format": {"type": "json_object"}
+        "temperature": API_CONFIG["temperature"]
     }
 
     diagnostics = {
@@ -196,7 +195,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
     if decision_type == 'HVAC':
         # HVAC-specific fields
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
         prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
         prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')} (R-value: {scenario.get('R-Value', 'N/A')})\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
@@ -260,7 +259,7 @@ Scoring guidelines:
 - Base scores on engineering principles, behavioral research, and practical constraints
 - Be consistent across similar scenarios
 
-Return ONLY a JSON object with four numeric scores (0-10):
+Return ONLY a JSON object with four numeric scores (0-10). There should be no other text in your response, even for reasoning:
 {{"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}}
 """
     user_prompt = build_user_prompt(scenario, alternative)
@@ -275,10 +274,10 @@ Return ONLY a JSON object with four numeric scores (0-10):
 
     # Neutral defaults for infrastructure/API failures.
     api_fallback_scores = {
-        "energy_cost": 5.0,
-        "environmental": 5.0,
-        "comfort": 5.0,
-        "practicality": 5.0,
+        "energy_cost": 1928,
+        "environmental": 1928,
+        "comfort": 1928,
+        "practicality": 1928,
         "reasoning": "API/environment failure - using neutral defaults"
     }
 
@@ -300,7 +299,14 @@ Return ONLY a JSON object with four numeric scores (0-10):
     diagnostics["success"] = False
 
     try:
-        scores = json.loads(response)
+        # Strip markdown code fences if present (Claude via OpenRouter wraps JSON in ```json ... ```)
+        text = response.strip()
+        if text.startswith("```"):
+            text = text.split("```", 2)[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+        scores = json.loads(text)
 
         diagnostics["success"] = True
         validation_failed = False
@@ -493,7 +499,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
     total_diagnostics["scenario_failed"] = total_diagnostics["failed_calls"] > 0
 
-    # Rank alternatives using TOPSIS
+    # Rank alternatives using MAVT
     ranking_results = apply_mavt_ranking(alternatives_scores)
 
     return {
