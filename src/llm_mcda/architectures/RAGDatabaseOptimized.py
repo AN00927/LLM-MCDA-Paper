@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+from sentinel_utils import has_sentinel_scores
 
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -33,7 +34,7 @@ COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 RETRIEVE_K = 3 
 
-MAX_RETRIES = 0
+MAX_RETRIES = 5
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
@@ -186,9 +187,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     if decision_type == 'HVAC':
         scenario_text = (
             f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
-            f"{scenario.get('Insulation', 'N/A')} insulation R-{scenario.get('R-Value', 'N/A')}, "
-            f"SEER {scenario.get('SEER', 'N/A')}, "
-            f"- Occupancy Pattern: {scenario.get('Occupancy Context', 'N/A')}\n"
+            f"{scenario.get('Insulation', 'N/A')} insulation, "
             f"{scenario.get('Square Footage', 'N/A')} sqft, "
             f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}"
@@ -486,7 +485,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'model': MODEL_ID,
             'success': False,
             'error': str(e),
-            'failure_types': []
+            'failure_types': ['failed_unknown']
         }
 
     # Add RAG metadata to diagnostics
@@ -513,7 +512,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         if alt_data.get('failed'):
             continue
         scores = alt_data['scores']
-        if any(scores.get(c) == 1928 for c in ['energy_cost', 'environmental', 'comfort', 'practicality']):
+        if has_sentinel_scores(scores):
             continue
         weighted_sum = (
                 CRITERION_WEIGHTS['energy_cost'] * scores['energy_cost'] +
@@ -795,8 +794,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     comfort = scores['comfort']
                     practicality = scores['practicality']
                     # Failed alternatives may not exist in ranked_alts.
-                    rank = rank_lookup.get(alternative)
-                    weighted_score = score_lookup.get(alternative)
+                    rank = rank_lookup.get(alternative, 1928)
+                    weighted_score = score_lookup.get(alternative, 1928)
 
                 writer.writerow({
                     'scenario_id': scenario_id,

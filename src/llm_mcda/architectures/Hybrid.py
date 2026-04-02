@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+from sentinel_utils import has_sentinel_scores
 
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -28,30 +29,26 @@ def _load_calculator_class(module_filename: str, class_name: str):
     return getattr(module, class_name)
 
 
-HVACGroundTruthCalculator = None
-ApplianceGroundTruthCalculator = None
-ShowerGroundTruthCalculator = None
-
 try:
     HVACGroundTruthCalculator = _load_calculator_class(
         "HVACGroundTruthCalculator.py", "HVACGroundTruthCalculator"
     )
-except Exception:
-    print("couldnt get HVAC ground truth calculator")
+except Exception as e:
+    raise RuntimeError(f"Cannot initialize Hybrid without HVAC calculator: {e}") from e
 
 try:
     ApplianceGroundTruthCalculator = _load_calculator_class(
         "ApplianceGroundTruthCalculator.py", "ApplianceGroundTruthCalculator"
     )
-except Exception:
-    print("couldnt get appliance  ground truth calculator")
+except Exception as e:
+    raise RuntimeError(f"Cannot initialize Hybrid without Appliance calculator: {e}") from e
 
 try:
     ShowerGroundTruthCalculator = _load_calculator_class(
         "ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"
     )
-except Exception:
-    print("couldnt get shower ground truth calculator")
+except Exception as e:
+    raise RuntimeError(f"Cannot initialize Hybrid without Shower calculator: {e}") from e
 
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
@@ -62,7 +59,7 @@ if not OPENROUTER_API_KEY:
 MODEL_ID = get_model_id()
 TEMPERATURE = 0.3
 
-MAX_RETRIES = 0
+MAX_RETRIES = 5
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.csv"
@@ -271,13 +268,11 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     messages = [{"role": "user", "content": prompt}]
 
     extraction_diagnostics = {
-        'attempts': 0,
+        'attempts': 1,
         'success': False,
         'extraction_error': None,
         'failure_types': []
     }
-    attempt = 0
-    extraction_diagnostics['attempts'] = 1
 
     try:
         response_text, api_diagnostics = query_openrouter(messages)
@@ -294,7 +289,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             stripped_response = stripped_response.strip()
         strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
         if not strict_json_only:
-            print(f"Extraction attempt {attempt + 1} failed: non-JSON wrapper text detected")
+            print("Extraction failed: non-JSON wrapper text detected")
             extraction_diagnostics['extraction_error'] = "Non-JSON wrapper text detected"
             extraction_diagnostics['failure_types'] = ["failed_extraction_non_json_wrapper"]
             return None, extraction_diagnostics
@@ -303,7 +298,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         json_match = re.search(r'\{.*\}', stripped_response, re.DOTALL)
 
         if not json_match:
-            print(f"Extraction attempt {attempt + 1} failed to parse JSON")
+            print("Extraction failed: could not parse JSON")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
             extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
             extraction_diagnostics.update({
@@ -316,7 +311,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         try:
             extracted = json.loads(json_match.group())
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"Extraction attempt {attempt + 1} failed to parse JSON: {e}")
+            print(f"Extraction failed: could not parse JSON: {e}")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
             extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
             extraction_diagnostics.update({
@@ -370,7 +365,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             extraction_diagnostics['failure_types'] = ["failed_extraction_missing_parameters"]
             return None, extraction_diagnostics
 
-        print(f"Extraction attempt {attempt + 1} failed to parse JSON")
+        print("Extraction failed: could not parse JSON")
         extraction_diagnostics['extraction_error'] = "Invalid JSON format"
         extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
         extraction_diagnostics.update({
@@ -381,11 +376,11 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         return None, extraction_diagnostics
 
     except Exception as e:
-        print(f"Extraction attempt {attempt + 1} error: {e}")
+        print(f"Extraction error: {e}")
         extraction_diagnostics['extraction_error'] = str(e)
         error_text = str(e).lower()
         if "failed to get response" in error_text or "request failed" in error_text:
-            extraction_diagnostics['failure_types'] = []
+            extraction_diagnostics['failure_types'] = ['failed_unknown']
         else:
             extraction_diagnostics['failure_types'] = ["failed_extraction_exception"]
         return None, extraction_diagnostics
@@ -448,11 +443,14 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """
     Apply MAVT weighted sum to rank alternatives.
+    Alternatives with sentinel scores (1928) are excluded from ranking.
     """
     weighted_scores = []
 
     for alt_data in alternatives_scores:
         scores = alt_data['scores']
+        if has_sentinel_scores(scores):
+            continue
         weighted_sum = (
                 CRITERION_WEIGHTS['energy_cost'] * scores['energy_cost'] +
                 CRITERION_WEIGHTS['environmental'] * scores['environmental'] +
