@@ -13,7 +13,7 @@ RAG_FILES = {
         'ground_truth': 'ApplianceRAGScenarios.csv'
     },
     'Shower': {
-        'scenarios': 'ShowerRAGScenarios.csv'
+        'ground_truth': 'ShowerRAGScenarios.csv'
     }
 }
 
@@ -56,7 +56,7 @@ def load_appliance_data(csv_dir: str) -> pd.DataFrame:
 
 def load_shower_data(csv_dir: str) -> pd.DataFrame:
     """Load Shower data (scenario file contains everything)."""
-    scenarios_path = Path(csv_dir) / RAG_FILES['Shower']['scenarios']
+    scenarios_path = Path(csv_dir) / RAG_FILES['Shower']['ground_truth']
     df = pd.read_csv(scenarios_path)
 
     #rename columns to match expected format

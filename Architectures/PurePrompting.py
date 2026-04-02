@@ -43,6 +43,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+from sentinel_utils import has_sentinel_scores
 
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -62,7 +63,6 @@ MODEL_ID = get_model_id()
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "model": MODEL_ID,
-    "max_tokens": 500,
     "temperature": 0.3  # Need determinism for reliability
 }
 
@@ -90,13 +90,13 @@ def _increment_failure_counters(counters: Dict[str, int], failure_types: List[st
 def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
-def query_openrouter(messages: List[Dict], max_retries: int = 0) -> Tuple[str, Dict]:
+def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, Dict]:
     """
     Query OpenRouter API with retry logic
 
     Args:
         messages: List of message dicts with role and content
-        max_retries: Number of retry attempts (0 = retry indefinitely)
+        max_retries: Number of retry attempts
 
     Returns:
         Tuple of (response_text, diagnostics_dict)
@@ -113,7 +113,6 @@ def query_openrouter(messages: List[Dict], max_retries: int = 0) -> Tuple[str, D
     payload = {
         "model": API_CONFIG["model"],
         "messages": messages,
-        "max_tokens": API_CONFIG["max_tokens"],
         "temperature": API_CONFIG["temperature"]
     }
 
@@ -194,36 +193,24 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
     prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
 
     if decision_type == 'HVAC':
-        # HVAC-specific fields
         prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
         prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
-        prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')} (R-value: {scenario.get('R-Value', 'N/A')})\n"
+        prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
-        prompt += f"- HVAC Age: {scenario.get('HVAC Age', 'N/A')} years\n"
-        prompt += f"- Occupancy Pattern: {scenario.get('Occupancy Context', 'N/A')}\n"
-        prompt += f"- HVAC SEER Rating: {scenario.get('SEER', 'N/A')}\n"
+        prompt += f"- House Age: {scenario.get('House Age', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
     elif decision_type == 'Appliance':
-        # Appliance-specific fields
-        prompt += f"- Appliance Type: {scenario.get('Appliance', 'N/A')}\n"
-        prompt += f"- Energy per Cycle: {scenario.get('kwh/cycle', 'N/A')} kWh\n"
-        prompt += f"- Appliance Age: {scenario.get('Appliance Age/Type', 'N/A')}\n"
-        prompt += f"- Baseline Time: {scenario.get('Baseline Time', '7pm')}\n"
-        prompt += f"- Peak Rate: ${scenario.get('Peak Rate', 'N/A')}/kWh\n"
-        prompt += f"- Off-Peak Rate: ${scenario.get('Off-Peak Rate', 'N/A')}/kWh\n"
-        prompt += f"- Household Size: {scenario.get('Occupants', 'N/A')} people\n"
+        prompt += f"- Appliance Age: {scenario.get('Appliance Age', 'N/A')}\n"
+        prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
     elif decision_type == 'Shower':
-        # Shower-specific fields
-        prompt += f"- Flow Rate: {scenario.get('GPM', 'N/A')} GPM\n"
-        prompt += f"- Tank Size: {scenario.get('Tank Size', 'N/A')} gallons\n"
-        prompt += f"- Water Heater Temperature: {scenario.get('Water Heater Temp', 'N/A')}Â°F\n"
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
-        prompt += f"- Household Size: {scenario.get('Occupants', 'N/A')} people\n"
+        prompt += f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
@@ -292,7 +279,7 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
 
     if not response:
         logging.error(f"LLM scoring failed for alternative: {alternative}")
-        diagnostics["failure_types"] = []
+        diagnostics["failure_types"] = ["failed_unknown"]
         return api_fallback_scores, diagnostics
 
 
@@ -358,7 +345,10 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """
-    Apply MAVT weighted sum to rank alternatives
+    Apply MAVT weighted sum to rank alternatives.
+
+    Alternatives with sentinel scores (1928) or marked failed are excluded
+    from ranking. No fallback averaging — if ranking fails, it propagates.
 
     Args:
         alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
@@ -366,77 +356,45 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     Returns:
         Dict with ranked_alternatives, ranks, weighted_scores
     """
-    try:
-        alternatives = [alt["alternative"] for alt in alternatives_scores]
-        valid_indices = []
+    alternatives = [alt["alternative"] for alt in alternatives_scores]
+    valid_indices = []
 
-        # Calculate weighted sum for each alternative
-        weighted_scores = []
-        for idx, alt_scores in enumerate(alternatives_scores):
-            has_sentinel = any(
-                alt_scores.get(c) == 1928 for c in ["energy_cost", "environmental", "comfort", "practicality"]
-            )
-            if has_sentinel or alt_scores.get("failed", False):
-                continue
+    # Calculate weighted sum for each alternative
+    weighted_scores = []
+    for idx, alt_scores in enumerate(alternatives_scores):
+        if has_sentinel_scores(alt_scores) or alt_scores.get("failed", False):
+            continue
 
-            weighted_sum = (
-                    CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
-                    CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
-                    CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
-                    CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
-            )
-            weighted_scores.append(weighted_sum)
-            valid_indices.append(idx)
+        weighted_sum = (
+                CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
+                CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
+                CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
+                CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
+        )
+        weighted_scores.append(weighted_sum)
+        valid_indices.append(idx)
 
-        if not valid_indices:
-            return {
-                "ranked_alternatives": [],
-                "ranks": [1928] * len(alternatives),
-                "weighted_scores": []
-            }
-
-        # Rank alternatives (higher weighted sum = better = lower rank number)
-        ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
-        ranked_alternatives = [alternatives[valid_indices[i]] for i in ranked_indices]
-
-        # Create rank numbers (1 = best, 2 = second, 3 = third)
-        ranks = [1928] * len(alternatives)
-        for rank_position, local_index in enumerate(ranked_indices):
-            ranks[valid_indices[local_index]] = rank_position + 1
-
+    if not valid_indices:
         return {
-            "ranked_alternatives": ranked_alternatives,
-            "ranks": ranks,
-            "weighted_scores": weighted_scores
+            "ranked_alternatives": [],
+            "ranks": [1928] * len(alternatives),
+            "weighted_scores": []
         }
 
-    except Exception as e:
-        logging.error(f"MAVT ranking failed: {e}")
+    # Rank alternatives (higher weighted sum = better = lower rank number)
+    ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
+    ranked_alternatives = [alternatives[valid_indices[i]] for i in ranked_indices]
 
-        # Fallback: rank by average score
-        avg_scores = []
-        for alt_scores in alternatives_scores:
-            avg = np.mean([
-                alt_scores["energy_cost"],
-                alt_scores["environmental"],
-                alt_scores["comfort"],
-                alt_scores["practicality"]
-            ])
-            avg_scores.append(avg)
+    # Create rank numbers (1 = best, 2 = second, 3 = third)
+    ranks = [1928] * len(alternatives)
+    for rank_position, local_index in enumerate(ranked_indices):
+        ranks[valid_indices[local_index]] = rank_position + 1
 
-        ranked_indices = np.argsort(avg_scores)[::-1]
-        ranked_alternatives = [alternatives[i] for i in ranked_indices]
-
-        ranks = [0] * len(alternatives)
-        for rank_position, alt_index in enumerate(ranked_indices):
-            ranks[alt_index] = rank_position + 1
-
-        return {
-            "ranked_alternatives": ranked_alternatives,
-            "ranks": ranks,
-            "weighted_scores": avg_scores,
-            "error": str(e)
-        }
+    return {
+        "ranked_alternatives": ranked_alternatives,
+        "ranks": ranks,
+        "weighted_scores": weighted_scores
+    }
 
 def run_scenario(scenario: Dict) -> Dict:
     """
@@ -652,7 +610,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             scenario_failed = result.get("diagnostics", {}).get("scenario_failed", False)
 
             ranks = result["ranking_results"]["ranks"]
-            weighted_scores = result["ranking_results"]["weighted_scores"]
+            ranked_alts = result["ranking_results"]["ranked_alternatives"]
+            ws_list = result["ranking_results"]["weighted_scores"]
+            # Build name-based lookup for weighted scores
+            ws_lookup = {alt: ws_list[i] for i, alt in enumerate(ranked_alts)}
 
             # Write each alternative as a row
             for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
@@ -671,7 +632,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     comfort = alt_scores["comfort"]
                     practicality = alt_scores["practicality"]
                     rank = ranks[alt_idx]
-                    weighted_score = weighted_scores[alt_idx]
+                    weighted_score = ws_lookup.get(alt, 1928)
 
                 writer.writerow({
                     "scenario_id": scenario_id,
@@ -734,8 +695,8 @@ def main():
 
             # Check decision types
             f.seek(0)
-            next(reader)  # Skip header
-            decision_types = set([row.get('Decision Type', 'UNKNOWN') for row in reader])
+            fresh_reader = csv_module.DictReader(f)
+            decision_types = set([row.get('Decision Type', 'UNKNOWN') for row in fresh_reader])
 
             logging.info(f"CSV validation passed")
             logging.info(f"  Decision types found: {decision_types}")

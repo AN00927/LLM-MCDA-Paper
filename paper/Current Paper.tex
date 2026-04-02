@@ -32,6 +32,7 @@
 %% For including figures, graphicx.sty has been loaded in
 %% elsarticle.cls. If you prefer to use the old commands
 %% please give \usepackage{epsfig}
+\usepackage[utf8]{inputenc}
 %% The amssymb package provides various useful mathematical symbols
  \usepackage{amssymb}
  %% The amsmath package provides various useful equation environments.
@@ -44,7 +45,10 @@
 \usepgfplotslibrary{colormaps,groupplots,statistics}
 \pgfplotsset{compat=1.18}
 \usepackage{tikz}
-\usetikzlibrary{shapes.rounded,arrows.meta,positioning,fit,backgrounds,calc}
+%% FIX: 'shapes.rounded' is not a valid tikz library name; use 'shapes' instead
+\usetikzlibrary{shapes,arrows.meta,positioning,fit,backgrounds,calc}
+%% FIX: todonotes requires marginparwidth >= 2cm
+\setlength{\marginparwidth}{2cm}
 \usepackage{todonotes} % figure placeholders during drafting
 \graphicspath{{./}}
 %% Named colors for architecture consistency
@@ -54,7 +58,7 @@
  %% The amsthm package provides extended theorem environments
  %% \usepackage{amsthm}
  %% The lineno packages adds line numbers. Start line numbering with
- \journal{Nuclear Physics B}
+ \journal{Decision Support Systems}
 \begin{document}
 \begin{frontmatter}
 %% Title, authors and addresses
@@ -154,17 +158,17 @@ This study, based on these theoretical benefits, addresses the gap by comparing 
 
 - Three types: HVAC, Appliance, Shower
 - 100 test scenarios (60/25/15), 50 RAG-only (25/20/5)
-- Parameter tables: what GT calculator received vs. what AI received
+- Parameter tables: what GT calculator received vs.\ what AI received
 
 2.2 MAVT Framework Design
 
 - Criteria, weights, rationale
-- Value function selection per criterion (cite Dyer & Sarin 1979, Belton & Stewart 2002)
-- Reference ranges (5th–95th percentile) — one sentence, point to Appendix B for full table
+- Value function selection per criterion (cite Dyer \& Sarin 1979, Belton \& Stewart 2002)
+- Reference ranges (5th--95th percentile) --- one sentence, point to Appendix B for full table
 
 2.3 Ground Truth Calculators
 
-- Describe what each calculator computes (energy cost in $, environmental impact in lbs CO2, comfort, practicality)
+- Describe what each calculator computes (energy cost in \$, environmental impact in lbs CO$_2$, comfort, practicality)
 - Cite sources for each formula (ASHRAE, Domanski, NREL, EPA eGRID, PECO TOU)
 - Full derivations in Appendix A
 
@@ -174,22 +178,22 @@ This study, based on these theoretical benefits, addresses the gap by comparing 
 - 2.4.2 RAG-Enhanced (ChromaDB, sentence-transformers/all-MiniLM-L6-v2, k=3)
 - 2.4.3 Hybrid
 - LLM: Mistral Small 3.2 24B, T=0.3, OpenRouter
-- API call structure: 3 calls/scenario (Pure, RAG) vs. 1 call/scenario (Hybrid)
+- API call structure: 3 calls/scenario (Pure, RAG) vs.\ 1 call/scenario (Hybrid)
 
 2.5 Evaluation Metrics
 
-- Accuracy: Kendall's τ, Spearman's ρ, Top-1, Top-2, MAE, RMSE
+- Accuracy: Kendall's $\tau$, Spearman's $\rho$, Top-1, Top-2, MAE, RMSE
 - Efficiency: total tokens, total latency
 
-Appendix A — Ground Truth Calculator Formulas
+Appendix A --- Ground Truth Calculator Formulas
 
 A.1 HVAC Calculator (cooling load, heating load, SEER degradation, TOU)
 A.2 Appliance Calculator (kWh/cycle, TOU pricing tiers, budget penalty)
-A.3 Shower Calculator (water heating energy, GPM × duration)
+A.3 Shower Calculator (water heating energy, GPM $\times$ duration)
 
-Appendix B — Reference Ranges and Constants
+Appendix B --- Reference Ranges and Constants
 
-- Table of all 5th–95th percentile reference ranges by decision type and criterion
+- Table of all 5th--95th percentile reference ranges by decision type and criterion
 - PA constants (emissions factor, electricity rate, TOU multipliers)
 
 \section{Results}
@@ -197,33 +201,33 @@ Appendix B — Reference Ranges and Constants
 
 3.1 Overall Ranking Accuracy
 
-- Summary table: τ, ρ, Top-1, Top-2 for all three architectures
-    (Hybrid: τ=0.80, ρ=0.82, Top-1=83%, Top-2=97%)
-    (RAG: τ=0.43, Top-1=58%, Top-2=89%)
-    (Pure: τ=-0.06, Top-1=30%, Top-2=62%)
+- Summary table: $\tau$, $\rho$, Top-1, Top-2 for all three architectures
+    (Hybrid: $\tau=0.80$, $\rho=0.82$, Top-1=83\%, Top-2=97\%)
+    (RAG: $\tau=0.43$, Top-1=58\%, Top-2=89\%)
+    (Pure: $\tau=-0.06$, Top-1=30\%, Top-2=62\%)
 - Statement that Hybrid dominates on all ranking metrics; Pure is near-random
 - Note that RAG shows meaningful improvement over Pure,
     confirming retrieval context adds signal but not sufficient alone
 
 3.2 Criterion-Level Error (MAE and RMSE)
 
-- Table: MAE and RMSE per criterion × architecture
+- Table: MAE and RMSE per criterion $\times$ architecture
 - Call out anomalies:
         - Hybrid HVAC Comfort + Practicality MAE = 0.0
-            (deterministic from occupancy context — fully correct)
-        - RAG Appliance Comfort MAE = 3.88 (worst in dataset —
+            (deterministic from occupancy context --- fully correct)
+        - RAG Appliance Comfort MAE = 3.88 (worst in dataset ---
             subjective criterion with no formula anchor)
-        - Pure Shower Environmental MAE = 4.04 (second worst —
+        - Pure Shower Environmental MAE = 4.04 (second worst ---
             no retrieval, no calculator for GPM/heating math)
 - Note that quantitative criteria (Energy Cost, Environmental)
     show the largest gap between Hybrid and the other two
 
 3.3 Performance by Decision Type
 
-- Table or grouped bar chart: τ by architecture × decision type
-    (Hybrid HVAC τ=0.90 vs. Appliance τ=0.68 vs. Shower τ=0.60)
-    (RAG HVAC Top-1=63% as best RAG result)
-    (Pure Appliance gap vs. Hybrid is largest — MAE 3.31 vs. 0.97)
+- Table or grouped bar chart: $\tau$ by architecture $\times$ decision type
+    (Hybrid HVAC $\tau=0.90$ vs.\ Appliance $\tau=0.68$ vs.\ Shower $\tau=0.60$)
+    (RAG HVAC Top-1=63\% as best RAG result)
+    (Pure Appliance gap vs.\ Hybrid is largest --- MAE 3.31 vs.\ 0.97)
 - Explanation that HVAC is the most structured decision type,
     benefiting both RAG (clean energy tradeoffs map to database)
     and Hybrid (deterministic comfort/practicality extraction)
@@ -237,7 +241,7 @@ Appendix B — Reference Ranges and Constants
     (Pure: 124,709 tokens, 437.1s)
     (RAG: 308,637 tokens, 480.8s)
 - Note the counterintuitive result: Hybrid is token-cheapest
-    despite structured output requirements — 100 calls vs. 300
+    despite structured output requirements --- 100 calls vs.\ 300
     for Pure/RAG more than compensates for per-call complexity
 - RAG is most token-expensive due to retrieval context
     appended to every prompt
@@ -256,38 +260,38 @@ Appendix B — Reference Ranges and Constants
     (extraction) while offloading its weakness (formula math)
     to the calculator
 - Single API call per scenario is both architecturally simpler
-    and empirically faster — not a bias but a design advantage
-- Svoboda & Lande (2024) showed LLMs can produce coherent MCDA
-    structures — this study extends that: coherent structure is
+    and empirically faster --- not a bias but a design advantage
+- Svoboda \& Lande (2024) showed LLMs can produce coherent MCDA
+    structures --- this study extends that: coherent structure is
     not the same as accurate quantitative scoring
 
 4.2 Why Pure Prompting Fails
 
-- Near-random τ = -0.06 confirms LLMs cannot self-generate
+- Near-random $\tau = -0.06$ confirms LLMs cannot self-generate
     physics-based MAVT scores from scenario text alone
-- No grounding in reference ranges → uncalibrated 0–10 scores
+- No grounding in reference ranges $\to$ uncalibrated 0--10 scores
     that are internally consistent per call but not comparable
     across alternatives or criteria
 - Risk point: a tool built on Pure Prompting would produce
-    confident but wrong recommendations — potentially worse than
+    confident but wrong recommendations --- potentially worse than
     no tool at all (cite back to Introduction's framing)
 
-4.3 Why RAG Is Intermediate — and Where It Helps
+4.3 Why RAG Is Intermediate --- and Where It Helps
 
 - Retrieval adds meaningful signal for structured decision types
-    (HVAC: τ jumps from near-random to 0.52 for RAG)
+    (HVAC: $\tau$ jumps from near-random to 0.52 for RAG)
 - Retrieval cannot substitute formula-based reasoning for
     criteria that require exact TOU rate math or GPM calculations
-- RAG's Top-2 = 89% suggests it could be a useful low-cost
+- RAG's Top-2 = 89\% suggests it could be a useful low-cost
     fallback where getting the top-2 correct is acceptable and
     building a full calculator is not feasible
 - Token cost (308,637) is the main practical barrier for RAG
 
 4.4 Efficiency as a Practical Constraint
 
-- Real household decision support requires low latency —
-    Hybrid's 275.6s across 100 scenarios scales to ~2.8s/decision
-- Token efficiency directly maps to API cost — Hybrid is the
+- Real household decision support requires low latency ---
+    Hybrid's 275.6s across 100 scenarios scales to $\sim$2.8s/decision
+- Token efficiency directly maps to API cost --- Hybrid is the
     only architecture viable at scale without significant cost
 - Tradeoff: Hybrid requires upfront investment to build the
     physics-based calculators; RAG does not
@@ -297,17 +301,17 @@ Appendix B — Reference Ranges and Constants
 - Single LLM (Mistral Small 3.2 24B): unknown if Hybrid
     advantage holds for stronger models or closes for weaker ones
 - Single region (Pennsylvania): emissions factor 0.6458 lbs
-    CO₂/kWh and PPL TOU structure — results may not generalize
+    CO$_2$/kWh and PPL TOU structure --- results may not generalize
     to high-renewables grids where environmental score
     compression changes which architecture performs best
-- Researcher designed both ground truth and Hybrid calculator —
+- Researcher designed both ground truth and Hybrid calculator ---
     this is the most critical validity threat; Hybrid's advantage
     may reflect design alignment rather than architecture
     superiority (must be foregrounded, not buried)
-- No statistical significance testing on τ differences between
-    architectures — genuine gap, not currently quantifiable
+- No statistical significance testing on $\tau$ differences between
+    architectures --- genuine gap, not currently quantifiable
     as statistically significant
-- Temperature fixed at 0.3 with single run per scenario —
+- Temperature fixed at 0.3 with single run per scenario ---
     no variance measurement across runs
 
 \subsection{Limitations and Future Work}
@@ -315,8 +319,8 @@ Appendix B — Reference Ranges and Constants
 4.6 Future Work
 
 - Scenario-type-specific extraction prompts for Hybrid to
-    address appliance/shower performance gap (τ=0.68/0.60 vs.
-    HVAC τ=0.90)
+    address appliance/shower performance gap ($\tau=0.68$/$0.60$ vs.\
+    HVAC $\tau=0.90$)
 - Multi-region generalization using all EPA eGRID subregions
     + EIA real-time utility rate API
 - Multi-model benchmarking: run same 100 scenarios against
@@ -324,7 +328,7 @@ Appendix B — Reference Ranges and Constants
     advantage is architecture or model-class specific
 - Real-world deployment study: mobile interface for PA
     households, longitudinal tracking of actual decisions
-    vs. tool recommendations
+    vs.\ tool recommendations
 
 \section{Conclusion}
 \label{sec5}
@@ -332,17 +336,17 @@ Appendix B — Reference Ranges and Constants
 - Restate research question: which LLM integration architecture
     most accurately replicates physics-based MAVT ground truth
     for household energy decisions?
-- Direct answer: Hybrid (τ=0.80, Top-1=83%, MAE=0.69)
-    outperforms RAG (τ=0.43, Top-1=58%) and Pure (τ=-0.06, Top-1=30%)
+- Direct answer: Hybrid ($\tau=0.80$, Top-1=83\%, MAE=0.69)
+    outperforms RAG ($\tau=0.43$, Top-1=58\%) and Pure ($\tau=-0.06$, Top-1=30\%)
     on every accuracy and efficiency metric simultaneously
 - Core finding: LLMs used end-to-end cannot replicate MCDA
     scoring; LLMs used for parameter extraction can
 - Efficiency finding: Hybrid is simultaneously the most accurate
-    and least resource-intensive architecture — the expected
+    and least resource-intensive architecture --- the expected
     token/efficiency tradeoff did not materialize
 - Practical implication: the architecture that requires the most
     upfront research investment (building the physics calculators)
-    is the only one suitable for a real household decision tool —
+    is the only one suitable for a real household decision tool ---
     but once built, it is fast and cheap to run per decision
 - Broader significance: this study provides the first empirical
     comparison of three LLM-MCDA integration strategies for
@@ -350,7 +354,7 @@ Appendix B — Reference Ranges and Constants
     organizational-scale MCDA literature and routine household choice
 - Call to action: the results support investment in LLM-assisted
     MCDA tools as a pathway to closing the intention-behavior gap
-    in household sustainability decisions — but only when grounded
+    in household sustainability decisions --- but only when grounded
     in deterministic calculation
 
 %% -----------------------------------------------------------------------
@@ -433,10 +437,10 @@ Appendix B — Reference Ranges and Constants
 %% https://en.wikibooks.org/wiki/LaTeX/Bibliography_Management
 \clearpage
 \clearpage
-\begin{thebibliography}{99}
+%% FIX: \bibliographystyle and \bibliography must appear outside
+%% \begin{thebibliography}...\end{thebibliography}, not inside it.
 \bibliographystyle{elsarticle-num}
 \bibliography{cas-refs}
-\end{thebibliography}
 
 %% =====================================================================
 %% ITEM 1 -- Notation Table
@@ -764,18 +768,15 @@ Failure Rate (\%) & 0.00\% & 0.00\% & 0.00\% \\
 	point meta=y,
 	every node near coord/.append style={font=\footnotesize}
 ]
+%% FIX: replaced \ifnum\coordindex conditional inside anchor={} with a
+%% static anchor=north, which is valid for mostly-negative Pure values.
+%% The \ifnum conditional caused "Unknown function 'north'" in PGF math.
 \addplot+[
 	draw=colorPure, fill=colorPure, bar shift=-6pt,
 	nodes near coords,
-	every node near coord/.style={
+	every node near coord/.append style={
 		font=\footnotesize,
-		/pgfplots/scatter/use mapped color=false,
-		anchor={
-			\ifnum\coordindex=0 north\fi
-			\ifnum\coordindex=1 south\fi
-			\ifnum\coordindex=2 north\fi
-			\ifnum\coordindex=3 north\fi
-		}
+		anchor=north
 	}
 ] coordinates {
 	(HVAC,-0.1111) (Appliance,0.0933) (Shower,-0.1111) (Overall,-0.0600)
@@ -980,6 +981,3 @@ Failure Rate (\%) & 0.00\% & 0.00\% & 0.00\% \\
 \end{figure*}
 
 \end{document}
-\endinput
-%%
-%% End of file `elsarticle-template-num.tex'.
