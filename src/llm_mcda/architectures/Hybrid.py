@@ -123,8 +123,8 @@ For HVAC decisions:
     "outdoor_temp": <number>,
     "seer": <number>,
     "hvac_age": <number>,
-    "Household Type": "<Apartment/Single-family/Townhouse>",
-    "utility_budget": <number>
+    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "utility_budget": <number>,
     "Occupancy Context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
     "alternatives": ["<temp>", "<temp>", "<temp>"]
   }}
@@ -175,7 +175,7 @@ Return ONLY the JSON, no explanation.
 """
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
-                     temperature: float = TEMPERATURE) -> Tuple[Dict, Dict]:
+                     temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
     """
     Query OpenRouter API with retry logic.
     EXACT COPY from pure_prompting.py and rag_enhanced.py
@@ -204,6 +204,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 
             if response.status_code == 200:
                 data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
                 usage = data.get('usage', {})
                 diagnostics = {
@@ -214,7 +215,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                     'model': model
                 }
 
-                return data, diagnostics
+                return content, diagnostics
             else:
                 if _is_transient_http_status(response.status_code):
                     print(f"  Transient API error (attempt {attempt}): {response.status_code}")
@@ -279,14 +280,18 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     extraction_diagnostics['attempts'] = 1
 
     try:
-        response, api_diagnostics = query_openrouter(messages)
+        response_text, api_diagnostics = query_openrouter(messages)
         extraction_diagnostics.update({
             'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
             'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
         })
-        response_text = response['choices'][0]['message']['content']
         stripped_response = response_text.strip()
+        if stripped_response.startswith("```"):
+            stripped_response = stripped_response.split("```", 2)[1]
+            if stripped_response.startswith("json"):
+                stripped_response = stripped_response[4:]
+            stripped_response = stripped_response.strip()
         strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
         if not strict_json_only:
             print(f"Extraction attempt {attempt + 1} failed: non-JSON wrapper text detected")
@@ -295,7 +300,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             return None, extraction_diagnostics
 
         import re
-        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        json_match = re.search(r'\{.*\}', stripped_response, re.DOTALL)
 
         if not json_match:
             print(f"Extraction attempt {attempt + 1} failed to parse JSON")
@@ -504,10 +509,10 @@ def run_scenario(scenario: Dict) -> Dict:
                 neutral_alternatives.append({
                     'alternative': str(alt),
                     'scores': {
-                        'energy_cost': 5.0,
-                        'environmental': 5.0,
-                        'comfort': 5.0,
-                        'practicality': 5.0
+                        'energy_cost': 1928,
+                        'environmental': 1928,
+                        'comfort': 1928,
+                        'practicality': 1928
                     }
                 })
 
