@@ -1107,3 +1107,38 @@
   doi = {10.1016/j.buildenv.2024.111262},
   url = {https://doi.org/10.1016/j.buildenv.2024.111262},
 }
+
+@article{fornara2016,
+  author = {F. Fornara and P. Pattitoni and M. Mura and E. Strazzera},
+  title = {Predicting intention to improve household energy efficiency: The role of value-belief-norm theory, normative and informational influence, and specific attitude},
+  journal = {J. Environ. Psychol.},
+  volume = {45},
+  pages = {1--10},
+  year = {2016},
+  doi = {10.1016/j.jenvp.2015.11.001},
+  url = {https://doi.org/10.1016/j.jenvp.2015.11.001},
+}
+
+@article{nah2004,
+  author = {F.F.-H. Nah},
+  title = {A study on tolerable waiting time: How long are web users willing to wait?},
+  journal = {Behav. Inf. Technol.},
+  volume = {23},
+  number = {3},
+  pages = {153--163},
+  year = {2004},
+  doi = {10.1080/01449290410001669914},
+  url = {https://doi.org/10.1080/01449290410001669914},
+}
+
+@article{siksnelyte2020,
+  author = {I. Siksnelyte-Butkiene and E.K. Zavadskas and D. Streimikiene},
+  title = {Multi-criteria decision-making (MCDM) for the assessment of renewable energy technologies in a household: A review},
+  journal = {Energies},
+  volume = {13},
+  number = {5},
+  pages = {1164},
+  year = {2020},
+  doi = {10.3390/en13051164},
+  url = {https://doi.org/10.3390/en13051164},
+}
