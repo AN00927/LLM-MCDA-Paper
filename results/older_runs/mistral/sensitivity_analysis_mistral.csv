@@ -1,0 +1,31 @@
+scenario_name,weights_json,architecture,kendall_tau,spearman_rho,top1_accuracy,top2_accuracy
+baseline,"{""energy_cost"": 0.3, ""environmental"": 0.35, ""comfort"": 0.2, ""practicality"": 0.15}",Pure,-0.1227,-0.1196,0.27,0.62
+baseline,"{""energy_cost"": 0.3, ""environmental"": 0.35, ""comfort"": 0.2, ""practicality"": 0.15}",RAG,0.3,0.345,0.52,0.8
+baseline,"{""energy_cost"": 0.3, ""environmental"": 0.35, ""comfort"": 0.2, ""practicality"": 0.15}",Hybrid,0.7967,0.81,0.83,0.96
+ene +0.05,"{""energy_cost"": 0.35, ""environmental"": 0.333333, ""comfort"": 0.183333, ""practicality"": 0.133333}",Pure,-0.0993,-0.1046,0.28,0.63
+ene +0.05,"{""energy_cost"": 0.35, ""environmental"": 0.333333, ""comfort"": 0.183333, ""practicality"": 0.133333}",RAG,0.3185,0.3663,0.51,0.83
+ene +0.05,"{""energy_cost"": 0.35, ""environmental"": 0.333333, ""comfort"": 0.183333, ""practicality"": 0.133333}",Hybrid,0.7967,0.81,0.85,0.96
+ene -0.05,"{""energy_cost"": 0.25, ""environmental"": 0.366667, ""comfort"": 0.216667, ""practicality"": 0.166667}",Pure,-0.1327,-0.1346,0.26,0.62
+ene -0.05,"{""energy_cost"": 0.25, ""environmental"": 0.366667, ""comfort"": 0.216667, ""practicality"": 0.166667}",RAG,0.2733,0.325,0.5,0.81
+ene -0.05,"{""energy_cost"": 0.25, ""environmental"": 0.366667, ""comfort"": 0.216667, ""practicality"": 0.166667}",Hybrid,0.8233,0.845,0.83,0.97
+env +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.4, ""comfort"": 0.183333, ""practicality"": 0.133333}",Pure,-0.1193,-0.1296,0.27,0.62
+env +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.4, ""comfort"": 0.183333, ""practicality"": 0.133333}",RAG,0.3185,0.3613,0.52,0.82
+env +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.4, ""comfort"": 0.183333, ""practicality"": 0.133333}",Hybrid,0.8033,0.815,0.85,0.96
+env -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.3, ""comfort"": 0.216667, ""practicality"": 0.166667}",Pure,-0.0978,-0.096,0.29,0.63
+env -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.3, ""comfort"": 0.216667, ""practicality"": 0.166667}",RAG,0.2733,0.32,0.51,0.8
+env -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.3, ""comfort"": 0.216667, ""practicality"": 0.166667}",Hybrid,0.8233,0.845,0.84,0.97
+com +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.333333, ""comfort"": 0.25, ""practicality"": 0.133333}",Pure,-0.0993,-0.1096,0.26,0.64
+com +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.333333, ""comfort"": 0.25, ""practicality"": 0.133333}",RAG,0.2733,0.315,0.49,0.8
+com +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.333333, ""comfort"": 0.25, ""practicality"": 0.133333}",Hybrid,0.83,0.85,0.83,0.97
+com -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.366667, ""comfort"": 0.15, ""practicality"": 0.166667}",Pure,-0.1097,-0.1123,0.28,0.62
+com -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.366667, ""comfort"": 0.15, ""practicality"": 0.166667}",RAG,0.3418,0.3813,0.54,0.84
+com -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.366667, ""comfort"": 0.15, ""practicality"": 0.166667}",Hybrid,0.7233,0.745,0.81,0.94
+pra +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.333333, ""comfort"": 0.183333, ""practicality"": 0.2}",Pure,-0.1327,-0.1446,0.27,0.62
+pra +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.333333, ""comfort"": 0.183333, ""practicality"": 0.2}",RAG,0.3133,0.36,0.53,0.8
+pra +0.05,"{""energy_cost"": 0.283333, ""environmental"": 0.333333, ""comfort"": 0.183333, ""practicality"": 0.2}",Hybrid,0.81,0.83,0.82,0.97
+pra -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.366667, ""comfort"": 0.216667, ""practicality"": 0.1}",Pure,-0.1393,-0.1396,0.27,0.63
+pra -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.366667, ""comfort"": 0.216667, ""practicality"": 0.1}",RAG,0.3333,0.37,0.54,0.81
+pra -0.05,"{""energy_cost"": 0.316667, ""environmental"": 0.366667, ""comfort"": 0.216667, ""practicality"": 0.1}",Hybrid,0.8167,0.83,0.83,0.96
+equal,"{""energy_cost"": 0.25, ""environmental"": 0.25, ""comfort"": 0.25, ""practicality"": 0.25}",Pure,-0.0678,-0.066,0.34,0.67
+equal,"{""energy_cost"": 0.25, ""environmental"": 0.25, ""comfort"": 0.25, ""practicality"": 0.25}",RAG,0.2478,0.281,0.47,0.77
+equal,"{""energy_cost"": 0.25, ""environmental"": 0.25, ""comfort"": 0.25, ""practicality"": 0.25}",Hybrid,0.7882,0.8087,0.8,0.95

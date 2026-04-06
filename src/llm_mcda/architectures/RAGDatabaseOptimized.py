@@ -372,7 +372,6 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
     """
     Parse JSON scores from LLM response.
-    EXACT COPY from pure_prompting.py
     """
     try:
         # Strip markdown code fences if present (Claude sometimes wraps JSON in ```json ... ```)
@@ -414,7 +413,6 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
 
         if validation_failed:
             validated_scores['_failed'] = True
-            print("   Diagnostic: _failed set to True in parse_llm_scores due to validation failure")
             return validated_scores, sorted(validation_failure_types) if validation_failure_types else ['failed_unknown']
 
         return validated_scores, []
@@ -427,7 +425,6 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
             'practicality': 1928,
             '_failed': True
         }
-        print(f"   Diagnostic: _failed set to True in parse_llm_scores due to JSON parse error: {e}")
         return failed_scores, ['failed_malformed_json']
 
 
@@ -435,23 +432,13 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     """
     Score an alternative using RAG-Enhanced approach.
 
-    Process:
-    1. Retrieve k similar scenarios from database
-    2. Format as context
-    3. Build prompt with context + scenario
-    4. Query LLM (single call)
-    5. Parse scores
-
     Returns:
         (scores_dict, diagnostics_dict)
     """
-    # Step 1: Retrieve similar scenarios
     retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K)
 
-    # Step 2: Format RAG context
     rag_context = format_rag_context(retrieved)
 
-    # Step 3: Build prompt
     system_prompt = build_system_prompt()
     user_prompt = build_user_prompt_with_rag(scenario, alternative, rag_context)
 
@@ -460,11 +447,9 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         {"role": "user", "content": user_prompt}
     ]
 
-    # Step 4: Query LLM
     try:
         response_text, diagnostics = query_openrouter(messages)
 
-        # Step 5: Parse scores
         scores, failure_types = parse_llm_scores(response_text)
         diagnostics['success'] = not scores.get('_failed', False)
         diagnostics['failure_types'] = failure_types if scores.get('_failed', False) else []
@@ -476,7 +461,6 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'comfort': 1928,
             'practicality': 1928
         }
-        print("   Diagnostic: API/environment failure fallback applied (neutral scores)")
         diagnostics = {
             'prompt_tokens': 0,
             'completion_tokens': 0,
@@ -498,7 +482,6 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """
     Apply MAVT weighted sum to rank alternatives.
-    EXACT COPY from pure_prompting.py
 
     Args:
         alternatives_scores: List of dicts with 'alternative' and 'scores'

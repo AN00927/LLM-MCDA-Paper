@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 SensitivityAnalysis.py - Sensitivity analysis for MCDA architecture comparison
 
@@ -14,8 +13,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-# ── path setup ────────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MISC_DIR = PROJECT_ROOT / "Miscellaneous Files"
 
@@ -37,9 +34,6 @@ from CalculateMetrics import (
 
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder(MODEL_KEY)
 
-
-# ── weight perturbation ───────────────────────────────────────────────────────
-
 def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dict[str, float]]]:
     """Generate 10 weight perturbation scenarios from a baseline weight dict.
 
@@ -50,8 +44,6 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dic
         Any weight clipped below 0.0 is set to 0.0 and the remainder is
         renormalised so weights always sum exactly to 1.0.
       - Equal weights: all criteria at 0.25
-
-    Returns a list of (scenario_name, weights_dict) tuples.
     """
     criteria = list(baseline.keys())
     scenarios: list[tuple[str, dict[str, float]]] = []
@@ -86,8 +78,6 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dic
     return scenarios
 
 
-# ── reranking ─────────────────────────────────────────────────────────────────
-
 def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> pd.DataFrame:
     """Recompute GT and architecture ranks within each scenario using perturbed weights.
 
@@ -97,18 +87,6 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> p
 
     The recomputed rank columns replace the loaded rank values; criterion score
     columns are never modified.
-
-    Parameters
-    ----------
-    merged_df : pd.DataFrame
-        Output of match_scenarios() after filter_failed_scenarios().
-    weights : dict[str, float]
-        Criterion weights summing to 1.0.
-
-    Returns
-    -------
-    pd.DataFrame
-        Copy of merged_df with updated gt_rank and arch_rank columns.
     """
     df = merged_df.copy()
 
@@ -132,8 +110,6 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> p
     return df
 
 
-# ── main ──────────────────────────────────────────────────────────────────────
-
 def run_sensitivity_analysis() -> pd.DataFrame:
     """Run the full sensitivity analysis and return a results DataFrame.
 
@@ -146,12 +122,6 @@ def run_sensitivity_analysis() -> pd.DataFrame:
          matched scenario and compute Kendall tau / Spearman rho / Top-k accuracy
          via compute_ranking_metrics().
       5. Print a summary table and robustness check, then export results CSV.
-
-    Returns
-    -------
-    pd.DataFrame
-        Full results with columns: scenario_name, weights_json, architecture,
-        kendall_tau, spearman_rho, top1_accuracy, top2_accuracy.
     """
     print("=" * 72)
     print("  SENSITIVITY ANALYSIS — MCDA ARCHITECTURE COMPARISON")
@@ -229,10 +199,9 @@ def run_sensitivity_analysis() -> pd.DataFrame:
             row += f"{val:>10.4f}" if not (isinstance(val, float) and np.isnan(val)) else f"{'N/A':>10}"
         print(row)
 
-    # 5. Robustness check
-    print("\n" + "=" * 72)
+    # 5. Robustness chec
     print("  ROBUSTNESS CHECK  (Hybrid tau > RAG tau > Pure tau)")
-    print("=" * 72)
+
 
     preserved = 0
     for scen in scen_order:
