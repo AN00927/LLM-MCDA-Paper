@@ -259,7 +259,6 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
     response, diagnostics = query_openrouter(messages)
     diagnostics["failure_types"] = []
 
-    # Neutral defaults for infrastructure/API failures.
     api_fallback_scores = {
         "energy_cost": 1928,
         "environmental": 1928,
@@ -268,7 +267,6 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
         "reasoning": "API/environment failure - using neutral defaults"
     }
 
-    # Sentinel defaults used when model output cannot be trusted.
     parse_failure_scores = {
         "energy_cost": 1928,
         "environmental": 1928,
@@ -406,7 +404,6 @@ def run_scenario(scenario: Dict) -> Dict:
     Returns:
         Results dict with rankings, scores, and diagnostics
     """
-    # Extract alternatives
     alternatives = [
         scenario.get("Alternative 1", ""),
         scenario.get("Alternative 2", ""),
@@ -414,7 +411,6 @@ def run_scenario(scenario: Dict) -> Dict:
 
     ]
 
-    # Score each alternative
     alternatives_scores = []
     total_diagnostics = {
         "api_calls": 0,
@@ -438,7 +434,6 @@ def run_scenario(scenario: Dict) -> Dict:
             **scores
         })
 
-        # Aggregate diagnostics
         total_diagnostics["api_calls"] += 1
         total_diagnostics["total_latency_ms"] += diagnostics["latency_ms"]
         total_diagnostics["total_tokens_input"] += diagnostics["tokens_input"]
@@ -457,7 +452,6 @@ def run_scenario(scenario: Dict) -> Dict:
 
     total_diagnostics["scenario_failed"] = total_diagnostics["failed_calls"] > 0
 
-    # Rank alternatives using MAVT
     ranking_results = apply_mavt_ranking(alternatives_scores)
 
     return {
@@ -490,7 +484,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     output_csv_path = Path(output_csv_path)
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Load test scenarios
     scenarios = []
     with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
@@ -500,7 +493,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
     logging.info(f"Loaded {len(scenarios)} test scenarios from {test_csv_path}")
 
-    # Process each scenario
     all_results = []
     cumulative_diagnostics = {
         "total_scenarios": len(scenarios),
@@ -567,7 +559,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
         all_results.append(result)
 
-        # Aggregate diagnostics
         diag = result["diagnostics"]
         cumulative_diagnostics["total_api_calls"] += diag["api_calls"]
         cumulative_diagnostics["total_latency_ms"] += diag["total_latency_ms"]
@@ -582,14 +573,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
         else:
             cumulative_diagnostics["successful_scenarios"] += 1
 
-    # Calculate summary statistics
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
     success_rate = cumulative_diagnostics["successful_scenarios"] / max(cumulative_diagnostics["total_scenarios"], 1)
 
     cumulative_diagnostics["avg_latency_ms"] = avg_latency
     cumulative_diagnostics["success_rate"] = success_rate
 
-    # Save results to CSV
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
             "scenario_id", "decision_type", "question", "location", "outdoor_temp", "appliance_age", "flow_rate",
@@ -612,10 +601,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             ranks = result["ranking_results"]["ranks"]
             ranked_alts = result["ranking_results"]["ranked_alternatives"]
             ws_list = result["ranking_results"]["weighted_scores"]
-            # Build name-based lookup for weighted scores
             ws_lookup = {alt: ws_list[i] for i, alt in enumerate(ranked_alts)}
 
-            # Write each alternative as a row
             for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
                 alt = alt_scores["alternative"]
 
@@ -653,7 +640,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
     logging.info(f"Results saved to {output_csv_path}")
 
-    # Save diagnostics
     diagnostics_path = output_csv_path.with_name(f"{output_csv_path.stem}_diagnostics.json")
     with open(diagnostics_path, 'w') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
@@ -666,7 +652,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 def main():
     """Main execution function"""
 
-    # Check for API key
     if not os.getenv("OPENROUTER_API_KEY"):
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return
@@ -677,7 +662,6 @@ def main():
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
     logging.info(f"Temperature: {API_CONFIG['temperature']}")
-    # Validate CSV has required columns
     import csv as csv_module
     try:
         with open(test_csv, 'r', encoding='utf-8-sig') as f:

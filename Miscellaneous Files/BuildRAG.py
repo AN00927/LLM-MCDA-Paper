@@ -295,7 +295,7 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     print(f"Total scenarios: {total_scenarios}")
     print(f"Database location: {CHROMA_DB_PATH}")
     print(f"Collection name: {COLLECTION_NAME}")
-    print(f"\nTo use in rag_enhanced.py:")
+    print(f"\nTo use in RAGDatabaseOptimized.py:")
     print(f"  client = chromadb.PersistentClient(path='{CHROMA_DB_PATH}')")
     print(f"  collection = client.get_collection('{COLLECTION_NAME}')")
 

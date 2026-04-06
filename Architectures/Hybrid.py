@@ -175,7 +175,6 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                      temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
     """
     Query OpenRouter API with retry logic.
-    EXACT COPY from pure_prompting.py and rag_enhanced.py
     """
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -401,7 +400,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                 gt_scenario[key] = 0.0
 
     calculator_name = extracted_result['calculator']
-    print(f"  Using AI-selected calculator: {calculator_name}")
+    print(f"  Using calculator: {calculator_name}")
     
     if calculator_name == 'HVACGroundTruthCalculator':
         calc = HVACGroundTruthCalculator()
@@ -476,27 +475,20 @@ def run_scenario(scenario: Dict) -> Dict:
     """
     Run Hybrid approach on a single scenario.
 
-    Process:
-    1. SINGLE AI CALL extracts: decision type + parameters + calculator selection
-    2. If extraction fails, output sentinel values and mark as failed
-    3. Feed to ground truth calculator (AI-selected)
-    4. Apply MAVT ranking
-
     Returns:
         Dict with results and diagnostics
     """
   
     print(f"SCENARIO: {scenario.get('Question', 'N/A')}")
    
-    print(f"AI extracting all information (decision type + parameters + calculator)...")
+    print(f"Extracting decision type, parameters, and calculator...")
 
     extraction_result, extraction_diag = extract_all_with_ai(scenario)
 
-    # Step 2: Check if extraction failed
     if extraction_result is None:
         extraction_failure_types = extraction_diag.get('failure_types', [])
         if not extraction_failure_types:
-            print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using neutral fallback scores")
+            print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using fallback scores")
 
             neutral_alternatives = []
             for alt in [
@@ -615,7 +607,6 @@ def run_scenario(scenario: Dict) -> Dict:
             'extraction_diagnostics': extraction_diag
         }
 
-    # Step 4: Apply MAVT ranking
     ranking_result = apply_mavt_ranking(alternatives_scores)
 
     print(f"\nRANKING:")
