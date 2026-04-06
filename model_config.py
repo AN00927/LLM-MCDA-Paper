@@ -1,4 +1,4 @@
-MODEL_KEY = "mistral"
+MODEL_KEY = "qwen"
 
 CRITERION_WEIGHTS = {
     "energy_cost": 0.30,
