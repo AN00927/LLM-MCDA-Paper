@@ -10,16 +10,51 @@ SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 class ApplianceGroundTruthCalculator:
-    # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
-    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update)
+    # -------------------------------------------------------------------------
+    # Modeling choice: time-varying (TOU) pricing and marginal emissions
+    #
+    # Appliance scheduling decisions are explicitly WHEN to run — the time of
+    # day is the decision variable. Alternatives differ only by run time, so
+    # TOU electricity pricing and time-varying marginal emissions are central to
+    # differentiating cost and environmental impact between alternatives.
+    # Using a flat-rate average (as in HVAC and Shower calculators) would
+    # collapse all alternatives to the same energy cost and undermine the
+    # purpose of the scheduling decision.
+    #
+    # Peak window: 2 PM–6 PM from PECO Energy residential TOU tariff.
+    # Source: PECO Energy Company. (2021). Residential Time-of-Use Rate
+    #   Schedule (RT). Philadelphia: PECO.
+    #
+    # Emissions: Peak-period generation relies on higher-emitting peaker plants,
+    # so marginal emissions vary by time. The PJM-region factors below are
+    # practical defaults consistent with the EPA AVERT and NREL Cambium
+    # time-varying emissions frameworks. Replace with hourly PJM marginal
+    # factors when available for higher precision.
+    # Sources: U.S. Environmental Protection Agency. (2023). Avoided Emissions
+    #   and Generation Tool (AVERT), Version 4.1. EPA.
+    #   Gagnon, P., et al. (2022). Cambium 2022 Scenario Descriptions and
+    #   Downloads. NREL/TP-6A40-84916. National Renewable Energy Laboratory.
+    #
+    # Contrast: HVAC and Shower calculators use flat-rate pricing and average
+    # grid-mix emissions (EPA eGRID2024, 0.6458 lbs CO₂/kWh; EIA 2024,
+    # $0.18/kWh) because those decisions are about setpoint/duration, not
+    # scheduling. TOU is irrelevant when the time of operation is not a
+    # decision variable.
+    # Source (flat-rate prevalence): U.S. Energy Information Administration.
+    #   (2023). Residential Energy Consumption Survey (RECS) 2020. DOE.
+    # -------------------------------------------------------------------------
 
-    # PA residential electricity price from EIA (2024)
-    ELECTRICITY_RATE_PA = 0.18  # dollars per/kWh
-    # Peak window 2 PM-6 PM from PECO Energy TOU documentation (PECO, 2021).
+    # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
+    # NOTE: This average factor is defined for reference only. Actual emissions
+    # calculations use EMISSIONS_FACTOR_PEAK / EMISSIONS_FACTOR_OFFPEAK below
+    # because time-of-use differentiation is integral to appliance scheduling.
+    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); NOT used in calculations
+
+    # Peak window 2 PM–6 PM from PECO Energy TOU documentation (PECO, 2021).
     PEAK_HOURS = (14, 18)
-    # Use time-varying marginal emissions factors by TOU period so emissions vary by schedule.
-    # These PJM-oriented factors are practical defaults inspired by EPA AVERT / NREL Cambium
-    # time-varying emissions concepts. Replace with hourly PJM marginal factors when available.
+    # Time-varying marginal emissions factors by TOU period.
+    # PJM-region defaults inspired by EPA AVERT / NREL Cambium framework.
+    # Replace with hourly PJM marginal factors when available.
     EMISSIONS_FACTOR_PEAK = 0.7427      # lbs CO2/kWh (approx. marginal peak-period)
     EMISSIONS_FACTOR_OFFPEAK = 0.5489   # lbs CO2/kWh (approx. marginal off-peak period)
     NOISE_LIMIT_EVENING = 35     # dBA acceptable after 10pm
@@ -631,16 +666,12 @@ class ApplianceGroundTruthCalculator:
         for alt, raw in raw_results.items():
             print(f"\nApplying value functions for: {alt}")
 
-            try:
-                energy_vf = self.apply_value_function(
-                    raw['energy_cost_dollars'],
-                    self.VF_ENERGY_COST,
-                    'energy_cost'
-                )
-                print(f"  After VF linear: Energy = {energy_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Energy VF ERROR: {e}")
-                energy_vf = 5.0
+            energy_vf = self.apply_value_function(
+                raw['energy_cost_dollars'],
+                self.VF_ENERGY_COST,
+                'energy_cost'
+            )
+            print(f"  After VF linear: Energy = {energy_vf:.2f}/10")
 
             if 'Utility Budget' in scenario and scenario['Utility Budget'] > 0:
                 # Convert per-cycle cost to monthly estimate (assume 30 cycles/month)
@@ -664,38 +695,26 @@ class ApplianceGroundTruthCalculator:
 
                 energy_vf = energy_vf_penalized
 
-            try:
-                env_vf = self.apply_value_function(
-                    raw['emissions_lbs'],
-                    self.VF_ENVIRONMENTAL,
-                    'environmental'
-                )
-                print(f"  After VF LinearL: Environmental = {env_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Environmental VF ERROR: {e}")
-                env_vf = 5.0
+            env_vf = self.apply_value_function(
+                raw['emissions_lbs'],
+                self.VF_ENVIRONMENTAL,
+                'environmental'
+            )
+            print(f"  After VF Linear: Environmental = {env_vf:.2f}/10")
 
-            try:
-                comfort_vf = self.apply_value_function(
-                    raw['comfort_raw'],
-                    self.VF_COMFORT,
-                    'comfort'
-                )
-                print(f"  After VF logarithmic (a=1.5): Comfort = {comfort_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Comfort VF ERROR: {e}")
-                comfort_vf = raw['comfort_raw']
+            comfort_vf = self.apply_value_function(
+                raw['comfort_raw'],
+                self.VF_COMFORT,
+                'comfort'
+            )
+            print(f"  After VF logarithmic (a=1.5): Comfort = {comfort_vf:.2f}/10")
 
-            try:
-                practicality_vf = self.apply_value_function(
-                    raw['practicality_raw'],
-                    self.VF_PRACTICALITY,
-                    'practicality'
-                )
-                print(f"  After VF logarithmic (a=1.2): Practicality = {practicality_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Practicality VF ERROR: {e}")
-                practicality_vf = raw['practicality_raw']
+            practicality_vf = self.apply_value_function(
+                raw['practicality_raw'],
+                self.VF_PRACTICALITY,
+                'practicality'
+            )
+            print(f"  After VF logarithmic (a=1.2): Practicality = {practicality_vf:.2f}/10")
 
             final_scores[alt] = {
                 'energy_cost_score': round(energy_vf, 2),
