@@ -1,4 +1,5 @@
 MODEL_KEY = "qwen"
+N_RUNS = 10
 
 CRITERION_WEIGHTS = {
     "energy_cost": 0.30,

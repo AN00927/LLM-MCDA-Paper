@@ -7,11 +7,13 @@ import importlib.util
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from dotenv import load_dotenv
+import numpy as np
+import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
 from sentinel_utils import has_sentinel_scores
 
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
@@ -122,7 +124,7 @@ For HVAC decisions:
     "hvac_age": <number>,
     "Housing Type": "<Apartment/Single-family/Townhouse>",
     "utility_budget": <number>,
-    "Occupancy Context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
+    "occupancy_context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
     "alternatives": ["<temp>", "<temp>", "<temp>"]
   }}
 }}
@@ -283,7 +285,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         stripped_response = response_text.strip()
         if stripped_response.startswith("```"):
             stripped_response = stripped_response.split("```", 2)[1]
-            if stripped_response.startswith("json"):
+            if stripped_response.lower().startswith("json"):
                 stripped_response = stripped_response[4:]
             stripped_response = stripped_response.strip()
         strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
@@ -860,6 +862,135 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     return cumulative_diagnostics
 
 
+def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
+                            base_diagnostics_path: str) -> None:
+    """
+    Run the test set N_RUNS times, save per-run CSVs, then write a single
+    averaged results CSV (same schema as a single run) to base_output_csv.
+    Also writes a _stats.csv with per-criterion std dev.
+    """
+    base = Path(base_output_csv)
+    base_diag = Path(base_diagnostics_path)
+    run_paths = []
+
+    for run_idx in range(1, N_RUNS + 1):
+        run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
+        diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
+        print(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
+        try:
+            run_test_set(str(test_csv_path), str(run_path), str(diag_path))
+            run_paths.append(run_path)
+        except Exception as e:
+            print(f"ERROR: Run {run_idx} failed and will be excluded from aggregation: {e}")
+
+    if len(run_paths) == 0:
+        print("ERROR: All runs failed. No aggregation possible.")
+        return
+    if len(run_paths) < N_RUNS:
+        print(
+            f"WARNING: Only {len(run_paths)}/{N_RUNS} runs completed. "
+            f"Aggregating over {len(run_paths)} runs."
+        )
+    print(f"{len(run_paths)}/{N_RUNS} runs complete. Aggregating scores...")
+
+    valid_run_paths = []
+    run_dfs = []
+    for p in run_paths:
+        try:
+            run_dfs.append(pd.read_csv(p, encoding='utf-8-sig'))
+            valid_run_paths.append(p)
+        except Exception as e:
+            print(f"WARNING: Could not read {p.name}, skipping from aggregation: {e}")
+    if len(run_dfs) == 0:
+        print("ERROR: No run files could be read. Aggregation aborted.")
+        return
+    if len(run_dfs) < len(run_paths):
+        print(f"WARNING: Aggregating over {len(run_dfs)}/{len(run_paths)} readable runs.")
+    combined = pd.concat(run_dfs, ignore_index=True)
+    combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
+
+    CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
+    SENTINEL = 1928.0
+
+    for c in CRITERIA_COLS:
+        combined[c] = combined[c].astype(float)
+
+    # Exclude the entire row from averaging if any criterion is sentinel
+    failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
+    combined.loc[failed_mask, CRITERIA_COLS] = np.nan
+
+    GROUP_KEYS = ["scenario_id", "alternative"]
+    STABLE_META_COLS = ["question", "location", "outdoor_temp", "appliance_age", "flow_rate", "calculator"]
+    BOOL_META_COLS = ["extraction_failed", "gt_calculation_failed"]
+
+    avg_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].mean()
+    std_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].std()
+
+    # Stable cols: take first (identical across runs for the same scenario)
+    avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[STABLE_META_COLS].first()
+
+    # decision_type: use mode of non-UNKNOWN values; fall back to UNKNOWN only if all runs failed
+    def _mode_decision_type(series):
+        non_unknown = series[series != 'UNKNOWN']
+        if len(non_unknown) == 0:
+            return 'UNKNOWN'
+        return non_unknown.mode().iloc[0]
+
+    dt_mode = combined.groupby(GROUP_KEYS)['decision_type'].agg(_mode_decision_type).reset_index()
+    avg_meta = avg_meta.merge(dt_mode, on=GROUP_KEYS)
+
+    # Boolean flags: any() — if any run had a failure the scenario was flaky
+    for col in BOOL_META_COLS:
+        if col in combined.columns:
+            bool_agg = (
+                combined.groupby(GROUP_KEYS)[col]
+                .agg(lambda s: bool(s.astype(str).str.lower().str.strip().eq('true').any()))
+                .reset_index()
+            )
+            avg_meta = avg_meta.merge(bool_agg, on=GROUP_KEYS)
+
+    avg = avg_criteria.merge(avg_meta, on=GROUP_KEYS)
+    std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
+    stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
+
+    # Fill NaN (all runs failed for that alternative) back to sentinel
+    for c in CRITERIA_COLS:
+        avg[c] = avg[c].fillna(SENTINEL)
+
+    # Re-rank within each scenario using averaged scores
+    avg["rank"] = int(SENTINEL)
+    avg["weighted_score"] = float(SENTINEL)
+
+    for sid in avg["scenario_id"].unique():
+        sc_mask = avg["scenario_id"] == sid
+        sc = avg[sc_mask]
+        valid_idx = sc.index[~sc[CRITERIA_COLS].eq(SENTINEL).any(axis=1)]
+        if len(valid_idx) > 0:
+            ws = (
+                avg.loc[valid_idx, "energy_cost"] * CRITERION_WEIGHTS["energy_cost"] +
+                avg.loc[valid_idx, "environmental"] * CRITERION_WEIGHTS["environmental"] +
+                avg.loc[valid_idx, "comfort"] * CRITERION_WEIGHTS["comfort"] +
+                avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
+            )
+            avg.loc[valid_idx, "weighted_score"] = ws
+            avg.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
+
+    col_order = [
+        "scenario_id", "question", "location", "decision_type", "outdoor_temp",
+        "appliance_age", "flow_rate", "calculator", "extraction_failed",
+        "gt_calculation_failed", "alternative",
+        "energy_cost", "environmental", "comfort", "practicality",
+        "rank", "weighted_score",
+    ]
+    avg = avg.reindex(columns=col_order)
+    avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
+    print(f"Averaged results ({N_RUNS} runs) saved to {base_output_csv}")
+
+    stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
+    stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')
+    print(f"Score statistics saved to {stats_path}")
+
+
 if __name__ == "__main__":
     test_csv = TEST_SCENARIOS_CSV
 
@@ -877,8 +1008,8 @@ if __name__ == "__main__":
     else:
         print(" Ground truth calculators loaded")
 
-    run_test_set(
+    run_multi_and_aggregate(
         test_csv_path=str(test_csv),
-        output_csv_path=str(OUTPUT_CSV),
-        output_diagnostics_path=str(OUTPUT_DIAGNOSTICS)
+        base_output_csv=str(OUTPUT_CSV),
+        base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
     )

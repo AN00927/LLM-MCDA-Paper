@@ -42,7 +42,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder
+from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
 from sentinel_utils import has_sentinel_scores
 
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
@@ -135,7 +135,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
                 API_CONFIG["endpoint"],
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=60
             )
             latency = (time.time() - start_time) * 1000
 
@@ -221,33 +221,14 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
 
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    """
-    Score a single alternative using LLM
+    system_prompt = f"""You are an expert household energy decision analyst. Score alternatives on 
+four criteria using the full 0-10 scale:
+- energy_cost: lower cost = higher score
+- environmental: lower emissions = higher score  
+- comfort: higher comfort = higher score
+- practicality: easier adoption = higher score
 
-    Args:
-        scenario: Full scenario context
-        alternative: Alternative to score
-
-    Returns:
-        Tuple of (scores_dict, diagnostics_dict)
-    """
-    system_prompt = f"""You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA). 
-    You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.
-
-Your task is to score alternatives on four criteria:
-1. Energy Cost (0-10): Lower energy costs = higher score
-2. Environmental Impact (0-10): Lower emissions = higher score
-3. Comfort (0-10): Higher user comfort = higher score
-4. Practicality (0-10): Easier to implement/maintain = higher score
-
-Scoring guidelines:
-- Use the full 0-10 scale
-- Consider tradeoffs between criteria
-- Base scores on engineering principles, behavioral research, and practical constraints
-- Be consistent across similar scenarios
-
-Return ONLY a JSON object with four numeric scores (0-10). There should be no other text in your response, even for reasoning:
-{{"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}}
+Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
     user_prompt = build_user_prompt(scenario, alternative)
 
@@ -288,7 +269,7 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
         text = response.strip()
         if text.startswith("```"):
             text = text.split("```", 2)[1]
-            if text.startswith("json"):
+            if text.lower().startswith("json"):
                 text = text[4:]
             text = text.strip()
         scores = json.loads(text)
@@ -649,6 +630,111 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     return cumulative_diagnostics
 
 
+def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
+    """
+    Run the test set N_RUNS times, save per-run CSVs, then write a single
+    averaged results CSV (same schema as a single run) to base_output_csv.
+    Also writes a _stats.csv with per-criterion std dev.
+    """
+    base = Path(base_output_csv)
+    run_paths = []
+
+    for run_idx in range(1, N_RUNS + 1):
+        run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
+        logging.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
+        try:
+            run_test_set(str(test_csv_path), str(run_path))
+            run_paths.append(run_path)
+        except Exception as e:
+            logging.error(f"Run {run_idx} failed and will be excluded from aggregation: {e}")
+
+    if len(run_paths) == 0:
+        logging.error("All runs failed. No aggregation possible.")
+        return
+    if len(run_paths) < N_RUNS:
+        logging.warning(
+            f"Only {len(run_paths)}/{N_RUNS} runs completed. "
+            f"Aggregating over {len(run_paths)} runs."
+        )
+    logging.info(f"{len(run_paths)}/{N_RUNS} runs complete. Aggregating scores...")
+
+    valid_run_paths = []
+    run_dfs = []
+    for p in run_paths:
+        try:
+            run_dfs.append(pd.read_csv(p, encoding='utf-8-sig'))
+            valid_run_paths.append(p)
+        except Exception as e:
+            logging.warning(f"Could not read {p.name}, skipping from aggregation: {e}")
+    if len(run_dfs) == 0:
+        logging.error("No run files could be read. Aggregation aborted.")
+        return
+    if len(run_dfs) < len(run_paths):
+        logging.warning(f"Aggregating over {len(run_dfs)}/{len(run_paths)} readable runs.")
+    combined = pd.concat(run_dfs, ignore_index=True)
+    combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
+
+    CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
+    SENTINEL = 1928.0
+
+    for c in CRITERIA_COLS:
+        combined[c] = combined[c].astype(float)
+
+    # Exclude the entire row from averaging if any criterion is sentinel
+    failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
+    combined.loc[failed_mask, CRITERIA_COLS] = np.nan
+
+    GROUP_KEYS = ["scenario_id", "alternative"]
+    META_COLS = [
+        "decision_type", "question", "location",
+        "outdoor_temp", "appliance_age", "flow_rate",
+    ]
+
+    avg_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].mean()
+    std_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].std()
+    avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[META_COLS].first()
+
+    avg = avg_criteria.merge(avg_meta, on=GROUP_KEYS)
+    std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
+    stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
+
+    # Fill NaN (all runs failed for that alternative) back to sentinel
+    for c in CRITERIA_COLS:
+        avg[c] = avg[c].fillna(SENTINEL)
+
+    # Re-rank within each scenario using averaged scores
+    avg["rank"] = int(SENTINEL)
+    avg["weighted_score"] = float(SENTINEL)
+
+    for sid in avg["scenario_id"].unique():
+        sc_mask = avg["scenario_id"] == sid
+        sc = avg[sc_mask]
+        valid_idx = sc.index[~sc[CRITERIA_COLS].eq(SENTINEL).any(axis=1)]
+        if len(valid_idx) > 0:
+            ws = (
+                avg.loc[valid_idx, "energy_cost"] * CRITERION_WEIGHTS["energy_cost"] +
+                avg.loc[valid_idx, "environmental"] * CRITERION_WEIGHTS["environmental"] +
+                avg.loc[valid_idx, "comfort"] * CRITERION_WEIGHTS["comfort"] +
+                avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
+            )
+            avg.loc[valid_idx, "weighted_score"] = ws
+            avg.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
+
+    col_order = [
+        "scenario_id", "decision_type", "question", "location", "outdoor_temp",
+        "appliance_age", "flow_rate", "alternative",
+        "energy_cost", "environmental", "comfort", "practicality",
+        "rank", "weighted_score",
+    ]
+    avg = avg.reindex(columns=col_order)
+    avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
+    logging.info(f"Averaged results ({N_RUNS} runs) saved to {base_output_csv}")
+
+    stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
+    stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')
+    logging.info(f"Score statistics saved to {stats_path}")
+
+
 def main():
     """Main execution function"""
 
@@ -692,15 +778,8 @@ def main():
         logging.error(f" CSV validation error: {e}")
         return
 
-    diagnostics = run_test_set(str(test_csv), str(output_csv))
-
-    logging.info("PURE PROMPTING TEST COMPLETE")
-    logging.info(f"Total scenarios: {diagnostics['total_scenarios']}")
-    logging.info(f"Total API calls: {diagnostics['total_api_calls']}")
-    logging.info(f"Success rate: {diagnostics['success_rate']:.1%}")
-    logging.info(f"Average latency: {diagnostics['avg_latency_ms']:.0f} ms")
-    logging.info(f"Total tokens (input): {diagnostics['total_tokens_input']}")
-    logging.info(f"Total tokens (output): {diagnostics['total_tokens_output']}")
+    run_multi_and_aggregate(str(test_csv), str(output_csv))
+    logging.info("PURE PROMPTING MULTI-RUN COMPLETE")
 
 
 
