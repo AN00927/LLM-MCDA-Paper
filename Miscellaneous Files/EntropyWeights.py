@@ -80,7 +80,7 @@ def load_ground_truth_data(project_root: Path) -> pd.DataFrame:
     data_frames: list[pd.DataFrame] = []
     for decision_type, relative_candidates in file_specs:
         csv_path = resolve_existing_path(project_root, relative_candidates)
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path, encoding='utf-8-sig')
         df = df.copy()
         df["decision_type"] = decision_type
         df["source_file"] = csv_path.name
@@ -180,8 +180,8 @@ def build_comparison_table(data: pd.DataFrame, column_map: dict[str, str]) -> pd
 
 
 def export_results(comparison_table: pd.DataFrame, project_root: Path) -> Path:
-    """Write the comparison table to Output Files/entropy_weights.csv."""
-    output_dir = project_root
+    """Write the comparison table to paper/entropy_weights.csv."""
+    output_dir = project_root / "paper"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "entropy_weights.csv"
     comparison_table.reset_index().to_csv(output_path, index=False)

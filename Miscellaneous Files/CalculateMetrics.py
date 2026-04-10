@@ -116,7 +116,7 @@ def load_ground_truth(config):
     gt_by_type = {}
 
     for dtype, filepath in config["ground_truth"].items():
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, encoding='utf-8-sig')
         df["decision_type"] = dtype
 
         if "description" in df.columns and "question" not in df.columns:
@@ -143,7 +143,7 @@ def load_ground_truth(config):
 
 def load_architecture(filepath, arch_name):
     """Load an architecture results file."""
-    df = pd.read_csv(filepath)
+    df = pd.read_csv(filepath, encoding='utf-8-sig')
     df["architecture"] = arch_name
     df["question"] = df["question"].str.strip()
     df["location"] = df["location"].str.strip()

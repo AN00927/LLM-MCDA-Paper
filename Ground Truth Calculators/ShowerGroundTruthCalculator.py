@@ -19,11 +19,39 @@ class ShowerGroundTruthCalculator:
   Monitoring Building Water: A Vital Step for Control of Legionella.
 - Zhang, D., Mui, K.-W., & Wong, L.-T. (2023). Buildings, 13(5), 1300.
 """
+    # -------------------------------------------------------------------------
+    # Modeling choice: flat-rate pricing and average grid-mix emissions
+    #
+    # Shower duration decisions are NOT scheduling decisions. Users choose how
+    # long to shower, not what time of day — the time of day is not a variable
+    # in the decision alternatives being evaluated. TOU electricity pricing is
+    # therefore not a relevant differentiating variable for duration alternatives.
+    #
+    # Pricing: The EIA-reported PA residential average ($0.18/kWh) is used as
+    # the default because flat-rate tariffs are the dominant residential
+    # structure in Pennsylvania. TOU enrollment is opt-in and represented <3%
+    # of PA residential customers as of 2020.
+    # Source: U.S. Energy Information Administration. (2023). Residential Energy
+    #   Consumption Survey (RECS) 2020. U.S. Department of Energy.
+    #   https://www.eia.gov/consumption/residential/
+    #
+    # Emissions: Because shower hot-water demand is driven by duration (not
+    # scheduling), the average grid-mix emissions factor (EPA eGRID2024) is the
+    # appropriate choice. For non-schedulable loads, average emissions factors
+    # are the standard approach in residential energy modeling.
+    # Source: ASHRAE. (2021). ASHRAE Handbook — Fundamentals, Chapter 18.
+    #   ASHRAE. (Standard reference for residential energy estimation.)
+    #
+    # Contrast: The Appliance calculator uses time-varying marginal emissions
+    # (EPA AVERT / NREL Cambium framework) and per-scenario TOU rates (PECO,
+    # 2021) because scheduling IS the explicit decision variable there.
+    # -------------------------------------------------------------------------
+
     # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
-    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update)
+    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); average grid-mix
 
     # PA residential electricity price from EIA (2024)
-    ELECTRICITY_RATE_PA = 0.18  # dollars per/kWh
+    ELECTRICITY_RATE_PA = 0.18  # $/kWh; flat-rate default (see modeling choice above)
 
     # PA seasonal mains water temperatures.
     # Sources: Hendron & Burch (2008), NREL/TP-550-40874; Maguire et al. (2013), NREL/TP-5500-58756.
@@ -457,7 +485,7 @@ class ShowerGroundTruthCalculator:
         occupants = int(scenario.get('Occupants', 2))
         tank_size = float(scenario.get('Tank Size', 40))
         gpm = float(scenario.get('GPM', 2.5))
-        outdoor_temp = float(scenario.get('Outdoor Temp', 50))
+        outdoor_temp = float(scenario.get('outdoor_temp', scenario.get('Outdoor Temp', 50)))
         water_heater_temp = float(scenario.get('Water Heater Temp', 120))
 
         print(f"SHOWER SCENARIO: {scenario.get('Description', 'N/A')}")
@@ -528,49 +556,32 @@ class ShowerGroundTruthCalculator:
                 'practicality': self.VF_PRACTICALITY
             })
 
-            try:
-                energy_vf = self.apply_value_function(
-                    raw['energy_cost'],
-                    self.VF_ENERGY_COST,
-                    'energy_cost'
-                )
-                print(f"  After VF ({vf_specs['energy_cost']}): Energy = {energy_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Energy VF ERROR: {e}")
-                energy_vf = 5.0
+            energy_vf = self.apply_value_function(
+                raw['energy_cost'],
+                self.VF_ENERGY_COST,
+                'energy_cost'
+            )
+            print(f"  After VF ({vf_specs['energy_cost']}): Energy = {energy_vf:.2f}/10")
 
-            try:
-                env_vf = self.apply_value_function(
-                    raw['environmental'],
-                    self.VF_ENVIRONMENTAL,
-                    'environmental'
-                )
-                print(f"  After VF ({vf_specs['environmental']}): Environmental = {env_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Environmental VF ERROR: {e}")
-                env_vf = 5.0
+            env_vf = self.apply_value_function(
+                raw['environmental'],
+                self.VF_ENVIRONMENTAL,
+                'environmental'
+            )
+            print(f"  After VF ({vf_specs['environmental']}): Environmental = {env_vf:.2f}/10")
 
-            try:
-                comfort_vf = self.apply_value_function(
-                    raw['comfort'],
-                    self.VF_COMFORT,
-                    'comfort'
-                )
-                print(f"  After VF ({vf_specs['comfort']}): Comfort = {comfort_vf:.2f}/10")
-            except Exception as e:
-                print(f"  ✗ Comfort VF ERROR: {e}")
-                comfort_vf = raw['comfort']  # Already 0-10
+            comfort_vf = self.apply_value_function(
+                raw['comfort'],
+                self.VF_COMFORT,
+                'comfort'
+            )
+            print(f"  After VF ({vf_specs['comfort']}): Comfort = {comfort_vf:.2f}/10")
 
-            try:
-                practicality_vf = self.apply_value_function(
-                    raw['practicality'],
-                    self.VF_PRACTICALITY,
-                    'practicality'
-                )
-
-            except Exception as e:
-                print(f"  ✗ Practicality VF ERROR: {e}")
-                practicality_vf = raw['practicality']  # Already 0-10
+            practicality_vf = self.apply_value_function(
+                raw['practicality'],
+                self.VF_PRACTICALITY,
+                'practicality'
+            )
 
             # Apply budget penalty to energy cost score if budget constraint exists
             if 'Utility Budget' in scenario and scenario['Utility Budget'] > 0:
