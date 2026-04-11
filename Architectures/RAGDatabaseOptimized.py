@@ -1,4 +1,4 @@
-ï»¿import os
+import os
 import sys
 import json
 import csv
@@ -80,10 +80,7 @@ except Exception as e:
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                      temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
-    """
-    Returns:
-        (response_text, diagnostics_dict)
-    """
+    """Query openrouter."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -156,9 +153,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
     raise Exception(f"Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
-    """
-    Build system prompt for MCDA scoring.
-    """
+    """Build system prompt."""
     return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
     You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.
 Your task is to score alternatives on four criteria:
@@ -178,17 +173,12 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
 
 
 def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
-    """
-    Convert scenario to text for RAG retrieval.
-    Returns:
-        (scenario_text, decision_type)
-    """
-    # Read decision type from CSV (not keyword detection)
+    """Format scenario text for retrieval."""
     decision_type = scenario.get('Decision Type', 'HVAC')
 
     if decision_type == 'HVAC':
         scenario_text = (
-            f"{scenario.get('Outdoor Temp', 'N/A')}Â°F outdoor, "
+            f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Insulation', 'N/A')} insulation, "
             f"{scenario.get('Square Footage', 'N/A')} sqft, "
             f"{scenario.get('Household Size', 'N/A')} occupants, "
@@ -205,7 +195,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     elif decision_type == 'Shower':
         scenario_text = (
             f"{scenario.get('Flow rate', 'N/A')} showerhead, "
-            f"{scenario.get('Outdoor Temp', 'N/A')}Â°F outdoor, "
+            f"{scenario.get('Outdoor Temp', 'N/A')}°F outdoor, "
             f"{scenario.get('Household Size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
             f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
@@ -217,16 +207,7 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     return scenario_text, decision_type
 
 def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict]:
-    """
-    Retrieve k most similar scenarios from RAG database.
-
-    Args:
-        scenario: Current test scenario dict
-        k: Number of similar scenarios to retrieve
-
-    Returns:
-        List of dicts with retrieved scenario info and scores
-    """
+    """Retrieve similar scenarios."""
     if chroma_collection is None or embedding_model is None:
         print("   RAG database not available, skipping retrieval")
         return []
@@ -295,15 +276,7 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
 
 
 def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
-    """
-    Format retrieved scenarios as context for LLM prompt.
-
-    Args:
-        retrieved_scenarios: List of retrieved scenario dicts
-
-    Returns:
-        Formatted context string
-    """
+    """Format rag context."""
     if not retrieved_scenarios:
         return ""
 
@@ -340,7 +313,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     if decision_type == 'HVAC':
         prompt += (
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
             f"- Square Footage: {scenario.get('Square Footage', 'N/A')} sqft\n"
             f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
@@ -359,7 +332,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     elif decision_type == 'Shower':
         prompt += (
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}Â°F\n"
+            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
             f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
             f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
@@ -372,9 +345,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
     return prompt
 
 def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
-    """
-    Parse JSON scores from LLM response.
-    """
+    """Parse llm scores."""
     try:
         # Strip markdown code fences if present (Claude sometimes wraps JSON in ```json ... ```)
         text = response_text.strip()
@@ -431,12 +402,7 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
 
 
 def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    """
-    Score an alternative using RAG-Enhanced approach.
-
-    Returns:
-        (scores_dict, diagnostics_dict)
-    """
+    """Score alternative with rag."""
     retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K)
 
     rag_context = format_rag_context(retrieved)
@@ -482,15 +448,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """
-    Apply MAVT weighted sum to rank alternatives.
-
-    Args:
-        alternatives_scores: List of dicts with 'alternative' and 'scores'
-
-    Returns:
-        Dict with ranked alternatives and weighted scores
-    """
+    """Apply mavt ranking."""
     weighted_scores = []
 
     for alt_data in alternatives_scores:
@@ -520,12 +478,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
 
 
 def run_scenario(scenario: Dict) -> Dict:
-    """
-    Run RAG-Enhanced scoring on all alternatives in a scenario.
-
-    Returns:
-        Dict with scores and ranking results
-    """
+    """Run scenario."""
     print(f"SCENARIO: {scenario.get('Question', 'N/A')}")
 
     alternatives_scores = []
@@ -610,17 +563,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
 def run_test_set(test_csv_path: str, output_csv_path: str,
                  output_diagnostics_path: str) -> Dict:
-    """
-    Run RAG-Enhanced on full test set.
-
-    Args:
-        test_csv_path: Path to test scenarios CSV
-        output_csv_path: Path to save results CSV
-        output_diagnostics_path: Path to save diagnostics JSON
-
-    Returns:
-        Summary statistics dict
-    """
+    """Run test set."""
     import csv as csv_module
 
     test_csv_path = Path(test_csv_path)
@@ -823,11 +766,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                             base_diagnostics_path: str) -> None:
-    """
-    Run the test set N_RUNS times, save per-run CSVs, then write a single
-    averaged results CSV (same schema as a single run) to base_output_csv.
-    Also writes a _stats.csv with per-criterion std dev.
-    """
+    """Run multi and aggregate."""
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
     run_paths = []

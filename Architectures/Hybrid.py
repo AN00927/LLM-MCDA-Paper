@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import json
 import requests
@@ -175,9 +175,7 @@ Return ONLY the JSON, no explanation.
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                      temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
-    """
-    Query OpenRouter API with retry logic.
-    """
+    """Query openrouter."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -246,9 +244,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 
 
 def format_scenario_for_extraction(scenario: Dict) -> str:
-    """
-    Convert scenario dict to natural language text for extraction prompt.
-    """
+    """Format scenario for extraction."""
     lines = []
     for key, value in scenario.items():
         if key not in ['Question']:  # Don't repeat question in details
@@ -427,7 +423,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                     'practicality': alt_data['transformed_values']['practicality']
                 }
             })
-    else:  # HVAC and Appliance â€” identical return structure
+    else:  # HVAC and Appliance — identical return structure
         for alt_key, alt_data in result.items():
             alternatives_scores.append({
                 'alternative': str(alt_key),
@@ -442,10 +438,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """
-    Apply MAVT weighted sum to rank alternatives.
-    Alternatives with sentinel scores (1928) are excluded from ranking.
-    """
+    """Apply mavt ranking."""
     weighted_scores = []
 
     for alt_data in alternatives_scores:
@@ -474,13 +467,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     }
 
 def run_scenario(scenario: Dict) -> Dict:
-    """
-    Run Hybrid approach on a single scenario.
-
-    Returns:
-        Dict with results and diagnostics
-    """
-  
+    """Run scenario."""
     print(f"SCENARIO: {scenario.get('Question', 'N/A')}")
    
     print(f"Extracting decision type, parameters, and calculator...")
@@ -635,17 +622,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
 def run_test_set(test_csv_path: str, output_csv_path: str,
                  output_diagnostics_path: str) -> Dict:
-    """
-    Run Hybrid approach on full test set.
-
-    Args:
-        test_csv_path: Path to test scenarios CSV
-        output_csv_path: Path to save results CSV
-        output_diagnostics_path: Path to save diagnostics JSON
-
-    Returns:
-        Summary statistics dict
-    """
+    """Run test set."""
     import csv as csv_module
 
     test_csv_path = Path(test_csv_path)
@@ -864,11 +841,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                             base_diagnostics_path: str) -> None:
-    """
-    Run the test set N_RUNS times, save per-run CSVs, then write a single
-    averaged results CSV (same schema as a single run) to base_output_csv.
-    Also writes a _stats.csv with per-criterion std dev.
-    """
+    """Run multi and aggregate."""
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
     run_paths = []
@@ -939,7 +912,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     dt_mode = combined.groupby(GROUP_KEYS)['decision_type'].agg(_mode_decision_type).reset_index()
     avg_meta = avg_meta.merge(dt_mode, on=GROUP_KEYS)
 
-    # Boolean flags: any() — if any run had a failure the scenario was flaky
+    # Boolean flags: any() � if any run had a failure the scenario was flaky
     for col in BOOL_META_COLS:
         if col in combined.columns:
             bool_agg = (
