@@ -11,42 +11,11 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 
 class HVACGroundTruthCalculator:
-    # -------------------------------------------------------------------------
-    # Modeling choice: flat-rate pricing and average grid-mix emissions
-    #
-    # HVAC thermostat setpoint decisions are NOT scheduling decisions. The system
-    # duty-cycles continuously across the evaluation period in response to the
-    # temperature differential; the user is choosing a setpoint, not a time
-    # window. Time-of-use (TOU) electricity pricing is therefore not a relevant
-    # differentiating variable for the setpoint alternatives being compared.
-    #
-    # Pricing: The EIA-reported PA residential average ($0.18/kWh) is used as
-    # the default because flat-rate tariffs are the dominant residential
-    # structure in Pennsylvania. TOU enrollment is opt-in and represented <3%
-    # of PA residential customers as of 2020.
-    # Source: U.S. Energy Information Administration. (2023). Residential Energy
-    #   Consumption Survey (RECS) 2020. U.S. Department of Energy.
-    #   https://www.eia.gov/consumption/residential/
-    #
-    # Emissions: Because HVAC load is spread continuously across the period
-    # rather than concentrated in a schedulable window, the average grid-mix
-    # emissions factor (EPA eGRID2024) is the appropriate choice. For
-    # non-schedulable loads, average emissions factors are the standard
-    # approach in residential energy modeling.
-    # Source: ASHRAE. (2021). ASHRAE Handbook — Fundamentals, Chapter 18:
-    #   Nonresidential Cooling and Heating Load Calculations. ASHRAE.
-    #   (Standard reference for residential/commercial HVAC energy estimation.)
-    #
-    # Contrast: The Appliance calculator uses time-varying marginal emissions
-    # (EPA AVERT / NREL Cambium framework) and per-scenario TOU rates (PECO,
-    # 2021) because scheduling IS the explicit decision variable there.
-    # -------------------------------------------------------------------------
-
     # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
     EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); average grid-mix
 
     # PA residential electricity price from EIA (2024)
-    ELECTRICITY_RATE_PA = 0.18  # $/kWh; flat-rate default (see modeling choice above)
+    ELECTRICITY_RATE_PA = 0.19  # $/kWh; flat-rate default (see modeling choice above)
     SUMMER_COMFORT_RANGE = (73, 79)
     SUMMER_OPTIMAL = 76
     WINTER_COMFORT_RANGE = (68, 75)
@@ -75,23 +44,7 @@ class HVACGroundTruthCalculator:
                                square_footage: int, r_value: int, household_size: int = 3,
                                ceiling_height: float = 8.0, ach: float = 0.35,
                                housing_type: str = "Single-family") -> float:
-        """
-        Calculate cooling load using ASHRAE cooling load temperature difference method.
-        Sources: ASHRAE Standard 55 — Thermal Environmental Conditions for Human Occupancy.
-         Wu, W., Skye, H. M., & Domanski, P. A. (2018). Applied Energy, 212, 577-591.
-         ASHRAE Handbook of Fundamentals, Chapter 16 (Ventilation/Infiltration)
-         ACCA Manual J, Table 1 (Envelope Area Multipliers)
-
-        Args:
-            outdoor_temp: Outdoor temperature (°F)
-            indoor_temp: Indoor setpoint temperature (°F)
-            square_footage: Building floor area (sqft)
-            r_value: Envelope thermal resistance (°F·sqft·hr/BTU)
-            household_size: Number of occupants (default 3)
-            ceiling_height: Ceiling height in feet (default 8.0)
-            ach: Air changes per hour for infiltration (default 0.35 for modern construction)
-            housing_type: Type of housing (Single-family, Apartment, Townhouse) for envelope multiplier
-        """
+        """Calculate cooling load."""
         delta_t = outdoor_temp - indoor_temp
 
         # Parameterize by housing type. Typical multipliers from ACCA Manual J:
@@ -102,6 +55,7 @@ class HVACGroundTruthCalculator:
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
+            "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
             "Rowhouse": 1.5
         }
@@ -137,23 +91,7 @@ class HVACGroundTruthCalculator:
                                square_footage: int, r_value: int, household_size: int = 3,
                                ceiling_height: float = 8.0, ach: float = 0.35,
                                housing_type: str = "Single-family") -> float:
-        """
-        Calculate heating load using ASHRAE heat loss method.
-        Sources: ASHRAE Standard 55 — Thermal Environmental Conditions for Human Occupancy.
-         Wu, W., Skye, H. M., & Domanski, P. A. (2018). Applied Energy, 212, 577-591.
-         ASHRAE Handbook of Fundamentals, Chapter 16 (Ventilation/Infiltration)
-         ACCA Manual J, Table 1 (Envelope Area Multipliers)
-
-        Args:
-            outdoor_temp: Outdoor temperature (°F)
-            indoor_temp: Indoor setpoint temperature (°F)
-            square_footage: Building floor area (sqft)
-            r_value: Envelope thermal resistance (°F·sqft·hr/BTU)
-            household_size: Number of occupants (default 3)
-            ceiling_height: Ceiling height in feet (default 8.0)
-            ach: Air changes per hour for infiltration (default 0.35 for modern construction)
-            housing_type: Type of housing (Single-family, Apartment, Townhouse) for envelope multiplier
-        """
+        """Calculate heating load."""
         delta_t = indoor_temp - outdoor_temp
 
         # Parameterize by housing type. Typical multipliers from ACCA Manual J:
@@ -163,6 +101,7 @@ class HVACGroundTruthCalculator:
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
+            "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
             "Rowhouse": 1.5
         }
@@ -191,26 +130,7 @@ class HVACGroundTruthCalculator:
     def calculate_energy_consumption(self, load_btu_hr: float, seer: int,
                                      hvac_age: int, occupancy_context: str, hours: float = 8,
                                      maintenance_level: str = 'moderate') -> float:
-        """
-        Calculate energy consumption in kWh with age degradation.
-
-
-        Sources: Domanski, P. A., Henderson, H. I., & Payne, W. V. (2014). NIST TN 1848.
-         Fenaughty, K., & Parker, D. (2018). FSEC-PF-474-18, Florida Solar Energy Center.
-         Davis Energy Group, Inc. (2010). HVAC Energy Efficiency Maintenance Study (CALMAC).
-
-
-        Args:
-            load_btu_hr: Cooling/heating load (BTU/hr)
-            seer: Nameplate SEER rating
-            hvac_age: System age (years)
-            hours: Operating hours
-
-        Returns:
-            Energy consumption in kWh
-        """
-        # Base degradation rates by maintenance level
-        #Rates from Domanski et al. 2014 (NIST TN 1848) and Davis Energy Group 2010.
+        """Calculate energy consumption."""
         maintenance_rates = {
             'good': 0.005,  # 0.5%/year with annual/biannual maintenance
             'moderate': 0.010,  # 1.0%/year with occasional maintenance
@@ -265,18 +185,7 @@ class HVACGroundTruthCalculator:
 
     def calculate_comfort_score(self, indoor_temp: float, outdoor_temp: float,
                                 household_size: int) -> float:
-        """
-        Calculate comfort score using ASHRAE 55 with adaptive comfort considerations.
-
-        Citations:
-        - Sources:
-        ASHRAE Standard 55. Baseline comfort ranges: 73-79F cooling, 68-75F heating.
-        Wu, W., et al. (2018). Applied Energy, 212, 577-591. Optimal setpoints.
-         de Dear, R., & Brager, G. (2002). Energy and Buildings, 34, 549-561.
-        tolerance +/-2F when outdoor 60-85F.
-        Wang, Z., & Hong, T. (2020). RSER, 119, 109593.
-
-        """
+        """Calculate comfort score."""
         if outdoor_temp > 75:
             optimal = 76
             comfort_min, comfort_max = 73, 79
@@ -297,8 +206,10 @@ class HVACGroundTruthCalculator:
                 range_violation = comfort_min - indoor_temp
             else:
                 range_violation = indoor_temp - comfort_max
-            # Partial comfort score. Wang & Hong 2020, RSER, 119, 109593.
-            comfort_score = 6 - (range_violation)
+            # Out-of-range score starts at 7 at the boundary and drops to 5 at 1°F outside.
+            # Slope is -2 points per °F beyond the comfort boundary.
+            # Wang & Hong 2020, RSER, 119, 109593.
+            comfort_score = 7.0 - (2.0 * range_violation)
 
         if household_size > 3:
             size_penalty = (household_size - 3) * 0.3
@@ -307,21 +218,7 @@ class HVACGroundTruthCalculator:
         return max(0, min(10, comfort_score))
 
     def calculate_practicality_score(self, outdoor_temp: float, indoor_temp: float,) -> float:
-        """
-        Calculate practicality as likelihood of sustained behavioral adoption.
-        NOT about comfort (that's the comfort criterion), but about behavioral abandonment.
-
-        Citations:
-        - Xu et al. (2017). "Investigating willingness to save energy and communication about
-          energy use in the American workplace with the attitude-behavior-context model"
-          Energy Research & Social Science 32:13-22
-          Finding: Override behavior increases with extreme setpoints regardless of comfort
-
-        - Karjalainen (2007). "Gender differences in thermal comfort and use of thermostats"
-          Indoor Air 17(1):60-67
-          Finding: Habituation difficulty for non-standard temperatures drives abandonment
-        """
-
+        """Calculate practicality score."""
         if outdoor_temp > 75:  # Cooling mode
             if indoor_temp >= 82:
                 extremity_penalty = (indoor_temp - 82) * 1.5
@@ -358,47 +255,11 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(10.0, base_score))
 
     def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 90) -> float:
-        """
-        Convert per-8hr-period cost to estimated monthly cost.
-
-        Args:
-            per_period_cost: Cost per 8-hour period ($)
-            periods_per_month: How many 8-hour periods per month (default 30 days)
-
-        Returns:
-            Estimated monthly cost in dollars
-        """
+        """Calculate monthly cost."""
         return per_period_cost * periods_per_month
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
-        """
-        Calculate budget constraint penalty multiplier for energy cost score.
-
-        The following thresholds (80%, 100%, 150%) and functional forms are MODELING ASSUMPTIONS
-        INSPIRED BY the cited work, not explicitly derived from it. The cited papers support
-        the general behavioral mechanisms (mental budgeting, loss aversion, elimination of extreme
-        options) but do not specify these exact thresholds for household energy decisions.
-
-        Threshold Rationale (Modeling Assumptions):
-        - <80%  : Mental budget safety margin (inspired by Thaler, 1999)
-        - 80-100%: Linear decline as budget limit approached (inspired by Heath & Soll, 1996)
-        - 100-150%: Exponential decline under budget constraint (inspired by Prelec & Loewenstein, 1998)
-        - >150%  : Eliminated (infeasible; inspired by Gathergood, 2012)
-
-        References:
-        - Thaler, R. (1999). J. Behavioral Decision Making, 12, 183-206.
-        - Heath, C., & Soll, J. B. (1996). J. Consumer Research, 23(1), 40-52.
-        - Prelec, D., & Loewenstein, G. (1998). Marketing Science, 17(1), 4-28.
-        - Heutel, G. (2017). NBER WP 23692 (energy-specific loss aversion context).
-        - Gathergood, J. (2012). J. Economic Psychology, 33(3), 590-602.
-
-        Args:
-            monthly_cost: Estimated monthly energy cost for this alternative
-            monthly_budget: User's monthly utility budget
-
-        Returns:
-            Penalty multiplier (0.0 to 1.0) to apply to energy cost score
-        """
+        """Calculate budget penalty."""
         if monthly_budget <= 0:
             return 1.0  # No budget constraint
 
@@ -422,17 +283,7 @@ class HVACGroundTruthCalculator:
             return 0.0
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
-        """
-        Apply value function transformation to raw criterion values.
-
-        Reference ranges derived from:
-        - Huyen & Cetin (2019): Baseline consumption
-        - Kim et al. (2024): Setpoint sensitivity
-        - Cetin & Novoselac (2015): Runtime patterns
-        - Alves et al. (2016): Degradation multipliers
-        - Krarti & Howarth (2020): SEER-power relationships
-        - EPA eGRID (2025): Grid emissions factors
-        """
+        """Apply value function."""
         reference_ranges = {
                 'energy_cost': {
         # 5th-95th percentile from actual dataset distribution
@@ -527,12 +378,7 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
-        """
-        Calculate complete ground truth scores for a scenario with all alternatives.
-        Feeds raw criterion values directly to value functions per MAVT principles.
-        """
-
-
+        """Calculate scenario scores."""
         is_cooling = scenario['outdoor_temp'] > 75
 
         raw_results = {}
@@ -706,18 +552,7 @@ class HVACGroundTruthCalculator:
 def process_hvac_scenarios(
     csv_filename: str = str(SCENARIO_DIR / "HVACScenarios.csv"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_hvac.csv")):
-    """
-    Read HVAC scenarios from CSV and calculate ground truth scores for all alternatives.
-
-    Args:
-        csv_filename: Path to CSV file with scenarios
-        output_filename: Where to save ground truth results
-
-    Expected CSV columns:
-        Question, Location, Square Footage, Insulation, Household Size,
-        Utility Budget, Housing Type, Outdoor Temp, House Age, R-Value,
-        HVAC Age, SEER, Alternative 1, Alternative 2, Alternative 3
-    """
+    """Process hvac scenarios."""
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -805,15 +640,7 @@ def process_hvac_scenarios(
     return results_df
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """
-    Apply MAVT weighted sum to rank alternatives
-
-    Args:
-        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
-
-    Returns:
-        Dict with ranked_alternatives, ranks, weighted_scores
-    """
+    """Apply mavt ranking."""
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 

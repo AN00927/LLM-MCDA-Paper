@@ -19,39 +19,11 @@ class ShowerGroundTruthCalculator:
   Monitoring Building Water: A Vital Step for Control of Legionella.
 - Zhang, D., Mui, K.-W., & Wong, L.-T. (2023). Buildings, 13(5), 1300.
 """
-    # -------------------------------------------------------------------------
-    # Modeling choice: flat-rate pricing and average grid-mix emissions
-    #
-    # Shower duration decisions are NOT scheduling decisions. Users choose how
-    # long to shower, not what time of day — the time of day is not a variable
-    # in the decision alternatives being evaluated. TOU electricity pricing is
-    # therefore not a relevant differentiating variable for duration alternatives.
-    #
-    # Pricing: The EIA-reported PA residential average ($0.18/kWh) is used as
-    # the default because flat-rate tariffs are the dominant residential
-    # structure in Pennsylvania. TOU enrollment is opt-in and represented <3%
-    # of PA residential customers as of 2020.
-    # Source: U.S. Energy Information Administration. (2023). Residential Energy
-    #   Consumption Survey (RECS) 2020. U.S. Department of Energy.
-    #   https://www.eia.gov/consumption/residential/
-    #
-    # Emissions: Because shower hot-water demand is driven by duration (not
-    # scheduling), the average grid-mix emissions factor (EPA eGRID2024) is the
-    # appropriate choice. For non-schedulable loads, average emissions factors
-    # are the standard approach in residential energy modeling.
-    # Source: ASHRAE. (2021). ASHRAE Handbook — Fundamentals, Chapter 18.
-    #   ASHRAE. (Standard reference for residential energy estimation.)
-    #
-    # Contrast: The Appliance calculator uses time-varying marginal emissions
-    # (EPA AVERT / NREL Cambium framework) and per-scenario TOU rates (PECO,
-    # 2021) because scheduling IS the explicit decision variable there.
-    # -------------------------------------------------------------------------
-
-    # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
+# PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
     EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); average grid-mix
 
     # PA residential electricity price from EIA (2024)
-    ELECTRICITY_RATE_PA = 0.18  # $/kWh; flat-rate default (see modeling choice above)
+    ELECTRICITY_RATE_PA = 0.19  # $/kWh; flat-rate default (see modeling choice above)
 
     # PA seasonal mains water temperatures.
     # Sources: Hendron & Burch (2008), NREL/TP-550-40874; Maguire et al. (2013), NREL/TP-5500-58756.
@@ -112,12 +84,16 @@ class ShowerGroundTruthCalculator:
             'decreasing': True
         },
         'environmental': {
-            # Derived from energy bounds × emissions factor
-            # Min: 1.3 kWh × 0.85 = 1.11 lbs CO2 (round to 1.10)
-            # Max: 6.9 kWh × 0.85 = 5.87 lbs CO2 (round to 5.90)
-            # Citations: EPA eGRID2023
-            'min': 1.10,
-            'max': 5.90,
+            # Derived from energy cost bounds (0.20–1.40 at $0.19/kWh) → kWh bounds 1.05–7.37 kWh
+            # × current EMISSIONS_FACTOR_PA = 0.6458 lbs/kWh (EPA eGRID2024)
+            # Min: 1.05 kWh × 0.6458 ≈ 0.68 lbs CO2
+            # Max: 7.37 kWh × 0.6458 ≈ 4.76 lbs CO2
+            # NOTE: Prior comment (1.3×0.85=1.10, 6.9×0.85=5.90) used an old emissions factor
+            # of 0.85 lbs/kWh. Values below are updated to match EMISSIONS_FACTOR_PA = 0.6458.
+            # Scores near the lower bound will saturate at 10.0 for low-flow/short scenarios —
+            # this is expected and correctly reflects that such showers have minimal environmental impact.
+            'min': 0.68,
+            'max': 4.76,
             'decreasing': True
         },
         'comfort': {
@@ -134,19 +110,7 @@ class ShowerGroundTruthCalculator:
 
     @staticmethod
     def determine_inlet_temp(outdoor_temp: float) -> float:
-        """
-        Determine inlet (cold) water temperature based on outdoor temperature.
-
-        Model basis: Hendron, R., & Burch, J. (2008). NREL/TP-550-40874.
-             Maguire, J., et al. (2013). NREL/TP-5500-58756.
-
-
-        Args:
-            outdoor_temp: Outdoor temperature in  degrees F
-
-        Returns:
-            Inlet water temperature in  degrees F
-        """
+        """Determine inlet temp."""
         if outdoor_temp <= 32:
             return 45.0  # Winter minimum
         elif outdoor_temp >= 75:
@@ -158,21 +122,7 @@ class ShowerGroundTruthCalculator:
     @staticmethod
     def calculate_shower_energy(duration_min: float, gpm: float,
                                 water_heater_temp: float, outdoor_temp: float) -> float:
-        """
-        Calculate energy consumption for shower in kWh.
-
-        Physics-based formula:
-        Energy (kWh) = (GPM × 8.33 lbs/gal × change in T degrees F × duration_min) / (3412 BTU/kWh × efficiency)
-
-        Args:
-            duration_min: Shower duration in minutes
-            gpm: Flow rate in gallons per minute
-            water_heater_temp: Water heater setpoint temperature in  degrees F
-            outdoor_temp: Outdoor temperature (for inlet temp determination)
-
-        Returns:
-            Energy consumption in kWh
-        """
+        """Calculate shower energy."""
         inlet_temp = ShowerGroundTruthCalculator.determine_inlet_temp(outdoor_temp)
         delta_t = water_heater_temp - inlet_temp
 
@@ -188,65 +138,25 @@ class ShowerGroundTruthCalculator:
 
     @staticmethod
     def calculate_energy_cost(kwh: float, electricity_rate: float = None) -> float:
-        """
-        Calculate energy cost in dollars.
-
-        Args:
-            kwh: Energy consumption in kWh
-            electricity_rate: Custom rate in $/kWh (optional, defaults to PA rate)
-
-        Returns:
-            Energy cost in dollars
-        """
+        """Calculate energy cost."""
         rate =ShowerGroundTruthCalculator.ELECTRICITY_RATE_PA
         return kwh * rate
 
     @staticmethod
     def calculate_environmental_impact(kwh: float) -> float:
-        """
-        Calculate CO2 emissions in pounds.
-
-        Args:
-            kwh: Energy consumption in kWh
-
-        Returns:
-            CO2 emissions in pounds
-        """
+        """Calculate environmental impact."""
         return kwh * ShowerGroundTruthCalculator.EMISSIONS_FACTOR_PA
 
     @staticmethod
     def calculate_comfort_score(duration: float, water_heater_temp: float,
                                 occupants: int) -> float:
-        """
-        Calculate comfort score (0-10) based on shower duration, temperature adequacy,
-        and household contention.
-
-        Components:
-        1. Duration comfort (REU2016 average 7.8 min) — LINEAR INTERPOLATION
-        2. Temperature adequacy (CDC/OSHA standards)
-        3. Household contention for hot water
-
-        Args:
-            duration: Shower duration in minutes
-            water_heater_temp: Water heater setpoint in  degrees F
-            occupants: Number of household occupants
-
-        Returns:
-            Comfort score (0-10)
-        """
-        # Component 1: Duration comfort with linear interpolation
-        # REU2016: Average 7.8 min; Harris Poll (2024): 33% report >15 min (but likely overestimation)
-        # Dermatologist minimum: ~5 min for adequate cleansing
-        # Piecewise linear ranges:
-        #   - 0-3 min: 1.0 to 4.0 (too short, rushed)
-        #   - 3-7.8 min: 4.0 to 10.0 (optimal range, linear increase)
-        #   - 7.8-15 min: 10.0 to 8.0 (diminishing returns after optimal)
-        #   - >15 min: continues declining from 8.0 (lightheadedness, waste concerns)
-        
+        """Calculate comfort score."""
         if duration <= 3.0:
-            # Below dermatologist minimum - rushed
-            # Linear ramp: 1.0 at 0 min → 4.0 at 3 min
-            base_comfort = 1.0 + (duration / 3.0) * 3.0
+            # Below dermatologist minimum — severely rushed.
+            # Cubic ramp: 0.0 at 0 min → 4.0 at 3 min, with exponential penalization for
+            # very short durations. At 2min: ~1.2 (vs ~3.0 with prior linear ramp).
+            # Boundary at 3min = 4.0 is unchanged — no discontinuity with next segment.
+            base_comfort = 4.0 * (duration / 3.0) ** 3
         elif duration <= 7.8:
             # Optimal range - REU2016 average at 7.8 min
             # Linear interpolation: 4.0 at 3 min → 10.0 at 7.8 min
@@ -273,7 +183,6 @@ class ShowerGroundTruthCalculator:
         # Larger households experience pressure to keep showers short
         contention_penalty = 0.0
         if occupants >= 4:
-            # Penalty increases with duration above optimal
             excess_duration = max(0, duration - ShowerGroundTruthCalculator.COMFORT_DURATION_OPTIMAL)
             contention_penalty = excess_duration * 0.5
 
@@ -283,27 +192,7 @@ class ShowerGroundTruthCalculator:
     @staticmethod
     def calculate_practicality_score(duration: float, occupants: int,
                                      tank_size: float, gpm: float) -> float:
-        """
-        Calculate practicality score (0-10) based on behavioral adoption likelihood
-        and hot water capacity constraints.
-
-        Components:
-        1. Behavioral adoption (likelihood of maintaining duration)
-        2. Hot water capacity (can tank support multiple showers?)
-
-        Args:
-            duration: Shower duration in minutes
-            occupants: Number of household occupants
-            tank_size: Water heater tank size in gallons
-            gpm: Flow rate in gallons per minute
-
-        Returns:
-            Practicality score (0-10)
-        """
-        # Behavioral adoption likelihood by duration
-        # The Harris Poll (2024, n=2000): 33% of US adults shower >15 min; REUS 2016: metered
-        # average 7.8 min suggesting <15 min is normative behavior
-        # Gen Z skews higher (54% >15 min) but metered data suggests self-report overestimation
+        """Calculate practicality score."""
         if duration <= 5:
             # Below dermatologist minimum - very low adoption
             # REUS 2016: well below average, requires significant behavior change
@@ -338,43 +227,13 @@ class ShowerGroundTruthCalculator:
     @staticmethod
     def calculate_monthly_cost(per_shower_cost: float, occupants: int,
                                showers_per_person_per_day: float = 0.9) -> float:
-        """
-        Convert per-shower cost to estimated monthly cost.
-
-        showers_per_person_per_day=0.9  # REU2016 average [Water Research Foundation]
-
-        Args:
-            per_shower_cost: Cost per shower ($)
-            occupants: Number of household occupants
-            showers_per_person_per_day: Frequency (default 0.9 from REU2016)
-
-        Returns:
-            Estimated monthly cost in dollars
-        """
+        """Calculate monthly cost."""
         showers_per_month = occupants * showers_per_person_per_day * 30
         return per_shower_cost * showers_per_month
 
     @staticmethod
     def calculate_budget_penalty(monthly_cost: float, monthly_budget: float) -> float:
-        """
-        Calculate budget constraint penalty multiplier.
-        
-        The following thresholds (80%, 100%, 150%) and functional forms are MODELING ASSUMPTIONS
-        INSPIRED BY the cited work, not explicitly derived from it.
-
-        Threshold Rationale (Modeling Assumptions):
-        - <80%  : Mental budget safety margin (inspired by Thaler, 1999)
-        - 80-100%: Linear decline as budget limit approached (inspired by Heath & Soll, 1996)
-        - 100-150%: Exponential decline under budget constraint (inspired by Prelec & Loewenstein, 1998)
-        - >150%  : Eliminated (infeasible; inspired by Gathergood, 2012)
-
-        References:
-        - Thaler, R. (1999). J. Behavioral Decision Making, 12, 183-206.
-        - Heath, C., & Soll, J. B. (1996). J. Consumer Research, 23(1), 40-52.
-        - Prelec, D., & Loewenstein, G. (1998). Marketing Science, 17(1), 4-28.
-        - Heutel, G. (2017). NBER WP 23692 (energy-specific loss aversion context).
-        - Gathergood, J. (2012). J. Economic Psychology, 33(3), 590-602.
-        """
+        """Calculate budget penalty."""
         if monthly_budget <= 0:
             return 1.0
 
@@ -392,21 +251,7 @@ class ShowerGroundTruthCalculator:
 
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
-        """
-        Apply Multi-Attribute Value Theory (MAVT) value function transformation.
-        MAVT Framework:
-        1. Normalize raw value using reference range [min, max]
-        2. Apply transformation per value function spec
-        3. Scale to [0, 10] and clamp final result
-
-        Args:
-            raw_value: Raw criterion value (e.g., dollars, lbs CO2, 0-10 score)
-            vf_spec: Value function specification (e.g., "linear", "logarithmic, a=1.5")
-            value_type: Criterion name for reference range lookup
-
-        Returns:
-            Transformed score on 0-10 scale
-        """
+        """Apply value function."""
         reference_ranges = self.REFERENCE_RANGES
 
         ref = reference_ranges[value_type]
@@ -471,16 +316,7 @@ class ShowerGroundTruthCalculator:
         # This is the only point where we prevent extrapolation
         return max(0.0, min(10.0, u_x * 10.0))
     def calculate_scenario_scores(self, scenario: dict) -> dict:
-        """
-        Calculate ground truth scores for all alternatives in a shower scenario.
-
-        Args:
-            scenario: Dictionary containing scenario parameters and alternatives
-
-        Returns:
-            Dictionary with calculated scores for each criterion and alternative
-        """
-        # Extract scenario parameters
+        """Calculate scenario scores."""
         location = scenario.get('Location', 'Unknown')
         occupants = int(scenario.get('Occupants', 2))
         tank_size = float(scenario.get('Tank Size', 40))
@@ -633,18 +469,7 @@ class ShowerGroundTruthCalculator:
 def process_shower_scenarios(
     csv_filename: str = str(SCENARIO_DIR / "ShowerScenarios.csv"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.csv")):
-    """
-    Read Shower scenarios from CSV and calculate ground truth scores for all alternatives.
-
-    Args:
-        csv_filename: Path to CSV file with scenarios
-        output_filename: Where to save ground truth results
-
-    Expected CSV columns:
-        Description, Location, Occupants, Water Heater, Tank Size, GPM,
-        Utility Budget, Housing Type, Outdoor Temp, Water Heater Temp,
-        Alternative 1, Alternative 2, Alternative 3
-    """
+    """Process shower scenarios."""
     import pandas as pd
 
     csv_path = Path(csv_filename)
@@ -730,15 +555,7 @@ def process_shower_scenarios(
     return results_df
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """
-    Apply MAVT weighted sum to rank alternatives
-
-    Args:
-        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
-
-    Returns:
-        Dict with ranked_alternatives, ranks, weighted_scores
-    """
+    """Apply mavt ranking."""
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 

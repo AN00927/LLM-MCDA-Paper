@@ -10,42 +10,7 @@ SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 class ApplianceGroundTruthCalculator:
-    # -------------------------------------------------------------------------
-    # Modeling choice: time-varying (TOU) pricing and marginal emissions
-    #
-    # Appliance scheduling decisions are explicitly WHEN to run — the time of
-    # day is the decision variable. Alternatives differ only by run time, so
-    # TOU electricity pricing and time-varying marginal emissions are central to
-    # differentiating cost and environmental impact between alternatives.
-    # Using a flat-rate average (as in HVAC and Shower calculators) would
-    # collapse all alternatives to the same energy cost and undermine the
-    # purpose of the scheduling decision.
-    #
-    # Peak window: 2 PM–6 PM from PECO Energy residential TOU tariff.
-    # Source: PECO Energy Company. (2021). Residential Time-of-Use Rate
-    #   Schedule (RT). Philadelphia: PECO.
-    #
-    # Emissions: Peak-period generation relies on higher-emitting peaker plants,
-    # so marginal emissions vary by time. The PJM-region factors below are
-    # practical defaults consistent with the EPA AVERT and NREL Cambium
-    # time-varying emissions frameworks. Replace with hourly PJM marginal
-    # factors when available for higher precision.
-    # Sources: U.S. Environmental Protection Agency. (2023). Avoided Emissions
-    #   and Generation Tool (AVERT), Version 4.1. EPA.
-    #   Gagnon, P., et al. (2022). Cambium 2022 Scenario Descriptions and
-    #   Downloads. NREL/TP-6A40-84916. National Renewable Energy Laboratory.
-    #
-    # Contrast: HVAC and Shower calculators use flat-rate pricing and average
-    # grid-mix emissions (EPA eGRID2024, 0.6458 lbs CO₂/kWh; EIA 2024,
-    # $0.18/kWh) because those decisions are about setpoint/duration, not
-    # scheduling. TOU is irrelevant when the time of operation is not a
-    # decision variable.
-    # Source (flat-rate prevalence): U.S. Energy Information Administration.
-    #   (2023). Residential Energy Consumption Survey (RECS) 2020. DOE.
-    # -------------------------------------------------------------------------
-
-    # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
-    # NOTE: This average factor is defined for reference only. Actual emissions
+    # his average factor is defined for reference only. Actual emissions
     # calculations use EMISSIONS_FACTOR_PEAK / EMISSIONS_FACTOR_OFFPEAK below
     # because time-of-use differentiation is integral to appliance scheduling.
     EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); NOT used in calculations
@@ -57,7 +22,9 @@ class ApplianceGroundTruthCalculator:
     # Replace with hourly PJM marginal factors when available.
     EMISSIONS_FACTOR_PEAK = 0.7427      # lbs CO2/kWh (approx. marginal peak-period)
     EMISSIONS_FACTOR_OFFPEAK = 0.5489   # lbs CO2/kWh (approx. marginal off-peak period)
-    NOISE_LIMIT_EVENING = 35     # dBA acceptable after 10pm
+    NOISE_LIMIT_EVENING = 45     # dBA threshold after 10pm (EPA/WHO indoor night limit is 35 dBA;
+                                  # 45 dBA chosen so dishwashers (~45 dBA) are at-threshold and
+                                  # washers/dryers (50-55 dBA) exceed it and receive the noise penalty)
     # Linear VF for energy cost - equal marginal utility across range
     # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
     # linear utility is appropriate" (Management Science 26(8):810-822)
@@ -74,17 +41,18 @@ class ApplianceGroundTruthCalculator:
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
+    def _max_acceptable_delay(self, appliance_type: str) -> float:
+        """ max acceptable delay."""
+        delays = {
+            'dishwasher': 12.0,
+            'washer': 8.0,
+            'washing_machine': 8.0,
+            'dryer': 6.0,
+        }
+        return delays.get(appliance_type.lower().strip(), 12.0)
+
     def determine_rate_period(self, run_time_hour: int) -> str:
-        """
-        Determine if run time falls in peak or off-peak period.
-
-        Args:
-            run_time_hour: Hour of day (0-23, e.g., 19 for 7pm)
-
-        Returns:
-            "peak" or "offpeak"
-
-        """
+        """Determine rate period."""
         peak_start, peak_end = self.PEAK_HOURS
 
         if peak_start <= run_time_hour < peak_end:
@@ -94,27 +62,7 @@ class ApplianceGroundTruthCalculator:
 
     def calculate_energy_cost(self, kwh_cycle: float, run_time_hour: int,
                              peak_rate: float, offpeak_rate: float) -> float:
-        """
-        Calculate energy cost based on TOU rate structure.
-
-        args:
-            kwh_cycle: Fixed energy per cycle
-            run_time_hour: When appliance runs (0-23)
-            peak_rate: Peak period $/kWh
-            offpeak_rate: Off-peak period $/kWh
-
-        Returns:
-            Energy cost in dollars
-       Dryer (heat pump 0.8-1.5 kWh; standard electric 2.5-4.0 kWh):
-       Winfield, D., et al. (2016). Measured Performance of Heat Pump Clothes Dryers.
-        ACEEE Summer Study on Energy Efficiency in Buildings.
-        Northeast Energy Efficiency Partnerships (NEEP). (2015).
-        New Study Unearths Energy Baseline for Clothes Dryers in the Northeast.
-        Dishwasher (0.9-1.1 kWh Energy Star): Porras, G., et al. (2020). ERC, 2.
-        Washer (0.15-0.25 kWh HE): Chen-Yu, J., & Emmel, J. (2018). Fashion & Textiles, 5.
-        Hustvedt, G., Ahn, M., & Emmel, J. (2013). Int. J. Consumer Studies, 37.
-
-        """
+        """Calculate energy cost."""
         period = self.determine_rate_period(run_time_hour)
 
         if period == "peak":
@@ -127,23 +75,7 @@ class ApplianceGroundTruthCalculator:
         return cost
 
     def calculate_environmental_impact(self, kwh_cycle: float, run_time_hour: int) -> float:
-        """
-        Calculate CO2 emissions from electricity consumption using
-        time-varying marginal emissions rates by TOU period.
-
-       
-        Args:
-            kwh_cycle: Energy consumption per cycle
-            run_time_hour: Appliance run hour (0-23)
-
-        Returns:
-            CO2 emissions in pounds
-
-        References:
-        - EPA AVERT (marginal emissions framework)
-        - NREL Cambium (hourly marginal emissions framework)
-        - PJM regional context (time-varying generation mix)
-        """
+        """Calculate environmental impact."""
         period = self.determine_rate_period(run_time_hour)
         if period == "peak":
             emissions_factor = self.EMISSIONS_FACTOR_PEAK
@@ -158,37 +90,22 @@ class ApplianceGroundTruthCalculator:
     def calculate_comfort_score(self, delay_hours: float, run_time_hour: int,
                                housing_type: str, occupants: int,
                                appliance_type: str) -> float:
-        """
-        Calculate comfort score based on delay inconvenience and noise disruption.
-
-        Components:
-        1. Delay penalty (longer delay = more inconvenience)
-        2. Noise disruption (late night in apartment = worse)
-        3. Household size multiplier (more people = dishes/laundry pile up faster)
-
-        Source: Paetz, A., Dutschke, E., & Fichtner, W. (2012). Shifting dish-washer use.
-        ACEEE Summer Study on Energy Efficiency in Buildings, Paper 0193-000232.
-        12-hour delay is the max acceptable without lifestyle disruption.
- """
-
-        # Component 1: Base delay penalty
-        # Paetz et al.: 12hr delay is maximum acceptable for dishwasher
+        """Calculate comfort score."""
         if delay_hours == 0:
             base_comfort = 10.0
         elif delay_hours <= 3:
-            base_comfort = 8.0   # Short delay, minor inconvenience
+            base_comfort = 10.0 - (delay_hours / 3.0) * 2.0         # 10→8 over 3hr
         elif delay_hours <= 7:
-            base_comfort = 6.0   # Medium delay, moderate inconvenience
+            base_comfort = 8.0 - ((delay_hours - 3.0) / 4.0) * 2.0  # 8→6 over 4hr
         elif delay_hours <= 12:
-            base_comfort = 4.0   # Long delay but still within "acceptable" range
+            base_comfort = 6.0 - ((delay_hours - 7.0) / 5.0) * 2.0  # 6→4 over 5hr
         else:
             base_comfort = 2.0   # Beyond acceptable (>12hr)
 
-        print(f"  : Base comfort (delay={delay_hours}hr): {base_comfort}/10")
+        print(f"  : Base comfort (delay={delay_hours:.1f}hr): {base_comfort:.2f}/10")
 
         # Component 2: Noise disruption penalty
-        # Depends on: time of day + housing type + appliance noise
-
+        # Depends on: time of day + housing type + appliance noise level
         if appliance_type.lower() == "dishwasher":
             appliance_noise = 45
         elif appliance_type.lower() == "washer" or "washing" in appliance_type.lower():
@@ -197,25 +114,26 @@ class ApplianceGroundTruthCalculator:
             appliance_noise = 55
         else:
             appliance_noise = 50
-        noise_penalty = 0.0
-            # Late night running (10pm-7am)
-        if 22 <= run_time_hour or run_time_hour < 7:
-           if appliance_noise > self.NOISE_LIMIT_EVENING:
-                noise_penalty = 2.0  # Base penalty for late night
 
-                # Housing type multiplier
-                # Apartment noise complaints from shared walls
-                if housing_type == "Apartment":
-                    noise_penalty *= 1.5   # Neighbors very close
-                elif housing_type == "Townhouse" or housing_type == "Rowhouse":
-                    noise_penalty *= 1.2   # Shared walls
+        noise_penalty = 0.0
+        # Late night running (10pm–7am)
+        if 22 <= run_time_hour or run_time_hour < 7:
+            if appliance_noise > self.NOISE_LIMIT_EVENING:
+                noise_penalty = 2.0  # Base penalty for late-night noise above threshold
+
+                # Housing type multiplier — shared walls increase noise impact
+                if housing_type in ("Apartment", "Condo"):
+                    noise_penalty *= 1.5   # Neighbors immediately adjacent
+                elif housing_type in ("Townhouse", "Rowhouse"):
+                    noise_penalty *= 1.2   # Shared walls, some buffering
                 else:  # Single-family
-                    noise_penalty *= 0.8   # Isolated, lower concern
+                    noise_penalty *= 0.8   # Isolated structure, lower concern
 
                 print(f"  : Noise penalty (late night, {housing_type}): -{noise_penalty:.1f}")
 
-        # Component 3: Household size impact
-        # Larger households : dishes pile up faster : delay worse
+        # Component 3: Household size impact — larger households feel delay more acutely
+        # (dishes/laundry pile up faster; scale penalty by appliance-specific max delay)
+        max_delay = self._max_acceptable_delay(appliance_type)
         if occupants >= 5:
             size_penalty = 1.5
         elif occupants >= 3:
@@ -223,10 +141,8 @@ class ApplianceGroundTruthCalculator:
         else:
             size_penalty = 0.0
 
-        # Apply size penalty proportional to delay
-        # (No delay = no penalty, long delay = full penalty)
-        size_penalty *= (delay_hours / 12.0)  # Scale by delay fraction
-        print(f"  : Household size penalty ({occupants} occupants): -{size_penalty:.1f}")
+        size_penalty *= min(delay_hours / max_delay, 1.0)  # Cap scaling at 1.0
+        print(f"  : Household size penalty ({occupants} occupants, max_delay={max_delay:.0f}hr): -{size_penalty:.2f}")
 
         final_comfort = base_comfort - noise_penalty - size_penalty
         return max(0.0, min(10.0, final_comfort))
@@ -234,61 +150,35 @@ class ApplianceGroundTruthCalculator:
     def calculate_practicality_score(self, delay_hours: float, run_time_hour: int,
                                     housing_type: str, occupants: int,
                                     appliance_type: str) -> float:
-        """
-        Calculate practicality as behavioral adoption likelihood.
-
-        NOT about comfort (that's comfort criterion), but about:
-        - Willingness to adopt TOU scheduling behavior
-        - Complexity of remembering to delay
-        - Household coordination difficulty
-
-        Citations:
-        - Paetz, A., Dutschke, E., & Fichtner, W. (2012). ACEEE, Paper 0193-000232.
-- Indonesia TOU Adoption Study. (2024). PMC11190461.
-- Shewale, A., et al. (2023). Arabian Journal for Science and Engineering.
-- Newsham, G. R., & Bowker, B. G. (2010). Energy Policy, 38(7), 3289-3296.
-  General TOU/CPP load-shifting context.
-- Waseem, M., et al. (2020). Electric Power Systems Research, 187, 106477.
-  Optimization-based appliance scheduling context.
-
-  """
-
-        # Component 1: Base adoption likelihood by delay duration
-        # Paetz: 12hr delay acceptable, but adoption varies
-        # Shewale: <20% adoption for manual TOU scheduling
-
+        """Calculate practicality score."""
         if delay_hours == 0:
-            base_practicality = 10.0  # No behavior change required
+            base_practicality = 10.0
         elif delay_hours <= 2:
-            base_practicality = 8.0   # Minor behavior change, high adoption
+            base_practicality = 10.0 - (delay_hours / 2.0) * 2.0          # 10→8 over 2hr
         elif delay_hours <= 4:
-            base_practicality = 6.5   # Moderate change, medium adoption
+            base_practicality = 8.0 - ((delay_hours - 2.0) / 2.0) * 1.5   # 8→6.5 over 2hr
         elif delay_hours <= 8:
-            base_practicality = 4.5   # Significant delay, lower adoption
+            base_practicality = 6.5 - ((delay_hours - 4.0) / 4.0) * 2.0   # 6.5→4.5 over 4hr
         elif delay_hours <= 12:
-            base_practicality = 3.0   # Maximum acceptable (Paetz), but low adoption
+            base_practicality = 4.5 - ((delay_hours - 8.0) / 4.0) * 1.5   # 4.5→3.0 over 4hr
         else:
             base_practicality = 1.5   # Beyond typical adoption range
 
-        print(f"  : Base practicality (delay={delay_hours}hr): {base_practicality}/10")
+        print(f"  : Base practicality (delay={delay_hours:.1f}hr): {base_practicality:.2f}/10")
 
-        # Component 2: Timing complexity (remembering to run at specific time)
-        # Late night/early morning = harder to remember/coordinate
+        # Component 2: Timing complexity (remembering to run at specific hour)
+        # Paetz et al.: "If low-price zones applied on brink of day, perceived as too early or too late"
         timing_penalty = 0.0
-
-        # Paetz et al.: "If low-price zones applied on brink of day, it was
-        # perceived as too early or too late"
-        if 0 <= run_time_hour < 6:  # Middle of night (midnight-6am)
-            timing_penalty = 2.0   # Very inconvenient timing
-        elif 22 <= run_time_hour < 24:  # Late night (10pm-midnight)
-            timing_penalty = 1.0   # Somewhat inconvenient
+        if 0 <= run_time_hour < 6:    # Middle of night (midnight–6am)
+            timing_penalty = 2.0
+        elif 22 <= run_time_hour < 24: # Late night (10pm–midnight)
+            timing_penalty = 1.0
 
         print(f"  : Timing complexity penalty: -{timing_penalty:.1f}")
 
         # Component 3: Household coordination difficulty
-        # More occupants = harder to coordinate "don't run dishes yet"
-        # Ground Truth Data Section 9: Behavioral barriers increase with complexity
-
+        # Appliance-specific max delay used for proportional scaling
+        max_delay = self._max_acceptable_delay(appliance_type)
         if occupants >= 5:
             coordination_penalty = 1.5
         elif occupants >= 3:
@@ -296,34 +186,24 @@ class ApplianceGroundTruthCalculator:
         else:
             coordination_penalty = 0.0
 
-        # Scale penalty by delay (longer delay = more coordination needed)
-        coordination_penalty *= (delay_hours / 12.0)
-        print(f"  : Coordination penalty ({occupants} occupants): -{coordination_penalty:.1f}")
+        coordination_penalty *= min(delay_hours / max_delay, 1.0)
+        print(f"  : Coordination penalty ({occupants} occupants, max_delay={max_delay:.0f}hr): -{coordination_penalty:.2f}")
 
         final_practicality = base_practicality - timing_penalty - coordination_penalty
-        DAYTIME_START = 7  # 7am
-        DAYTIME_END = 22  # 10pm
 
-        if DAYTIME_START <= run_time_hour < DAYTIME_END:
+        # Daytime floor: running appliances during business hours carries a minimum practicality
+        # of 4 (always a socially acceptable option). Only applies when delay is within the
+        # appliance-specific acceptable window — prevents large-delay wrap-bug rescues.
+        DAYTIME_START = 7
+        DAYTIME_END = 22
+        if DAYTIME_START <= run_time_hour < DAYTIME_END and delay_hours <= max_delay:
             final_practicality = max(final_practicality, 4)
 
         return max(1.5, min(10.0, final_practicality))
 
 
     def parse_alternative(self, alt: str, scenario: Dict) -> Tuple[int, float]:
-        """
-        Parse alternative text to extract run time and delay.
-
-        Now uses scenario-provided baseline time instead of hardcoded defaults.
-        This allows user flexibility and makes the baseline explicit.
-
-        Args:
-            alt: Alternative text string (e.g., "Run at 7pm")
-            scenario: Full scenario dict (must contain 'Baseline Time' key)
-
-        Returns:
-            (run_time_hour, delay_hours)
-        """
+        """Parse alternative."""
         import re
 
         # Extract run time from alternative (e.g., "7pm", "10pm", "2am")
@@ -349,33 +229,20 @@ class ApplianceGroundTruthCalculator:
         baseline_str = scenario.get('Baseline Time', '7pm')
         baseline_hour = self._parse_time_to_hour(baseline_str)
 
-        # Calculate delay from baseline
-        if run_time_hour >= baseline_hour:
-            delay_hours = float(run_time_hour - baseline_hour)
-        else:
-            # Crossed midnight
-            delay_hours = float(24 - baseline_hour + run_time_hour)
+        # Calculate delay from baseline as circular clock distance.
+        # This treats near wrap-around differences as short delays (e.g., 2 hours),
+        # rather than inflated 22-23 hour delays.
+        delay_forward = float((run_time_hour - baseline_hour) % 24)
+        delay_backward = float((baseline_hour - run_time_hour) % 24)
+        delay_hours = min(delay_forward, delay_backward)
 
-        print(f"  Parsed: '{alt}' : run at {run_time_hour:02d}:00, "
-              f"delay={delay_hours}hr from baseline {baseline_str}")
+        print(f"  Parsed: '{alt}' -> run at {run_time_hour:02d}:00, "
+              f"delay={delay_hours:.1f}hr from baseline {baseline_str} "
+              f"(fwd={delay_forward:.0f}hr, bwd={delay_backward:.0f}hr)")
 
         return run_time_hour, delay_hours
     def _parse_time_to_hour(self, time_str: str) -> int:
-        """
-        Helper function to convert time string to 24-hour format.
-
-        Examples:
-        - "7pm" : 19
-        - "8am" : 8
-        - "12pm" : 12
-        - "12am" : 0
-
-        Args:
-            time_str: Time string (e.g., "7pm", "8am")
-
-        Returns:
-            Hour in 24-hour format (0-23)
-        """
+        """ parse time to hour."""
         import re
 
         match =re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', time_str, re.IGNORECASE)
@@ -395,21 +262,7 @@ class ApplianceGroundTruthCalculator:
             return hour
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
-        """
-        Apply value function transformation to raw criterion values.
-
-        EXACT SAME METHOD AS HVAC - maintains consistency across calculators.
-
-        Reference ranges derived from actual scenario distribution (5th-95th percentile).
-
-        Args:
-            raw_value: Raw criterion value (e.g., dollars, lbs CO2)
-            vf_spec: Value function specification (e.g., "linear", "logarithmic, a=1.5")
-            value_type: Criterion name for reference range lookup
-
-        Returns:
-            Transformed score on 0-10 scale
-        """
+        """Apply value function."""
         reference_ranges = {
             'energy_cost': {
                 # Reference range derived from representative appliance usage:
@@ -422,13 +275,15 @@ class ApplianceGroundTruthCalculator:
                 'decreasing': True
             },
             'environmental': {
-                # Derived from energy bounds × PA emissions factor:
-                # Min: 0.1 kWh × 0.6458 lbs/kWh ≈ 0.065 lbs CO2
-                # Max: 4.5 kWh × 0.6458 lbs/kWh ≈ 2.9 lbs CO2
-                # Source: EPA eGRID2023 Detailed Data (Version 2).
+                # Derived from energy bounds × peak marginal emissions factor.
+                # Min: 0.1 kWh (HE washer off-peak) × 0.5489 lbs/kWh ≈ 0.055 → 0.09 (5th pctile)
+                # Max: 4.5 kWh (resistance dryer at peak) × 0.7427 lbs/kWh ≈ 3.34 lbs CO2
+                # Previous value of 3.83 was computed with an older emissions factor (~0.85 lbs/kWh);
+                # updated to reflect current EMISSIONS_FACTOR_PEAK = 0.7427 (EPA eGRID2024).
+                # Source: EPA eGRID2024 Detailed Data.
 
                 'min': 0.09,
-                'max': 3.83,
+                'max': 3.34,
                 'decreasing': True
             },
             'comfort': {
@@ -500,44 +355,7 @@ class ApplianceGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
-        """
-        Calculate budget constraint penalty multiplier for energy cost score.
-
-        The following thresholds (80%, 100%, 150%) and functional forms are MODELING ASSUMPTIONS
-        INSPIRED BY the cited work, not explicitly derived from it. The cited papers support
-        the general behavioral mechanisms but do not specify these exact thresholds for appliance scheduling.
-
-        Threshold Rationale (Modeling Assumptions):
-        - <80%  : Mental budget safety margin (inspired by Thaler, 1999)
-        - 80-100%: Linear decline as budget limit approached (inspired by Heath & Soll, 1996)
-        - 100-150%: Exponential decline under budget constraint (inspired by Prelec & Loewenstein, 1998)
-        - >150%  : Eliminated (infeasible; inspired by Gathergood, 2012)
-
-        References:
-        - Thaler, R. (1999). J. Behavioral Decision Making, 12, 183-206.
-        - Heath, C., & Soll, J. B. (1996). J. Consumer Research, 23(1), 40-52.
-        - Prelec, D., & Loewenstein, G. (1998). Marketing Science, 17(1), 4-28.
-        - Heutel, G. (2017). NBER WP 23692 (energy-specific loss aversion context).
-        - Gathergood, J. (2012). J. Economic Psychology, 33(3), 590-602.
-
-        Args:
-            monthly_cost: Estimated monthly energy cost for this alternative ($)
-            monthly_budget: User's stated monthly utility budget ($)
-
-        Returns:
-            Penalty multiplier ∈ [0.0, 1.0] to apply to energy cost score
-
-        Examples:
-            Budget = $175/month
-            - $140 cost (80%):  penalty = 1.0   (no reduction)
-            - $158 cost (90%):  penalty = 0.75  (mild reduction)
-            - $175 cost (100%): penalty = 0.5   (moderate reduction)
-            - $193 cost (110%): penalty = 0.37  (significant reduction)
-            - $219 cost (125%): penalty = 0.14  (severe reduction)
-            - $263 cost (150%): penalty = 0.01  (near elimination)
-            - $267 cost (153%): penalty = 0.0   (complete elimination)
-        """
-
+        """Calculate budget penalty."""
         utilization = monthly_cost / monthly_budget
 
         if utilization < 0.80:
@@ -558,39 +376,11 @@ class ApplianceGroundTruthCalculator:
             return 0.0
 
     def calculate_monthly_cost(self, per_cycle_cost: float, cycles_per_month: int = 30) -> float:
-        """
-        Convert per-cycle cost to monthly cost.
-        Standard: 30 cycles/month for dishwasher/washer/dryer.
-        Citations: Porras et al. (2020), Chen-Yu & Emmel (2018)
-        """
+        """Calculate monthly cost."""
         return per_cycle_cost * cycles_per_month
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
-        """
-        Calculate complete ground truth scores for appliance scenario with all alternatives.
-
-        Expected scenario structure:
-        {
-            'Description': "When should I run my dishwasher after dinner tonight?",
-            'Location': "Philadelphia, PA",
-            'Utility Budget': 150,
-            'Appliance': "dishwasher",
-            'Housing Type': "Apartment",
-            'Occupants': 2,
-            'Peak Rate': 0.18,      # Dollar amount, not string
-            'Off-Peak Rate': 0.09,  # Dollar amount, not string
-            'kwh/cycle': 1.25,
-            'Appliance Age/Type': "7 years",
-            'Alternative 1': "Run at 7pm",
-            'Alternative 2': "Run at 10pm",
-            'Alternative 3': "Run at 2am",
-        }
-
-        Returns:
-            Dict mapping alternatives to their criterion scores and raw values
-        """
-
-        # Extract alternatives from scenario
+        """Calculate scenario scores."""
         alternatives = []
         for alt_key in ['Alternative 1', 'Alternative 2', 'Alternative 3']:
             if alt_key in scenario and scenario[alt_key]:
@@ -735,18 +525,7 @@ class ApplianceGroundTruthCalculator:
 def process_appliance_scenarios(
     csv_filename: str = str(SCENARIO_DIR / "ApplianceScenarios.csv"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_appliance.csv")):
-    """
-    Read Appliance scenarios from CSV and calculate ground truth scores for all alternatives.
-
-    Args:
-        csv_filename: Path to CSV file with scenarios
-        output_filename: Where to save ground truth results
-
-    Expected CSV columns:
-        Description, Location, Utility Budget, Appliance, Housing Type,
-        Occupants, Peak Rate, Off-Peak Rate, kwh/cycle, Appliance Age/Type,
-        Alternative 1, Alternative 2, Alternative 3
-    """
+    """Process appliance scenarios."""
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -845,15 +624,7 @@ CRITERION_WEIGHTS = {
     "practicality": 0.15
 }
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """
-    Apply MAVT weighted sum to rank alternatives
-
-    Args:
-        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
-
-    Returns:
-        Dict with ranked_alternatives, ranks, weighted_scores
-    """
+    """Apply mavt ranking."""
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 

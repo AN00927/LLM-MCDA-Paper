@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import json
 import csv
@@ -17,7 +17,7 @@ These sources were used to help build prompts:
 
  1. Role prompting ("You are an expert in [domain]...")
  Shanahan, M., McDonell, K., & Reynolds, L. (2023).
- Role play with large language models. Nature, 623(7987), 493â€“498.
+ Role play with large language models. Nature, 623(7987), 493–498.
  https://doi.org/10.1038/s41586-023-06647-8
 
  2. Structured output constraint ("return ONLY JSON")
@@ -91,16 +91,7 @@ def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
 def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, Dict]:
-    """
-    Query OpenRouter API with retry logic
-
-    Args:
-        messages: List of message dicts with role and content
-        max_retries: Number of retry attempts
-
-    Returns:
-        Tuple of (response_text, diagnostics_dict)
-    """
+    """Query openrouter."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         raise ValueError("OPENROUTER_API_KEY not found in environment variables")
@@ -193,7 +184,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
     prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
 
     if decision_type == 'HVAC':
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}�F\n"
         prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
         prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
@@ -209,7 +200,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
     elif decision_type == 'Shower':
         prompt += f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}�F\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
@@ -323,18 +314,7 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """
-    Apply MAVT weighted sum to rank alternatives.
-
-    Alternatives with sentinel scores (1928) or marked failed are excluded
-    from ranking. No fallback averaging — if ranking fails, it propagates.
-
-    Args:
-        alternatives_scores: List of dicts with keys: alternative, energy_cost, environmental, comfort, practicality
-
-    Returns:
-        Dict with ranked_alternatives, ranks, weighted_scores
-    """
+    """Apply mavt ranking."""
     alternatives = [alt["alternative"] for alt in alternatives_scores]
     valid_indices = []
 
@@ -376,15 +356,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     }
 
 def run_scenario(scenario: Dict) -> Dict:
-    """
-    Process one scenario: score all alternatives and rank them
-
-    Args:
-        scenario: Full scenario dict
-
-    Returns:
-        Results dict with rankings, scores, and diagnostics
-    """
+    """Run scenario."""
     alternatives = [
         scenario.get("Alternative 1", ""),
         scenario.get("Alternative 2", ""),
@@ -451,16 +423,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
 
 def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
-    """
-    Run Pure Prompting on test set
-
-    Args:
-        test_csv_path: Path to test scenarios CSV
-        output_csv_path: Path to save results CSV
-
-    Returns:
-        Summary statistics dict
-    """
+    """Run test set."""
     test_csv_path = Path(test_csv_path)
     output_csv_path = Path(output_csv_path)
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
@@ -631,11 +594,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
-    """
-    Run the test set N_RUNS times, save per-run CSVs, then write a single
-    averaged results CSV (same schema as a single run) to base_output_csv.
-    Also writes a _stats.csv with per-criterion std dev.
-    """
+    """Run multi and aggregate."""
     base = Path(base_output_csv)
     run_paths = []
 
@@ -736,8 +695,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
 
 
 def main():
-    """Main execution function"""
-
+    """Main."""
     if not os.getenv("OPENROUTER_API_KEY"):
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return
