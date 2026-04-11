@@ -1,11 +1,4 @@
-"""
-SensitivityAnalysis.py - Sensitivity analysis for MCDA architecture comparison
-
-Tests whether the architecture performance ordering (Hybrid > RAG > Pure on
-Kendall tau) holds when MAVT criterion weights are perturbed. For each weight
-scenario, GT and architecture rankings are recomputed from raw criterion scores
-using the perturbed weights, so the "correct" answer shifts with the weights.
-"""
+"""Sensitivity analysis for architecture ranking robustness under weight perturbations."""
 
 import json
 import sys
@@ -35,16 +28,7 @@ from CalculateMetrics import (
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder(MODEL_KEY)
 
 def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dict[str, float]]]:
-    """Generate 10 weight perturbation scenarios from a baseline weight dict.
-
-    Scenarios:
-      - Baseline (no change)
-      - For each of the 4 criteria: +0.05 and -0.05 (8 scenarios)
-        Difference is redistributed equally across the other 3 criteria.
-        Any weight clipped below 0.0 is set to 0.0 and the remainder is
-        renormalised so weights always sum exactly to 1.0.
-      - Equal weights: all criteria at 0.25
-    """
+    """Generate baseline, +/-0.05 per-criterion perturbations, and equal-weight scenario."""
     criteria = list(baseline.keys())
     scenarios: list[tuple[str, dict[str, float]]] = []
 
@@ -79,15 +63,7 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dic
 
 
 def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> pd.DataFrame:
-    """Recompute GT and architecture ranks within each scenario using perturbed weights.
-
-    For each scenario (grouped by arch_scenario_id):
-      - gt_weighted  = Σ weights[c] * gt_{c}   → ranked descending (rank 1 = highest)
-      - arch_weighted = Σ weights[c] * arch_{c} → ranked descending (rank 1 = highest)
-
-    The recomputed rank columns replace the loaded rank values; criterion score
-    columns are never modified.
-    """
+    """Recompute GT and architecture ranks per scenario using the provided weights."""
     df = merged_df.copy()
 
     df["_gt_weighted"] = sum(
@@ -111,22 +87,9 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> p
 
 
 def run_sensitivity_analysis() -> pd.DataFrame:
-    """Run the full sensitivity analysis and return a results DataFrame.
-
-    Steps:
-      1. Load ground truth and all three architecture results files.
-      2. Match architecture scenarios to GT using the existing match_scenarios()
-         pipeline (no pre-computed ranks are used after this point).
-      3. Filter failed scenarios (1928 sentinel) once per architecture.
-      4. For each of the 10 weight scenarios, rerank alternatives within each
-         matched scenario and compute Kendall tau / Spearman rho / Top-k accuracy
-         via compute_ranking_metrics().
-      5. Print a summary table and robustness check, then export results CSV.
-    """
-    print("=" * 72)
-    print("  SENSITIVITY ANALYSIS — MCDA ARCHITECTURE COMPARISON")
-    print(f"  Model: {MODEL_KEY}")
-    print("=" * 72)
+    """Run sensitivity analysis and return per-architecture metrics by weight scenario."""
+    print("Sensitivity analysis: MCDA architecture comparison")
+    print(f"Model: {MODEL_KEY}")
 
     # 1. Load data
     print("\n[1] Loading ground truth and architectures...")
@@ -172,9 +135,7 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     results_df = pd.DataFrame(results)
 
     # 4. Print Kendall tau summary table
-    print("\n" + "=" * 72)
-    print("  KENDALL TAU SUMMARY TABLE")
-    print("=" * 72)
+    print("\nKendall tau summary table")
 
     tau_pivot = results_df.pivot_table(
         index="scenario_name",
@@ -200,7 +161,7 @@ def run_sensitivity_analysis() -> pd.DataFrame:
         print(row)
 
     # 5. Robustness chec
-    print("  ROBUSTNESS CHECK  (Hybrid tau > RAG tau > Pure tau)")
+    print("\nRobustness check (Hybrid tau > RAG tau > Pure tau)")
 
 
     preserved = 0
