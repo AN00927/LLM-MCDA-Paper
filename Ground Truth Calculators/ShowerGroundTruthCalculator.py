@@ -84,16 +84,21 @@ class ShowerGroundTruthCalculator:
             'decreasing': True
         },
         'environmental': {
-            # Derived from energy cost bounds (0.20–1.40 at $0.19/kWh) → kWh bounds 1.05–7.37 kWh
-            # × current EMISSIONS_FACTOR_PA = 0.6458 lbs/kWh (EPA eGRID2024)
-            # Min: 1.05 kWh × 0.6458 ≈ 0.68 lbs CO2
-            # Max: 7.37 kWh × 0.6458 ≈ 4.76 lbs CO2
-            # NOTE: Prior comment (1.3×0.85=1.10, 6.9×0.85=5.90) used an old emissions factor
-            # of 0.85 lbs/kWh. Values below are updated to match EMISSIONS_FACTOR_PA = 0.6458.
-            # Scores near the lower bound will saturate at 10.0 for low-flow/short scenarios —
-            # this is expected and correctly reflects that such showers have minimal environmental impact.
-            'min': 0.68,
-            'max': 4.76,
+            # Environmental criterion = water volume consumed (gallons) per shower.
+            # Bounds derived from EPA conservation-planning Appendix B 5th-95th percentile
+            # GPM (1.5-5.0) and duration (5-15 min):
+            #   5th x 5th = 1.5 GPM x 5 min = 7.5 gal
+            #   95th x 95th = 5.0 GPM x 15 min = 75 gal (EPA reference upper bound)
+            # Upper bound entropy-adjusted from EPA's 75 to 80 gallons. Justification:
+            # observed shower scenarios reach 72.5 gal (Wilkes-Barre 29 min x 2.5 GPM),
+            # which under a 75-gal cap would saturate at ~0.4/10 and lose entropy;
+            # extending to 80 spreads scores across [1, 10] so the value function
+            # discriminates among real high-volume alternatives. Lower bound preserved
+            # at 7.5 so scores of 10/10 remain reachable but rare (only ultra-short
+            # low-flow combinations like 5min x 1.5GPM hit the boundary).
+            # Source: EPA WaterSense conservation benchmarks (Appendix B).
+            'min': 7.5,
+            'max': 80.0,
             'decreasing': True
         },
         'comfort': {
@@ -143,9 +148,9 @@ class ShowerGroundTruthCalculator:
         return kwh * rate
 
     @staticmethod
-    def calculate_environmental_impact(kwh: float) -> float:
-        """Calculate environmental impact."""
-        return kwh * ShowerGroundTruthCalculator.EMISSIONS_FACTOR_PA
+    def calculate_environmental_impact(gpm: float, duration_min: float) -> float:
+        """Calculate environmental impact as water volume consumed (gallons)."""
+        return gpm * duration_min
 
     @staticmethod
     def calculate_comfort_score(duration: float, water_heater_temp: float,
@@ -353,7 +358,7 @@ class ShowerGroundTruthCalculator:
                 duration, gpm, water_heater_temp, outdoor_temp
             )
             cost = ShowerGroundTruthCalculator.calculate_energy_cost(kwh)
-            emissions = ShowerGroundTruthCalculator.calculate_environmental_impact(kwh)
+            water_gallons = ShowerGroundTruthCalculator.calculate_environmental_impact(gpm, duration)
             comfort = ShowerGroundTruthCalculator.calculate_comfort_score(
                 duration, water_heater_temp, occupants
             )
@@ -362,8 +367,8 @@ class ShowerGroundTruthCalculator:
             )
 
             print(f"\n{alt['name']} ({duration} min):")
-            print(f"  Energy: {kwh:.4f} kWh → ${cost:.3f}")
-            print(f"  Emissions: {emissions:.3f} lbs CO2")
+            print(f"  Energy: {kwh:.4f} kWh -> ${cost:.3f}")
+            print(f"  Water: {water_gallons:.2f} gal ({gpm} GPM x {duration} min)")
             print(f"  Comfort: {comfort:.2f}/10")
             print(f"  Practicality: {practicality:.2f}/10")
 
@@ -373,7 +378,7 @@ class ShowerGroundTruthCalculator:
                 'raw_values': {
                     'energy_kwh': kwh,
                     'energy_cost': cost,
-                    'environmental': emissions,
+                    'environmental': water_gallons,
                     'comfort': comfort,
                     'practicality': practicality
                 }
@@ -442,8 +447,8 @@ class ShowerGroundTruthCalculator:
                 print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['Utility Budget']:.2f} budget")
                 print(f"  ({occupants} people × 0.9 showers/day × 30 days = {occupants * 0.9 * 30:.0f} showers/month)")
                 print(
-                    f"  Utilization: {monthly_cost / scenario['Utility Budget'] * 100:.1f}% → penalty: {budget_penalty:.3f}")
-                print(f"  Energy score: {energy_vf:.2f} → {energy_vf_penalized:.2f} (after penalty)")
+                    f"  Utilization: {monthly_cost / scenario['Utility Budget'] * 100:.1f}% -> penalty: {budget_penalty:.3f}")
+                print(f"  Energy score: {energy_vf:.2f} -> {energy_vf_penalized:.2f} (after penalty)")
 
                 energy_vf = energy_vf_penalized
 
@@ -536,7 +541,7 @@ def process_shower_scenarios(
                     'rank': ranking_result["ranks"][alt_idx],
                     'raw_kwh': alt_data['raw_values']['energy_kwh'],
                     'raw_cost': alt_data['raw_values']['energy_cost'],
-                    'raw_emissions': alt_data['raw_values']['environmental']
+                    'raw_water_gallons': alt_data['raw_values']['environmental']
                 }
                 results.append(result_row)
 
