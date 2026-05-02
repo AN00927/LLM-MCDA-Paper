@@ -2,6 +2,7 @@ import pandas as pd
 import math
 import logging
 import numpy as np
+import re
 from typing import Dict, List, Tuple
 from pathlib import Path
 
@@ -11,8 +12,15 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 
 class HVACGroundTruthCalculator:
-    # PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
-    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); average grid-mix
+    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
+    # Emissions Report (April 2023). Replaces prior eGRID average factor 0.6458.
+    # Marginal (not average) is the correct measure for behavioral decisions because
+    # it reflects what is actually displaced or added at the margin. Peak window 7am-11pm
+    # (16h) and off-peak 11pm-7am (8h) per PJM definition.
+    EMISSIONS_FACTOR_PEAK = 1.041     # PJM peak (1041 lbs/MWh)
+    EMISSIONS_FACTOR_OFFPEAK = 0.976  # PJM off-peak (976 lbs/MWh)
+    EMISSIONS_PEAK_HOURS_PER_DAY = 16
+    EMISSIONS_OFFPEAK_HOURS_PER_DAY = 8
 
     # PA residential electricity price from EIA (2024)
     ELECTRICITY_RATE_PA = 0.19  # $/kWh; flat-rate default (see modeling choice above)
@@ -169,10 +177,16 @@ class HVACGroundTruthCalculator:
 
         # Calculate power draw
         kw = (load_btu_hr / eer_estimated) / 1000
+        occupancy_context = self.normalize_occupancy_context(occupancy_context)
+
         if occupancy_context == "occupied_all_day":
             runtime_multiplier = 1.0
         elif occupancy_context.startswith("unoccupied_"):
-            hours_away = int(occupancy_context.split("_")[1])
+            hours_match = re.search(r"(\d+)", occupancy_context)
+            if hours_match:
+                hours_away = max(0, min(int(hours_match.group(1)), 24))
+            else:
+                hours_away = 8
             runtime_multiplier = 1.0 - (hours_away / 24) * 0.5
         elif occupancy_context == "occupied_sleep":
             runtime_multiplier = 0.75
@@ -282,6 +296,82 @@ class HVACGroundTruthCalculator:
             # Infeasible option eliminated (Gathergood 2012)
             return 0.0
 
+    @staticmethod
+    def parse_utility_budget(budget_value) -> float:
+        """Parse utility budget values that may include currency symbols or spacing."""
+        if budget_value is None or pd.isna(budget_value):
+            return 0.0
+
+        if isinstance(budget_value, (int, float, np.integer, np.floating)):
+            return max(0.0, float(budget_value))
+
+        cleaned = re.sub(r"[^0-9.\-]", "", str(budget_value))
+        if not cleaned:
+            return 0.0
+
+        try:
+            return max(0.0, float(cleaned))
+        except ValueError:
+            return 0.0
+
+    @classmethod
+    def emissions_factor_for_occupancy(cls, occupancy_context: str) -> float:
+        """Return the PJM marginal CO2 factor (lbs/kWh) implied by an HVAC occupancy
+        context. HVAC alternatives have no explicit start_time, so we infer when the
+        system is running from the occupancy pattern:
+          - occupied_all_day: runs across the full 24h, weighted by peak/off-peak hours
+          - occupied_sleep:   runs during the 8h off-peak window (11pm-7am)
+          - unoccupied_<H>:   runs while the household is away. If H <= 16, all of those
+                              hours fit within the daytime peak window so use the peak
+                              factor. If H > 16, hours overflow into off-peak and we
+                              weight accordingly.
+        """
+        ctx = cls.normalize_occupancy_context(occupancy_context)
+        peak = cls.EMISSIONS_FACTOR_PEAK
+        off = cls.EMISSIONS_FACTOR_OFFPEAK
+        peak_h = cls.EMISSIONS_PEAK_HOURS_PER_DAY
+        off_h = cls.EMISSIONS_OFFPEAK_HOURS_PER_DAY
+
+        if ctx == "occupied_sleep":
+            return off
+
+        if ctx == "occupied_all_day":
+            return (peak_h * peak + off_h * off) / (peak_h + off_h)
+
+        if ctx.startswith("unoccupied_"):
+            hours_match = re.search(r"(\d+)", ctx)
+            hours_away = int(hours_match.group(1)) if hours_match else 8
+            hours_away = max(0, min(hours_away, 24))
+            if hours_away <= peak_h:
+                return peak
+            offpeak_hours = hours_away - peak_h
+            return (peak_h * peak + offpeak_hours * off) / hours_away
+
+        return (peak_h * peak + off_h * off) / (peak_h + off_h)
+
+    @staticmethod
+    def normalize_occupancy_context(occupancy_value) -> str:
+        """Normalize occupancy context values to expected internal tokens."""
+        if occupancy_value is None or pd.isna(occupancy_value):
+            return "occupied_all_day"
+
+        value = str(occupancy_value).strip().lower()
+
+        if value in {"occupied_all_day", "standard", "occupied", "home_all_day"}:
+            return "occupied_all_day"
+
+        if value in {"occupied_sleep", "sleep", "night", "overnight_sleep", "overnight"}:
+            return "occupied_sleep"
+
+        if value.startswith("unoccupied"):
+            hours_match = re.search(r"(\d+)", value)
+            if hours_match:
+                hours_away = max(0, min(int(hours_match.group(1)), 24))
+                return f"unoccupied_{hours_away}"
+            return "unoccupied_8"
+
+        return "occupied_all_day"
+
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         """Apply value function."""
         reference_ranges = {
@@ -301,13 +391,20 @@ class HVACGroundTruthCalculator:
         'decreasing': True
     },
     'environmental': {
-        # Derived from energy bounds x PA emissions factor.
-        # # Source: EPA eGRID2023 Detailed Data (EPA, 2025).
-        # Formula: (cost / electricity_rate) × emissions_factor
-        # Min: (0.47 / 0.19) × 0.6458 = 2.474 × 0.6458 = 1.60 lbs CO₂
-        # Max: (3.31 / 0.19) × 0.6458 = 17.421 × 0.6458 = 11.25 lbs CO₂
-        'min': 1.60,
-        'max': 11.25,
+        # Bounds derived from the same 5th-95th percentile cost envelope as energy_cost
+        # ($0.47-$3.31 at $0.19/kWh flat = 2.474-17.421 kWh) but applied against PJM
+        # marginal emissions factors (0.976 off-peak, 1.041 peak):
+        #   min = 2.474 kWh x 0.976 lbs/kWh = 2.42 lbs CO2  (best case: fully off-peak)
+        #   max = 17.421 kWh x 1.041 lbs/kWh = 18.14 lbs CO2 (worst case: fully peak)
+        # Spread is wider than the previous eGRID-average range (1.60-11.25) because
+        # marginal factors are larger than the eGRID 0.6458 average. Rationale: marginal
+        # is the correct measure for behavioral decisions (it reflects the generator
+        # actually displaced or added). Source: PJM 2022 Emissions Report (April 2023).
+        # Note for HVAC: alternatives within one scenario share the same emission factor
+        # (collinearity documented as paper limitation - all alternatives evaluated at
+        # same moment, differing only in load magnitude).
+        'min': 2.42,
+        'max': 18.14,
         'decreasing': True
     },
             'comfort': {
@@ -446,12 +543,17 @@ class HVACGroundTruthCalculator:
                 load,
                 scenario['seer'],
                 scenario['hvac_age'],
-                occupancy_context=scenario.get('occupancy_context', 'occupied_all_day'),
+                occupancy_context=self.normalize_occupancy_context(
+                    scenario.get('occupancy_context', 'occupied_all_day')
+                ),
                 maintenance_level=scenario.get('maintenance_level', 'moderate')
             )
 
             energy_cost = kwh * scenario.get('electricity_rate', self.ELECTRICITY_RATE_PA)
-            emissions = kwh * self.EMISSIONS_FACTOR_PA
+            emission_factor = self.emissions_factor_for_occupancy(
+                scenario.get('occupancy_context', 'occupied_all_day')
+            )
+            emissions = kwh * emission_factor
 
             # When alternative is "off", set energy-related values to 0 (physically correct).
             # Still use drift temp for comfort/practicality scoring.
@@ -481,6 +583,7 @@ class HVACGroundTruthCalculator:
             }
 
         final_scores = {}
+        utility_budget = self.parse_utility_budget(scenario.get('utility_budget', 0.0))
 
         for alt, raw in raw_results.items():
 
@@ -510,7 +613,7 @@ class HVACGroundTruthCalculator:
             )
 
             # Apply budget penalty if budget constraint exists
-            if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
+            if utility_budget > 0:
                 # Convert 8-hour cost to monthly estimate (30 days)
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost_dollars'],
@@ -519,15 +622,15 @@ class HVACGroundTruthCalculator:
 
                 budget_penalty = self.calculate_budget_penalty(
                     monthly_cost,
-                    scenario['utility_budget']
+                    utility_budget
                 )
 
                 # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
 
-                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['utility_budget']:.2f} budget")
+                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${utility_budget:.2f} budget")
                 print(
-                    f"  Utilization: {monthly_cost / scenario['utility_budget'] * 100:.1f}% to penalty: {budget_penalty:.3f}")
+                    f"  Utilization: {monthly_cost / utility_budget * 100:.1f}% to penalty: {budget_penalty:.3f}")
                 print(f"  Energy score: {energy_vf:.2f} to {energy_vf_penalized:.2f} (after penalty)")
 
                 energy_vf = energy_vf_penalized
@@ -583,10 +686,13 @@ def process_hvac_scenarios(
             'square_footage': int(row['Square Footage']),
             'r_value': int(row['R-Value']),
             'household_size': int(row['Household Size']),
+            'utility_budget': calculator.parse_utility_budget(row.get('Utility Budget', 0)),
             'outdoor_temp': float(row['Outdoor Temp']),
             'seer': int(row['SEER']),
             'hvac_age': int(row['HVAC Age']),
-            'occupancy_context': row['Occupancy Context'] if 'Occupancy Context' in row.index else 'occupied_all_day',
+            'occupancy_context': calculator.normalize_occupancy_context(
+                row.get('Occupancy Context', row.get('Occupancy context', 'occupied_all_day'))
+            ),
             'electricity_rate': electricity_rate,
             'alternatives': alternatives,
         }

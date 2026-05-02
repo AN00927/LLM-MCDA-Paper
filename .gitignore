@@ -18,3 +18,7 @@ __pycache__/
 # Personal drafting files
 paper/Notebook (text format)
 paper/Literature Review
+
+/validation/
+/validation/**
+/validation_runs/

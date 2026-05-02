@@ -184,7 +184,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
     prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
 
     if decision_type == 'HVAC':
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')} deg F\n"
         prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
         prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
@@ -200,7 +200,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
     elif decision_type == 'Shower':
         prompt += f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')}°F\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')} deg F\n"
         prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
@@ -212,7 +212,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
 
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    system_prompt = f"""You are an expert household energy decision analyst. Score alternatives on 
+    system_prompt = """You are an expert household energy decision analyst. Score alternatives on 
 four criteria using the full 0-10 scale:
 - energy_cost: lower cost = higher score
 - environmental: lower emissions = higher score  

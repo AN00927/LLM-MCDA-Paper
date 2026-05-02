@@ -139,8 +139,6 @@ For Appliance decisions:
     "kwh/cycle": <number>,
     "Appliance Age/Type": "<age> OR <type>",
     "Baseline Time": "<time like 7pm, 8am, 9am>",
-    "Peak Rate": <number>,
-    "Off-Peak Rate": <number>,
     "Occupants": <number>,
     "Housing Type": "<Apartment/Single-family/Townhouse>",
     "utility_budget": <number>,
@@ -343,7 +341,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
                                    'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
             elif decision_type == 'Appliance':
                 required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
-                                   'Baseline Time', 'Peak Rate', 'Off-Peak Rate', 'alternatives']
+                                   'Baseline Time', 'alternatives']
             elif decision_type == 'Shower':
                 required_params = ['Location', 'GPM', 'Tank Size',
                                    'Water Heater Temp', 'outdoor_temp', 'alternatives']
@@ -390,7 +388,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
     alternatives = extracted_result['parameters'].get('alternatives', [])
     for i, alt in enumerate(alternatives[:3], 1):
         gt_scenario[f'Alternative {i}'] = alt
-    for key in ['Utility Budget', 'Occupants', 'Peak Rate', 'Off-Peak Rate', 'kwh/cycle']:
+    for key in ['Utility Budget', 'Occupants', 'kwh/cycle']:
         if key in gt_scenario and isinstance(gt_scenario[key], str):
             try:
                 gt_scenario[key] = float(gt_scenario[key])
@@ -912,7 +910,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     dt_mode = combined.groupby(GROUP_KEYS)['decision_type'].agg(_mode_decision_type).reset_index()
     avg_meta = avg_meta.merge(dt_mode, on=GROUP_KEYS)
 
-    # Boolean flags: any() — if any run had a failure the scenario was flaky
+    # Boolean flags: any() ï¿½ if any run had a failure the scenario was flaky
     for col in BOOL_META_COLS:
         if col in combined.columns:
             bool_agg = (

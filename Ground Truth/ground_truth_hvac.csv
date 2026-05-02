@@ -1,0 +1,256 @@
+scenario_id,question,location,square_footage,insulation,household_size,utility_budget,housing_type,outdoor_temp,house_age,alternative,energy_cost_score,environmental_score,comfort_score,practicality_score,mavt_score,rank,raw_kwh,raw_cost,raw_emissions
+0,The house will be empty for 8 hours today. What AC temperature should I set?,"Chester Springs, PA",1800,Poor,3,$200 ,Condo,88,22,78,5.05,5.21,8.6,9.59,6.497,1,9.55,1.81,9.94
+0,The house will be empty for 8 hours today. What AC temperature should I set?,"Chester Springs, PA",1800,Poor,3,$200 ,Condo,88,22,80,5.63,5.58,6.11,10.0,6.364,2,9.0,1.71,9.37
+0,The house will be empty for 8 hours today. What AC temperature should I set?,"Chester Springs, PA",1800,Poor,3,$200 ,Condo,88,22,83,6.18,6.12,0.0,8.72,5.303999999999999,3,8.18,1.55,8.52
+1,The house will be empty for 8 hours today. What heat setting should I use?,"Chester Springs, PA",1800,Poor,3,$200 ,Condo,25,22,65,6.22,6.16,1.53,7.29,5.421499999999999,3,8.12,1.54,8.45
+1,The house will be empty for 8 hours today. What heat setting should I use?,"Chester Springs, PA",1800,Poor,3,$200 ,Condo,25,22,68,5.67,5.62,8.6,7.29,6.4815,1,8.94,1.7,9.31
+1,The house will be empty for 8 hours today. What heat setting should I use?,"Chester Springs, PA",1800,Poor,3,$200 ,Condo,25,22,71,4.69,5.08,9.32,7.29,6.142499999999999,2,9.76,1.85,10.16
+2,"With 4 people home on a hot day, what's the best AC setting?","Lancaster, PA",2500,Good,4,$500 ,Single-family,92,27,72,0.71,0.93,5.73,8.72,2.9925,3,16.36,3.11,16.67
+2,"With 4 people home on a hot day, what's the best AC setting?","Lancaster, PA",2500,Good,4,$500 ,Single-family,92,27,76,1.5,1.7,10.0,9.59,4.483499999999999,1,15.18,2.88,15.47
+2,"With 4 people home on a hot day, what's the best AC setting?","Lancaster, PA",2500,Good,4,$500 ,Single-family,92,27,80,2.29,2.46,5.73,9.59,4.1325,2,14.0,2.66,14.27
+3,Cold day today with 4 people home. What's a good heating temperature?,"Lancaster, PA",2500,Good,4,$500 ,Single-family,20,27,68,4.95,5.04,8.46,7.29,6.0344999999999995,1,10.02,1.9,10.22
+3,Cold day today with 4 people home. What's a good heating temperature?,"Lancaster, PA",2500,Good,4,$500 ,Single-family,20,27,71,4.36,4.47,9.25,7.29,5.816,2,10.91,2.07,11.12
+3,Cold day today with 4 people home. What's a good heating temperature?,"Lancaster, PA",2500,Good,4,$500 ,Single-family,20,27,74,3.76,3.89,6.65,7.29,4.912999999999999,3,11.79,2.24,12.02
+4,The house will be empty for 4 hours today. What AC temperature should I set?,"Pittsburgh, PA",2000,Medium,2,$250 ,Single-family,85,32,75,4.19,4.15,9.32,9.59,6.0120000000000005,2,11.16,2.12,11.62
+4,The house will be empty for 4 hours today. What AC temperature should I set?,"Pittsburgh, PA",2000,Medium,2,$250 ,Single-family,85,32,78,4.8,4.75,8.6,10.0,6.3225,1,10.25,1.95,10.67
+4,The house will be empty for 4 hours today. What AC temperature should I set?,"Pittsburgh, PA",2000,Medium,2,$250 ,Single-family,85,32,81,5.41,5.36,4.06,10.0,5.811,3,9.33,1.77,9.71
+5,The house will be empty for 4 hours today. What heat setting should I use?,"Pittsburgh, PA",2000,Medium,2,$250 ,Single-family,28,32,66,5.91,5.85,4.06,7.29,5.726,3,8.59,1.63,8.94
+5,The house will be empty for 4 hours today. What heat setting should I use?,"Pittsburgh, PA",2000,Medium,2,$250 ,Single-family,28,32,69,5.3,5.25,9.32,7.29,6.385,1,9.5,1.81,9.89
+5,The house will be empty for 4 hours today. What heat setting should I use?,"Pittsburgh, PA",2000,Medium,2,$250 ,Single-family,28,32,72,4.68,4.64,8.6,7.29,5.841499999999999,2,10.42,1.98,10.85
+6,Someone's home all day and it's hot outside. What should I set the AC to?,"West Chester, PA",1600,Medium,2,$220 ,Townhouse,90,37,77,2.48,3.79,9.32,9.59,5.372999999999999,1,11.95,2.27,12.18
+6,Someone's home all day and it's hot outside. What should I set the AC to?,"West Chester, PA",1600,Medium,2,$220 ,Townhouse,90,37,80,3.61,4.36,6.11,9.59,5.269500000000001,2,11.07,2.1,11.28
+6,Someone's home all day and it's hot outside. What should I set the AC to?,"West Chester, PA",1600,Medium,2,$220 ,Townhouse,90,37,83,4.84,4.94,0.0,8.72,4.489,3,10.18,1.93,10.38
+7,Someone's home all day and it's cold. What heating temperature should I use?,"West Chester, PA",1600,Medium,2,$220 ,Townhouse,22,37,65,5.36,5.44,1.53,7.29,4.9115,3,9.41,1.79,9.59
+7,Someone's home all day and it's cold. What heating temperature should I use?,"West Chester, PA",1600,Medium,2,$220 ,Townhouse,22,37,68,4.77,4.87,8.6,7.29,5.948999999999999,1,10.29,1.96,10.49
+7,Someone's home all day and it's cold. What heating temperature should I use?,"West Chester, PA",1600,Medium,2,$220 ,Townhouse,22,37,71,3.46,4.29,9.32,7.29,5.497,2,11.17,2.12,11.39
+8,The house is unoccupied for 8 hours today. What's the best AC temperature?,"State College, PA",2100,Good,3,$300 ,Single-family,86,42,74,2.87,2.84,8.6,9.59,5.0135000000000005,3,13.13,2.5,13.67
+8,The house is unoccupied for 8 hours today. What's the best AC temperature?,"State College, PA",2100,Good,3,$300 ,Single-family,86,42,77,3.42,3.39,9.32,10.0,5.5765,1,12.3,2.34,12.81
+8,The house is unoccupied for 8 hours today. What's the best AC temperature?,"State College, PA",2100,Good,3,$300 ,Single-family,86,42,80,3.98,3.94,6.11,10.0,5.295,2,11.47,2.18,11.94
+9,The house is unoccupied for 8 hours. What should I set the thermostat to?,"State College, PA",2100,Good,3,$300 ,Single-family,18,42,66,5.35,5.29,4.06,7.29,5.361999999999999,3,9.43,1.79,9.82
+9,The house is unoccupied for 8 hours. What should I set the thermostat to?,"State College, PA",2100,Good,3,$300 ,Single-family,18,42,69,4.79,4.74,9.32,7.29,6.0535,1,10.26,1.95,10.68
+9,The house is unoccupied for 8 hours. What should I set the thermostat to?,"State College, PA",2100,Good,3,$300 ,Single-family,18,42,72,4.23,4.19,8.6,7.29,5.5489999999999995,2,11.09,2.11,11.55
+10,"With 1 people home on a hot day, what's the best AC setting?","Philadelphia, PA",900,Poor,1,$150 ,Apartment,93,47,78,1.91,5.27,8.6,9.59,5.575999999999999,1,9.67,1.84,9.85
+10,"With 1 people home on a hot day, what's the best AC setting?","Philadelphia, PA",900,Poor,1,$150 ,Apartment,93,47,81,2.65,5.73,4.06,9.59,5.051,2,8.96,1.7,9.13
+10,"With 1 people home on a hot day, what's the best AC setting?","Philadelphia, PA",900,Poor,1,$150 ,Apartment,93,47,84,3.97,6.19,0.0,7.29,4.451,3,8.25,1.57,8.41
+11,Cold day today with 1 people home. What's a good heating temperature?,"Philadelphia, PA",900,Poor,1,$150 ,Apartment,24,47,64,7.14,7.17,0.0,7.29,5.744999999999999,3,6.74,1.28,6.87
+11,Cold day today with 1 people home. What's a good heating temperature?,"Philadelphia, PA",900,Poor,1,$150 ,Apartment,24,47,67,5.85,6.71,6.11,7.29,6.4190000000000005,2,7.45,1.42,7.59
+11,Cold day today with 1 people home. What's a good heating temperature?,"Philadelphia, PA",900,Poor,1,$150 ,Apartment,24,47,70,4.19,6.25,10.0,7.29,6.537999999999999,1,8.16,1.55,8.31
+12,The house is unoccupied for 4 hours today. What's the best AC temperature?,"Erie, PA",1800,Medium,4,$260 ,Single-family,82,21,74,5.28,5.23,8.46,10.0,6.6065000000000005,3,9.53,1.81,9.92
+12,The house is unoccupied for 4 hours today. What's the best AC temperature?,"Erie, PA",1800,Medium,4,$260 ,Single-family,82,21,77,5.79,5.73,9.25,10.0,7.092499999999999,1,8.77,1.67,9.13
+12,The house is unoccupied for 4 hours today. What's the best AC temperature?,"Erie, PA",1800,Medium,4,$260 ,Single-family,82,21,80,6.3,6.24,6.65,10.0,6.904,2,8.0,1.52,8.33
+13,The house is unoccupied for 4 hours. What should I set the thermostat to?,"Erie, PA",1800,Medium,4,$260 ,Single-family,15,21,66,5.16,5.11,3.59,7.29,5.148,3,9.71,1.84,10.1
+13,The house is unoccupied for 4 hours. What should I set the thermostat to?,"Erie, PA",1800,Medium,4,$260 ,Single-family,15,21,69,4.65,4.61,9.25,7.29,5.951999999999999,1,10.47,1.99,10.9
+13,The house is unoccupied for 4 hours. What should I set the thermostat to?,"Erie, PA",1800,Medium,4,$260 ,Single-family,15,21,72,4.14,4.1,8.46,7.29,5.4624999999999995,2,11.23,2.13,11.69
+14,"With 2 people home on a hot day, what's the best AC setting?","Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,89,23,76,6.07,6.13,10.0,9.59,7.404999999999999,1,8.34,1.58,8.5
+14,"With 2 people home on a hot day, what's the best AC setting?","Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,89,23,79,6.41,6.46,7.83,9.59,7.1884999999999994,2,7.84,1.49,7.99
+14,"With 2 people home on a hot day, what's the best AC setting?","Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,89,23,82,6.75,6.78,1.53,10.0,6.204,3,7.34,1.39,7.48
+15,Cold day today with 2 people home. What's a good heating temperature?,"Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,26,23,67,8.78,8.75,6.11,7.29,8.012,2,4.3,0.82,4.39
+15,Cold day today with 2 people home. What's a good heating temperature?,"Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,26,23,70,8.44,8.42,10.0,7.29,8.5725,1,4.81,0.91,4.9
+15,Cold day today with 2 people home. What's a good heating temperature?,"Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,26,23,73,8.1,8.1,7.83,7.29,7.924499999999998,3,5.31,1.01,5.41
+16,It's hot today and we're home as usual. What temperature should I set the AC to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,91,17,72,3.37,3.51,5.73,9.59,4.824,3,12.39,2.35,12.63
+16,It's hot today and we're home as usual. What temperature should I set the AC to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,91,17,75,3.82,3.95,9.25,9.59,5.817,2,11.71,2.23,11.94
+16,It's hot today and we're home as usual. What temperature should I set the AC to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,91,17,79,4.42,4.53,7.59,9.59,5.868,1,10.81,2.05,11.02
+17,It's cold outside and we're home as usual. What should I set the heat to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,19,17,68,6.48,6.52,8.46,7.29,7.011499999999999,1,7.74,1.47,7.89
+17,It's cold outside and we're home as usual. What should I set the heat to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,19,17,71,6.03,6.09,9.25,7.29,6.8839999999999995,2,8.41,1.6,8.57
+17,It's cold outside and we're home as usual. What should I set the heat to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,19,17,74,5.58,5.65,6.65,7.29,6.075,3,9.09,1.73,9.26
+18,Someone's home all day and it's hot outside. What should I set the AC to?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,87,12,75,5.74,5.8,9.32,9.59,7.054499999999999,2,8.85,1.68,9.02
+18,Someone's home all day and it's hot outside. What should I set the AC to?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,87,12,78,6.17,6.23,8.6,10.0,7.251499999999999,1,8.19,1.56,8.35
+18,Someone's home all day and it's hot outside. What should I set the AC to?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,87,12,81,6.61,6.65,4.06,10.0,6.6225000000000005,3,7.54,1.43,7.68
+19,Someone's home all day and it's cold. What heating temperature should I use?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,23,12,67,6.99,7.02,6.11,7.29,6.8695,2,6.97,1.33,7.11
+19,Someone's home all day and it's cold. What heating temperature should I use?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,23,12,70,6.55,6.59,10.0,7.29,7.364999999999999,1,7.63,1.45,7.78
+19,Someone's home all day and it's cold. What heating temperature should I use?,"Media, PA",1700,Medium,3,$240 ,Rowhouse,23,12,73,6.11,6.17,7.83,7.29,6.651999999999999,3,8.28,1.57,8.44
+20,We're all out for 8 hours in the heat. What AC setting makes sense?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,90,5,76,6.38,6.32,10.0,9.59,7.564499999999999,1,7.88,1.5,8.21
+20,We're all out for 8 hours in the heat. What AC setting makes sense?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,90,5,79,6.76,6.69,7.83,9.59,7.3740000000000006,2,7.32,1.39,7.62
+20,We're all out for 8 hours in the heat. What AC setting makes sense?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,90,5,82,7.14,7.07,1.53,10.0,6.4225,3,6.75,1.28,7.03
+21,We're all out for 8 hours in cold weather. What heating temperature is best?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,21,5,66,7.42,7.34,4.06,7.29,6.7005,3,6.34,1.2,6.6
+21,We're all out for 8 hours in cold weather. What heating temperature is best?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,21,5,69,7.04,6.97,9.32,7.29,7.5089999999999995,1,6.9,1.31,7.18
+21,We're all out for 8 hours in cold weather. What heating temperature is best?,"Allentown, PA",1900,Medium,3,$280 ,Single-family,21,5,72,6.66,6.6,8.6,7.29,7.121499999999999,2,7.46,1.42,7.77
+22,The house will be empty for 12 hours today. What AC temperature should I set?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,94,1,76,4.91,4.87,10.0,9.59,6.616,1,10.08,1.91,10.49
+22,The house will be empty for 12 hours today. What AC temperature should I set?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,94,1,79,5.39,5.33,7.34,9.59,6.388999999999999,2,9.37,1.78,9.75
+22,The house will be empty for 12 hours today. What AC temperature should I set?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,94,1,82,5.86,5.8,0.0,9.59,5.2265,3,8.66,1.65,9.02
+23,The house will be empty for 12 hours today. What heat setting should I use?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,17,1,66,5.53,5.48,3.11,7.29,5.2924999999999995,3,9.16,1.74,9.53
+23,The house will be empty for 12 hours today. What heat setting should I use?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,17,1,69,5.06,5.01,9.18,7.29,6.201,1,9.86,1.87,10.27
+23,The house will be empty for 12 hours today. What heat setting should I use?,"Harrisburg, PA",2600,Poor,5,$320 ,Single-family,17,1,72,4.58,4.54,8.3,7.29,5.7165,2,10.57,2.01,11.0
+24,I'm working from home today and it's hot. What AC temperature should I use?,"Blue Bell, PA",2800,Good,4,$450 ,Single-family,88,1,73,3.91,4.03,7.59,9.59,5.539999999999999,3,11.58,2.2,11.8
+24,I'm working from home today and it's hot. What AC temperature should I use?,"Blue Bell, PA",2800,Good,4,$450 ,Single-family,88,1,76,4.38,4.49,10.0,9.59,6.324,1,10.88,2.07,11.09
+24,I'm working from home today and it's hot. What AC temperature should I use?,"Blue Bell, PA",2800,Good,4,$450 ,Single-family,88,1,79,4.84,4.94,7.59,10.0,6.199,2,10.18,1.93,10.38
+25,I'm working from home and it's cold outside. What should I set the heat to?,"Blue Bell, PA",2800,Good,4,$450 ,Single-family,22,1,68,6.56,6.6,8.46,7.29,7.0634999999999994,1,7.62,1.45,7.77
+25,I'm working from home and it's cold outside. What should I set the heat to?,"Blue Bell, PA",2800,Good,4,$450 ,Single-family,22,1,71,6.09,6.15,9.25,7.29,6.922999999999999,2,8.32,1.58,8.48
+25,I'm working from home and it's cold outside. What should I set the heat to?,"Blue Bell, PA",2800,Good,4,$450 ,Single-family,22,1,74,5.62,5.69,6.65,7.29,6.101,3,9.01,1.71,9.19
+26,The house will be empty for 4 hours today. What AC temperature should I set?,"York, PA",1500,Poor,2,$180 ,Single-family,92,4,78,7.09,7.02,8.6,9.59,7.7425,1,6.83,1.3,7.1
+26,The house will be empty for 4 hours today. What AC temperature should I set?,"York, PA",1500,Poor,2,$180 ,Single-family,92,4,81,7.44,7.37,4.06,9.59,7.062000000000001,2,6.3,1.2,6.55
+26,The house will be empty for 4 hours today. What AC temperature should I set?,"York, PA",1500,Poor,2,$180 ,Single-family,92,4,84,7.8,7.72,0.0,7.29,6.1354999999999995,3,5.77,1.1,6.0
+27,The house will be empty for 4 hours today. What heat setting should I use?,"York, PA",1500,Poor,2,$180 ,Single-family,20,4,65,7.54,7.46,1.53,7.29,6.272499999999999,3,6.15,1.17,6.41
+27,The house will be empty for 4 hours today. What heat setting should I use?,"York, PA",1500,Poor,2,$180 ,Single-family,20,4,68,7.18,7.11,8.6,7.29,7.4559999999999995,1,6.68,1.27,6.96
+27,The house will be empty for 4 hours today. What heat setting should I use?,"York, PA",1500,Poor,2,$180 ,Single-family,20,4,71,6.83,6.76,9.32,7.29,7.372499999999999,2,7.21,1.37,7.51
+28,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"Phoenixville, PA",2000,Medium,3,$260 ,Single-family,89,5,76,5.2,5.28,10.0,9.59,6.846499999999999,1,9.65,1.83,9.84
+28,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"Phoenixville, PA",2000,Medium,3,$260 ,Single-family,89,5,79,5.68,5.74,7.83,9.59,6.717499999999999,2,8.94,1.7,9.11
+28,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"Phoenixville, PA",2000,Medium,3,$260 ,Single-family,89,5,82,6.15,6.21,1.53,10.0,5.8245,3,8.22,1.56,8.38
+29,I'll be home all day and it's cold. What temperature should I set the thermostat to?,"Phoenixville, PA",2000,Medium,3,$260 ,Single-family,24,5,66,6.73,6.77,4.06,7.29,6.294,3,7.36,1.4,7.5
+29,I'll be home all day and it's cold. What temperature should I set the thermostat to?,"Phoenixville, PA",2000,Medium,3,$260 ,Single-family,24,5,69,6.25,6.31,9.32,7.29,7.0409999999999995,1,8.07,1.53,8.23
+29,I'll be home all day and it's cold. What temperature should I set the thermostat to?,"Phoenixville, PA",2000,Medium,3,$260 ,Single-family,24,5,72,5.78,5.84,8.6,7.29,6.5915,2,8.79,1.67,8.96
+30,No one's home for 8 hours and it's hot. What should I set the AC to?,"Scranton, PA",1750,Medium,2,$210 ,Single-family,84,7,75,7.38,7.3,9.32,10.0,8.133,2,6.4,1.22,6.66
+30,No one's home for 8 hours and it's hot. What should I set the AC to?,"Scranton, PA",1750,Medium,2,$210 ,Single-family,84,7,78,7.73,7.66,8.6,10.0,8.219999999999999,1,5.87,1.11,6.11
+30,No one's home for 8 hours and it's hot. What should I set the AC to?,"Scranton, PA",1750,Medium,2,$210 ,Single-family,84,7,81,8.09,8.01,6.11,10.0,7.9525,3,5.33,1.01,5.55
+31,No one's home for 8 hours and it's cold. What should I set the heat to?,"Scranton, PA",1750,Medium,2,$210 ,Single-family,16,7,66,6.98,6.92,4.06,7.29,6.4215,3,6.98,1.33,7.27
+31,No one's home for 8 hours and it's cold. What should I set the heat to?,"Scranton, PA",1750,Medium,2,$210 ,Single-family,16,7,69,6.63,6.56,9.32,7.29,7.2425,1,7.51,1.43,7.82
+31,No one's home for 8 hours and it's cold. What should I set the heat to?,"Scranton, PA",1750,Medium,2,$210 ,Single-family,16,7,72,6.27,6.21,8.6,7.29,6.8679999999999986,2,8.04,1.53,8.37
+32,We're all out for 8 hours in the heat. What AC setting makes sense?,"Norristown, PA",1200,Poor,3,$170 ,Apartment,91,9,78,7.66,7.59,8.6,9.59,8.113,1,5.97,1.13,6.21
+32,We're all out for 8 hours in the heat. What AC setting makes sense?,"Norristown, PA",1200,Poor,3,$170 ,Apartment,91,9,81,7.96,7.88,4.06,9.59,7.3965,2,5.53,1.05,5.76
+32,We're all out for 8 hours in the heat. What AC setting makes sense?,"Norristown, PA",1200,Poor,3,$170 ,Apartment,91,9,84,8.25,8.17,0.0,7.29,6.428,3,5.09,0.97,5.3
+33,We're all out for 8 hours in cold weather. What heating temperature is best?,"Norristown, PA",1200,Poor,3,$170 ,Apartment,19,9,65,8.41,8.33,1.53,7.29,6.837999999999999,3,4.84,0.92,5.04
+33,We're all out for 8 hours in cold weather. What heating temperature is best?,"Norristown, PA",1200,Poor,3,$170 ,Apartment,19,9,68,8.12,8.04,8.6,7.29,8.0635,1,5.28,1.0,5.5
+33,We're all out for 8 hours in cold weather. What heating temperature is best?,"Norristown, PA",1200,Poor,3,$170 ,Apartment,19,9,71,7.82,7.75,9.32,7.29,8.016,2,5.73,1.09,5.96
+34,It's hot today and we're home as usual. What temperature should I set the AC to?,"Lower Merion, PA",3000,Good,4,$600 ,Single-family,90,10,71,1.23,1.44,3.48,9.59,3.0075,3,15.58,2.96,15.88
+34,It's hot today and we're home as usual. What temperature should I set the AC to?,"Lower Merion, PA",3000,Good,4,$600 ,Single-family,90,10,75,2.01,2.19,9.25,9.59,4.6579999999999995,2,14.41,2.74,14.69
+34,It's hot today and we're home as usual. What temperature should I set the AC to?,"Lower Merion, PA",3000,Good,4,$600 ,Single-family,90,10,79,2.79,2.95,7.59,9.59,4.8260000000000005,1,13.24,2.52,13.5
+35,It's cold outside and we're home as usual. What should I set the heat to?,"Lower Merion, PA",3000,Good,4,$600 ,Single-family,23,10,68,5.37,5.45,8.46,7.29,6.303999999999999,1,9.39,1.78,9.57
+35,It's cold outside and we're home as usual. What should I set the heat to?,"Lower Merion, PA",3000,Good,4,$600 ,Single-family,23,10,71,4.79,4.88,9.25,7.29,6.0885,2,10.27,1.95,10.47
+35,It's cold outside and we're home as usual. What should I set the heat to?,"Lower Merion, PA",3000,Good,4,$600 ,Single-family,23,10,74,4.2,4.31,6.65,7.29,5.191999999999999,3,11.14,2.12,11.36
+36,The house is unoccupied for 4 hours today. What's the best AC temperature?,"King of Prussia, PA",2200,Medium,5,$400 ,Townhouse,93,12,75,3.23,3.2,9.18,9.59,5.3635,2,12.59,2.39,13.1
+36,The house is unoccupied for 4 hours today. What's the best AC temperature?,"King of Prussia, PA",2200,Medium,5,$400 ,Townhouse,93,12,78,3.77,3.73,8.3,9.59,5.535,1,11.79,2.24,12.27
+36,The house is unoccupied for 4 hours today. What's the best AC temperature?,"King of Prussia, PA",2200,Medium,5,$400 ,Townhouse,93,12,81,4.31,4.27,2.86,9.59,4.798,3,10.99,2.09,11.44
+37,The house is unoccupied for 4 hours. What should I set the thermostat to?,"King of Prussia, PA",2200,Medium,5,$400 ,Townhouse,18,12,66,5.32,5.26,3.11,7.29,5.1525,3,9.48,1.8,9.86
+37,The house is unoccupied for 4 hours. What should I set the thermostat to?,"King of Prussia, PA",2200,Medium,5,$400 ,Townhouse,18,12,69,4.78,4.73,9.18,7.29,6.019,1,10.28,1.95,10.7
+37,The house is unoccupied for 4 hours. What should I set the thermostat to?,"King of Prussia, PA",2200,Medium,5,$400 ,Townhouse,18,12,72,4.24,4.2,8.3,7.29,5.4955,2,11.08,2.1,11.53
+38,It's hot today and we're home as usual. What temperature should I set the AC to?,"Pottstown, PA",1850,Medium,3,$230 ,Single-family,88,13,76,5.03,5.12,10.0,9.59,6.7395,1,9.9,1.88,10.09
+38,It's hot today and we're home as usual. What temperature should I set the AC to?,"Pottstown, PA",1850,Medium,3,$230 ,Single-family,88,13,79,5.53,5.6,7.83,10.0,6.685,2,9.16,1.74,9.34
+38,It's hot today and we're home as usual. What temperature should I set the AC to?,"Pottstown, PA",1850,Medium,3,$230 ,Single-family,88,13,82,6.02,6.08,1.53,10.0,5.739999999999999,3,8.42,1.6,8.58
+39,It's cold outside and we're home as usual. What should I set the heat to?,"Pottstown, PA",1850,Medium,3,$230 ,Single-family,21,13,66,6.11,6.17,4.06,7.29,5.898,3,8.29,1.57,8.45
+39,It's cold outside and we're home as usual. What should I set the heat to?,"Pottstown, PA",1850,Medium,3,$230 ,Single-family,21,13,69,5.61,5.69,9.32,7.29,6.632,1,9.03,1.72,9.2
+39,It's cold outside and we're home as usual. What should I set the heat to?,"Pottstown, PA",1850,Medium,3,$230 ,Single-family,21,13,72,5.12,5.2,8.6,7.29,6.169499999999999,2,9.77,1.86,9.96
+40,It's hot today and everyone's home. What temperature makes sense for the AC?,"Exton, PA",2400,Good,4,$380 ,Single-family,91,14,73,3.14,3.29,7.59,9.59,5.049999999999999,3,12.72,2.42,12.97
+40,It's hot today and everyone's home. What temperature makes sense for the AC?,"Exton, PA",2400,Good,4,$380 ,Single-family,91,14,76,3.62,3.75,10.0,9.59,5.837,1,12.01,2.28,12.24
+40,It's hot today and everyone's home. What temperature makes sense for the AC?,"Exton, PA",2400,Good,4,$380 ,Single-family,91,14,79,4.09,4.21,7.59,9.59,5.657,2,11.3,2.15,11.52
+41,It's cold today and everyone's home. What heating temperature should I use?,"Exton, PA",2400,Good,4,$380 ,Single-family,20,14,67,6.48,6.52,5.82,7.29,6.4834999999999985,2,7.74,1.47,7.89
+41,It's cold today and everyone's home. What heating temperature should I use?,"Exton, PA",2400,Good,4,$380 ,Single-family,20,14,70,6.0,6.06,10.0,7.29,7.014499999999999,1,8.45,1.61,8.61
+41,It's cold today and everyone's home. What heating temperature should I use?,"Exton, PA",2400,Good,4,$380 ,Single-family,20,14,73,5.53,5.6,7.59,7.29,6.230499999999999,3,9.16,1.74,9.34
+42,"With 2 people home on a hot day, what's the best AC setting?","Reading, PA",1600,Poor,2,$190 ,Rowhouse,92,15,78,3.96,5.15,8.6,9.59,6.148999999999999,1,9.85,1.87,10.04
+42,"With 2 people home on a hot day, what's the best AC setting?","Reading, PA",1600,Poor,2,$190 ,Rowhouse,92,15,81,5.33,5.65,4.06,9.59,5.827,2,9.08,1.73,9.26
+42,"With 2 people home on a hot day, what's the best AC setting?","Reading, PA",1600,Poor,2,$190 ,Rowhouse,92,15,84,6.09,6.15,0.0,7.29,5.0729999999999995,3,8.31,1.58,8.47
+43,Cold day today with 2 people home. What's a good heating temperature?,"Reading, PA",1600,Poor,2,$190 ,Rowhouse,22,15,65,5.95,6.01,1.53,7.29,5.287999999999999,3,8.53,1.62,8.7
+43,Cold day today with 2 people home. What's a good heating temperature?,"Reading, PA",1600,Poor,2,$190 ,Rowhouse,22,15,68,4.93,5.51,8.6,7.29,6.220999999999999,1,9.3,1.77,9.48
+43,Cold day today with 2 people home. What's a good heating temperature?,"Reading, PA",1600,Poor,2,$190 ,Rowhouse,22,15,71,3.61,5.01,9.32,7.29,5.794,2,10.07,1.91,10.27
+44,It's a hot day. What should I set my air conditioning to?,"Newtown, PA",2100,Good,3,$340 ,Single-family,89,17,74,4.25,4.36,8.6,9.59,5.9595,3,11.07,2.1,11.28
+44,It's a hot day. What should I set my air conditioning to?,"Newtown, PA",2100,Good,3,$340 ,Single-family,89,17,77,4.69,4.79,9.32,9.59,6.385999999999999,1,10.41,1.98,10.61
+44,It's a hot day. What should I set my air conditioning to?,"Newtown, PA",2100,Good,3,$340 ,Single-family,89,17,80,5.13,5.22,6.11,10.0,6.088,2,9.75,1.85,9.94
+45,It's a cold day. What should I set the thermostat to?,"Newtown, PA",2100,Good,3,$340 ,Single-family,24,17,67,7.39,7.4,6.11,7.29,7.1225,2,6.38,1.21,6.5
+45,It's a cold day. What should I set the thermostat to?,"Newtown, PA",2100,Good,3,$340 ,Single-family,24,17,70,6.95,6.98,10.0,7.29,7.6215,1,7.03,1.34,7.17
+45,It's a cold day. What should I set the thermostat to?,"Newtown, PA",2100,Good,3,$340 ,Single-family,24,17,73,6.51,6.55,7.83,7.29,6.904999999999999,3,7.69,1.46,7.84
+46,It's hot today and we're home as usual. What temperature should I set the AC to?,"Wilkes-Barre, PA",1950,Medium,4,$270 ,Single-family,87,19,75,3.99,4.11,9.25,9.59,5.9239999999999995,2,11.46,2.18,11.68
+46,It's hot today and we're home as usual. What temperature should I set the AC to?,"Wilkes-Barre, PA",1950,Medium,4,$270 ,Single-family,87,19,78,4.55,4.66,8.46,10.0,6.188000000000001,1,10.62,2.02,10.82
+46,It's hot today and we're home as usual. What temperature should I set the AC to?,"Wilkes-Barre, PA",1950,Medium,4,$270 ,Single-family,87,19,81,5.12,5.2,3.48,10.0,5.552,3,9.78,1.86,9.96
+47,It's cold outside and we're home as usual. What should I set the heat to?,"Wilkes-Barre, PA",1950,Medium,4,$270 ,Single-family,19,19,66,5.15,5.23,3.59,7.29,5.187,3,9.72,1.85,9.91
+47,It's cold outside and we're home as usual. What should I set the heat to?,"Wilkes-Barre, PA",1950,Medium,4,$270 ,Single-family,19,19,69,4.59,4.69,9.25,7.29,5.962,1,10.56,2.01,10.77
+47,It's cold outside and we're home as usual. What should I set the heat to?,"Wilkes-Barre, PA",1950,Medium,4,$270 ,Single-family,19,19,72,4.02,4.14,8.46,7.29,5.440499999999999,2,11.41,2.17,11.63
+48,"With 2 people home on a hot day, what's the best AC setting?","Carlisle, PA",1650,Poor,2,$195 ,Townhouse,90,21,78,2.15,4.22,8.6,9.59,5.2805,1,11.29,2.15,11.51
+48,"With 2 people home on a hot day, what's the best AC setting?","Carlisle, PA",1650,Poor,2,$195 ,Townhouse,90,21,81,3.45,4.82,4.06,10.0,5.034,2,10.36,1.97,10.56
+48,"With 2 people home on a hot day, what's the best AC setting?","Carlisle, PA",1650,Poor,2,$195 ,Townhouse,90,21,84,5.0,5.43,0.0,7.29,4.494,3,9.42,1.79,9.6
+49,Cold day today with 2 people home. What's a good heating temperature?,"Carlisle, PA",1650,Poor,2,$195 ,Townhouse,23,21,65,3.87,5.0,1.53,7.29,4.3105,3,10.09,1.92,10.28
+49,Cold day today with 2 people home. What's a good heating temperature?,"Carlisle, PA",1650,Poor,2,$195 ,Townhouse,23,21,68,2.5,4.39,8.6,7.29,5.1,1,11.02,2.09,11.23
+49,Cold day today with 2 people home. What's a good heating temperature?,"Carlisle, PA",1650,Poor,2,$195 ,Townhouse,23,21,71,1.58,3.79,9.32,7.29,4.758,2,11.96,2.27,12.19
+50,It's hot today and everyone's home. What temperature makes sense for the AC?,"Lebanon, PA",2350,Medium,3,$310 ,Single-family,91,25,76,0.47,0.86,10.0,9.59,3.8805,2,16.47,3.13,16.78
+50,It's hot today and everyone's home. What temperature makes sense for the AC?,"Lebanon, PA",2350,Medium,3,$310 ,Single-family,91,25,79,1.28,1.63,7.83,9.59,3.959,1,15.28,2.9,15.58
+50,It's hot today and everyone's home. What temperature makes sense for the AC?,"Lebanon, PA",2350,Medium,3,$310 ,Single-family,91,25,82,2.22,2.4,1.53,10.0,3.3120000000000003,3,14.1,2.68,14.37
+51,It's cold today and everyone's home. What heating temperature should I use?,"Lebanon, PA",2350,Medium,3,$310 ,Single-family,21,25,66,2.48,2.65,4.06,7.29,3.577,2,13.71,2.6,13.97
+51,It's cold today and everyone's home. What heating temperature should I use?,"Lebanon, PA",2350,Medium,3,$310 ,Single-family,21,25,69,1.6,1.88,9.32,7.29,4.0954999999999995,1,14.89,2.83,15.18
+51,It's cold today and everyone's home. What heating temperature should I use?,"Lebanon, PA",2350,Medium,3,$310 ,Single-family,21,25,72,0.71,1.12,8.6,7.29,3.4185,3,16.07,3.05,16.39
+52,It's a hot day. What should I set my air conditioning to?,"Gettysburg, PA",1800,Good,5,$380 ,Single-family,88,26,74,2.57,2.73,8.3,9.59,4.824999999999999,3,13.58,2.58,13.85
+52,It's a hot day. What should I set my air conditioning to?,"Gettysburg, PA",1800,Good,5,$380 ,Single-family,88,26,77,3.07,3.22,9.18,9.59,5.3225,1,12.82,2.44,13.07
+52,It's a hot day. What should I set my air conditioning to?,"Gettysburg, PA",1800,Good,5,$380 ,Single-family,88,26,80,3.58,3.72,5.33,10.0,4.942,2,12.07,2.29,12.3
+53,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Good,5,$380 ,Single-family,20,26,67,6.79,6.83,5.53,7.29,6.627,2,7.26,1.38,7.41
+53,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Good,5,$380 ,Single-family,20,26,70,6.29,6.34,10.0,7.29,7.1995,1,8.02,1.52,8.18
+53,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Good,5,$380 ,Single-family,20,26,73,5.78,5.84,7.34,7.29,6.3395,3,8.78,1.67,8.95
+54,What temperature should I set the AC to overnight?,"Chambersburg, PA",2450,Medium,4,$340 ,Single-family,92,28,75,1.65,2.25,9.25,9.59,4.571,2,14.95,2.84,14.6
+54,What temperature should I set the AC to overnight?,"Chambersburg, PA",2450,Medium,4,$340 ,Single-family,92,28,78,2.32,2.88,8.46,9.59,4.8345,1,13.95,2.65,13.61
+54,What temperature should I set the AC to overnight?,"Chambersburg, PA",2450,Medium,4,$340 ,Single-family,92,28,81,3.0,3.51,3.48,9.59,4.263,3,12.94,2.46,12.63
+55,What temperature should I set the heat to overnight?,"Chambersburg, PA",2450,Medium,4,$340 ,Single-family,18,28,67,3.09,3.59,5.82,7.29,4.441,2,12.8,2.43,12.49
+55,What temperature should I set the heat to overnight?,"Chambersburg, PA",2450,Medium,4,$340 ,Single-family,18,28,70,2.42,2.97,10.0,7.29,4.859,1,13.81,2.62,13.48
+55,What temperature should I set the heat to overnight?,"Chambersburg, PA",2450,Medium,4,$340 ,Single-family,18,28,73,1.74,2.34,7.59,7.29,3.9524999999999997,3,14.82,2.82,14.46
+56,It's hot today and everyone's home. What temperature makes sense for the AC?,"Altoona, PA",1550,Poor,2,$175 ,Apartment,85,29,76,1.86,4.52,10.0,10.0,5.64,2,10.82,2.06,11.03
+56,It's hot today and everyone's home. What temperature makes sense for the AC?,"Altoona, PA",1550,Poor,2,$175 ,Apartment,85,29,79,3.0,5.15,7.83,10.0,5.7684999999999995,1,9.86,1.87,10.05
+56,It's hot today and everyone's home. What temperature makes sense for the AC?,"Altoona, PA",1550,Poor,2,$175 ,Apartment,85,29,82,4.73,5.78,1.53,10.0,5.248,3,8.89,1.69,9.06
+57,It's cold today and everyone's home. What heating temperature should I use?,"Altoona, PA",1550,Poor,2,$175 ,Apartment,17,29,66,0.8,3.36,4.06,7.29,3.3214999999999995,3,12.61,2.4,12.85
+57,It's cold today and everyone's home. What heating temperature should I use?,"Altoona, PA",1550,Poor,2,$175 ,Apartment,17,29,69,0.48,2.74,9.32,7.29,4.0605,1,13.57,2.58,13.84
+57,It's cold today and everyone's home. What heating temperature should I use?,"Altoona, PA",1550,Poor,2,$175 ,Apartment,17,29,72,0.27,2.11,8.6,7.29,3.633,2,14.54,2.76,14.82
+58,I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Stroudsburg, PA",2050,Medium,3,$270 ,Single-family,89,102,76,0.47,1.62,10.0,9.59,4.1465,2,15.97,3.04,15.59
+58,I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Stroudsburg, PA",2050,Medium,3,$270 ,Single-family,89,102,79,1.16,2.36,7.83,9.59,4.1785,1,14.79,2.81,14.43
+58,I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Stroudsburg, PA",2050,Medium,3,$270 ,Single-family,89,102,82,2.16,3.09,1.53,10.0,3.5355,3,13.61,2.58,13.28
+59,I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Stroudsburg, PA",2050,Medium,3,$270 ,Single-family,21,102,66,2.3,3.18,4.06,7.29,3.7085,2,13.46,2.56,13.14
+59,I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Stroudsburg, PA",2050,Medium,3,$270 ,Single-family,21,102,69,1.27,2.45,9.32,7.29,4.196,1,14.64,2.78,14.29
+59,I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Stroudsburg, PA",2050,Medium,3,$270 ,Single-family,21,102,72,0.53,1.71,8.6,7.29,3.5709999999999997,3,15.83,3.01,15.45
+60,"With people home all day in the heat, what's the best AC setting?","Hazleton, PA",2200,Poor,4,$180 ,Single-family,98,40,78,0.0,0.0,8.46,8.72,3.0,1,25.05,4.76,25.54
+60,"With people home all day in the heat, what's the best AC setting?","Hazleton, PA",2200,Poor,4,$180 ,Single-family,98,40,80,0.0,0.0,5.73,9.59,2.5845000000000002,2,23.93,4.55,24.4
+60,"With people home all day in the heat, what's the best AC setting?","Hazleton, PA",2200,Poor,4,$180 ,Single-family,98,40,82,0.0,0.0,0.64,9.59,1.5665,3,22.82,4.34,23.26
+61,It's hot today and we're home as usual. What temperature should I set the AC to?,"Monroeville, PA",2000,Medium,3,$250 ,Condo,92,25,76,1.24,2.34,10.0,9.59,4.6295,2,14.19,2.7,14.46
+61,It's hot today and we're home as usual. What temperature should I set the AC to?,"Monroeville, PA",2000,Medium,3,$250 ,Condo,92,25,78,1.78,2.76,8.6,9.59,4.6585,1,13.54,2.57,13.8
+61,It's hot today and we're home as usual. What temperature should I set the AC to?,"Monroeville, PA",2000,Medium,3,$250 ,Condo,92,25,80,2.42,3.18,6.11,9.59,4.499499999999999,3,12.88,2.45,13.13
+62,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"New Castle, PA",2400,Poor,5,$150 ,Single-family,97,35,79,0.0,0.0,7.34,9.59,2.9065,1,23.37,4.44,23.82
+62,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"New Castle, PA",2400,Poor,5,$150 ,Single-family,97,35,81,0.0,0.0,2.86,9.59,2.0105,2,22.29,4.24,22.72
+62,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"New Castle, PA",2400,Poor,5,$150 ,Single-family,97,35,83,0.0,0.0,0.0,8.33,1.2495,3,21.21,4.03,21.62
+63,It's hot today and we're home as usual. What temperature should I set the AC to?,"Butler, PA",2500,Good,4,$600 ,Single-family,88,3,72,4.5,4.6,5.73,9.59,5.544499999999999,3,10.7,2.03,10.9
+63,It's hot today and we're home as usual. What temperature should I set the AC to?,"Butler, PA",2500,Good,4,$600 ,Single-family,88,3,75,4.92,5.01,9.25,9.59,6.517999999999999,2,10.07,1.91,10.27
+63,It's hot today and we're home as usual. What temperature should I set the AC to?,"Butler, PA",2500,Good,4,$600 ,Single-family,88,3,78,5.33,5.41,8.46,9.59,6.622999999999999,1,9.45,1.8,9.63
+64,The house will be empty for 4 hours today. What AC temperature should I set?,"Coatesville, PA",1850,Medium,3,$200 ,Townhouse,91,20,77,3.07,4.39,9.32,9.59,5.76,2,10.79,2.05,11.23
+64,The house will be empty for 4 hours today. What AC temperature should I set?,"Coatesville, PA",1850,Medium,3,$200 ,Townhouse,91,20,79,3.84,4.73,7.83,9.59,5.811999999999999,1,10.28,1.95,10.7
+64,The house will be empty for 4 hours today. What AC temperature should I set?,"Coatesville, PA",1850,Medium,3,$200 ,Townhouse,91,20,81,4.67,5.07,4.06,9.59,5.426,3,9.77,1.86,10.17
+65,It's a hot day. What should I set my air conditioning to?,"Uniontown, PA",2100,Poor,4,$280 ,Single-family,95,55,78,0.0,0.0,8.46,9.59,3.1305,1,25.68,4.88,26.17
+65,It's a hot day. What should I set my air conditioning to?,"Uniontown, PA",2100,Poor,4,$280 ,Single-family,95,55,80,0.0,0.0,5.73,9.59,2.5845000000000002,2,24.46,4.65,24.93
+65,It's a hot day. What should I set my air conditioning to?,"Uniontown, PA",2100,Poor,4,$280 ,Single-family,95,55,82,0.0,0.0,0.64,9.59,1.5665,3,23.24,4.41,23.68
+66,Cold day today with 3 people home. What's a good heating temperature?,"Indiana, PA",1900,Medium,3,$250 ,Apartment,18,60,65,0.54,1.49,1.53,7.29,2.083,3,15.49,2.94,15.79
+66,Cold day today with 3 people home. What's a good heating temperature?,"Indiana, PA",1900,Medium,3,$250 ,Apartment,18,60,68,0.13,0.65,8.6,7.29,3.08,1,16.8,3.19,17.12
+66,Cold day today with 3 people home. What's a good heating temperature?,"Indiana, PA",1900,Medium,3,$250 ,Apartment,18,60,71,0.0,0.0,9.32,7.29,2.9575,2,18.1,3.44,18.45
+67,It's a hot day. What should I set my air conditioning to?,"Meadville, PA",2200,Good,4,$400 ,Single-family,90,2,73,5.17,5.26,7.59,9.59,6.3485,3,9.69,1.84,9.87
+67,It's a hot day. What should I set my air conditioning to?,"Meadville, PA",2200,Good,4,$400 ,Single-family,90,2,76,5.54,5.61,10.0,9.59,7.064,1,9.14,1.74,9.32
+67,It's a hot day. What should I set my air conditioning to?,"Meadville, PA",2200,Good,4,$400 ,Single-family,90,2,79,5.9,5.96,7.59,9.59,6.8125,2,8.6,1.63,8.76
+68,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"Greensburg, PA",1800,Poor,2,$170 ,Single-family,93,45,79,0.0,0.0,7.83,9.59,3.0045,1,19.79,3.76,20.17
+68,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"Greensburg, PA",1800,Poor,2,$170 ,Single-family,93,45,81,0.0,0.0,4.06,9.59,2.2504999999999997,2,18.75,3.56,19.11
+68,I'll be home all day working and it's hot outside. What AC temperature makes sense?,"Greensburg, PA",1800,Poor,2,$170 ,Single-family,93,45,83,0.0,0.06,0.0,8.33,1.2705,3,17.7,3.36,18.04
+69,It's a hot day. What should I set my air conditioning to?,"DuBois, PA",1950,Medium,3,$260 ,Single-family,89,18,76,4.15,4.27,10.0,9.59,6.177999999999999,1,11.21,2.13,11.43
+69,It's a hot day. What should I set my air conditioning to?,"DuBois, PA",1950,Medium,3,$260 ,Single-family,89,18,77,4.34,4.45,9.32,9.59,6.161999999999999,2,10.94,2.08,11.15
+69,It's a hot day. What should I set my air conditioning to?,"DuBois, PA",1950,Medium,3,$260 ,Single-family,89,18,78,4.52,4.63,8.6,9.59,6.135,3,10.66,2.03,10.87
+70,The house will be empty for 4 hours today. What AC temperature should I set?,"Oil City, PA",2100,Good,4,$320 ,Townhouse,91,10,82,6.07,6.01,0.64,10.0,5.5525,2,8.35,1.59,8.69
+70,The house will be empty for 4 hours today. What AC temperature should I set?,"Oil City, PA",2100,Good,4,$320 ,Townhouse,91,10,76,5.34,5.28,10.0,9.59,6.888499999999999,1,9.45,1.79,9.83
+70,The house will be empty for 4 hours today. What AC temperature should I set?,"Oil City, PA",2100,Good,4,$320 ,Townhouse,91,10,70,4.6,4.56,0.64,7.93,4.2935,3,10.54,2.0,10.97
+71,Cold day today with 3 people home. What's a good heating temperature?,"Reading, PA",2000,Medium,3,$290 ,Single-family,20,18,65,4.84,4.94,1.53,7.29,4.5805,2,10.18,1.93,10.38
+71,Cold day today with 3 people home. What's a good heating temperature?,"Reading, PA",2000,Medium,3,$290 ,Single-family,20,18,72,3.44,3.57,8.6,7.29,5.095,1,12.28,2.33,12.52
+71,Cold day today with 3 people home. What's a good heating temperature?,"Reading, PA",2000,Medium,3,$290 ,Single-family,20,18,79,1.79,2.21,0.0,5.47,2.131,3,14.38,2.73,14.66
+72,Someone's home all day and it's hot outside. What should I set the AC to?,"Carlisle, PA",2000,Poor,3,$300 ,Single-family,102,28,78,0.0,0.0,8.6,8.72,3.028,1,19.61,3.73,19.98
+72,Someone's home all day and it's hot outside. What should I set the AC to?,"Carlisle, PA",2000,Poor,3,$300 ,Single-family,102,28,80,0.0,0.0,6.11,8.72,2.5300000000000002,2,18.8,3.57,19.16
+72,Someone's home all day and it's hot outside. What should I set the AC to?,"Carlisle, PA",2000,Poor,3,$300 ,Single-family,102,28,82,0.0,0.0,1.53,8.72,1.614,3,17.99,3.42,18.33
+73,Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,66,0.0,0.0,3.59,7.29,1.8114999999999999,3,28.38,5.39,28.93
+73,Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,69,0.0,0.0,9.25,7.29,2.9435000000000002,1,30.06,5.71,30.64
+73,Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,72,0.0,0.0,8.46,7.29,2.7855,2,31.73,6.03,32.34
+74,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,68,10.0,10.0,8.6,10.0,9.72,2,0.0,0.0,0.0
+74,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,70,10.0,10.0,10.0,9.59,9.9385,1,0.0,0.0,0.0
+74,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,72,10.0,10.0,8.6,9.59,9.6585,3,0.39,0.07,0.4
+75,We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,77,2.87,2.98,9.32,8.72,5.076,1,12.93,2.46,13.46
+75,We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,80,3.54,3.51,6.11,9.59,4.9510000000000005,2,12.12,2.3,12.62
+75,We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,83,4.08,4.04,0.0,8.33,3.8875,3,11.32,2.15,11.79
+76,I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Quakertown, PA",1900,Good,3,$240 ,Single-family,22,11,70,8.47,8.58,10.0,7.29,8.6375,1,4.76,0.9,4.65
+76,I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Quakertown, PA",1900,Good,3,$240 ,Single-family,22,11,65,8.95,9.03,1.53,7.29,7.244999999999999,2,4.05,0.77,3.95
+76,I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Quakertown, PA",1900,Good,3,$240 ,Single-family,22,11,60,9.43,9.47,0.0,2.76,6.557499999999999,3,3.33,0.63,3.25
+77,I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Phoenixville, PA",1750,Medium,2,$250 ,Townhouse,92,14,78,6.62,6.87,8.6,9.59,7.5489999999999995,1,7.52,1.43,7.34
+77,I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Phoenixville, PA",1750,Medium,2,$250 ,Townhouse,92,14,81,6.99,7.21,4.06,9.59,6.871,2,6.97,1.32,6.8
+77,I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Phoenixville, PA",1750,Medium,2,$250 ,Townhouse,92,14,84,7.36,7.55,0.0,7.29,5.944,3,6.42,1.22,6.27
+78,We're all out for 12 hours in the heat. What AC setting makes sense?,"West Mifflin, PA",2300,Poor,4,$165 ,Single-family,94,30,79,0.28,2.23,7.59,9.59,3.8209999999999997,1,14.06,2.67,14.64
+78,We're all out for 12 hours in the heat. What AC setting makes sense?,"West Mifflin, PA",2300,Poor,4,$165 ,Single-family,94,30,81,0.43,2.7,3.48,9.59,3.2085,2,13.35,2.54,13.9
+78,We're all out for 12 hours in the heat. What AC setting makes sense?,"West Mifflin, PA",2300,Poor,4,$165 ,Single-family,94,30,83,0.63,3.17,0.0,8.33,2.548,3,12.64,2.4,13.16
+79,I'm working from home today and it's hot. What AC temperature should I use?,"Cheltenham, PA",2000,Good,3,$450 ,Single-family,88,4,73,5.96,6.02,7.83,9.59,6.8995,3,8.51,1.62,8.68
+79,I'm working from home today and it's hot. What AC temperature should I use?,"Cheltenham, PA",2000,Good,3,$450 ,Single-family,88,4,75,6.18,6.24,9.32,9.59,7.340499999999999,2,8.18,1.55,8.33
+79,I'm working from home today and it's hot. What AC temperature should I use?,"Cheltenham, PA",2000,Good,3,$450 ,Single-family,88,4,77,6.41,6.46,9.32,9.59,7.4864999999999995,1,7.84,1.49,7.99
+80,It's a mild spring day but the house feels chilly. What should I set the heat to?,"Norristown, PA",1600,Medium,3,$260 ,Single-family,60,14,68,10.0,10.0,8.6,10.0,9.72,2,0.0,0.0,0.0
+80,It's a mild spring day but the house feels chilly. What should I set the heat to?,"Norristown, PA",1600,Medium,3,$260 ,Single-family,60,14,71,10.0,10.0,9.32,9.59,9.8025,1,0.0,0.0,0.0
+80,It's a mild spring day but the house feels chilly. What should I set the heat to?,"Norristown, PA",1600,Medium,3,$260 ,Single-family,60,14,74,10.0,10.0,7.0,9.59,9.3385,3,0.35,0.07,0.36
+81,I'm setting the thermostat for bedtime on a cold night. What heating temperature is best?,"Wilkes-Barre, PA",1900,Good,2,$230 ,Single-family,17,9,65,8.54,8.65,1.53,7.29,6.988999999999999,3,4.65,0.88,4.54
+81,I'm setting the thermostat for bedtime on a cold night. What heating temperature is best?,"Wilkes-Barre, PA",1900,Good,2,$230 ,Single-family,17,9,68,8.27,8.4,8.6,7.29,8.234499999999999,2,5.05,0.96,4.93
+81,I'm setting the thermostat for bedtime on a cold night. What heating temperature is best?,"Wilkes-Barre, PA",1900,Good,2,$230 ,Single-family,17,9,70,8.1,8.24,10.0,7.29,8.4075,1,5.32,1.01,5.19
+82,We're leaving the house for a few hours on a hot day. What should I set the AC to?,"Levittown, PA",1700,Medium,3,$300 ,Single-family,89,32,78,3.53,3.49,8.6,9.59,5.439,1,12.15,2.31,12.65
+82,We're leaving the house for a few hours on a hot day. What should I set the AC to?,"Levittown, PA",1700,Medium,3,$300 ,Single-family,89,32,80,3.94,3.9,6.11,10.0,5.269,2,11.53,2.19,12.01
+82,We're leaving the house for a few hours on a hot day. What should I set the AC to?,"Levittown, PA",1700,Medium,3,$300 ,Single-family,89,32,82,4.35,4.31,1.53,10.0,4.6194999999999995,3,10.92,2.07,11.37
+83,It's a scorching day and we're all home. What AC setting balances comfort and cost with our older system?,"Easton, PA",2200,Poor,4,$165 ,Townhouse,97,35,76,0.0,0.0,10.0,8.72,3.308,1,24.87,4.73,25.35
+83,It's a scorching day and we're all home. What AC setting balances comfort and cost with our older system?,"Easton, PA",2200,Poor,4,$165 ,Townhouse,97,35,78,0.0,0.0,8.46,9.59,3.1305,2,23.78,4.52,24.24
+83,It's a scorching day and we're all home. What AC setting balances comfort and cost with our older system?,"Easton, PA",2200,Poor,4,$165 ,Townhouse,97,35,80,0.0,0.0,5.73,9.59,2.5845000000000002,3,22.7,4.31,23.14
+84,We're leaving for 12 hours on a very cold day. How far should I set back the heat?,"Stroudsburg, PA",3000,Poor,5,$350 ,Single-family,15,28,60,0.81,0.81,0.0,2.76,0.9404999999999999,3,16.21,3.08,16.87
+84,We're leaving for 12 hours on a very cold day. How far should I set back the heat?,"Stroudsburg, PA",3000,Poor,5,$350 ,Single-family,15,28,63,0.0,0.0,0.0,7.29,1.0935,2,17.58,3.34,18.3
+84,We're leaving for 12 hours on a very cold day. How far should I set back the heat?,"Stroudsburg, PA",3000,Poor,5,$350 ,Single-family,15,28,67,0.0,0.0,5.53,7.29,2.1995,1,19.4,3.69,20.19
