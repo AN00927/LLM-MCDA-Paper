@@ -10,18 +10,57 @@ SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 class ApplianceGroundTruthCalculator:
-    # his average factor is defined for reference only. Actual emissions
-    # calculations use EMISSIONS_FACTOR_PEAK / EMISSIONS_FACTOR_OFFPEAK below
-    # because time-of-use differentiation is integral to appliance scheduling.
-    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); NOT used in calculations
+    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
+    # Emissions Report (April 2023). Marginal rates reflect emissions of the last
+    # generator dispatched and are the correct measure for time-shifting decisions
+    # (vs. the prior eGRID average factor which represented all generation averaged).
+    # Peak window: 7am-11pm. Weekday/holiday distinction not modeled (scenarios
+    # have no date parameter; assumed weekday).
+    EMISSIONS_FACTOR_PEAK = 1.041      # lbs CO2/kWh; PJM peak (1041 lbs/MWh)
+    EMISSIONS_FACTOR_OFFPEAK = 0.976   # lbs CO2/kWh; PJM off-peak (976 lbs/MWh)
+    EMISSIONS_PEAK_HOURS = (7, 23)     # 7am-11pm system-wide PJM
 
-    # Peak window 2 PM–6 PM from PECO Energy TOU documentation (PECO, 2021).
-    PEAK_HOURS = (14, 18)
-    # Time-varying marginal emissions factors by TOU period.
-    # PJM-region defaults inspired by EPA AVERT / NREL Cambium framework.
-    # Replace with hourly PJM marginal factors when available.
-    EMISSIONS_FACTOR_PEAK = 0.7427      # lbs CO2/kWh (approx. marginal peak-period)
-    EMISSIONS_FACTOR_OFFPEAK = 0.5489   # lbs CO2/kWh (approx. marginal off-peak period)
+    # Utility-to-city mapping with TOU rate windows and rates ($/kWh).
+    # Sources: PECO Rate R-TOU 2026; PPL TOU 2025; FirstEnergy PA TOU 2026
+    # (West Penn, Penelec, Met-Ed); PA PUC press release 2025-04-10 (Duquesne pilot,
+    # no standard residential TOU - flat PTC used for both periods).
+    # PPL note: outline simplification - 2-6pm weekdays uniformly (no seasonal split,
+    # since scenarios lack a season parameter).
+    # Weekend rule: all utilities treat weekends as off-peak. Scenarios lack day-of-week,
+    # so weekday is assumed throughout - weekend handling is intentionally not coded.
+    UTILITY_RATES = {
+        "PECO":      {"peak_hours": (14, 18), "peak_rate": 0.320,  "offpeak_rate": 0.076},
+        "PPL":       {"peak_hours": (14, 18), "peak_rate": 0.140,  "offpeak_rate": 0.100},
+        "WestPenn":  {"peak_hours": (14, 21), "peak_rate": 0.165,  "offpeak_rate": 0.067},
+        "Penelec":   {"peak_hours": (14, 21), "peak_rate": 0.185,  "offpeak_rate": 0.072},
+        "MetEd":     {"peak_hours": (14, 21), "peak_rate": 0.220,  "offpeak_rate": 0.080},
+        "Duquesne":  {"peak_hours": (14, 21), "peak_rate": 0.1375, "offpeak_rate": 0.1375},
+    }
+
+    # City-to-utility mapping (PA only; city name as it appears in scenario Location field).
+    # Coverage verified against PA PUC service-territory maps and FirstEnergy/PPL/PECO
+    # public service-area documentation. Cities not in outline-provided mapping
+    # (Harrisburg, Williamsport, McKeesport, Chester, Easton, Johnstown) researched
+    # against utility service-territory pages and PA PUC sources.
+    CITY_TO_UTILITY = {
+        "Philadelphia": "PECO", "Norristown": "PECO", "Pottstown": "PECO",
+        "Phoenixville": "PECO", "West Chester": "PECO", "Exton": "PECO",
+        "King of Prussia": "PECO", "Blue Bell": "PECO", "Lower Merion": "PECO",
+        "Media": "PECO", "Coatesville": "PECO", "Newtown": "PECO",
+        "Doylestown": "PECO", "Chester": "PECO",
+        "Allentown": "PPL", "Bethlehem": "PPL", "Hazleton": "PPL",
+        "Reading": "PPL", "Scranton": "PPL", "Wilkes-Barre": "PPL",
+        "Stroudsburg": "PPL", "Lebanon": "PPL", "Lancaster": "PPL",
+        "State College": "PPL", "Harrisburg": "PPL", "Williamsport": "PPL",
+        "Greensburg": "WestPenn", "Monroeville": "WestPenn",
+        "Indiana": "WestPenn", "Uniontown": "WestPenn", "Butler": "WestPenn",
+        "DuBois": "Penelec", "Oil City": "Penelec", "Meadville": "Penelec",
+        "Erie": "Penelec", "Altoona": "Penelec", "Johnstown": "Penelec",
+        "York": "MetEd", "Chambersburg": "MetEd", "Gettysburg": "MetEd",
+        "Carlisle": "MetEd", "Easton": "MetEd",
+        "Pittsburgh": "Duquesne", "McKeesport": "Duquesne",
+    }
+
     NOISE_LIMIT_EVENING = 45     # dBA threshold after 10pm (EPA/WHO indoor night limit is 35 dBA;
                                   # 45 dBA chosen so dishwashers (~45 dBA) are at-threshold and
                                   # washers/dryers (50-55 dBA) exceed it and receive the noise penalty)
@@ -51,40 +90,54 @@ class ApplianceGroundTruthCalculator:
         }
         return delays.get(appliance_type.lower().strip(), 12.0)
 
-    def determine_rate_period(self, run_time_hour: int) -> str:
-        """Determine rate period."""
-        peak_start, peak_end = self.PEAK_HOURS
+    @staticmethod
+    def _normalize_city(location: str) -> str:
+        """Strip ', PA' / state suffix and whitespace from a Location string."""
+        return location.split(",")[0].strip()
+
+    def _utility_for_location(self, location: str) -> str:
+        city = self._normalize_city(location)
+        if city not in self.CITY_TO_UTILITY:
+            raise ValueError(f"Unmapped city for utility lookup: {city!r}")
+        return self.CITY_TO_UTILITY[city]
+
+    def determine_rate_period(self, run_time_hour: int, location: str = None) -> str:
+        """Determine rate period using the utility's TOU window for `location`."""
+        if location is None:
+            peak_start, peak_end = (14, 18)
+        else:
+            utility = self._utility_for_location(location)
+            peak_start, peak_end = self.UTILITY_RATES[utility]["peak_hours"]
 
         if peak_start <= run_time_hour < peak_end:
             return "peak"
+        return "offpeak"
 
+    def determine_emissions_period(self, run_time_hour: int) -> str:
+        """Determine PJM marginal-emissions period (system-wide 7am-11pm peak)."""
+        peak_start, peak_end = self.EMISSIONS_PEAK_HOURS
+        if peak_start <= run_time_hour < peak_end:
+            return "peak"
         return "offpeak"
 
     def calculate_energy_cost(self, kwh_cycle: float, run_time_hour: int,
-                             peak_rate: float, offpeak_rate: float) -> float:
-        """Calculate energy cost."""
-        period = self.determine_rate_period(run_time_hour)
-
-        if period == "peak":
-            rate = peak_rate
-        else:
-            rate = offpeak_rate
-
+                              location: str) -> float:
+        """Calculate energy cost using the utility's TOU rates for the given location."""
+        utility = self._utility_for_location(location)
+        rates = self.UTILITY_RATES[utility]
+        period = self.determine_rate_period(run_time_hour, location)
+        rate = rates["peak_rate"] if period == "peak" else rates["offpeak_rate"]
         cost = kwh_cycle * rate
-        print(f" Energy cost: {kwh_cycle} kWh × ${rate:.4f}/kWh ({period}) = ${cost:.4f}")
+        print(f" Energy cost: {kwh_cycle} kWh x ${rate:.4f}/kWh ({utility} {period}) = ${cost:.4f}")
         return cost
 
     def calculate_environmental_impact(self, kwh_cycle: float, run_time_hour: int) -> float:
-        """Calculate environmental impact."""
-        period = self.determine_rate_period(run_time_hour)
-        if period == "peak":
-            emissions_factor = self.EMISSIONS_FACTOR_PEAK
-        else:
-            emissions_factor = self.EMISSIONS_FACTOR_OFFPEAK
-
+        """Calculate environmental impact using PJM marginal emissions factors."""
+        period = self.determine_emissions_period(run_time_hour)
+        emissions_factor = self.EMISSIONS_FACTOR_PEAK if period == "peak" else self.EMISSIONS_FACTOR_OFFPEAK
         emissions = kwh_cycle * emissions_factor
-        print(f"  : Emissions: {kwh_cycle} kWh × {emissions_factor:.4f} lbs/kWh ({period} marginal) = "
-              f"{emissions:.3f} lbs CO2")
+        print(f"  : Emissions: {kwh_cycle} kWh x {emissions_factor:.4f} lbs/kWh "
+              f"(PJM {period} marginal) = {emissions:.3f} lbs CO2")
         return emissions
 
     def calculate_comfort_score(self, delay_hours: float, run_time_hour: int,
@@ -265,25 +318,37 @@ class ApplianceGroundTruthCalculator:
         """Apply value function."""
         reference_ranges = {
             'energy_cost': {
-                # Reference range derived from representative appliance usage:
-                # Min: Efficient HE washer off-peak≈0.1 kWh × $0.09/kWh ≈ $0.01 (rounded to $0.02 for 5th percentile)
-                # Max: Standard electric resistance dryer at peak≈4.5 kWh × $0.20/kWh ≈ $0.90
-                # Sources: Winfield et al. (2016); NEEP (2015); Porras et al. (2020); Chen-Yu & Emmel (2018); EIA (2022) for PA electricity price.
-
-                'min': 0.02,
-                'max': 0.90,
+                # Bounds: 5th-pctile kWh/cycle x lowest off-peak rate, and 95th-pctile
+                # kWh/cycle x highest peak rate, across the 6 PA utilities.
+                #   min = 0.25 kWh x $0.067/kWh (West Penn off-peak) = $0.017
+                #   max = 4.0  kWh x $0.320/kWh (PECO peak)         = $1.28
+                # kWh/cycle 5th pctile = 0.25 (efficient HE washer; ENERGY STAR
+                # certified-products distribution, catalog.data.gov).
+                # kWh/cycle 95th pctile entropy-adjusted from ENERGY STAR's 2.82
+                # (most-inefficient certified electric resistance dryer) up to 4.0
+                # to cover older non-certified resistance dryers observed in the
+                # scenario set (max kwh/cycle = 3.5) plus modest buffer (LBNL
+                # appliance reports document resistance dryers reaching 4-4.5
+                # kWh/cycle in 1990s-era housing stock). Without this widening, all
+                # alternatives for high-load dryer scenarios saturate the env score
+                # at 0/10 and lose discriminative power; with it, real scenarios
+                # score across [1, 9] while only extreme outliers (>4.5 kWh/cycle)
+                # appropriately saturate.
+                'min': 0.017,
+                'max': 1.28,
                 'decreasing': True
             },
             'environmental': {
-                # Derived from energy bounds × peak marginal emissions factor.
-                # Min: 0.1 kWh (HE washer off-peak) × 0.5489 lbs/kWh ≈ 0.055 → 0.09 (5th pctile)
-                # Max: 4.5 kWh (resistance dryer at peak) × 0.7427 lbs/kWh ≈ 3.34 lbs CO2
-                # Previous value of 3.83 was computed with an older emissions factor (~0.85 lbs/kWh);
-                # updated to reflect current EMISSIONS_FACTOR_PEAK = 0.7427 (EPA eGRID2024).
-                # Source: EPA eGRID2024 Detailed Data.
-
-                'min': 0.09,
-                'max': 3.34,
+                # Bounds: same 5th/95th-pctile kWh envelope as energy_cost, applied
+                # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak).
+                #   min = 0.25 kWh x 0.976 lbs/kWh = 0.244 lbs CO2
+                #   max = 4.0  kWh x 1.041 lbs/kWh = 4.164 lbs CO2
+                # Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023).
+                # Marginal (not average) factors are the correct measure for
+                # behavioral time-shifting decisions because they reflect the
+                # generator actually displaced or added at the margin.
+                'min': 0.244,
+                'max': 4.164,
                 'decreasing': True
             },
             'comfort': {
@@ -403,8 +468,7 @@ class ApplianceGroundTruthCalculator:
                 energy_cost = self.calculate_energy_cost(
                     scenario['kwh/cycle'],
                     run_time_hour,
-                    scenario['Peak Rate'],
-                    scenario['Off-Peak Rate']
+                    scenario['Location']
                 )
             except Exception as e:
                 print(f"  ✗ Energy cost ERROR: {e}")
@@ -556,8 +620,6 @@ def process_appliance_scenarios(
             'Appliance': row['Appliance'],
             'Housing Type': row['Housing Type'],
             'Occupants': int(row['Occupants']),
-            'Peak Rate': float(row['Peak Rate']),
-            'Off-Peak Rate': float(row['Off-Peak Rate']),
             'kwh/cycle': float(row['kwh/cycle']),
             'Appliance Age/Type': row['Appliance Age/Type'],
             'Baseline Time': row['Baseline Time'],
@@ -590,8 +652,6 @@ def process_appliance_scenarios(
                     'housing_type': row['Housing Type'],
                     'occupants': row['Occupants'],
                     'kwh_per_cycle': row['kwh/cycle'],
-                    'peak_rate': row['Peak Rate'],
-                    'offpeak_rate': row['Off-Peak Rate'],
                     'alternative': alt,
                     'energy_cost_score': alt_scores['energy_cost_score'],
                     'environmental_score': alt_scores['environmental_score'],

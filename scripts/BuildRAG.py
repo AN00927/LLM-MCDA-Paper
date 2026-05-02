@@ -92,8 +92,7 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
             f"{row.get('kwh_per_cycle', 'N/A')} kWh/cycle, "
             f"{row.get('Household Size', 'N/A')} occupants, "
             f"{row.get('Housing Type', 'N/A')}, "
-            f"peak ${row.get('peak_rate', 'N/A')}/kWh, "
-            f"off-peak ${row.get('offpeak_rate', 'N/A')}/kWh"
+            f"{row.get('Location', 'N/A')}"
         )
 
     elif decision_type == 'Shower':

@@ -1,0 +1,61 @@
+scenario_id,description,location,occupants,gpm,utility_budget,housing_type,outdoor_temp,alternative,duration_min,energy_cost_score,environmental_score,comfort_score,practicality_score,mavt_score,rank,raw_kwh,raw_cost,raw_water_gallons
+0,How long should my showers be?,"Pittsburgh, PA",2,2.5,200,Apartment,35,5,5.0,9.15,9.31,7.43,2.44,7.8555,2,1.5869994636932403,0.30152989810171565,12.5
+0,How long should my showers be?,"Pittsburgh, PA",2,2.5,200,Apartment,35,8,8.0,7.65,8.28,9.96,7.29,8.2785,1,2.5391991419091844,0.482447836962745,20.0
+0,How long should my showers be?,"Pittsburgh, PA",2,2.5,200,Apartment,35,12,12.0,5.64,6.9,9.21,6.24,6.885000000000001,3,3.808798712863776,0.7236717554441174,30.0
+1,How long should my showers be?,"Philadelphia, PA",4,2.5,280,Apartment,38,7,7.0,8.22,8.62,9.32,5.87,8.2275,1,2.1796798321246493,0.4141391681036834,17.5
+1,How long should my showers be?,"Philadelphia, PA",4,2.5,280,Apartment,38,10,10.0,6.74,7.59,8.82,5.09,7.2059999999999995,2,3.113828331606642,0.591627383005262,25.0
+1,How long should my showers be?,"Philadelphia, PA",4,2.5,280,Apartment,38,15,15.0,4.27,5.86,5.53,4.48,5.109999999999999,3,4.670742497409963,0.8874410745078929,37.5
+2,What's the ideal shower length?,"Lancaster, PA",3,2.0,250,Single-family,55,6,6.0,9.56,9.38,8.42,4.27,8.4755,2,1.3309735786500272,0.2528849799435052,12.0
+2,What's the ideal shower length?,"Lancaster, PA",3,2.0,250,Single-family,55,9,9.0,8.51,8.55,9.78,7.78,8.6685,1,1.996460367975041,0.3793274699152578,18.0
+2,What's the ideal shower length?,"Lancaster, PA",3,2.0,250,Single-family,55,12,12.0,7.45,7.72,9.21,6.24,7.715,3,2.6619471573000544,0.5057699598870103,24.0
+3,How long should my showers be?,"Harrisburg, PA",2,2.5,190,Townhouse,75,5,5.0,9.79,9.31,7.43,2.44,8.0475,2,1.185862158494317,0.22531381011392024,12.5
+3,How long should my showers be?,"Harrisburg, PA",2,2.5,190,Townhouse,75,7,7.0,9.04,8.62,9.32,5.87,8.4735,1,1.6602070218920437,0.3154393341594883,17.5
+3,How long should my showers be?,"Harrisburg, PA",2,2.5,190,Townhouse,75,10,10.0,7.91,7.59,9.59,5.09,7.710999999999999,3,2.371724316988634,0.4506276202278405,25.0
+4,How long should my showers be?,"Allentown, PA",3,2.0,260,Single-family,50,8,8.0,8.76,8.83,9.96,7.29,8.804,1,1.838813407031864,0.34937454733605416,16.0
+4,How long should my showers be?,"Allentown, PA",3,2.0,260,Single-family,50,10,10.0,8.03,8.28,9.59,8.26,8.463999999999999,2,2.2985167587898303,0.43671818417006775,20.0
+4,How long should my showers be?,"Allentown, PA",3,2.0,260,Single-family,50,13,13.0,6.94,7.45,9.01,5.68,7.343500000000001,3,2.9880717864267794,0.5677336394210881,26.0
+5,What's the ideal shower length?,"Erie, PA",4,2.5,300,Single-family,28,6,6.0,8.59,8.97,8.42,4.27,8.041,1,1.9405017138997913,0.36869532564096036,15.0
+5,What's the ideal shower length?,"Erie, PA",4,2.5,300,Single-family,28,9,9.0,7.06,7.93,9.37,4.48,7.439499999999999,2,2.910752570849687,0.5530429884614405,22.5
+5,What's the ideal shower length?,"Erie, PA",4,2.5,300,Single-family,28,12,12.0,5.52,6.9,7.62,6.24,6.531,3,3.8810034277995826,0.7373906512819207,30.0
+6,What's the ideal shower length?,"Scranton, PA",2,1.5,180,Apartment,32,5,5.0,10.0,10.0,7.43,2.44,8.352,3,0.9702508569498955,0.18434766282048015,7.5
+6,What's the ideal shower length?,"Scranton, PA",2,1.5,180,Apartment,32,7,7.0,9.52,9.59,9.32,5.87,8.956999999999999,1,1.3583511997298536,0.2580867279486722,10.5
+6,What's the ideal shower length?,"Scranton, PA",2,1.5,180,Apartment,32,10,10.0,8.59,8.97,9.59,8.26,8.8735,2,1.940501713899791,0.3686953256409603,15.0
+7,What's the ideal shower length?,"Bethlehem, PA",3,2.0,230,Townhouse,60,5,5.0,9.97,9.66,7.43,2.44,8.224,2,1.0690309183551303,0.20311587448747476,10.0
+7,What's the ideal shower length?,"Bethlehem, PA",3,2.0,230,Townhouse,60,10,10.0,8.28,8.28,9.59,8.26,8.539,1,2.1380618367102606,0.4062317489749495,20.0
+7,What's the ideal shower length?,"Bethlehem, PA",3,2.0,230,Townhouse,60,15,15.0,6.59,6.9,8.6,4.48,6.783999999999999,3,3.207092755065391,0.6093476234624243,30.0
+8,How long should my showers be?,"Reading, PA",5,2.5,350,Single-family,82,5,5.0,9.79,9.31,7.43,2.44,8.0475,2,1.185862158494317,0.22531381011392024,12.5
+8,How long should my showers be?,"Reading, PA",5,2.5,350,Single-family,82,8,8.0,8.66,8.28,9.9,3.83,8.0505,1,1.897379453590907,0.36050209618227236,20.0
+8,How long should my showers be?,"Reading, PA",5,2.5,350,Single-family,82,12,12.0,7.16,6.9,7.62,6.24,7.023000000000001,3,2.8460691803863605,0.5407531442734085,30.0
+9,How long should my showers be?,"York, PA",2,2.0,195,Apartment,48,5,5.0,9.82,9.66,7.43,2.44,8.179,2,1.165303871602872,0.22140773560454569,10.0
+9,How long should my showers be?,"York, PA",2,2.0,195,Apartment,48,10,10.0,7.98,8.28,9.59,8.26,8.449,1,2.330607743205744,0.44281547120909137,20.0
+9,How long should my showers be?,"York, PA",2,2.0,195,Apartment,48,15,15.0,6.13,6.9,8.6,4.48,6.645999999999999,3,3.495911614808616,0.664223206813637,30.0
+10,How long should my showers be?,"West Chester, PA",3,1.5,270,Single-family,58,5,5.0,10.0,10.0,7.43,2.44,8.352,3,0.8138073079223155,0.15462338850523993,7.5
+10,How long should my showers be?,"West Chester, PA",3,1.5,270,Single-family,58,7,7.0,9.86,9.59,9.32,5.87,9.059,1,1.1393302310912417,0.21647274390733592,10.5
+10,How long should my showers be?,"West Chester, PA",3,1.5,270,Single-family,58,10,10.0,9.09,8.97,9.59,8.26,9.0235,2,1.627614615844631,0.30924677701047987,15.0
+11,How long should my showers be?,"State College, PA",4,2.5,290,Single-family,30,6,6.0,8.59,8.97,8.42,4.27,8.041,1,1.9405017138997913,0.36869532564096036,15.0
+11,How long should my showers be?,"State College, PA",4,2.5,290,Single-family,30,10,10.0,6.55,7.59,8.82,5.09,7.148999999999999,2,3.234169523166319,0.6144922094016005,25.0
+11,How long should my showers be?,"State College, PA",4,2.5,290,Single-family,30,15,15.0,3.99,5.86,5.53,4.48,5.026,3,4.851254284749478,0.9217383141024008,37.5
+12,How long should my showers be?,"Doylestown, PA",3,2.5,310,Single-family,85,6,6.0,9.41,8.97,8.42,4.27,8.287,1,1.4230345901931802,0.27037657213670424,15.0
+12,How long should my showers be?,"Doylestown, PA",3,2.5,310,Single-family,85,9,9.0,8.29,7.93,9.78,4.48,7.8904999999999985,2,2.1345518852897705,0.4055648582050564,22.5
+12,How long should my showers be?,"Doylestown, PA",3,2.5,310,Single-family,85,12,12.0,7.16,6.9,9.21,6.24,7.341000000000001,3,2.8460691803863605,0.5407531442734085,30.0
+13,What's the ideal shower length?,"Media, PA",2,2.0,220,Townhouse,52,5,5.0,9.33,9.66,6.57,2.44,7.859999999999999,2,1.478190969658032,0.28085628423502607,10.0
+13,What's the ideal shower length?,"Media, PA",2,2.0,220,Townhouse,52,8,8.0,7.92,8.83,9.29,7.29,8.418,1,2.3651055514528516,0.4493700547760418,16.0
+13,What's the ideal shower length?,"Media, PA",2,2.0,220,Townhouse,52,12,12.0,6.05,7.72,8.48,9.16,7.586999999999999,3,3.547658327179277,0.6740550821640626,24.0
+14,What's the ideal shower length?,"Norristown, PA",4,2.5,250,Apartment,35,6,6.0,8.65,8.97,8.42,4.27,8.059000000000001,1,1.904399356431888,0.3618358777220587,15.0
+14,What's the ideal shower length?,"Norristown, PA",4,2.5,250,Apartment,35,10,10.0,6.64,7.59,8.82,5.09,7.175999999999999,2,3.1739989273864806,0.6030597962034313,25.0
+14,What's the ideal shower length?,"Norristown, PA",4,2.5,250,Apartment,35,15,15.0,4.13,5.86,5.53,4.48,5.068,3,4.7609983910797204,0.9045896943051469,37.5
+15,What's the ideal shower length?,"King of Prussia, PA",3,2.0,340,Single-family,62,6,6.0,9.67,9.38,8.42,4.27,8.5085,2,1.2635825113766082,0.24008067716155554,12.0
+15,What's the ideal shower length?,"King of Prussia, PA",3,2.0,340,Single-family,62,9,9.0,8.67,8.55,9.78,7.78,8.7165,1,1.8953737670649125,0.36012101574233335,18.0
+15,What's the ideal shower length?,"King of Prussia, PA",3,2.0,340,Single-family,62,12,12.0,7.67,7.72,9.21,6.24,7.781000000000001,3,2.5271650227532163,0.4801613543231111,24.0
+16,How long should my showers be?,"Pottstown, PA",2,2.0,210,Apartment,78,5,5.0,10.0,9.66,7.43,2.44,8.233,3,0.9486897267954535,0.18025104809113618,10.0
+16,How long should my showers be?,"Pottstown, PA",2,2.0,210,Apartment,78,8,8.0,9.26,8.83,9.96,7.29,8.954,1,1.5179035628727255,0.28840167694581786,16.0
+16,How long should my showers be?,"Pottstown, PA",2,2.0,210,Apartment,78,12,12.0,8.06,7.72,9.21,9.16,8.336,2,2.276855344309088,0.43260251541872674,24.0
+17,What's the ideal shower length?,"Exton, PA",4,2.5,320,Single-family,55,6,6.0,9.03,8.97,8.42,4.27,8.173,1,1.6637169733125343,0.3161062249293815,15.0
+17,What's the ideal shower length?,"Exton, PA",4,2.5,320,Single-family,55,9,9.0,7.72,7.93,9.37,4.48,7.637499999999999,2,2.4955754599688014,0.4741593373940723,22.5
+17,What's the ideal shower length?,"Exton, PA",4,2.5,320,Single-family,55,12,12.0,6.4,6.9,7.62,6.24,6.795,3,3.3274339466250686,0.632212449858763,30.0
+18,What's the ideal shower length?,"Newtown, PA",3,2.0,280,Single-family,33,5,5.0,9.63,9.66,7.43,2.44,8.122,3,1.285645063162549,0.2442725620008843,10.0
+18,What's the ideal shower length?,"Newtown, PA",3,2.0,280,Single-family,33,7,7.0,8.82,9.1,9.32,5.87,8.5755,1,1.7999030884275684,0.341981586801238,14.0
+18,What's the ideal shower length?,"Newtown, PA",3,2.0,280,Single-family,33,10,10.0,7.6,8.28,9.59,8.26,8.334999999999999,2,2.571290126325098,0.4885451240017686,20.0
+19,What's the ideal shower length?,"Wilkes-Barre, PA",2,2.5,200,Apartment,58,2,2.0,10.0,10.0,1.79,0.0,6.858,1,0.5425382052815436,0.10308225900349328,5.0
+19,What's the ideal shower length?,"Wilkes-Barre, PA",2,2.5,200,Apartment,58,16,16.0,4.79,5.52,8.23,4.03,5.6194999999999995,2,4.340305642252349,0.8246580720279463,40.0
+19,What's the ideal shower length?,"Wilkes-Barre, PA",2,2.5,200,Apartment,58,29,29.0,0.0,1.03,1.53,0.0,0.6665000000000001,3,7.866803976582384,1.4946927555506528,72.5

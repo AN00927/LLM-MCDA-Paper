@@ -1,4 +1,4 @@
-MODEL_KEY = "qwen"
+MODEL_KEY = "mistral"
 N_RUNS = 10
 
 CRITERION_WEIGHTS = {
