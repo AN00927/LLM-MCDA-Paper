@@ -16,8 +16,6 @@ __pycache__/
 .github\prompts
 
 # Personal drafting files
-paper/Notebook (text format)
-paper/Literature Review
 
 /validation/
 /validation/**
