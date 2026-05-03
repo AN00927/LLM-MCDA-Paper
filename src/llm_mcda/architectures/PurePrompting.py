@@ -316,38 +316,36 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """Apply mavt ranking."""
     alternatives = [alt["alternative"] for alt in alternatives_scores]
-    valid_indices = []
+    n = len(alternatives)
 
-    # Calculate weighted sum for each alternative
-    weighted_scores = []
+    valid_pairs = []  # (input_idx, weighted_sum)
     for idx, alt_scores in enumerate(alternatives_scores):
         if has_sentinel_scores(alt_scores) or alt_scores.get("failed", False):
             continue
-
         weighted_sum = (
                 CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
                 CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
                 CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
                 CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
         )
-        weighted_scores.append(weighted_sum)
-        valid_indices.append(idx)
+        valid_pairs.append((idx, weighted_sum))
 
-    if not valid_indices:
+    if not valid_pairs:
         return {
             "ranked_alternatives": [],
-            "ranks": [1928] * len(alternatives),
-            "weighted_scores": []
+            "ranks": [1928] * n,
+            "weighted_scores": [1928] * n
         }
 
-    # Rank alternatives (higher weighted sum = better = lower rank number)
-    ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
-    ranked_alternatives = [alternatives[valid_indices[i]] for i in ranked_indices]
+    valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
+    ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
-    # Create rank numbers (1 = best, 2 = second, 3 = third)
-    ranks = [1928] * len(alternatives)
-    for rank_position, local_index in enumerate(ranked_indices):
-        ranks[valid_indices[local_index]] = rank_position + 1
+    # Input-order arrays: index matches position in alternatives_scores
+    ranks = [1928] * n
+    weighted_scores = [1928] * n
+    for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
+        ranks[input_idx] = rank_position + 1
+        weighted_scores[input_idx] = ws
 
     return {
         "ranked_alternatives": ranked_alternatives,
@@ -483,9 +481,9 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     for alt in fallback_alternatives
                 ],
                 "ranking_results": {
-                    "ranked_alternatives": fallback_alternatives,
-                    "ranks": [1, 2, 3],
-                    "weighted_scores": [0.0, 0.0, 0.0],
+                    "ranked_alternatives": [],
+                    "ranks": [1928, 1928, 1928],
+                    "weighted_scores": [1928, 1928, 1928],
                     "error": str(e)
                 },
                 "diagnostics": {
@@ -543,9 +541,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             scenario_failed = result.get("diagnostics", {}).get("scenario_failed", False)
 
             ranks = result["ranking_results"]["ranks"]
-            ranked_alts = result["ranking_results"]["ranked_alternatives"]
-            ws_list = result["ranking_results"]["weighted_scores"]
-            ws_lookup = {alt: ws_list[i] for i, alt in enumerate(ranked_alts)}
+            weighted_scores = result["ranking_results"]["weighted_scores"]
 
             for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
                 alt = alt_scores["alternative"]
@@ -563,7 +559,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                     comfort = alt_scores["comfort"]
                     practicality = alt_scores["practicality"]
                     rank = ranks[alt_idx]
-                    weighted_score = ws_lookup.get(alt, 1928)
+                    weighted_score = weighted_scores[alt_idx]
 
                 writer.writerow({
                     "scenario_id": scenario_id,

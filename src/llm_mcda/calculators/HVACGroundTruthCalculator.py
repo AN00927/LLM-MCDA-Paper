@@ -266,7 +266,7 @@ class HVACGroundTruthCalculator:
 
         base_score *= delta_t_multiplier
 
-        return max(0.0, min(10.0, base_score))
+        return max(1.5, min(10.0, base_score))
 
     def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 90) -> float:
         """Calculate monthly cost."""
