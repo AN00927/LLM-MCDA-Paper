@@ -87,16 +87,10 @@ class ShowerGroundTruthCalculator:
             # GPM (1.5-5.0) and duration (5-15 min):
             #   5th x 5th = 1.5 GPM x 5 min = 7.5 gal
             #   95th x 95th = 5.0 GPM x 15 min = 75 gal (EPA reference upper bound)
-            # Upper bound entropy-adjusted from EPA's 75 to 80 gallons. Justification:
-            # observed shower scenarios reach 72.5 gal (Wilkes-Barre 29 min x 2.5 GPM),
-            # which under a 75-gal cap would saturate at ~0.4/10 and lose entropy;
-            # extending to 80 spreads scores across [1, 10] so the value function
-            # discriminates among real high-volume alternatives. Lower bound preserved
-            # at 7.5 so scores of 10/10 remain reachable but rare (only ultra-short
-            # low-flow combinations like 5min x 1.5GPM hit the boundary).
+        
             # Source: EPA WaterSense conservation benchmarks (Appendix B).
             'min': 7.5,
-            'max': 80.0,
+            'max': 75,
             'decreasing': True
         },
         'comfort': {
