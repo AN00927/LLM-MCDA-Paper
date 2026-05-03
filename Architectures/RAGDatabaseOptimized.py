@@ -449,9 +449,11 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """Apply mavt ranking."""
-    weighted_scores = []
+    alternatives = [ad['alternative'] for ad in alternatives_scores]
+    n = len(alternatives)
 
-    for alt_data in alternatives_scores:
+    valid_pairs = []  # (input_idx, weighted_sum)
+    for idx, alt_data in enumerate(alternatives_scores):
         if alt_data.get('failed'):
             continue
         scores = alt_data['scores']
@@ -463,17 +465,29 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
                 CRITERION_WEIGHTS['comfort'] * scores['comfort'] +
                 CRITERION_WEIGHTS['practicality'] * scores['practicality']
         )
-        weighted_scores.append({
-            'alternative': alt_data['alternative'],
-            'weighted_score': weighted_sum,
-            'raw_scores': scores
-        })
-    ranked = sorted(weighted_scores, key=lambda x: x['weighted_score'], reverse=True)
+        valid_pairs.append((idx, weighted_sum))
+
+    if not valid_pairs:
+        return {
+            'ranked_alternatives': [],
+            'ranks': [1928] * n,
+            'weighted_scores': [1928] * n
+        }
+
+    valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
+    ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
+
+    # Input-order arrays: index matches position in alternatives_scores
+    ranks = [1928] * n
+    weighted_scores = [1928] * n
+    for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
+        ranks[input_idx] = rank_position + 1
+        weighted_scores[input_idx] = ws
 
     return {
-        'ranked_alternatives': [r['alternative'] for r in ranked],
-        'weighted_scores': [r['weighted_score'] for r in ranked],
-        'details': ranked
+        'ranked_alternatives': ranked_alternatives,
+        'ranks': ranks,
+        'weighted_scores': weighted_scores
     }
 
 
@@ -547,11 +561,10 @@ def run_scenario(scenario: Dict) -> Dict:
     ranking_result = apply_mavt_ranking(alternatives_scores)
 
     print(f"\nRANKING:")
-    for i, (alt, score) in enumerate(zip(
-            ranking_result['ranked_alternatives'],
-            ranking_result['weighted_scores']
-    ), 1):
-        print(f"  {i}. {alt} (weighted score: {score:.2f})")
+    alt_names = [ad['alternative'] for ad in alternatives_scores]
+    for i, alt in enumerate(ranking_result['ranked_alternatives'], 1):
+        ws = ranking_result['weighted_scores'][alt_names.index(alt)]
+        print(f"  {i}. {alt} (weighted score: {ws:.2f})")
 
     return {
         'scenario': scenario.get('Question', 'N/A'),
@@ -637,7 +650,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 ],
                 'ranking_result': {
                     'ranked_alternatives': [],
-                    'weighted_scores': []
+                    'ranks': [1928, 1928, 1928],
+                    'weighted_scores': [1928, 1928, 1928]
                 },
                 'diagnostics': {
                     'api_calls': 0,
@@ -698,11 +712,9 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
             scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
 
-            # Get ranking details
-            ranked_alts = result['ranking_result']['ranked_alternatives']
+            # Get ranking details (input-order arrays)
+            ranks = result['ranking_result']['ranks']
             weighted_scores = result['ranking_result']['weighted_scores']
-            rank_lookup = {alt: idx + 1 for idx, alt in enumerate(ranked_alts)}
-            score_lookup = {alt: weighted_scores[idx] for idx, alt in enumerate(ranked_alts)}
 
             # Write each alternative
             for alt_idx, alt_data in enumerate(result['alternatives_scores']):
@@ -721,9 +733,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     environmental = scores['environmental']
                     comfort = scores['comfort']
                     practicality = scores['practicality']
-                    # Failed alternatives may not exist in ranked_alts.
-                    rank = rank_lookup.get(alternative, 1928)
-                    weighted_score = score_lookup.get(alternative, 1928)
+                    rank = ranks[alt_idx]
+                    weighted_score = weighted_scores[alt_idx]
 
                 writer.writerow({
                     'scenario_id': scenario_id,
