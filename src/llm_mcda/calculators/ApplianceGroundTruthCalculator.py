@@ -325,30 +325,23 @@ class ApplianceGroundTruthCalculator:
                 # kWh/cycle 5th pctile = 0.25 (efficient HE washer; ENERGY STAR
                 # certified-products distribution, catalog.data.gov).
                 # kWh/cycle 95th pctile entropy-adjusted from ENERGY STAR's 2.82
-                # (most-inefficient certified electric resistance dryer) up to 4.0
-                # to cover older non-certified resistance dryers observed in the
-                # scenario set (max kwh/cycle = 3.5) plus modest buffer (LBNL
-                # appliance reports document resistance dryers reaching 4-4.5
-                # kWh/cycle in 1990s-era housing stock). Without this widening, all
-                # alternatives for high-load dryer scenarios saturate the env score
-                # at 0/10 and lose discriminative power; with it, real scenarios
-                # score across [1, 9] while only extreme outliers (>4.5 kWh/cycle)
-                # appropriately saturate.
+                # (most-inefficient certified electric resistance dryer) up to 3.5
+                # to cover older non-certified resistance dryers
                 'min': 0.017,
-                'max': 1.28,
+                'max': 1.12,
                 'decreasing': True
             },
             'environmental': {
                 # Bounds: same 5th/95th-pctile kWh envelope as energy_cost, applied
                 # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak).
                 #   min = 0.25 kWh x 0.976 lbs/kWh = 0.244 lbs CO2
-                #   max = 4.0  kWh x 1.041 lbs/kWh = 4.164 lbs CO2
+                #   max = 3.5  kWh x 1.041 lbs/kWh = 3.644 lbs CO2
                 # Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023).
                 # Marginal (not average) factors are the correct measure for
                 # behavioral time-shifting decisions because they reflect the
                 # generator actually displaced or added at the margin.
                 'min': 0.244,
-                'max': 4.164,
+                'max': 3.644,
                 'decreasing': True
             },
             'comfort': {

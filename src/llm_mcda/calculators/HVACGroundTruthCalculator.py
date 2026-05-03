@@ -12,9 +12,8 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 
 class HVACGroundTruthCalculator:
-    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
-    # Emissions Report (April 2023). Replaces prior eGRID average factor 0.6458.
-    # Marginal (not average) is the correct measure for behavioral decisions because
+    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023). 
+    # # Marginal (not average) is the correct measure for behavioral decisions because
     # it reflects what is actually displaced or added at the margin. Peak window 7am-11pm
     # (16h) and off-peak 11pm-7am (8h) per PJM definition.
     EMISSIONS_FACTOR_PEAK = 1.041     # PJM peak (1041 lbs/MWh)
@@ -169,10 +168,8 @@ class HVACGroundTruthCalculator:
         print(f"  to SEER degradation: {seer} to {effective_seer:.1f} "
               f"(age={hvac_age}yr, {maintenance_level}, {total_degradation * 100:.1f}% loss)")
 
-        # Replace linear approximation (eer = seer × 0.875) with quadratic relationship per AHRI 210/240
-        # Formula: EER = -0.02 × SEER² + 1.12 × SEER
-        # This improves accuracy, especially for high-SEER units (up to 18% error reduction)
-        # Source: AHRI Standard 210/240 (Air Conditioning, Heating, and Refrigeration Institute)
+          # Formula: EER = -0.02 × SEER² + 1.12 × SEER
+       # Source: AHRI Standard 210/240 (Air Conditioning, Heating, and Refrigeration Institute)
         eer_estimated = (-0.02 * effective_seer ** 2) + (1.12 * effective_seer)
 
         # Calculate power draw
@@ -378,15 +375,10 @@ class HVACGroundTruthCalculator:
                 'energy_cost': {
         # 5th-95th percentile from actual dataset distribution
         # Captures 90% of realistic alternatives, creates sensitivity in cluster region
-
-                    # Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
-                    #   Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015), EB 96:210.
-
-                    'min': 0.47,
-
-
+       # Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
+        #   Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015), EB 96:210.
+        'min': 0.47,
         # Max (degraded): Alves et al. (2016), EB 130:408; Krarti & Howarth (2020), JBE 31:101457.
-
         'max': 3.31,
         'decreasing': True
     },
@@ -396,10 +388,7 @@ class HVACGroundTruthCalculator:
         # marginal emissions factors (0.976 off-peak, 1.041 peak):
         #   min = 2.474 kWh x 0.976 lbs/kWh = 2.42 lbs CO2  (best case: fully off-peak)
         #   max = 17.421 kWh x 1.041 lbs/kWh = 18.14 lbs CO2 (worst case: fully peak)
-        # Spread is wider than the previous eGRID-average range (1.60-11.25) because
-        # marginal factors are larger than the eGRID 0.6458 average. Rationale: marginal
-        # is the correct measure for behavioral decisions (it reflects the generator
-        # actually displaced or added). Source: PJM 2022 Emissions Report (April 2023).
+        # Source: PJM 2022 Emissions Report (April 2023).
         # Note for HVAC: alternatives within one scenario share the same emission factor
         # (collinearity documented as paper limitation - all alternatives evaluated at
         # same moment, differing only in load magnitude).
