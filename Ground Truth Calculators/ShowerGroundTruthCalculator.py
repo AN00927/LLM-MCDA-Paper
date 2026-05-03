@@ -19,8 +19,6 @@ class ShowerGroundTruthCalculator:
   Monitoring Building Water: A Vital Step for Control of Legionella.
 - Zhang, D., Mui, K.-W., & Wong, L.-T. (2023). Buildings, 13(5), 1300.
 """
-# PA CO2 intensity from EPA eGRID2024 Detailed Data (EPA, 2024)
-    EMISSIONS_FACTOR_PA = 0.6458  # lbs CO2/kWh (2024 update); average grid-mix
 
     # PA residential electricity price from EIA (2024)
     ELECTRICITY_RATE_PA = 0.19  # $/kWh; flat-rate default (see modeling choice above)
@@ -142,7 +140,7 @@ class ShowerGroundTruthCalculator:
         return energy_kwh
 
     @staticmethod
-    def calculate_energy_cost(kwh: float, electricity_rate: float = None) -> float:
+    def calculate_energy_cost(kwh: float) -> float:
         """Calculate energy cost."""
         rate =ShowerGroundTruthCalculator.ELECTRICITY_RATE_PA
         return kwh * rate
