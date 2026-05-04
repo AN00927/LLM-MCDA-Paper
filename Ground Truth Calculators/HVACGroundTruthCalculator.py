@@ -197,36 +197,36 @@ class HVACGroundTruthCalculator:
     def calculate_comfort_score(self, indoor_temp: float, outdoor_temp: float,
                                 household_size: int) -> float:
         """Calculate comfort score."""
-        if outdoor_temp > 75:
-            optimal = 76
-            comfort_min, comfort_max = 73, 79
-        else:
-            optimal = 70
-            comfort_min, comfort_max = 68, 75
-
-        if 60 < outdoor_temp < 85:
-            comfort_min -= 2
-            comfort_max += 2
-
+        # Tent comfort function around PMV-aligned indoor setpoints for mechanical
+        # HVAC. Optimal indoor 76F in cooling mode (outdoor > 75F) and 70F in
+        # heating mode, consistent with ASHRAE 55-2020 Section 5.2 (PMV/PPD method)
+        # operative-temperature recommendations for sedentary metabolic activity
+        # and typical clothing insulation (1.0 clo winter, 0.5 clo summer).
+        # Score = 10 - |indoor - optimal|, clipped to [0, 10]. The -1.0/F slope
+        # follows the PPD response in Fanger (1970, Thermal Comfort, Danish
+        # Technical Press): roughly 5-10 percentage-point increase in PPD per F
+        # outside the comfort band, which on a 0-10 scale maps to a comparable
+        # score decrement. A prior -2.0/F out-of-band slope was over-aggressive
+        # (producing 0/10 at indoor 83F when outdoor 88F, which is not consistent
+        # with the PPD literature on hot-weather indoor tolerance).
+        # An earlier revision used the ASHRAE 55 adaptive method (T_comf = 0.31 *
+        # T_rm + 17.8) to slide the optimal with outdoor temperature, but the
+        # adaptive method is formally applicable only to occupant-controlled,
+        # naturally conditioned (non-mechanically-cooled) spaces (de Dear & Brager
+        # 2002; Nicol & Humphreys 2002), which is not the regime our scenarios
+        # describe. The fixed-setpoint tent is therefore the standards-compliant
+        # choice for mechanical HVAC; the adaptive citations are retained as
+        # context for why a sliding-target alternative was considered and rejected.
+        # Sources: ashrae55-2020 Sec 5.2; fanger1970; dedear2002; nicol2002.
+        optimal = 76 if outdoor_temp > 75 else 70
         deviation = abs(indoor_temp - optimal)
-
-        if comfort_min <= indoor_temp <= comfort_max:
-            comfort_score = 10 - (deviation)
-        else:
-            if indoor_temp < comfort_min:
-                range_violation = comfort_min - indoor_temp
-            else:
-                range_violation = indoor_temp - comfort_max
-            # Out-of-range score starts at 7 at the boundary and drops to 5 at 1°F outside.
-            # Slope is -2 points per °F beyond the comfort boundary.
-            # Wang & Hong 2020, RSER, 119, 109593.
-            comfort_score = 7.0 - (2.0 * range_violation)
+        comfort_score = 10.0 - deviation
 
         if household_size > 3:
             size_penalty = (household_size - 3) * 0.3
-            comfort_score -= size_penalty * (deviation / 3)
+            comfort_score -= size_penalty * (deviation / 3.0)
 
-        return max(0, min(10, comfort_score))
+        return max(0.0, min(10.0, comfort_score))
 
     def calculate_practicality_score(self, outdoor_temp: float, indoor_temp: float,) -> float:
         """Calculate practicality score."""
@@ -373,25 +373,33 @@ class HVACGroundTruthCalculator:
         """Apply value function."""
         reference_ranges = {
                 'energy_cost': {
-        # 5th-95th percentile from actual dataset distribution
-        # Captures 90% of realistic alternatives, creates sensitivity in cluster region
-       # Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
-        #   Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015), EB 96:210.
+        # 5th-95th percentile of the actual scenario-set cost distribution (8h
+        # window at $0.19/kWh). Dataset-percentile bounds are chosen over a wider
+        # physics envelope so that scores spread meaningfully across the [0,10]
+        # scale for typical PA residential alternatives; this is a deliberate
+        # entropy-driven normalization choice (Roszkowska 2026) and is documented
+        # as a paper limitation. Cost endpoints are still anchored in real
+        # residential studies:
+        #   Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
+        #     Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015),
+        #     EB 96:210.
+        #   Max (degraded):  Alves et al. (2016), EB 130:408;
+        #     Krarti & Howarth (2020), JBE 31:101457.
         'min': 0.47,
-        # Max (degraded): Alves et al. (2016), EB 130:408; Krarti & Howarth (2020), JBE 31:101457.
         'max': 3.31,
         'decreasing': True
     },
     'environmental': {
-        # Bounds derived from the same 5th-95th percentile cost envelope as energy_cost
-        # ($0.47-$3.31 at $0.19/kWh flat = 2.474-17.421 kWh) but applied against PJM
-        # marginal emissions factors (0.976 off-peak, 1.041 peak):
+        # Bounds derived from the same 5th-95th percentile cost envelope as
+        # energy_cost ($0.47-$3.31 at $0.19/kWh flat = 2.474-17.421 kWh) but
+        # applied against PJM marginal emissions factors (0.976 off-peak, 1.041
+        # peak):
         #   min = 2.474 kWh x 0.976 lbs/kWh = 2.42 lbs CO2  (best case: fully off-peak)
         #   max = 17.421 kWh x 1.041 lbs/kWh = 18.14 lbs CO2 (worst case: fully peak)
         # Source: PJM 2022 Emissions Report (April 2023).
-        # Note for HVAC: alternatives within one scenario share the same emission factor
-        # (collinearity documented as paper limitation - all alternatives evaluated at
-        # same moment, differing only in load magnitude).
+        # Note for HVAC: alternatives within one scenario share the same emission
+        # factor (collinearity documented as paper limitation - all alternatives
+        # evaluated at same moment, differing only in load magnitude).
         'min': 2.42,
         'max': 18.14,
         'decreasing': True
