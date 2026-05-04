@@ -33,7 +33,7 @@ class ShowerGroundTruthCalculator:
     # Source: Rheem Manufacturing Company. (2025). Residential Tank Water Heaters
     #         Product Specifications (electric models 40-55 gal). Midpoint: 0.92.
     ELECTRIC_HEATER_EFFICIENCY = 0.92
-    HOT_WATER_FRACTION = 0.65  # Fraction of shower water from hot side (mixing physics)
+    TARGET_SHOWER_TEMP = 105.0  # F, typical comfortable shower delivery temp (zhang2023)
     WATER_DENSITY = 8.33  # lbs/gallon (standard)
     BTU_PER_KWH = 3412  # Conversion factor (standard)
 
@@ -74,11 +74,26 @@ class ShowerGroundTruthCalculator:
 
     REFERENCE_RANGES = {
         'energy_cost': {
-            # Min (short, summer, efficient): REU2016 short-duration + NREL summer inlet temp + EIA (2022) rate
-            # Max (long, winter, high-temp): Harris Poll (2024) long-duration + NREL winter inlet temp + EIA (2022) rate
-
-            'min': 0.20,
-            'max': 1.40,
+            # Re-derived under the dynamic mixing-fraction physics (calculate_shower_energy
+            # uses target=105F so total shower energy reduces to
+            #   kWh = gpm * 8.33 lb/gal * (TARGET_SHOWER_TEMP - inlet) * duration
+            #         / (3412 BTU/kWh * 0.92 UEF)
+            # which is independent of heater setpoint and depends only on target-vs-inlet
+            # and flow-time).
+            #
+            # Min (short, summer, efficient):
+            #   1.5 GPM (WaterSense low-flow) x 5 min x summer inlet 65F
+            #   -> 1.5 * 8.33 * 40 * 5 / (3412 * 0.92) = 0.80 kWh -> $0.15 at $0.19/kWh
+            # Max (long, winter, higher flow incl. dataset extension to 3.5 GPM):
+            #   3.5 GPM (older / non-WaterSense multi-jet) x 15 min x winter inlet 45F
+            #   -> 3.5 * 8.33 * 60 * 15 / (3412 * 0.92) = 8.36 kWh -> $1.59 at $0.19/kWh
+            #
+            # Sources for endpoints: REU2016 (Water Research Foundation, short-duration
+            # benchmark); Harris Poll (2024, long-duration prevalence); Hendron & Burch
+            # (2008) NREL/TP-550-40874 (PA seasonal inlet temps); EPA WaterSense
+            # Appendix B (GPM benchmarks); EIA (2024) PA residential rate.
+            'min': 0.15,
+            'max': 1.50,
             'decreasing': True
         },
         'environmental': {
@@ -124,7 +139,12 @@ class ShowerGroundTruthCalculator:
         delta_t = water_heater_temp - inlet_temp
 
         # Only heat the hot water fraction (rest is cold water mixed in)
-        effective_gpm = gpm * ShowerGroundTruthCalculator.HOT_WATER_FRACTION
+        hot_fraction = ShowerGroundTruthCalculator.calculate_hot_water_fraction(
+            water_heater_temp,
+            inlet_temp,
+            ShowerGroundTruthCalculator.TARGET_SHOWER_TEMP
+        )
+        effective_gpm = gpm * hot_fraction
 
         # Energy = (flow × density × temp_rise × time) / (conversion × efficiency)
         energy_kwh = (effective_gpm * ShowerGroundTruthCalculator.WATER_DENSITY *
@@ -132,6 +152,17 @@ class ShowerGroundTruthCalculator:
                                                  ShowerGroundTruthCalculator.ELECTRIC_HEATER_EFFICIENCY)
 
         return energy_kwh
+
+    @staticmethod
+    def calculate_hot_water_fraction(water_heater_temp: float, inlet_temp: float,
+                                     target_temp: float) -> float:
+        """Calculate hot-water mixing fraction for a target delivery temperature."""
+        # Mixing-energy balance for hot/cold streams.
+        # Sources: hendron2008; maguire2013; zhang2023.
+        if water_heater_temp <= inlet_temp:
+            return 0.0
+        fraction = (target_temp - inlet_temp) / (water_heater_temp - inlet_temp)
+        return max(0.0, min(1.0, fraction))
 
     @staticmethod
     def calculate_energy_cost(kwh: float) -> float:
@@ -188,7 +219,8 @@ class ShowerGroundTruthCalculator:
 
     @staticmethod
     def calculate_practicality_score(duration: float, occupants: int,
-                                     tank_size: float, gpm: float) -> float:
+                                     tank_size: float, gpm: float,
+                                     water_heater_temp: float, outdoor_temp: float) -> float:
         """Calculate practicality score."""
         if duration <= 5:
             # Below dermatologist minimum - very low adoption
@@ -209,7 +241,13 @@ class ShowerGroundTruthCalculator:
             base_practicality = max(1.5, 7.5 - (duration - 15.0) * 0.35)
 
         # Component 2: Hot water capacity constraint
-        hot_water_per_shower = duration * gpm * ShowerGroundTruthCalculator.HOT_WATER_FRACTION
+        inlet_temp = ShowerGroundTruthCalculator.determine_inlet_temp(outdoor_temp)
+        hot_fraction = ShowerGroundTruthCalculator.calculate_hot_water_fraction(
+            water_heater_temp,
+            inlet_temp,
+            ShowerGroundTruthCalculator.TARGET_SHOWER_TEMP
+        )
+        hot_water_per_shower = duration * gpm * hot_fraction
         total_hot_water_needed = hot_water_per_shower * occupants
         available_capacity = tank_size * 0.80
 
@@ -355,7 +393,7 @@ class ShowerGroundTruthCalculator:
                 duration, water_heater_temp, occupants
             )
             practicality = ShowerGroundTruthCalculator.calculate_practicality_score(
-                duration, occupants, tank_size, gpm
+                duration, occupants, tank_size, gpm, water_heater_temp, outdoor_temp
             )
 
             print(f"\n{alt['name']} ({duration} min):")
