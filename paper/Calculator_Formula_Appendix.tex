@@ -128,6 +128,18 @@ C_{\$} = E_{\mathrm{kWh}}\,p_e
 \end{equation}
 \noindent\textit{Source note:} where $\mathrm{CO2}_{\mathrm{lbs}}$ stands for emitted pounds of CO2, $E_{\mathrm{kWh}}$ stands for energy use in kWh, and $\gamma_{\mathrm{PA}}$ stands for Pennsylvania grid emissions factor (lbs CO2/kWh). Source: U.S. EPA, \emph{eGRID2023 Detailed Data (Version 2)}.
 
+\begin{equation}
+\label{eq:hvac_adaptive_comfort}
+T_{\mathrm{cmf}} = 0.31\,T_{\mathrm{rm}} + 17.8
+\end{equation}
+\noindent\textit{Source note:} where $T_{\mathrm{cmf}}$ stands for adaptive comfort temperature (deg C) and $T_{\mathrm{rm}}$ stands for prevailing mean outdoor temperature (deg C). Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy} \cite{ashrae55}; de Dear, R. J.; Brager, G. S., \emph{Thermal comfort in naturally ventilated buildings: revisions to ASHRAE Standard 55} \cite{dedear2002}.
+
+\begin{equation}
+\label{eq:hvac_adaptive_band}
+T_{\mathrm{80\%}} \in [T_{\mathrm{cmf}} - 3.5,\,T_{\mathrm{cmf}} + 3.5]
+\end{equation}
+\noindent\textit{Source note:} where $T_{\mathrm{80\%}}$ stands for the 80\% acceptability band in the adaptive model; the 90\% band uses $\pm 2.5\,^{\circ}\mathrm{C}$. Sources: ASHRAE, \emph{Standard 55: Thermal Environmental Conditions for Human Occupancy} \cite{ashrae55}; de Dear, R. J.; Brager, G. S., \emph{Thermal comfort in naturally ventilated buildings: revisions to ASHRAE Standard 55} \cite{dedear2002}. The comfort score uses a smooth mapping anchored to these bands (modeling choice).
+
 \subsection{Appliance Calculator Equations}
 
 \begin{equation}
@@ -189,9 +201,9 @@ T_{\mathrm{inlet}}(T_{\mathrm{out}})=
 
 \begin{equation}
 \label{eq:shower_effective_gpm}
-\dot V_{\mathrm{hot}} = 0.65\,\dot V
+\dot V_{\mathrm{hot}} = \dot V\,\frac{T_{\mathrm{target}}-T_{\mathrm{inlet}}}{T_{\mathrm{heater}}-T_{\mathrm{inlet}}}
 \end{equation}
-\noindent\textit{Source note:} where $\dot V_{\mathrm{hot}}$ stands for hot-water flow rate and $\dot V$ stands for total shower flow rate. Sources: Maguire, J. et al., \emph{Validation of a hot water distribution model using laboratory and field data}; Zhang, D.; Mui, K.-W.; Wong, L.-T., \emph{Establishing the relationship between occupants' thermal behavior and energy consumption during showering}.
+\noindent\textit{Source note:} where $\dot V_{\mathrm{hot}}$ stands for hot-water flow rate, $\dot V$ stands for total shower flow rate, and $T_{\mathrm{target}}$ stands for desired delivery temperature. Sources: Hendron, R.; Burch, J., \emph{Development of standardized domestic hot water event schedules for residential buildings} \cite{hendron2008}; Maguire, J. et al., \emph{Validation of a hot water distribution model using laboratory and field data} \cite{maguire2013}; Zhang, D.; Mui, K.-W.; Wong, L.-T., \emph{Buildings} 13(5), 1300 (2023) \cite{zhang2023}. The target delivery temperature uses a typical 105F setting from the same shower comfort literature.
 
 \begin{equation}
 \label{eq:shower_energy_kwh}

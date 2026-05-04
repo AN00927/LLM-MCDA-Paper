@@ -321,7 +321,7 @@ class ApplianceGroundTruthCalculator:
                 # Bounds: 5th-pctile kWh/cycle x lowest off-peak rate, and 95th-pctile
                 # kWh/cycle x highest peak rate, across the 6 PA utilities.
                 #   min = 0.25 kWh x $0.067/kWh (West Penn off-peak) = $0.017
-                #   max = 4.0  kWh x $0.320/kWh (PECO peak)         = $1.28
+                #   max = 3.5  kWh x $0.320/kWh (PECO peak)         = $1.12
                 # kWh/cycle 5th pctile = 0.25 (efficient HE washer; ENERGY STAR
                 # certified-products distribution, catalog.data.gov).
                 # kWh/cycle 95th pctile entropy-adjusted from ENERGY STAR's 2.82
