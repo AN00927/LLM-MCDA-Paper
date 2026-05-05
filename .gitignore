@@ -2,6 +2,19 @@
 __pycache__/
 *.pyc
 .env
+*.pyo
+*.pyd
+*.so
+.Python
+pip-wheel-metadata/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
 # Default ignored files
 /shelf/
 /workspace.xml
@@ -21,6 +34,29 @@ __pycache__/
 /validation/**
 /validation_runs/
 
+# Output/data artifacts
+Output Files*/
+chroma_rag_db/
+*.sqlite3
+
+# Jupyter + OS files
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.log
+*.out
+*.synctex.gz
+*.toc
+
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
-LLM-MCDA-Paper\Scenario Files\~$ConsolidatedforSimaltaneousediting.xlsx
-LLM-MCDA-Paper\Scenario Files\ConsolidatedforSimaltaneousediting.xlsx
+Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
+.claude
+.vscode
