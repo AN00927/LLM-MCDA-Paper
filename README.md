@@ -32,7 +32,7 @@ This project compares three LLM-MCDA architectures for household energy decision
 
 ---
 
-## Repository Structure
+## Repository Structure TO UPDATE
 
 ```
 LLM-MCDA/
@@ -96,7 +96,7 @@ LLM-MCDA/
 
 ---
 
-## Ground Truth Methodology
+## Ground Truth Methodology TO UPDATEEE
 
 Ground truth scores are calculated using deterministic MAVT value functions with empirically derived reference ranges (5th–95th percentile from actual scenario data).
 
@@ -129,94 +129,6 @@ Ground truth scores are calculated using deterministic MAVT value functions with
 | Shower | $0.20–$1.40 | 1.10–5.90 lbs CO₂ |
 
 > Pre-transformation clamping is NOT applied — values extrapolate beyond reference bounds freely; final clamping occurs only after value function transformation to preserve MAVT independence.
-
----
-
-## Results
-
-### Overall Performance (100 scenarios)
-
-| Metric | Pure Prompting | RAG-Enhanced | Hybrid |
-|---|---|---|---|
-| Kendall's τ | -0.06 | 0.43 | **0.80** |
-| Spearman's ρ | -0.055 | 0.49 | **0.82** |
-| Top-1 Accuracy | 30% | 58% | **83%** |
-| Top-2 Accuracy | 62% | 89% | **97%** |
-| Overall MAE | 2.52 | 1.61 | **0.69** |
-| Overall RMSE | 3.07 | 2.40 | **1.52** |
-
-> Pure Prompting's τ ≈ −0.06 is near-random — end-to-end LLM scoring cannot reliably replicate physics-based MAVT rankings.
-
----
-
-### Criterion-Level MAE (Overall)
-
-| Criterion | Pure | RAG | Hybrid |
-|---|---|---|---|
-| Energy Cost | 2.60 | 1.60 | 0.96 |
-| Environmental | 2.80 | 1.59 | 1.02 |
-| Comfort | 2.51 | 1.97 | 0.32 |
-| Practicality | 2.16 | 1.29 | 0.43 |
-
----
-
-### Performance by Decision Type
-
-#### HVAC (60 scenarios)
-| Metric | Pure | RAG | Hybrid |
-|---|---|---|---|
-| Kendall's τ | -0.111 | 0.522 | **0.90** |
-| Top-1 Accuracy | 25% | 63% | **92%** |
-| Top-2 Accuracy | 57% | 93% | **100%** |
-| Overall MAE | 2.11 | 1.46 | **0.62** |
-
-#### Appliance (25 scenarios)
-| Metric | Pure | RAG | Hybrid |
-|---|---|---|---|
-| Kendall's τ | 0.093 | 0.413 | **0.68** |
-| Top-1 Accuracy | 40% | 56% | **72%** |
-| Top-2 Accuracy | 72% | 88% | **92%** |
-| Overall MAE | 3.31 | 2.15 | **0.97** |
-
-#### Shower (15 scenarios)
-| Metric | Pure | RAG | Hybrid |
-|---|---|---|---|
-| Kendall's τ | -0.111 | 0.111 | **0.60** |
-| Top-1 Accuracy | 33% | 40% | **67%** |
-| Top-2 Accuracy | 67% | 73% | **93%** |
-| Overall MAE | 2.85 | 1.34 | **0.46** |
-
----
-
-### Efficiency (100 scenarios)
-
-| Metric | Pure Prompting | RAG-Enhanced | Hybrid |
-|---|---|---|---|
-| Total API Calls | 300 | 300 | **100** |
-| Input Tokens | 114,739 | 295,174 | **81,741** |
-| Output Tokens | 9,970 | 13,463 | 16,275 |
-| **Total Tokens** | **124,709** | **308,637** | **98,016** |
-| Total Latency | 437.1s | 480.8s | **275.6s** |
-| Avg Latency/Call | 1,457ms | 1,603ms | **2,756ms** |
-| Success Rate | 100% | 100% | 100% |
-
----
-
-## Key Findings
-
-1. **Pure Prompting performs near-randomly** (τ = −0.06). LLMs cannot reliably score household energy tradeoffs without physics grounding.
-2. **RAG improves ranking** (τ = 0.43) but still struggles — especially on Appliance Comfort (MAE = 3.88), where retrieval context doesn't translate to accurate scoring.
-3. **Hybrid dominates** on every metric: τ = 0.80, Top-1 = 83%, Top-2 = 97%, MAE = 0.69. Separating parameter extraction (LLM strength) from calculation (deterministic) produces the best results.
-4. **Hybrid is also the most efficient**: fewest total tokens (98,016), fewest API calls (100), and lowest total latency (275.6s) — despite higher per-call complexity.
-
----
-
-## Validation Metrics
-
-| Category | Metrics |
-|---|---|
-| Accuracy | MAE, RMSE, Kendall's τ, Spearman's ρ, Top-1 Accuracy, Top-2 Accuracy |
-| Architecture Diagnostics | API calls, input/output tokens, total latency, success rate, failure rate |
 
 ---
 
