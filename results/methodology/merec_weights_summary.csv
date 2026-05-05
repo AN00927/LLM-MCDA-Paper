@@ -1,0 +1,17 @@
+scope,n_scenarios,criterion,merec_weight,weight_std_dev,subjective_weight,diff,zero_var_scenarios
+Overall,263,energy_cost,0.226016,0.078204,0.3,-0.073984,35
+Overall,263,environmental,0.19825,0.079146,0.35,-0.15175,47
+Overall,263,comfort,0.280942,0.156639,0.2,0.080942,0
+Overall,263,practicality,0.294792,0.112875,0.15,0.144792,72
+HVAC,128,energy_cost,0.200827,0.084962,0.3,-0.099173,14
+HVAC,128,environmental,0.163454,0.065408,0.35,-0.186546,12
+HVAC,128,comfort,0.409751,0.093546,0.2,0.209751,0
+HVAC,128,practicality,0.225968,0.077318,0.15,0.075968,72
+Appliance,80,energy_cost,0.236298,0.048119,0.3,-0.063702,21
+Appliance,80,environmental,0.264641,0.075021,0.35,-0.085359,35
+Appliance,80,comfort,0.152757,0.090918,0.2,-0.047243,0
+Appliance,80,practicality,0.346304,0.103733,0.15,0.196304,0
+Shower,55,energy_cost,0.26968,0.07554,0.3,-0.03032,0
+Shower,55,environmental,0.182662,0.049491,0.35,-0.167338,0
+Shower,55,comfort,0.16762,0.098073,0.2,-0.03238,0
+Shower,55,practicality,0.380038,0.097229,0.15,0.230038,0

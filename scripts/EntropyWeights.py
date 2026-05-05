@@ -180,8 +180,8 @@ def build_comparison_table(data: pd.DataFrame, column_map: dict[str, str]) -> pd
 
 
 def export_results(comparison_table: pd.DataFrame, project_root: Path) -> Path:
-    """Write the comparison table to paper/entropy_weights.csv."""
-    output_dir = project_root / "paper"
+    """Write the comparison table to Scoring Logic and Documentation/method/entropy_weights.csv."""
+    output_dir = project_root / "Scoring Logic and Documentation" / "method"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "entropy_weights.csv"
     comparison_table.reset_index().to_csv(output_path, index=False)

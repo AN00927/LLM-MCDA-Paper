@@ -1,0 +1,17 @@
+scope,n_pairs,criterion,implied_weight,subjective_weight,diff,pairwise_sign_acc,r2_pairwise
+Overall,789,energy_cost,0.261238,0.3,-0.038762,0.9442,0.5147
+Overall,789,environmental,0.365946,0.35,0.015946,0.9442,0.5147
+Overall,789,comfort,0.275561,0.2,0.075561,0.9442,0.5147
+Overall,789,practicality,0.097256,0.15,-0.052744,0.9442,0.5147
+HVAC,384,energy_cost,0.589859,0.3,0.289859,0.8672,0.5216
+HVAC,384,environmental,0.0,0.35,-0.35,0.8672,0.5216
+HVAC,384,comfort,0.325874,0.2,0.125874,0.8672,0.5216
+HVAC,384,practicality,0.084266,0.15,-0.065734,0.8672,0.5216
+Appliance,240,energy_cost,0.225409,0.3,-0.074591,0.9833,0.5978
+Appliance,240,environmental,0.456338,0.35,0.106338,0.9833,0.5978
+Appliance,240,comfort,0.080855,0.2,-0.119145,0.9833,0.5978
+Appliance,240,practicality,0.237398,0.15,0.087398,0.9833,0.5978
+Shower,165,energy_cost,0.101385,0.3,-0.198615,0.9939,0.134
+Shower,165,environmental,0.592574,0.35,0.242574,0.9939,0.134
+Shower,165,comfort,0.145128,0.2,-0.054872,0.9939,0.134
+Shower,165,practicality,0.160913,0.15,0.010913,0.9939,0.134
