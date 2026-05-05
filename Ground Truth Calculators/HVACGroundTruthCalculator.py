@@ -410,7 +410,9 @@ class HVACGroundTruthCalculator:
                 'decreasing': False
             },
             'practicality': {
-                'min': 1.5,
+                # Match calculation floor (0.5) so VF mapping doesn't collapse
+                # the raw floor to a utility of exactly zero.
+                'min': 0.5,
                 'max': 10.0,
                 'decreasing': False
             }
