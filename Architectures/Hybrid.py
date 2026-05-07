@@ -58,6 +58,9 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
 
+OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
+OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
+
 MODEL_ID = get_model_id()
 TEMPERATURE = 0.3
 
@@ -177,7 +180,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_HTTP_REFERER,
+        "X-Title": OPENROUTER_APP_TITLE
     }
 
     payload = {
@@ -236,9 +241,39 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
             continue
 
-    # Only reachable when finite retries are exhausted.
+    # We're out of retries at this point.
     raise Exception(f"Failed to get response after {MAX_RETRIES} attempts")
 
+def _normalize_scenario_fields(scenario: Dict) -> Dict:
+    """Normalize scenario input fields to handle common formatting quirks."""
+    normalized = scenario.copy()
+    
+    # Clean up the obvious text fields first
+    for key in ['Question', 'Location', 'Decision Type', 'Housing Type', 'Appliance', 'Insulation']:
+        if key in normalized and isinstance(normalized[key], str):
+            normalized[key] = normalized[key].strip()
+    
+    # Make housing type look consistent
+    if 'Housing Type' in normalized:
+        ht = str(normalized['Housing Type']).lower().strip()
+        if 'apartment' in ht:
+            normalized['Housing Type'] = 'Apartment'
+        elif 'single' in ht:
+            normalized['Housing Type'] = 'Single-family'
+        elif 'town' in ht:
+            normalized['Housing Type'] = 'Townhouse'
+    
+    # Tidy up insulation labels too
+    if 'Insulation' in normalized:
+        ins = str(normalized['Insulation']).lower().strip()
+        if 'poor' in ins:
+            normalized['Insulation'] = 'Poor'
+        elif 'good' in ins:
+            normalized['Insulation'] = 'Good'
+        elif 'medium' in ins or 'avg' in ins:
+            normalized['Insulation'] = 'Medium'
+    
+    return normalized
 
 
 def format_scenario_for_extraction(scenario: Dict) -> str:
@@ -252,8 +287,11 @@ def format_scenario_for_extraction(scenario: Dict) -> str:
 
 def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     
-    scenario_text = format_scenario_for_extraction(scenario)
-    question = scenario.get('Question', '')
+    # Give the scenario a quick cleanup before sending it to the AI
+    normalized_scenario = _normalize_scenario_fields(scenario)
+    
+    scenario_text = format_scenario_for_extraction(normalized_scenario)
+    question = normalized_scenario.get('Question', '')
 
     prompt = UNIFIED_EXTRACTION_PROMPT.format(
         scenario_text=scenario_text,
@@ -463,7 +501,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
-    # Input-order arrays: index matches position in alternatives_scores
+    # Keep the array positions lined up with the original alternatives
     ranks = [1928] * n
     weighted_scores = [1928] * n
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
@@ -523,7 +561,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
         print(f" EXTRACTION FAILEd. Outputting sentinel scores")
 
-        # Create sentinel-score alternatives
+        # Build fallback alternatives with sentinel scores
         zero_alternatives = []
         for i in range(1, 4):
             zero_alternatives.append({
@@ -576,7 +614,7 @@ def run_scenario(scenario: Dict) -> Dict:
     except Exception as e:
         print(f" hround truth calculation failed: {e}")
 
-        # Output sentinel values on GT calculation failure
+        # If GT calc blows up, send back sentinel values
         zero_alternatives = []
         for i, alt in enumerate(parameters.get('alternatives', ['Alt1', 'Alt2', 'Alt3'])[:3], 1):
             zero_alternatives.append({
@@ -648,7 +686,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         reader = csv_module.DictReader(f)
         first_row = next(reader)
 
-        # Validate required columns
+        # Make sure the columns we need are actually there
         required_cols = ['Question', 'Decision Type']
         missing_cols = [col for col in required_cols if col not in first_row]
 
@@ -661,7 +699,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f" Loaded {len(scenarios)} test scenarios")
     print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
 
-    # Process all scenarios
+    # Run through every scenario
     all_results = []
     cumulative_diagnostics = {
         'total_scenarios': len(scenarios),
@@ -780,11 +818,11 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
 
-            # Get ranking details (input-order arrays)
+            # Grab ranking details in input order
             ranks = result['ranking_result']['ranks']
             weighted_scores = result['ranking_result']['weighted_scores']
 
-            # Write each alternative
+            # Write out each alternative
             for alt_idx, alt_data in enumerate(result['alternatives_scores']):
                 alternative = alt_data['alternative']
                 scores = alt_data['scores']
@@ -826,7 +864,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
     print(f" Results saved to: {output_csv_path}")
 
-    # Save diagnostics
+    # Save the diagnostics blob
     print(f"Saving diagnostics to: {output_diagnostics_path}")
 
     with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
@@ -897,7 +935,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for c in CRITERIA_COLS:
         combined[c] = combined[c].astype(float)
 
-    # Exclude the entire row from averaging if any criterion is sentinel
+    # If one criterion is busted, drop the whole row from the average
     failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
     combined.loc[failed_mask, CRITERIA_COLS] = np.nan
 
@@ -908,10 +946,10 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     avg_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].mean()
     std_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].std()
 
-    # Stable cols: take first (identical across runs for the same scenario)
+    # Stable cols: just take the first one since these should match across runs
     avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[STABLE_META_COLS].first()
 
-    # decision_type: use mode of non-UNKNOWN values; fall back to UNKNOWN only if all runs failed
+    # decision_type: use the most common non-UNKNOWN value, or UNKNOWN if everything failed
     def _mode_decision_type(series):
         non_unknown = series[series != 'UNKNOWN']
         if len(non_unknown) == 0:
@@ -921,7 +959,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     dt_mode = combined.groupby(GROUP_KEYS)['decision_type'].agg(_mode_decision_type).reset_index()
     avg_meta = avg_meta.merge(dt_mode, on=GROUP_KEYS)
 
-    # Boolean flags: any() � if any run had a failure the scenario was flaky
+    # Boolean flags: use any() so one bad run marks the scenario as flaky
     for col in BOOL_META_COLS:
         if col in combined.columns:
             bool_agg = (
@@ -935,11 +973,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # Fill NaN (all runs failed for that alternative) back to sentinel
+    # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL)
 
-    # Re-rank within each scenario using averaged scores
+    # Re-rank each scenario using the averaged scores
     avg["rank"] = int(SENTINEL)
     avg["weighted_score"] = float(SENTINEL)
 

@@ -28,9 +28,9 @@ def get_model_id(model_key: str = MODEL_KEY) -> str:
     elif model_key == "qwen":
         return "qwen/qwen-2.5-72b-instruct"
     elif model_key == "claude":
-        return "anthropic/claude-sonnet-4-6"
+        return "anthropic/claude-sonnet-4"
     elif model_key == "gemini":
-        return "google/gemini-3-flash"
+        return "google/gemini-2.5-pro"
     else:
         raise ValueError(
             f"Unknown MODEL_KEY: '{model_key}'. Must be one of: mistral, qwen, claude, gemini"
