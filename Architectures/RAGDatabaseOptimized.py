@@ -24,6 +24,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
+OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
+OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
+
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
@@ -65,17 +68,24 @@ def _increment_failure_counters(counters: Dict[str, int], failure_types: List[st
 def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
-print("Loading ChromaDB and embedding model")
-try:
-    chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
-    chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
-    embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-    print(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available")
-except Exception as e:
-    print(f" WARNING: Could not load RAG database: {e}")
-    print("  Make sure to run Miscellaneous Files/BuildRAG.py first.")
-    chroma_collection = None
-    embedding_model = None
+chroma_collection = None
+embedding_model = None
+
+
+def init_rag_resources() -> None:
+    """Initialize ChromaDB client and embedding model for a single run."""
+    global chroma_collection, embedding_model
+    print("Loading ChromaDB and embedding model")
+    try:
+        chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
+        chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
+        embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+        print(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available")
+    except Exception as e:
+        print(f" WARNING: Could not load RAG database: {e}")
+        print("  Make sure to run Miscellaneous Files/BuildRAG.py first.")
+        chroma_collection = None
+        embedding_model = None
 
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
@@ -84,7 +94,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_HTTP_REFERER,
+        "X-Title": OPENROUTER_APP_TITLE
     }
 
     payload = {
@@ -149,7 +161,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
             continue
 
-    # Only reachable when finite retries are exhausted.
+    # We're out of retries at this point
     raise Exception(f"Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
@@ -212,13 +224,13 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
         print("   RAG database not available, skipping retrieval")
         return []
 
-    # Convert scenario to text
+    # Turn the scenario into plain text
     scenario_text, decision_type = format_scenario_text_for_retrieval(scenario)
 
-    # Generate embedding
+    # Make the embedding
     query_embedding = embedding_model.encode(scenario_text).tolist()
 
-    # Retrieve from database (filtered by decision type)
+    # Pull matches from the database, filtered by decision type
     try:
         results = chroma_collection.query(
             query_embeddings=[query_embedding],
@@ -347,7 +359,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
     """Parse llm scores."""
     try:
-        # Strip markdown code fences if present (Claude sometimes wraps JSON in ```json ... ```)
+        # Claude sometimes wraps JSON in code fences, so let's peel that off
         text = response_text.strip()
         if text.startswith("```"):
             text = text.split("```", 2)[1]
@@ -440,7 +452,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'failure_types': ['failed_unknown']
         }
 
-    # Add RAG metadata to diagnostics
+    # Add the RAG bits to diagnostics
     diagnostics['rag_retrieved_count'] = len(retrieved)
     diagnostics['rag_context_length'] = len(rag_context)
 
@@ -477,7 +489,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
-    # Input-order arrays: index matches position in alternatives_scores
+    # Keep the indices lined up with the original alternatives
     ranks = [1928] * n
     weighted_scores = [1928] * n
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
@@ -585,6 +597,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
     output_diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
 
+    init_rag_resources()
+    if chroma_collection is None or embedding_model is None:
+        raise RuntimeError("RAG database not available; run BuildRAG.py first.")
+
     print(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
 
     print(f"Loading test scenarios from: {test_csv_path}")
@@ -594,7 +610,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         reader = csv_module.DictReader(f)
         first_row = next(reader)
 
-        # Validate required columns
+        # Make sure the required columns are there
         required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
         missing_cols = [col for col in required_cols if col not in first_row]
 
@@ -607,7 +623,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f"OK Loaded {len(scenarios)} test scenarios")
     print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
 
-    # Process all scenarios
+    # Run through all scenarios
     all_results = []
     cumulative_diagnostics = {
         'total_scenarios': len(scenarios),
@@ -668,7 +684,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
         all_results.append(result)
 
-        # Aggregate diagnostics
+        # Roll the diagnostics up together
         diag = result['diagnostics']
         cumulative_diagnostics['total_api_calls'] += diag['api_calls']
         cumulative_diagnostics['total_tokens_input'] += diag['total_tokens_input']
@@ -691,7 +707,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             cumulative_diagnostics['successful_scenarios'] /
             max(cumulative_diagnostics['total_scenarios'], 1)
     )
-    # Save results to CSV
+    # Write the results to CSV
     print(f"\nSaving results to: {output_csv_path}")
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
@@ -712,11 +728,11 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
             scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
 
-            # Get ranking details (input-order arrays)
+            # Grab ranking details in input order
             ranks = result['ranking_result']['ranks']
             weighted_scores = result['ranking_result']['weighted_scores']
 
-            # Write each alternative
+            # Write out each alternative
             for alt_idx, alt_data in enumerate(result['alternatives_scores']):
                 alternative = alt_data['alternative']
                 scores = alt_data['scores']
@@ -755,7 +771,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
     print(f"OK Results saved to: {output_csv_path}")
 
-    # Save diagnostics
+    # Save the diagnostics blob
     print(f"Saving diagnostics to: {output_diagnostics_path}")
 
     with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
@@ -824,7 +840,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for c in CRITERIA_COLS:
         combined[c] = combined[c].astype(float)
 
-    # Exclude the entire row from averaging if any criterion is sentinel
+    # If one score is busted, drop the whole row from the average
     failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
     combined.loc[failed_mask, CRITERIA_COLS] = np.nan
 
@@ -842,11 +858,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # Fill NaN (all runs failed for that alternative) back to sentinel
+    # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL)
 
-    # Re-rank within each scenario using averaged scores
+    # Re-rank each scenario using the averaged scores
     avg["rank"] = int(SENTINEL)
     avg["weighted_score"] = float(SENTINEL)
 
@@ -887,11 +903,6 @@ if __name__ == "__main__":
     if not test_csv.exists():
         print(f"Test scenarios file not found: {test_csv}")
         print("Please upload your test scenarios CSV first.")
-        sys.exit(1)
-
-    if chroma_collection is None:
-        print(f"RAG database not available.")
-        print("Please run Miscellaneous Files/BuildRAG.py first to create the RAG database.")
         sys.exit(1)
 
     run_multi_and_aggregate(

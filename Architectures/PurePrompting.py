@@ -49,10 +49,13 @@ TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Load environment variables
+# Pull in the env vars
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
-# Configure logging
+OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
+OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
+
+# Set up the logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -63,7 +66,7 @@ MODEL_ID = get_model_id()
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "model": MODEL_ID,
-    "temperature": 0.3  # Need determinism for reliability
+    "temperature": 0.3  # Keep it consistent so results are reliable
 }
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
@@ -98,7 +101,9 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
 
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_HTTP_REFERER,
+        "X-Title": OPENROUTER_APP_TITLE
     }
 
     payload = {
@@ -134,7 +139,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
                 data = response.json()
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-                # Extract token usage if available
+                # Grab token counts if the API sent them
                 usage = data.get("usage", {})
                 diagnostics["tokens_input"] = usage.get("prompt_tokens", 0)
                 diagnostics["tokens_output"] = usage.get("completion_tokens", 0)
@@ -172,7 +177,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
             time.sleep(min(2 ** min(attempt - 1, 6), 60))
             continue
 
-    # Only reachable when finite retries are exhausted.
+    # We're done here, retries didn't save it
     return None, diagnostics
 
 
@@ -256,7 +261,7 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     diagnostics["success"] = False
 
     try:
-        # Strip markdown code fences if present (Claude via OpenRouter wraps JSON in ```json ... ```)
+        # Claude sometimes wraps JSON in code fences;  peel that off
         text = response.strip()
         if text.startswith("```"):
             text = text.split("```", 2)[1]
@@ -340,7 +345,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
-    # Input-order arrays: index matches position in alternatives_scores
+    # Keep the indices lined up with the original order
     ranks = [1928] * n
     weighted_scores = [1928] * n
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
@@ -635,7 +640,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
     for c in CRITERIA_COLS:
         combined[c] = combined[c].astype(float)
 
-    # Exclude the entire row from averaging if any criterion is sentinel
+    # If even one score is busted (1928), drop the whole row
     failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
     combined.loc[failed_mask, CRITERIA_COLS] = np.nan
 
@@ -653,11 +658,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # Fill NaN (all runs failed for that alternative) back to sentinel
+    # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL)
 
-    # Re-rank within each scenario using averaged scores
+    # Re-rank each scenario using the averaged scores
     avg["rank"] = int(SENTINEL)
     avg["weighted_score"] = float(SENTINEL)
 
@@ -717,7 +722,7 @@ def main():
                 logging.error("Plus decision-type-specific columns")
                 return
 
-            # Check decision types
+            # Make sure the decision types look right
             f.seek(0)
             fresh_reader = csv_module.DictReader(f)
             decision_types = set([row.get('Decision Type', 'UNKNOWN') for row in fresh_reader])

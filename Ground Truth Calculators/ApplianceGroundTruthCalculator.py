@@ -23,11 +23,9 @@ class ApplianceGroundTruthCalculator:
     # Utility-to-city mapping with TOU rate windows and rates ($/kWh).
     # Sources: PECO Rate R-TOU 2026; PPL TOU 2025; FirstEnergy PA TOU 2026
     # (West Penn, Penelec, Met-Ed); PA PUC press release 2025-04-10 (Duquesne pilot,
-    # no standard residential TOU - flat PTC used for both periods).
-    # PPL note: outline simplification - 2-6pm weekdays uniformly (no seasonal split,
-    # since scenarios lack a season parameter).
-    # Weekend rule: all utilities treat weekends as off-peak. Scenarios lack day-of-week,
-    # so weekday is assumed throughout - weekend handling is intentionally not coded.
+    # no standard residential TOU, so we use the flat PTC for both periods).
+    # PPL is simplified to 2-6pm weekdays only, since the scenarios don't give us seasons.
+    # Weekends are treated as off-peak across the board because we don't have day-of-week.
     UTILITY_RATES = {
         "PECO":      {"peak_hours": (14, 18), "peak_rate": 0.320,  "offpeak_rate": 0.076},
         "PPL":       {"peak_hours": (14, 18), "peak_rate": 0.140,  "offpeak_rate": 0.100},
