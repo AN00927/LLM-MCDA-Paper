@@ -99,3 +99,84 @@ Shower,How long should my showers be?,"Pottstown, PA",,,2,200,Single-family,78,,
 Shower,What's the ideal shower length?,"Exton, PA",,,4,320,Single-family,55,,,standard,6,9,12
 Shower,What's the ideal shower length?,"Newtown, PA",,,3,350,Single-family,33,,,standard,5,7,10
 Shower,What's the ideal shower length?,"Wilkes-Barre, PA",,,2,225,Single-family,58,,,low_flow,2,16,29
+HVAC,It's warm but not scorching today. What should I set the AC to?,"Allentown, PA",1900,Medium,3,280,Single-family,78,15,,,73,76,
+HVAC,The house will be empty for 4 hours on a mildly hot day. What AC temperature should I set?,"Doylestown, PA",2200,Good,4,350,Single-family,80,18,,,74,77,
+HVAC,Someone's home all day and it's just barely hot enough for AC. What should I set it to?,"Erie, PA",1600,Poor,2,190,Townhouse,77,25,,,72,76,
+HVAC,It's a warm afternoon but nothing extreme. What AC temperature makes sense?,"Harrisburg, PA",2500,Medium,5,320,Single-family,82,10,,,74,78,
+HVAC,We're working from home on a warm day. What should I set the AC to?,"West Chester, PA",1400,Good,2,220,Condo,79,8,,,73,77,
+HVAC,It's a cool fall morning. What should I set the heat to?,"Lancaster, PA",2200,Good,4,400,Single-family,48,20,,,66,69,
+HVAC,It's chilly this morning but not freezing. What temperature should I set the heat to?,"Pittsburgh, PA",1800,Medium,2,250,Townhouse,42,30,,,65,68,
+HVAC,The house will be empty for 4 hours on a mild winter day. What heat setting should I use?,"Bethlehem, PA",1500,Poor,3,200,Apartment,45,35,,,64,67,
+HVAC,It's a brisk spring day. What should I set the thermostat to?,"State College, PA",2600,Good,3,300,Single-family,52,12,,,67,70,
+HVAC,It's a cool evening in early fall. What heating temperature makes sense?,"Scranton, PA",1700,Medium,4,230,Rowhouse,40,22,,,66,70,
+HVAC,It's very hot and I'm trying to decide between aggressive cooling or saving energy. What AC temperature should I set?,"Philadelphia, PA",2000,Medium,3,260,Single-family,95,20,,,71,76,
+HVAC,"With 4 people home on a hot day, what's the best AC setting?","Reading, PA",2400,Poor,4,200,Single-family,90,28,,,70,76,
+HVAC,The house will be empty for 8 hours today. What AC temperature should I set?,"King of Prussia, PA",1800,Good,2,350,Townhouse,92,14,,,73,77,
+HVAC,Cold day today with 3 people home. What's a good heating temperature?,"Williamsport, PA",2100,Medium,3,270,Single-family,18,25,,,64,68,
+HVAC,Someone's home all day and it's cold. What heating temperature should I use?,"Hazleton, PA",1600,Poor,2,180,Apartment,22,40,,,65,70,
+HVAC,We're away for 8 hours on a hot day. Should I leave the AC on low or turn it off?,"Media, PA",2000,Medium,3,240,Single-family,92,22,,,78,85,
+HVAC,We're all out for 12 hours in the heat. Should I turn the AC off or set it high?,"Pottstown, PA",1700,Poor,2,190,Townhouse,95,30,,,80,Off (85),
+HVAC,The house will be empty for 12 hours on a very cold day. How far should I set back the heat?,"Erie, PA",2400,Medium,4,280,Single-family,10,18,,,60,65,
+HVAC,We're leaving for 8 hours in cold weather. Should I turn the heat off or keep it low?,"Altoona, PA",1900,Poor,3,175,Single-family,15,35,,,62,Off,
+HVAC,Nobody's home for 8 hours on a warm day. Is it worth running the AC at all?,"Newtown, PA",2100,Good,3,340,Single-family,88,12,,,78,Off (85),
+HVAC,I'm setting the thermostat for bedtime on a hot night. What AC temperature is best for sleeping?,"Philadelphia, PA",1500,Poor,2,180,Apartment,88,30,,,72,76,
+HVAC,What AC temperature should I set for sleeping tonight?,"Lower Merion, PA",2800,Good,4,500,Single-family,84,8,,,73,77,
+HVAC,I'm going to bed and it's warm out. What should I set the AC to for overnight?,"York, PA",2000,Medium,3,260,Single-family,82,16,,,74,76,
+HVAC,I'm setting the thermostat for bedtime on a cold night. What heating temperature is best?,"Meadville, PA",1800,Good,2,220,Single-family,12,20,,,65,68,
+HVAC,What heating temperature should I set for sleeping tonight? It's cold out.,"Lebanon, PA",2100,Medium,3,270,Townhouse,20,24,,,66,70,
+HVAC,It's hot and our old AC struggles. What temperature should I set it to?,"Uniontown, PA",2200,Poor,4,170,Single-family,93,45,,,73,77,
+HVAC,It's cold and our old furnace isn't very efficient. What should I set the heat to?,"Johnstown, PA",1900,Poor,3,160,Single-family,14,50,,,64,68,
+HVAC,We just got a new high-efficiency system installed. What AC temperature should we use on this hot day?,"Blue Bell, PA",2600,Good,4,450,Single-family,91,2,,,72,76,
+HVAC,We have a brand-new HVAC system and it's cold out. What heating temperature makes sense?,"Exton, PA",2400,Good,3,380,Single-family,22,1,,,67,70,
+HVAC,Our AC is ancient and it's a scorching day. What's a realistic temperature to set?,"Indiana, PA",1700,Medium,2,190,Single-family,96,38,,,74,78,
+HVAC,We just upgraded to a high-efficiency heat pump. What should I set the heat to tonight?,"Gettysburg, PA",2000,Good,3,320,Single-family,28,3,,,66,69,
+Appliance,I want to run my dishwasher this morning (around 10 AM). When should I start it?,"Philadelphia, PA",,,3,175,Townhouse,,,5,,0.416666667,0.625,0.958333333
+Appliance,I have time to do laundry this morning (around 9 AM). When should I start?,"Lancaster, PA",,,4,150,Single-family,,,6,,0.375,0.625,0
+Appliance,My laundry is ready to dry (around 8 AM). Should I run the dryer now or wait?,"Allentown, PA",,,3,200,Single-family,,,4,,0.333333333,0.75,0
+Appliance,Planning to run the dishwasher around 11 AM. Is that a good time?,"Norristown, PA",,,2,175,Apartment,,,3,,0.458333333,0.666666667,0.833333333
+Appliance,I have time to do laundry this morning (around 9 AM). When should I start?,"Reading, PA",,,3,150,Townhouse,,,7,,0.375,0.833333333,0
+Appliance,I want to run my dishwasher this morning (around 10 AM). When should I start it?,"Pittsburgh, PA",,,2,150,Apartment,,,5,,0.416666667,0.625,0.958333333
+Appliance,I have time to do laundry this afternoon (around 3 PM). When should I start?,"Pittsburgh, PA",,,4,175,Single-family,,,4,,0.625,0.791666667,0
+Appliance,My laundry is ready to dry (around 9 AM). Should I run the dryer now or wait?,"McKeesport, PA",,,3,200,Townhouse,,,6,,0.375,0.583333333,0.958333333
+Appliance,Dinner's done around 7 PM. What's the best time to run the dishwasher?,"McKeesport, PA",,,3,120,Apartment,,,8,,0.791666667,0.916666667,0
+Appliance,Planning to run the washing machine around 2 PM. Is that a good time?,"Pittsburgh, PA",,,2,150,Townhouse,,,3,,0.583333333,0.291666667,0.916666667
+Appliance,I have time to do laundry this afternoon (around 4 PM). When should I start?,"State College, PA",,,2,150,Apartment,,,2,,0.666666667,0.375,0
+Appliance,When should I do laundry today?,"Harrisburg, PA",,,3,120,Single-family,,,1,,0.708333333,0.375,0.916666667
+Appliance,My laundry is ready to dry (around 3 PM). Should I run the dryer now or wait?,"Philadelphia, PA",,,4,200,Single-family,,,15,,0.625,0.333333333,0.958333333
+Appliance,I need to dry clothes this evening (around 7 PM). When should I start?,"Bethlehem, PA",,,3,175,Townhouse,,,12,,0.791666667,0.375,0
+Appliance,Planning to run the dishwasher around 3 PM. Is that a good time?,"Exton, PA",,,2,150,Apartment,,,2,,0.625,0.375,0.916666667
+Appliance,Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Scranton, PA",,,3,150,Apartment,,,5,,0.958333333,0.333333333,0.583333333
+Appliance,It's late (around 10 PM) and I need to dry laundry. Should I start now or wait?,"Philadelphia, PA",,,4,150,Apartment,,,6,,0.916666667,0.375,0.583333333
+Appliance,It's late (around midnight) and I need to do laundry. Should I start now or wait?,"York, PA",,,2,175,Apartment,,,4,,0,0.416666667,0.625
+Appliance,I'm ready to dry clothes (around 1 AM). When should I start the dryer?,"Erie, PA",,,2,150,Apartment,,,8,,0.041666667,0.375,0.583333333
+Appliance,Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Greensburg, PA",,,3,175,Townhouse,,,5,,0.958333333,0.333333333,0.625
+Appliance,I want to run my dishwasher this morning (around 8 AM). When should I start it?,"Doylestown, PA",,,5,175,Single-family,,,4,,0.333333333,0.5,0.75
+Appliance,My laundry is ready to dry (around 2 PM). Should I run the dryer now or wait?,"Wilkes-Barre, PA",,,5,200,Single-family,,,7,,0.583333333,0.666666667,0.833333333
+Appliance,Planning to run the dishwasher around 9 AM. Is that a good time?,"Lebanon, PA",,,4,150,Townhouse,,,5,,0.375,0.625,0.833333333
+Appliance,It's late (around 2 AM) and I need to do laundry. Should I do it now or wait?,"Allentown, PA",,,6,120,Apartment,,,6,,0.083333333,0.416666667,0.625
+Appliance,I'm ready to dry clothes (around 3 AM). When should I start the dryer?,"Chester, PA",,,5,175,Apartment,,,5,,0.125,0.416666667,0.625
+Shower,How long should my showers be?,"Phoenixville, PA",,,3,260,Single-family,62,,,3,5,8,12
+Shower,What's the ideal shower length?,"Greensburg, PA",,,4,300,Single-family,45,,,3,5,8,12
+Shower,How long should my showers be?,"Hazleton, PA",,,3,250,Townhouse,30,,,3.5,5,8,12
+Shower,What's the ideal shower length?,"Altoona, PA",,,2,210,Apartment,70,,,3.5,4,7,10
+Shower,How long should my showers be?,"Chambersburg, PA",,,4,320,Single-family,55,,,4,4,7,10
+Shower,What's the ideal shower length?,"Johnstown, PA",,,3,240,Townhouse,58,,,2,3,8,15
+Shower,How long should my showers be?,"Lebanon, PA",,,2,195,Apartment,65,,,2.5,4,10,18
+Shower,How long should my showers be?,"Monroeville, PA",,,4,280,Single-family,50,,,2,5,12,20
+Shower,What's the ideal shower length?,"Stroudsburg, PA",,,2,185,Apartment,40,,,2.5,2,7,14
+Shower,How long should my showers be?,"Carlisle, PA",,,3,255,Townhouse,72,,,2,6,10,16
+Shower,How long should my showers be?,"Coatesville, PA",,,2,200,Apartment,52,,,2,5,8,12
+Shower,What's the ideal shower length?,"DuBois, PA",,,3,240,Single-family,45,,,2.5,5,8,12
+Shower,How long should my showers be?,"Gettysburg, PA",,,2,205,Townhouse,60,,,2,5,8,12
+Shower,What's the ideal shower length?,"Chester, PA",,,3,260,Single-family,55,,,2.5,5,8,12
+Shower,How long should my showers be?,"Easton, PA",,,4,290,Single-family,48,,,2.5,5,8,12
+Shower,How long should my showers be?,"Butler, PA",,,5,320,Single-family,55,,,2.5,8,10,12
+Shower,What's the ideal shower length?,"Meadville, PA",,,4,280,Single-family,50,,,3,8,10,12
+Shower,How long should my showers be?,"Indiana, PA",,,6,380,Single-family,60,,,2.5,8,10,12
+Shower,What's the ideal shower length?,"Oil City, PA",,,5,310,Single-family,55,,,2,8,10,12
+Shower,How long should my showers be?,"Uniontown, PA",,,7,430,Single-family,58,,,2.5,8,10,12
+Shower,How long should my showers be?,"Erie, PA",,,3,265,Apartment,10,,,2.5,5,8,12
+Shower,What's the ideal shower length?,"Scranton, PA",,,2,200,Single-family,20,,,2,5,8,12
+Shower,How long should my showers be?,"Stroudsburg, PA",,,3,250,Single-family,32,,,2.5,5,8,12
+Shower,What's the ideal shower length?,"Blue Bell, PA",,,2,195,Townhouse,75,,,2,5,8,12
+Shower,How long should my showers be?,"Phoenixville, PA",,,3,260,Apartment,92,,,2.5,5,8,12
