@@ -12,10 +12,9 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 
 class HVACGroundTruthCalculator:
-    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023). 
-    # # Marginal (not average) is the correct measure for behavioral decisions because
-    # it reflects what is actually displaced or added at the margin. Peak window 7am-11pm
-    # (16h) and off-peak 11pm-7am (8h) per PJM definition.
+    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023).
+    # Marginal, not average, is what we want here because it tracks what actually gets shifted at the edge.
+    # Peak is 7am-11pm (16h) and off-peak is 11pm-7am (8h) per PJM.
     EMISSIONS_FACTOR_PEAK = 1.041     # PJM peak (1041 lbs/MWh)
     EMISSIONS_FACTOR_OFFPEAK = 0.976  # PJM off-peak (976 lbs/MWh)
     EMISSIONS_PEAK_HOURS_PER_DAY = 16
@@ -54,7 +53,7 @@ class HVACGroundTruthCalculator:
         """Calculate cooling load."""
         delta_t = outdoor_temp - indoor_temp
 
-        # Parameterize by housing type. Typical multipliers from ACCA Manual J:
+        # Adjust by housing type. Typical multipliers from ACCA Manual J:
         # - Single-family (2-story typical): 1.7 (includes roof, walls, floor exposures)
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
@@ -73,7 +72,6 @@ class HVACGroundTruthCalculator:
 
         conductive_load = u_factor * envelope_area * delta_t
 
-        # Replace hardcoded 1000 with formula based on household size and building characteristics
         # Formula: occupants (400 BTU/hr each) + lighting & equipment (1.0 BTU/hr/sqft) + baseline (800)
         # For 3-person, 1500 sqft home: (3 × 400) + (1500 × 1.0) + 800 = 3,500 BTU/hr (more realistic)
         # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1
@@ -82,10 +80,9 @@ class HVACGroundTruthCalculator:
         window_area = square_footage * 0.15
         solar_gains = window_area * 20
 
-        # Replace simple conductive_load multiplier with ASHRAE formula:
+        # Use the ASHRAE-style ventilation formula instead of a rough multiplier
         # ventilation_load = 1.08 × (square_footage × ceiling_height × ACH / 60) × ΔT
-        # where ACH ≈ 0.35 for modern construction (ASHRAE Handbook, Chapter 16)
-        # 1.08 is the air density-capacity factor (0.018 × 60 = 1.08 BTU per CFM·°F)
+        # ACH is about 0.35 for modern construction, and 1.08 is the air factor
         ventilation_cfm = (square_footage * ceiling_height * ach) / 60.0
         ventilation_load = 1.08 * ventilation_cfm * delta_t
 
@@ -101,7 +98,7 @@ class HVACGroundTruthCalculator:
         """Calculate heating load."""
         delta_t = indoor_temp - outdoor_temp
 
-        # Parameterize by housing type. Typical multipliers from ACCA Manual J:
+        # Adjust by housing type. Typical multipliers from ACCA Manual J:
         # - Single-family (2-story typical): 1.7
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
@@ -123,9 +120,8 @@ class HVACGroundTruthCalculator:
         # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1
         internal_gains = (household_size * 400) + (square_footage * 1.0) + 800
 
-        # Replace simple multiplier with ASHRAE formula:
+        # Use the same ASHRAE-style ventilation formula here too
         # infiltration_loss = 1.08 × (square_footage × ceiling_height × ACH / 60) × ΔT
-        # Source: ASHRAE Handbook of Fundamentals, Chapter 16
         infiltration_cfm = (square_footage * ceiling_height * ach) / 60.0
         infiltration_loss = 1.08 * infiltration_cfm * delta_t
 

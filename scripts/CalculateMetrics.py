@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import get_output_folder, MODEL_KEY
+from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -88,11 +88,11 @@ def extract_time_from_alt(alt_str):
     """Extract time pattern from alternative string.
     Handles: '2:00 PM', 'Run dishwasher at 2:00 PM', '4PM', '1AM'."""
     alt_str = str(alt_str).strip()
-    # Try full format first: '2:00 PM'
+    # Try the full time format first: '2:00 PM'
     match = re.search(r'(\d{1,2}:\d{2}\s*[AaPp][Mm])', alt_str)
     if match:
         return match.group(1).strip().upper()
-    # Try abbreviated: '4PM', '1AM'\
+    # Then try the short version: '4PM', '1AM'\
     match = re.search(r'(\d{1,2})\s*([AaPp][Mm])', alt_str)
     if match:
         hour = match.group(1)
@@ -104,15 +104,30 @@ def normalize_alternative(alt, decision_type):
     alt = str(alt).strip()
     if decision_type == "Appliance":
         return extract_time_from_alt(alt)
-    else:
+    if decision_type == "HVAC":
+        alt_lower = alt.lower()
+        if "off" in alt_lower:
+            match = re.search(r'(\d+(?:\.\d+)?)', alt_lower)
+            if match:
+                return f"off_{match.group(1)}"
+            return "off"
         try:
             return str(int(float(alt)))
         except ValueError:
             return alt
+    if decision_type == "Shower":
+        try:
+            value = float(alt)
+            if value.is_integer():
+                return str(int(value))
+            return str(value)
+        except ValueError:
+            return alt
+    return alt
 
 
 def load_ground_truth(config):
-    """Load GT files separately by decision type (IDs overlap across types)."""
+    """Load the GT files separately by decision type (IDs overlap across types)."""
     gt_by_type = {}
 
     for dtype, filepath in config["ground_truth"].items():
@@ -141,9 +156,12 @@ def load_ground_truth(config):
 
     return gt_by_type
 
-def load_architecture(filepath, arch_name):
-    """Load an architecture results file."""
-    df = pd.read_csv(filepath, encoding='utf-8-sig')
+def load_architecture(source, arch_name):
+    """Load an architecture results file or dataframe."""
+    if isinstance(source, pd.DataFrame):
+        df = source.copy()
+    else:
+        df = pd.read_csv(source, encoding='utf-8-sig')
     df["architecture"] = arch_name
     df["question"] = df["question"].str.strip()
     df["location"] = df["location"].str.strip()
@@ -162,8 +180,74 @@ def load_architecture(filepath, arch_name):
         df = df.rename(columns={"weighted_score": "arch_weighted_score"})
 
     return df
+
+
+def _coerce_score_columns(df, score_cols):
+    for c in score_cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+
+def aggregate_run_files(run_paths):
+    """Aggregate multi-run results into a single dataframe with mean/std scores."""
+    run_dfs = []
+    for p in run_paths:
+        run_dfs.append(pd.read_csv(p, encoding="utf-8-sig"))
+    combined = pd.concat(run_dfs, ignore_index=True)
+
+    score_cols = [
+        CONFIG["arch_score_cols"]["energy_cost"],
+        CONFIG["arch_score_cols"]["environmental"],
+        CONFIG["arch_score_cols"]["comfort"],
+        CONFIG["arch_score_cols"]["practicality"],
+    ]
+    combined = _coerce_score_columns(combined, score_cols)
+
+    failed_mask = combined[score_cols].eq(FAIL_SENTINEL).any(axis=1)
+    combined.loc[failed_mask, score_cols] = np.nan
+
+    group_keys = ["scenario_id", "decision_type", "alternative"]
+    meta_cols = [c for c in [
+        "question", "location", "outdoor_temp", "appliance_age", "flow_rate",
+        "calculator", "extraction_failed", "gt_calculation_failed"
+    ] if c in combined.columns]
+
+    avg_scores = combined.groupby(group_keys, as_index=False)[score_cols].mean()
+    std_scores = combined.groupby(group_keys, as_index=False)[score_cols].std()
+    avg_meta = combined.groupby(group_keys, as_index=False)[meta_cols].first() if meta_cols else None
+
+    aggregated = avg_scores
+    if avg_meta is not None:
+        aggregated = aggregated.merge(avg_meta, on=group_keys)
+
+    std_scores = std_scores.rename(columns={c: f"{c}_std" for c in score_cols})
+    aggregated = aggregated.merge(std_scores, on=group_keys)
+
+    # Fill NaN (all runs failed) back to sentinel
+    for c in score_cols:
+        aggregated[c] = aggregated[c].fillna(FAIL_SENTINEL)
+
+    # Recompute weighted score + rank per scenario_id
+    aggregated["weighted_score"] = float(FAIL_SENTINEL)
+    aggregated["rank"] = int(FAIL_SENTINEL)
+    for sid in aggregated["scenario_id"].unique():
+        sc_mask = aggregated["scenario_id"] == sid
+        sc = aggregated[sc_mask]
+        valid_idx = sc.index[~sc[score_cols].eq(FAIL_SENTINEL).any(axis=1)]
+        if len(valid_idx) > 0:
+            ws = (
+                aggregated.loc[valid_idx, score_cols[0]] * CRITERION_WEIGHTS["energy_cost"] +
+                aggregated.loc[valid_idx, score_cols[1]] * CRITERION_WEIGHTS["environmental"] +
+                aggregated.loc[valid_idx, score_cols[2]] * CRITERION_WEIGHTS["comfort"] +
+                aggregated.loc[valid_idx, score_cols[3]] * CRITERION_WEIGHTS["practicality"]
+            )
+            aggregated.loc[valid_idx, "weighted_score"] = ws
+            aggregated.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
+
+    return aggregated
 def build_gt_lookup(gt_by_type):
-    """Build lookup: (question, location):   list of GT scenario entries."""
+    """Build a lookup like (question, location) -> list of GT scenario entries."""
     gt_lookup = defaultdict(list)
 
     for dtype, gt_df in gt_by_type.items():
@@ -182,7 +266,7 @@ def build_gt_lookup(gt_by_type):
                 "decision_type": dtype,
                 "alt_map": alt_map,
                 "used": False,
-                # Decision-type-specific disambiguating parameters
+                # Little tie-breaker fields for each decision type
                 "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
                 "appliance_age_type": str(sub["appliance_age_type"].iloc[0]).strip() if "appliance_age_type" in sub.columns else "",
                 "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
@@ -191,7 +275,31 @@ def build_gt_lookup(gt_by_type):
     return gt_lookup
 
 
-def match_scenarios(gt_lookup, arch_df, arch_name):
+def build_gt_id_lookup(gt_by_type):
+    """Build a lookup like (decision_type, scenario_id) -> GT scenario entry."""
+    gt_id_lookup = {}
+    for dtype, gt_df in gt_by_type.items():
+        for sid in gt_df["scenario_id"].unique():
+            sub = gt_df[gt_df["scenario_id"] == sid]
+            alt_map = {}
+            for _, row in sub.iterrows():
+                norm_alt = normalize_alternative(row["alternative"], dtype)
+                alt_map[norm_alt] = row
+            gt_id_lookup[(dtype, str(sid))] = {
+                "gt_sid": sid,
+                "decision_type": dtype,
+                "alt_map": alt_map,
+                "used": False,
+                "question": sub["question"].iloc[0],
+                "location": sub["location"].iloc[0],
+                "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
+                "appliance_age_type": str(sub["appliance_age_type"].iloc[0]).strip() if "appliance_age_type" in sub.columns else "",
+                "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
+            }
+    return gt_id_lookup
+
+
+def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
     """Match architecture scenarios to GT by question+location, then alternatives."""
     matched_rows = []
     warnings_log = []
@@ -202,24 +310,31 @@ def match_scenarios(gt_lookup, arch_df, arch_name):
         q = arch_sub["question"].iloc[0]
         loc = arch_sub["location"].iloc[0]
 
-        key = (q, loc)
-        if key not in gt_lookup:
-            warnings_log.append(
-                f"No GT match: sid={arch_sid} ({arch_dtype}, '{q[:50]}', '{loc}')"
-            )
-            continue
+        # First try the strict (decision_type, scenario_id) match
+        strict_key = (arch_dtype, str(arch_sid))
+        if strict_key in gt_id_lookup:
+            gt_entry = gt_id_lookup[strict_key]
+            best_match = gt_entry
+        else:
+            key = (q, loc)
+            if key not in gt_lookup:
+                warnings_log.append(
+                    f"No GT match: sid={arch_sid} ({arch_dtype}, '{q[:50]}', '{loc}')"
+                )
+                continue
 
-        # Normalize arch alternatives
+        # Normalize the architecture alternatives
         arch_norm_alts = {}
         for _, row in arch_sub.iterrows():
             norm_alt = normalize_alternative(row["alternative"], arch_dtype)
             arch_norm_alts[norm_alt] = row
 
-        # Find best GT entry: must match decision type, use extra params as tiebreakers
-        best_match = None
-        best_score = -1
+        # Find the best GT entry: same decision type, then use the extra params as tiebreakers
+        if strict_key not in gt_id_lookup:
+            best_match = None
+            best_score = -1
 
-        # Extract the one disambiguating parameter for this decision type (skip if N/A or blank)
+        # Pull the one extra parameter for this decision type (skip blanks and N/A)
         def _clean(val):
             s = str(val).strip()
             return "" if s.lower() in ("", "n/a", "nan", "none") else s
@@ -234,24 +349,25 @@ def match_scenarios(gt_lookup, arch_df, arch_name):
             arch_param = _clean(arch_sub["flow_rate"].iloc[0]) if "flow_rate" in arch_sub.columns else ""
             gt_param_key = "gpm"
 
-        for gt_entry in gt_lookup[key]:
-            if gt_entry["used"]:
-                continue
-            if gt_entry["decision_type"] != arch_dtype:
-                continue
-            overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
-            # Tiebreaker: only apply the parameter specific to this decision type,
-            # and only when both arch and GT values are non-blank (not N/A)
-            extra = 0
-            gt_param = _clean(gt_entry.get(gt_param_key, ""))
-            if arch_param and gt_param and arch_param == gt_param:
-                extra += 100
-            score = overlap + extra
-            if score > best_score:
-                best_score = score
-                best_match = gt_entry
+        if strict_key not in gt_id_lookup:
+            for gt_entry in gt_lookup[key]:
+                if gt_entry["used"]:
+                    continue
+                if gt_entry["decision_type"] != arch_dtype:
+                    continue
+                overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
+                # Tiny tiebreaker: only use the parameter for this decision type,
+                # and only when both sides actually have a real value
+                extra = 0
+                gt_param = _clean(gt_entry.get(gt_param_key, ""))
+                if arch_param and gt_param and arch_param == gt_param:
+                    extra += 100
+                score = overlap + extra
+                if score > best_score:
+                    best_score = score
+                    best_match = gt_entry
 
-        if best_match is None or best_score == 0:
+        if best_match is None or (strict_key not in gt_id_lookup and best_score == 0):
             warnings_log.append(
                 f"No alt overlap: sid={arch_sid} ({arch_dtype}, '{q[:50]}', "
                 f"arch_alts={list(arch_norm_alts.keys())})"
@@ -303,6 +419,8 @@ def match_scenarios(gt_lookup, arch_df, arch_name):
     for entries in gt_lookup.values():
         for e in entries:
             e["used"] = False
+    for e in gt_id_lookup.values():
+        e["used"] = False
 
     merged_df = pd.DataFrame(matched_rows)
     n_arch = arch_df["scenario_id"].nunique()
@@ -460,18 +578,28 @@ def evaluate_all(config):
     print("\n[2] Loading architectures...")
     arch_dfs = {}
     for name, path in config["architectures"].items():
-        arch_dfs[name] = load_architecture(path, name)
-        dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
-        print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
+        base_path = Path(path)
+        run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.csv"))
+        if run_paths:
+            aggregated = aggregate_run_files(run_paths)
+            arch_dfs[name] = load_architecture(aggregated, name)
+            dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
+            print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc} (aggregated {len(run_paths)} runs)")
+        else:
+            arch_dfs[name] = load_architecture(path, name)
+            dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
+            print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
 
     # 2. Match
     print("\n[3] Matching...")
     gt_lookup = build_gt_lookup(gt_by_type)
+    gt_id_lookup = build_gt_id_lookup(gt_by_type)
     print(f"    GT lookup: {len(gt_lookup)} unique (question, location) keys")
+    print(f"    GT id lookup: {len(gt_id_lookup)} (decision_type, scenario_id) keys")
 
     merged_dfs = {}
     for name, adf in arch_dfs.items():
-        merged_dfs[name] = match_scenarios(gt_lookup, adf, name)
+        merged_dfs[name] = match_scenarios(gt_lookup, gt_id_lookup, adf, name)
 
     print("  RESULTS")
 
