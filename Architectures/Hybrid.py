@@ -358,7 +358,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         if all(k in extracted for k in required_top_level):
 
             if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
-                print(f" iinvalid decision_type: {extracted['decision_type']}")
+                print(f" invalid decision_type: {extracted['decision_type']}")
                 extraction_diagnostics['extraction_error'] = "Invalid decision_type"
                 extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_decision_type"]
                 return None, extraction_diagnostics
@@ -559,7 +559,7 @@ def run_scenario(scenario: Dict) -> Dict:
                 'extraction_diagnostics': extraction_diag
             }
 
-        print(f" EXTRACTION FAILEd. Outputting sentinel scores")
+        print(f" EXTRACTION FAILED. Outputting sentinel scores")
 
         # Build fallback alternatives with sentinel scores
         zero_alternatives = []
@@ -612,7 +612,7 @@ def run_scenario(scenario: Dict) -> Dict:
                   f"Pract={scores['practicality']:.1f}")
 
     except Exception as e:
-        print(f" hround truth calculation failed: {e}")
+        print(f" Ground truth calculation failed: {e}")
 
         # If GT calc blows up, send back sentinel values
         zero_alternatives = []
