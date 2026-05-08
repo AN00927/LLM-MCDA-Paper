@@ -16,7 +16,7 @@ Which AI-MCDA architecture most accurately replicates physics-based ground truth
 
 [Abstract](Abstract.pdf)
 
-This project compares three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across 100 scenarios (60 HVAC, 25 Appliance, 15 Shower). Each scenario presents three alternatives; each architecture ranks them on four criteria.
+This project compares three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **181 scenarios** (for now) (91 HVAC, 50 Appliance, 40 Shower). Each scenario presents three alternatives; each architecture ranks them on four criteria.
 
 **MAVT Criterion Weights:**
 | Criterion | Weight |
@@ -77,22 +77,39 @@ LLM-MCDA/
 ## Three Architectures
 
 ### 1. Pure Prompting
+
+**NOTE**: API CALLS NUMBERS ARE ESTIMATES
+
 - **Approach:** LLM scores all four criteria directly via calibrated system prompts
 - **Input:** Natural language scenario description
 - **Output:** Four 0–10 scores per alternative
 - **API calls per scenario:** 3 (one per alternative)
+- **API calls per run (181 scenarios):** 543
+- **API calls per 10-run benchmark:** 5,430
 
 ### 2. RAG-Enhanced
 - **Approach:** LLM retrieves relevant ground truth scenario chunks from ChromaDB vector database before scoring
 - **Input:** User description → semantic retrieval → LLM scores with retrieved context
 - **Output:** Four 0–10 scores per alternative
 - **API calls per scenario:** 3 (one per alternative)
+- **API calls per run (181 scenarios):** 543
+- **API calls per 10-run benchmark:** 5,430
 
 ### 3. Hybrid (AI Extraction + Deterministic Calculator)
 - **Approach:** LLM extracts structured parameters (SEER tier, appliance age, flow rate, etc.) → deterministic MAVT calculator computes scores using physics formulas
 - **Input:** User description → AI maps to parameters → calculator runs
 - **Output:** Four 0–10 scores from physics-backed formulas
 - **API calls per scenario:** 1 (single call processes all three alternatives)
+- **API calls per run (181 scenarios):** 181
+- **API calls per 10-run benchmark:** 1,810
+
+**Four-model full benchmark estimates (10 runs each):**
+| Architecture | Calls/model | × 4 models |
+|---|---|---|
+| Pure | 5,430 | 21,720 |
+| RAG | 5,430 | 21,720 |
+| Hybrid | 1,810 | 7,240 |
+| **Total** | **12,670** | **50,680** |
 
 ---
 

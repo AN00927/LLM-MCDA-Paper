@@ -797,7 +797,9 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
-            'scenario_id', 'question', 'location', 'decision_type', 'outdoor_temp', 'appliance_age', 'flow_rate',
+            'scenario_id', 'question', 'location',
+            'input_decision_type', 'extracted_decision_type', 'decision_type',
+            'outdoor_temp', 'appliance_age', 'flow_rate',
             'calculator', 'extraction_failed', 'gt_calculation_failed',
             'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
             'rank', 'weighted_score'
@@ -817,6 +819,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             outdoor_temp = scenarios[scenario_id - 1].get('Outdoor Temp', '')
             appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
+            # input_decision_type: always the value from the scenario CSV
+            input_decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
+            # extracted_decision_type: what the LLM said (may differ from input)
+            extracted_decision_type = result.get('decision_type', 'UNKNOWN')
+            # decision_type kept as the input type for backwards-compatibility
+            decision_type = input_decision_type
 
             # Grab ranking details in input order
             ranks = result['ranking_result']['ranks']
@@ -846,6 +854,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'scenario_id': scenario_id,
                     'question': question,
                     'location': location,
+                    'input_decision_type': input_decision_type,
+                    'extracted_decision_type': extracted_decision_type,
                     'decision_type': decision_type,
                     'outdoor_temp': outdoor_temp,
                     'appliance_age': appliance_age,
@@ -888,14 +898,30 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                             base_diagnostics_path: str) -> None:
-    """Run multi and aggregate."""
+    """Run multi and aggregate.
+
+    Resume-aware: if a _run_NN.csv already exists and is non-empty it is
+    included in aggregation without re-running the benchmark.
+    """
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
     run_paths = []
+    skipped_runs = []
 
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
         diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
+        # --- Resume support: skip runs that already have output ---
+        if run_path.exists():
+            try:
+                existing = pd.read_csv(run_path, encoding='utf-8-sig')
+                if len(existing) > 0:
+                    print(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+                    run_paths.append(run_path)
+                    skipped_runs.append(run_idx)
+                    continue
+            except Exception:
+                pass  # Unreadable file — re-run it
         print(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
@@ -903,15 +929,19 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         except Exception as e:
             print(f"ERROR: Run {run_idx} failed and will be excluded from aggregation: {e}")
 
-    if len(run_paths) == 0:
+    if skipped_runs:
+        print(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
+
+    n_runs = len(run_paths)
+    if n_runs == 0:
         print("ERROR: All runs failed. No aggregation possible.")
         return
-    if len(run_paths) < N_RUNS:
+    if n_runs < N_RUNS:
         print(
-            f"WARNING: Only {len(run_paths)}/{N_RUNS} runs completed. "
-            f"Aggregating over {len(run_paths)} runs."
+            f"WARNING: Only {n_runs}/{N_RUNS} runs completed. "
+            f"Aggregating over {n_runs} runs."
         )
-    print(f"{len(run_paths)}/{N_RUNS} runs complete. Aggregating scores...")
+    print(f"{n_runs}/{N_RUNS} runs complete. Aggregating scores...")
 
     valid_run_paths = []
     run_dfs = []
@@ -924,24 +954,29 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     if len(run_dfs) == 0:
         print("ERROR: No run files could be read. Aggregation aborted.")
         return
-    if len(run_dfs) < len(run_paths):
-        print(f"WARNING: Aggregating over {len(run_dfs)}/{len(run_paths)} readable runs.")
+    n_readable = len(run_dfs)
+    if n_readable < n_runs:
+        print(f"WARNING: Aggregating over {n_readable}/{n_runs} readable runs.")
     combined = pd.concat(run_dfs, ignore_index=True)
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
     SENTINEL = 1928.0
 
+    # Use pd.to_numeric (coerce) — handles string "1928" and malformed values
     for c in CRITERIA_COLS:
-        combined[c] = combined[c].astype(float)
-
-    # If one criterion is busted, drop the whole row from the average
-    failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
-    combined.loc[failed_mask, CRITERIA_COLS] = np.nan
+        combined[c] = pd.to_numeric(combined[c], errors="coerce")
+        # Treat exact sentinel float as a failed row
+        combined.loc[combined[c] == SENTINEL, c] = np.nan
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     STABLE_META_COLS = ["question", "location", "outdoor_temp", "appliance_age", "flow_rate", "calculator"]
     BOOL_META_COLS = ["extraction_failed", "gt_calculation_failed"]
+
+    # Count how many runs contributed a non-NaN value per (scenario, alternative)
+    n_valid_runs = combined.groupby(GROUP_KEYS)[CRITERIA_COLS[0]].apply(
+        lambda s: s.notna().sum()
+    ).reset_index(name="n_successful_runs")
 
     avg_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].mean()
     std_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].std()
@@ -959,6 +994,12 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     dt_mode = combined.groupby(GROUP_KEYS)['decision_type'].agg(_mode_decision_type).reset_index()
     avg_meta = avg_meta.merge(dt_mode, on=GROUP_KEYS)
 
+    # input_decision_type / extracted_decision_type — preserve both for traceability
+    for col in ['input_decision_type', 'extracted_decision_type']:
+        if col in combined.columns:
+            col_first = combined.groupby(GROUP_KEYS)[col].first().reset_index()
+            avg_meta = avg_meta.merge(col_first, on=GROUP_KEYS)
+
     # Boolean flags: use any() so one bad run marks the scenario as flaky
     for col in BOOL_META_COLS:
         if col in combined.columns:
@@ -970,8 +1011,20 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             avg_meta = avg_meta.merge(bool_agg, on=GROUP_KEYS)
 
     avg = avg_criteria.merge(avg_meta, on=GROUP_KEYS)
+    avg = avg.merge(n_valid_runs, on=GROUP_KEYS)
+    avg["n_runs"] = n_readable
+    avg["n_failed_runs"] = avg["n_runs"] - avg["n_successful_runs"]
+
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
+
+    # When N=1, pandas std returns NaN — annotate clearly in the stats CSV
+    if n_readable == 1:
+        print("WARNING: Only 1 run aggregated — std columns will be NaN (undefined for N=1).")
+        for c in CRITERIA_COLS:
+            col = f"{c}_std"
+            if col in stats_df.columns:
+                stats_df[col] = "N/A (N=1)"
 
     # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
@@ -996,15 +1049,17 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             avg.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
 
     col_order = [
-        "scenario_id", "question", "location", "decision_type", "outdoor_temp",
-        "appliance_age", "flow_rate", "calculator", "extraction_failed",
-        "gt_calculation_failed", "alternative",
+        "scenario_id", "question", "location", "decision_type",
+        "input_decision_type", "extracted_decision_type",
+        "outdoor_temp", "appliance_age", "flow_rate",
+        "calculator", "extraction_failed", "gt_calculation_failed", "alternative",
         "energy_cost", "environmental", "comfort", "practicality",
         "rank", "weighted_score",
+        "n_runs", "n_successful_runs", "n_failed_runs",
     ]
     avg = avg.reindex(columns=col_order)
     avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
-    print(f"Averaged results ({N_RUNS} runs) saved to {base_output_csv}")
+    print(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
     stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')

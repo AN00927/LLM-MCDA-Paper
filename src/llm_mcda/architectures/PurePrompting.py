@@ -595,12 +595,28 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
 
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
-    """Run multi and aggregate."""
+    """Run multi and aggregate.
+
+    if a _run_NN.csv already exists and is non-empty it is
+    included in aggregation without re-running the benchmark.
+    """
     base = Path(base_output_csv)
     run_paths = []
+    skipped_runs = []
 
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
+        # skip runs that already have output
+        if run_path.exists():
+            try:
+                existing = pd.read_csv(run_path, encoding='utf-8-sig')
+                if len(existing) > 0:
+                    logging.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+                    run_paths.append(run_path)
+                    skipped_runs.append(run_idx)
+                    continue
+            except Exception:
+                pass  # Unreadable file
         logging.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
             run_test_set(str(test_csv_path), str(run_path))
@@ -608,15 +624,19 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
         except Exception as e:
             logging.error(f"Run {run_idx} failed and will be excluded from aggregation: {e}")
 
-    if len(run_paths) == 0:
+    if skipped_runs:
+        logging.info(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
+
+    n_runs = len(run_paths)
+    if n_runs == 0:
         logging.error("All runs failed. No aggregation possible.")
         return
-    if len(run_paths) < N_RUNS:
+    if n_runs < N_RUNS:
         logging.warning(
-            f"Only {len(run_paths)}/{N_RUNS} runs completed. "
-            f"Aggregating over {len(run_paths)} runs."
+            f"Only {n_runs}/{N_RUNS} runs completed. "
+            f"Aggregating over {n_runs} runs."
         )
-    logging.info(f"{len(run_paths)}/{N_RUNS} runs complete. Aggregating scores...")
+    logging.info(f"{n_runs}/{N_RUNS} runs complete. Aggregating scores...")
 
     valid_run_paths = []
     run_dfs = []
@@ -629,20 +649,21 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
     if len(run_dfs) == 0:
         logging.error("No run files could be read. Aggregation aborted.")
         return
-    if len(run_dfs) < len(run_paths):
-        logging.warning(f"Aggregating over {len(run_dfs)}/{len(run_paths)} readable runs.")
+    n_readable = len(run_dfs)
+    if n_readable < n_runs:
+        logging.warning(f"Aggregating over {n_readable}/{n_runs} readable runs.")
+
     combined = pd.concat(run_dfs, ignore_index=True)
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
     SENTINEL = 1928.0
 
+    # Use pd.to_numeric (coerce) — handles string "1928" and malformed values
     for c in CRITERIA_COLS:
-        combined[c] = combined[c].astype(float)
-
-    # If even one score is busted (1928), drop the whole row
-    failed_mask = combined[CRITERIA_COLS].eq(SENTINEL).any(axis=1)
-    combined.loc[failed_mask, CRITERIA_COLS] = np.nan
+        combined[c] = pd.to_numeric(combined[c], errors="coerce")
+        # Treat exact sentinel float as a failed row
+        combined.loc[combined[c] == SENTINEL, c] = np.nan
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     META_COLS = [
@@ -650,13 +671,32 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
         "outdoor_temp", "appliance_age", "flow_rate",
     ]
 
+    # Count how many runs contributed a non-NaN value per (scenario, alternative)
+    n_valid_runs = combined.groupby(GROUP_KEYS)[CRITERIA_COLS[0]].apply(
+        lambda s: s.notna().sum()
+    ).reset_index(name="n_successful_runs")
+
     avg_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].mean()
     std_criteria = combined.groupby(GROUP_KEYS, as_index=False)[CRITERIA_COLS].std()
     avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[META_COLS].first()
 
     avg = avg_criteria.merge(avg_meta, on=GROUP_KEYS)
+    avg = avg.merge(n_valid_runs, on=GROUP_KEYS)
+    avg["n_runs"] = n_readable
+    avg["n_failed_runs"] = avg["n_runs"] - avg["n_successful_runs"]
+
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
+
+    # When N=1, pandas std returns NaN — annotate clearly in the stats CSV
+    if n_readable == 1:
+        logging.warning(
+            "Only 1 run aggregated — std columns will be NaN (undefined for N=1)."
+        )
+        for c in CRITERIA_COLS:
+            col = f"{c}_std"
+            if col in stats_df.columns:
+                stats_df[col] = "N/A (N=1)"
 
     # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
@@ -685,10 +725,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
         "appliance_age", "flow_rate", "alternative",
         "energy_cost", "environmental", "comfort", "practicality",
         "rank", "weighted_score",
+        "n_runs", "n_successful_runs", "n_failed_runs",
     ]
     avg = avg.reindex(columns=col_order)
     avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
-    logging.info(f"Averaged results ({N_RUNS} runs) saved to {base_output_csv}")
+    logging.info(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
     stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')

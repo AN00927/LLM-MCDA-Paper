@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 calculate_metrics.py - Metrics evaluation for MCDA architecture comparison
 Science Fair Project: LLM-assisted MCDA for Household Emissions Optimization
@@ -55,6 +55,18 @@ CONFIG = {
 
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = 1928
+
+# Scenario matching uses (question, location) content keys only.  The strict
+# (decision_type, scenario_id) lookup is intentionally DISABLED because
+# architecture CSV scenario_ids are assigned sequentially from TestScenarios
+# (mixed types) while GT CSVs number independently per domain.  The two ID
+# namespaces therefore do NOT correspond and a strict ID match would silently
+# misalign rows.  If a shared ID namespace is ever declared, re-enable
+# build_gt_id_lookup as a primary lookup and demote content-matching to
+# fallback only. i will turn this on in the future if needed with standardizing
+#questions leading to duplicates
+
+_STRICT_ID_MATCH_ENABLED = False  # see note above
 
 
 def is_failed_row(row):
@@ -190,10 +202,16 @@ def _coerce_score_columns(df, score_cols):
 
 
 def aggregate_run_files(run_paths):
-    """Aggregate multi-run results into a single dataframe with mean/std scores."""
+    """Aggregate multi-run results into a single dataframe with mean/std scores.
+
+    The returned dataframe includes n_runs, n_successful_runs, and n_failed_runs
+    so downstream callers can report on run coverage without re-counting.
+    When std is NaN because only one run was aggregated, it is annotated.
+    """
     run_dfs = []
     for p in run_paths:
         run_dfs.append(pd.read_csv(p, encoding="utf-8-sig"))
+    n_readable = len(run_dfs)
     combined = pd.concat(run_dfs, ignore_index=True)
 
     score_cols = [
@@ -204,14 +222,20 @@ def aggregate_run_files(run_paths):
     ]
     combined = _coerce_score_columns(combined, score_cols)
 
-    failed_mask = combined[score_cols].eq(FAIL_SENTINEL).any(axis=1)
-    combined.loc[failed_mask, score_cols] = np.nan
+    # Treat sentinel rows as NaN for averaging
+    for c in score_cols:
+        combined.loc[combined[c] == FAIL_SENTINEL, c] = np.nan
 
     group_keys = ["scenario_id", "decision_type", "alternative"]
     meta_cols = [c for c in [
         "question", "location", "outdoor_temp", "appliance_age", "flow_rate",
         "calculator", "extraction_failed", "gt_calculation_failed"
     ] if c in combined.columns]
+
+    # Count successful (non-NaN) runs per (scenario, alternative)
+    n_valid_runs = combined.groupby(group_keys)[score_cols[0]].apply(
+        lambda s: s.notna().sum()
+    ).reset_index(name="n_successful_runs")
 
     avg_scores = combined.groupby(group_keys, as_index=False)[score_cols].mean()
     std_scores = combined.groupby(group_keys, as_index=False)[score_cols].std()
@@ -220,9 +244,19 @@ def aggregate_run_files(run_paths):
     aggregated = avg_scores
     if avg_meta is not None:
         aggregated = aggregated.merge(avg_meta, on=group_keys)
+    aggregated = aggregated.merge(n_valid_runs, on=group_keys)
+    aggregated["n_runs"] = n_readable
+    aggregated["n_failed_runs"] = aggregated["n_runs"] - aggregated["n_successful_runs"]
 
     std_scores = std_scores.rename(columns={c: f"{c}_std" for c in score_cols})
     aggregated = aggregated.merge(std_scores, on=group_keys)
+
+    # If N=1, std is undefined — annotate rather than leave unexplained NaN
+    if n_readable == 1:
+        warnings.warn(
+            "Only 1 run file aggregated — std columns are NaN (undefined for N=1).",
+            UserWarning, stacklevel=2
+        )
 
     # Fill NaN (all runs failed) back to sentinel
     for c in score_cols:
@@ -300,9 +334,16 @@ def build_gt_id_lookup(gt_by_type):
 
 
 def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
-    """Match architecture scenarios to GT by question+location, then alternatives."""
+    """Match architecture scenarios to GT by (question, location) content keys.
+
+    Note: strict (decision_type, scenario_id) matching is disabled because the
+    two ID namespaces do not correspond (see _STRICT_ID_MATCH_ENABLED note).
+    Content-based matching is logged so reviewers can audit the method used.
+    Warnings are emitted when fewer than 3 alternatives match for a scenario.
+    """
     matched_rows = []
     warnings_log = []
+    match_method_counts = {"content": 0, "no_match": 0}
 
     for arch_sid in arch_df["scenario_id"].unique():
         arch_sub = arch_df[arch_df["scenario_id"] == arch_sid]
@@ -310,18 +351,14 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
         q = arch_sub["question"].iloc[0]
         loc = arch_sub["location"].iloc[0]
 
-        # First try the strict (decision_type, scenario_id) match
-        strict_key = (arch_dtype, str(arch_sid))
-        if strict_key in gt_id_lookup:
-            gt_entry = gt_id_lookup[strict_key]
-            best_match = gt_entry
-        else:
-            key = (q, loc)
-            if key not in gt_lookup:
-                warnings_log.append(
-                    f"No GT match: sid={arch_sid} ({arch_dtype}, '{q[:50]}', '{loc}')"
-                )
-                continue
+        # Content-based match only (strict ID match intentionally disabled)
+        key = (q, loc)
+        if key not in gt_lookup:
+            warnings_log.append(
+                f"No GT match: sid={arch_sid} ({arch_dtype}, '{q[:50]}', '{loc}')"
+            )
+            match_method_counts["no_match"] += 1
+            continue
 
         # Normalize the architecture alternatives
         arch_norm_alts = {}
@@ -329,10 +366,8 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             norm_alt = normalize_alternative(row["alternative"], arch_dtype)
             arch_norm_alts[norm_alt] = row
 
-        # Find the best GT entry: same decision type, then use the extra params as tiebreakers
-        if strict_key not in gt_id_lookup:
-            best_match = None
-            best_score = -1
+        best_match = None
+        best_score = -1
 
         # Pull the one extra parameter for this decision type (skip blanks and N/A)
         def _clean(val):
@@ -349,33 +384,33 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             arch_param = _clean(arch_sub["flow_rate"].iloc[0]) if "flow_rate" in arch_sub.columns else ""
             gt_param_key = "gpm"
 
-        if strict_key not in gt_id_lookup:
-            for gt_entry in gt_lookup[key]:
-                if gt_entry["used"]:
-                    continue
-                if gt_entry["decision_type"] != arch_dtype:
-                    continue
-                overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
-                # Tiny tiebreaker: only use the parameter for this decision type,
-                # and only when both sides actually have a real value
-                extra = 0
-                gt_param = _clean(gt_entry.get(gt_param_key, ""))
-                if arch_param and gt_param and arch_param == gt_param:
-                    extra += 100
-                score = overlap + extra
-                if score > best_score:
-                    best_score = score
-                    best_match = gt_entry
+        for gt_entry in gt_lookup[key]:
+            if gt_entry["used"]:
+                continue
+            if gt_entry["decision_type"] != arch_dtype:
+                continue
+            overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
+            extra = 0
+            gt_param = _clean(gt_entry.get(gt_param_key, ""))
+            if arch_param and gt_param and arch_param == gt_param:
+                extra += 100
+            score = overlap + extra
+            if score > best_score:
+                best_score = score
+                best_match = gt_entry
 
-        if best_match is None or (strict_key not in gt_id_lookup and best_score == 0):
+        if best_match is None or best_score == 0:
             warnings_log.append(
                 f"No alt overlap: sid={arch_sid} ({arch_dtype}, '{q[:50]}', "
                 f"arch_alts={list(arch_norm_alts.keys())})"
             )
+            match_method_counts["no_match"] += 1
             continue
 
+        match_method_counts["content"] += 1
         best_match["used"] = True
 
+        matched_alts = 0
         for norm_alt, arch_row in arch_norm_alts.items():
             if norm_alt in best_match["alt_map"]:
                 gt_row = best_match["alt_map"][norm_alt]
@@ -387,6 +422,7 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
                     "alternative": arch_row["alternative"],
                     "norm_alternative": norm_alt,
                     "architecture": arch_name,
+                    "match_method": "content",
                     "question": q,
                     "location": loc,
                 }
@@ -407,13 +443,23 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
                     merged["extraction_failed"] = arch_row["extraction_failed"]
                 if "gt_calculation_failed" in arch_row.index:
                     merged["gt_calculation_failed"] = arch_row["gt_calculation_failed"]
+                if "input_decision_type" in arch_row.index:
+                    merged["input_decision_type"] = arch_row["input_decision_type"]
 
                 matched_rows.append(merged)
+                matched_alts += 1
             else:
                 warnings_log.append(
                     f"Alt not in GT: sid={arch_sid}, alt='{norm_alt}' "
                     f"(GT has: {list(best_match['alt_map'].keys())})"
                 )
+
+        # Warn when fewer than 3 alternatives matched — affects metric quality
+        if 0 < matched_alts < 3:
+            warnings_log.append(
+                f"WARN: only {matched_alts}/3 alternatives matched for "
+                f"sid={arch_sid} ({arch_dtype}) — ranking metrics may be unreliable"
+            )
 
     # Reset used flags for next architecture
     for entries in gt_lookup.values():
@@ -427,7 +473,8 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
     n_matched = merged_df["arch_scenario_id"].nunique() if len(merged_df) > 0 else 0
 
     print(f"\n  [{arch_name}] Matched {n_matched}/{n_arch} scenarios "
-          f"({len(merged_df)} alt rows)")
+          f"({len(merged_df)} alt rows) | method: content-only")
+    print(f"    match_method_counts: {match_method_counts}")
 
     if n_matched < n_arch:
         for dtype in ["HVAC", "Appliance", "Shower"]:
@@ -446,7 +493,7 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
         for w in warnings_log[:n_show]:
             print(f"      {w}")
 
-    return merged_df
+    return merged_df, match_method_counts
 
 
 def compute_criterion_metrics(merged_df):
@@ -564,6 +611,100 @@ def compute_failure_rate(arch_df):
 
     return result
 
+def _load_diagnostics_json(arch_path_str, arch_name):
+    """Discover and load diagnostics JSON file(s) next to the run CSVs.
+
+    Looks for *_diagnostics_run_NN.json patterns (per-run) and falls back to
+    the single-run diagnostics file.  Returns a merged summary dict with
+    failure-mode counters aggregated across runs.
+
+    The schema differs per architecture:
+      Pure/RAG: failed_malformed_json, failed_missing_score, failed_out_of_bounds,
+                failed_invalid_score_type, failed_unknown
+      Hybrid:   failed_extraction_*, failed_ground_truth_calculation_exception,
+                failed_unknown
+
+    Counters present in the JSON are summed; counters absent in a schema are
+    omitted rather than fabricated.
+    """
+    base_path = Path(arch_path_str)
+    result = {"arch_name": arch_name, "diag_files_loaded": 0}
+
+    # Collect candidate paths: per-run first, then the single-run fallback
+    _stem_no_results = (
+        base_path.stem[:-len("_results")]
+        if base_path.stem.endswith("_results")
+        else base_path.stem
+    )
+    diag_candidates = sorted(
+        base_path.parent.glob(f"{_stem_no_results}_diagnostics_run_*.json")
+    )
+    # Also try the standard per-architecture naming
+    if not diag_candidates:
+        diag_candidates = sorted(
+            base_path.parent.glob(f"*diagnostics_run_*.json")
+        )
+    # Single-run fallback
+    single_diag_names = [
+        base_path.with_name(f"{base_path.stem}_diagnostics.json"),
+        base_path.with_name("RAGDiagnostics.json"),
+        base_path.with_name("hybrid_diagnostics.json"),
+        base_path.with_name("pure_prompting_results_diagnostics.json"),
+    ]
+
+    all_diag_paths = list(diag_candidates)
+    if not all_diag_paths:
+        for p in single_diag_names:
+            if p.exists():
+                all_diag_paths.append(p)
+                break
+
+    if not all_diag_paths:
+        print(f"    [{arch_name}] No diagnostics JSON found next to {base_path.name}")
+        return result
+
+    # Aggregate counters across all found files
+    import json as _json
+    summed = {}
+    for dp in all_diag_paths:
+        try:
+            with open(dp, "r", encoding="utf-8") as f:
+                blob = _json.load(f)
+            result["diag_files_loaded"] += 1
+            for k, v in blob.items():
+                if isinstance(v, (int, float)):
+                    summed[k] = summed.get(k, 0) + v
+        except Exception as e:
+            print(f"    [{arch_name}] Could not read {dp.name}: {e}")
+
+    # Identify failure counters present in the data (schema-agnostic)
+    PURE_RAG_COUNTERS = [
+        "failed_malformed_json", "failed_missing_score", "failed_out_of_bounds",
+        "failed_invalid_score_type", "failed_unknown"
+    ]
+    HYBRID_COUNTERS = [
+        "failed_extraction_non_json_wrapper", "failed_extraction_invalid_json",
+        "failed_extraction_invalid_decision_type", "failed_extraction_invalid_calculator",
+        "failed_extraction_missing_parameters", "failed_extraction_exception",
+        "failed_ground_truth_calculation_exception", "failed_unknown"
+    ]
+    expected_counters = HYBRID_COUNTERS if arch_name == "Hybrid" else PURE_RAG_COUNTERS
+
+    result["diag_total_scenarios"] = summed.get("total_scenarios", np.nan)
+    result["diag_failed_scenarios"] = summed.get("failed_scenarios", np.nan)
+    result["diag_successful_scenarios"] = summed.get("successful_scenarios", np.nan)
+    result["diag_failed_calls"] = summed.get("failed_calls", np.nan)
+    result["diag_successful_calls"] = summed.get("successful_calls", np.nan)
+
+    for k in expected_counters:
+        if k in summed:
+            result[f"diag_{k}"] = summed[k]
+
+    print(f"    [{arch_name}] Loaded {result['diag_files_loaded']} diagnostics file(s) "
+          f"from {base_path.parent.name}")
+    return result
+
+
 def evaluate_all(config):
     print("=" * 72)
     print("  MCDA ARCHITECTURE EVALUATION - METRICS REPORT")
@@ -590,16 +731,27 @@ def evaluate_all(config):
             dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
             print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
 
+    # Load architecture diagnostics JSONs for failure-mode breakdown
+    print("\n[2b] Loading architecture diagnostics...")
+    arch_diagnostics = {}
+    for name, path in config["architectures"].items():
+        if Path(path).parent.exists():
+            arch_diagnostics[name] = _load_diagnostics_json(path, name)
+        else:
+            arch_diagnostics[name] = {"arch_name": name, "diag_files_loaded": 0}
+
     # 2. Match
     print("\n[3] Matching...")
     gt_lookup = build_gt_lookup(gt_by_type)
     gt_id_lookup = build_gt_id_lookup(gt_by_type)
     print(f"    GT lookup: {len(gt_lookup)} unique (question, location) keys")
-    print(f"    GT id lookup: {len(gt_id_lookup)} (decision_type, scenario_id) keys")
+    print(f"    GT id lookup: {len(gt_id_lookup)} (decision_type, scenario_id) keys "
+          f"(built for reference; strict ID match is disabled)")
 
     merged_dfs = {}
+    all_match_counts = {}
     for name, adf in arch_dfs.items():
-        merged_dfs[name] = match_scenarios(gt_lookup, gt_id_lookup, adf, name)
+        merged_dfs[name], all_match_counts[name] = match_scenarios(gt_lookup, gt_id_lookup, adf, name)
 
     print("  RESULTS")
 
@@ -614,6 +766,36 @@ def evaluate_all(config):
 
 
         print(f"  {arch_name.upper()}")
+
+        # Record match method counts
+        mc = all_match_counts.get(arch_name, {})
+        for k, v in mc.items():
+            all_metrics.append({
+                "architecture": arch_name,
+                "decision_type": "Overall",
+                "metric": f"match_{k}", "value": v,
+            })
+
+        # Diagnostics-based failure-mode counters
+        diag = arch_diagnostics.get(arch_name, {})
+        for k, v in diag.items():
+            if k not in ("arch_name",) and not isinstance(v, str):
+                all_metrics.append({
+                    "architecture": arch_name,
+                    "decision_type": "Overall",
+                    "metric": k, "value": v,
+                })
+
+        # n_runs from aggregated dataframe (if available)
+        arch_df_this = arch_dfs[arch_name]
+        if "n_runs" in arch_df_this.columns:
+            n_runs_val = arch_df_this["n_runs"].iloc[0]
+            all_metrics.append({"architecture": arch_name, "decision_type": "Overall",
+                                 "metric": "n_runs", "value": n_runs_val})
+        if "n_successful_runs" in arch_df_this.columns:
+            n_succ_val = arch_df_this["n_successful_runs"].mean()
+            all_metrics.append({"architecture": arch_name, "decision_type": "Overall",
+                                 "metric": "n_successful_runs_mean", "value": round(n_succ_val, 2)})
 
         # Failure rate (all architectures via 1928 sentinel detection)
         fail = compute_failure_rate(arch_dfs[arch_name])
