@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import math
 import logging
@@ -8,6 +9,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from model_config import CRITERION_WEIGHTS
 
 class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
@@ -670,12 +675,6 @@ def process_appliance_scenarios(
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
 
-CRITERION_WEIGHTS = {
-    "energy_cost": 0.30,
-    "environmental": 0.35,
-    "comfort": 0.20,
-    "practicality": 0.15
-}
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """Apply mavt ranking."""
     try:

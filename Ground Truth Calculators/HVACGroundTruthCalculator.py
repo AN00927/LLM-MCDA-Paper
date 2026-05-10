@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import math
 import logging
@@ -9,6 +10,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from model_config import CRITERION_WEIGHTS
 
 
 class HVACGroundTruthCalculator:
@@ -58,12 +63,16 @@ class HVACGroundTruthCalculator:
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
         # Default to 1.7 (median across housing stock) per ACCA Manual J, Table 1
+        # TODO(D4): "Twin" appears in TestScenarios but the ACCA Manual J
+        # multiplier is unconfirmed. Currently falls through to the 1.7 default
+        # via the .get() below — research and add an explicit entry.
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
             "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
-            "Rowhouse": 1.5
+            "Rowhouse": 1.5,
+            # "Twin": <TODO_VALUE>,
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
@@ -102,12 +111,16 @@ class HVACGroundTruthCalculator:
         # - Single-family (2-story typical): 1.7
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
+        # TODO(D4): "Twin" appears in TestScenarios but the ACCA Manual J
+        # multiplier is unconfirmed. Currently falls through to the 1.7 default
+        # via the .get() below — research and add an explicit entry.
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
             "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
-            "Rowhouse": 1.5
+            "Rowhouse": 1.5,
+            # "Twin": <TODO_VALUE>,
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
@@ -800,11 +813,5 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         }
 
 
-CRITERION_WEIGHTS = {
-    "energy_cost": 0.30,
-    "environmental": 0.35,
-    "comfort": 0.20,
-    "practicality": 0.15
-}
 if __name__ == "__main__":
     process_hvac_scenarios()

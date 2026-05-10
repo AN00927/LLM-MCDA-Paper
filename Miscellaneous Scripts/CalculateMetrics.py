@@ -56,28 +56,72 @@ CONFIG = {
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = 1928
 
-# Scenario matching uses (question, location) content keys only.  The strict
-# (decision_type, scenario_id) lookup is intentionally DISABLED because
-# architecture CSV scenario_ids are assigned sequentially from TestScenarios
-# (mixed types) while GT CSVs number independently per domain.  The two ID
-# namespaces therefore do NOT correspond and a strict ID match would silently
-# misalign rows.  If a shared ID namespace is ever declared, re-enable
-# build_gt_id_lookup as a primary lookup and demote content-matching to
-# fallback only. i will turn this on in the future if needed with standardizing
-#questions leading to duplicates
+# B2 (documented): scenario matching uses (question, location) content keys
+# only. The strict (decision_type, scenario_id) lookup is intentionally
+# DISABLED because architecture CSV scenario_ids are assigned sequentially
+# from TestScenarios (mixed types) while GT CSVs number independently per
+# domain. The two ID namespaces therefore do NOT correspond and a strict ID
+# match would silently misalign rows. If a shared ID namespace is ever
+# declared, re-enable build_gt_id_lookup as a primary lookup and demote
+# content-matching to fallback only. (Note: standardizing questions could
+# create duplicates — handle that before flipping the flag.)
+#
+# C5 (documented): two aggregation sources of truth exist by design. Each
+# architecture writes a *_results.csv summary for manual inspection
+# (run_multi_and_aggregate); this script ignores those summaries and instead
+# re-aggregates the per-run files via aggregate_run_files. The architectures'
+# summary CSVs are not used in published metrics — this script is the source
+# of truth for everything reported.
 
 _STRICT_ID_MATCH_ENABLED = False  # see note above
 
+# A5 (tie-break): secondary criterion priority used when weighted scores tie.
+# Order matches the audit recommendation: environmental, then energy_cost.
+TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
+
+
+def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, log_prefix=""):
+    """Rank rows by `weighted_col` desc with deterministic tie-breaking.
+
+    Returns a pd.Series of integer ranks aligned to scores_df.index. Ties on
+    weighted_score are broken by `tiebreak_cols` (each desc, in order). When
+    ties on weighted_score are detected, emits a UserWarning so reviewers can
+    audit cases where the tie-break rule changed the outcome.
+    """
+    df = scores_df.copy()
+    if df[weighted_col].duplicated().any():
+        tied_groups = df.groupby(weighted_col).size()
+        n_tied = (tied_groups > 1).sum()
+        warnings.warn(
+            f"{log_prefix}weighted_score ties detected for {n_tied} group(s); "
+            f"applying deterministic tie-break by {tiebreak_cols} (each desc).",
+            UserWarning, stacklevel=2,
+        )
+    sort_cols = [weighted_col] + tiebreak_cols
+    df_sorted = df.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
+    ranks = pd.Series(range(1, len(df_sorted) + 1), index=df_sorted.index, dtype=int)
+    return ranks.reindex(df.index)
+
+
+def _to_float_or_nan(val):
+    """Coerce a value to float; return NaN on any failure (covers strings,
+    None, empty, '1928', 'FAILED'). Used by D6 type-safe sentinel checks."""
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return float("nan")
+
 
 def is_failed_row(row):
-    """Check if a row has the 1928 failure sentinel in any score column."""
+    """Check if a row has the 1928 failure sentinel in any score column.
+
+    D6 fix: coerce the value via a tolerant helper before comparing — a string
+    "1928" should still register as a sentinel, not silently leak through.
+    """
     for c in CRITERIA:
-        val = row.get(f"arch_{c}", np.nan)
-        try:
-            if float(val) == FAIL_SENTINEL:
-                return True
-        except (ValueError, TypeError):
-            pass
+        val = _to_float_or_nan(row.get(f"arch_{c}", np.nan))
+        if val == FAIL_SENTINEL:
+            return True
     return False
 
 
@@ -265,6 +309,13 @@ def aggregate_run_files(run_paths):
     # Recompute weighted score + rank per scenario_id
     aggregated["weighted_score"] = float(FAIL_SENTINEL)
     aggregated["rank"] = int(FAIL_SENTINEL)
+    arch_score_to_col = {
+        "energy_cost": score_cols[0],
+        "environmental": score_cols[1],
+        "comfort": score_cols[2],
+        "practicality": score_cols[3],
+    }
+    tiebreak_cols = [arch_score_to_col[c] for c in TIE_BREAK_PRIORITY]
     for sid in aggregated["scenario_id"].unique():
         sc_mask = aggregated["scenario_id"] == sid
         sc = aggregated[sc_mask]
@@ -277,7 +328,13 @@ def aggregate_run_files(run_paths):
                 aggregated.loc[valid_idx, score_cols[3]] * CRITERION_WEIGHTS["practicality"]
             )
             aggregated.loc[valid_idx, "weighted_score"] = ws
-            aggregated.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
+            sub = aggregated.loc[valid_idx, [*score_cols]].copy()
+            sub["weighted_score"] = ws
+            ranks = _rank_with_deterministic_tiebreak(
+                sub, "weighted_score", tiebreak_cols,
+                log_prefix=f"[aggregate_run_files sid={sid}] "
+            )
+            aggregated.loc[valid_idx, "rank"] = ranks.astype(int)
 
     return aggregated
 def build_gt_lookup(gt_by_type):
@@ -477,6 +534,14 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
     print(f"    match_method_counts: {match_method_counts}")
 
     if n_matched < n_arch:
+        # B8: surface dropped scenarios as a warning so silent alt-normalization
+        # mismatches don't reduce ranking metrics to binary without anyone noticing.
+        warnings.warn(
+            f"[{arch_name}] Matched only {n_matched}/{n_arch} architecture scenarios "
+            f"to ground truth. Dropped scenarios will not contribute to metrics — "
+            f"see per-type breakdown below.",
+            UserWarning, stacklevel=2,
+        )
         for dtype in ["HVAC", "Appliance", "Shower"]:
             arch_sids = set(arch_df[arch_df["decision_type"] == dtype]["scenario_id"].unique())
             matched_sids = set(
@@ -485,7 +550,7 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             unmatched = arch_sids - matched_sids
             if unmatched:
                 print(f"    {dtype}: {len(matched_sids)}/{len(arch_sids)} matched, "
-                      f"{len(unmatched)} missing")
+                      f"{len(unmatched)} missing (sids: {sorted(unmatched)[:10]}{'...' if len(unmatched) > 10 else ''})")
 
     if warnings_log:
         n_show = min(5, len(warnings_log))
@@ -579,12 +644,12 @@ def compute_failure_rate(arch_df):
         for c in ["energy_cost", "environmental", "comfort", "practicality"]:
             col = c if c in g.columns else f"arch_{c}"
             if col in g.columns:
-                try:
-                    if (g[col].astype(float) == FAIL_SENTINEL).any():
-                        has_sentinel = True
-                        break
-                except (ValueError, TypeError):
-                    pass
+                # D6: tolerant coercion catches stringified sentinel ("1928")
+                # and NaN-as-failed without raising on parse errors.
+                coerced = pd.to_numeric(g[col], errors="coerce")
+                if (coerced == FAIL_SENTINEL).any():
+                    has_sentinel = True
+                    break
         if has_sentinel:
             n_failed += 1
 
@@ -677,16 +742,19 @@ def _load_diagnostics_json(arch_path_str, arch_name):
         except Exception as e:
             print(f"    [{arch_name}] Could not read {dp.name}: {e}")
 
-    # Identify failure counters present in the data (schema-agnostic)
+    # Identify failure counters present in the data (schema-agnostic).
+    # Keep aligned with PURE_FAILURE_COUNTER_KEYS / RAG_FAILURE_COUNTER_KEYS /
+    # HYBRID_FAILURE_COUNTER_KEYS in the architecture modules.
     PURE_RAG_COUNTERS = [
         "failed_malformed_json", "failed_missing_score", "failed_out_of_bounds",
-        "failed_invalid_score_type", "failed_unknown"
+        "failed_invalid_score_type", "failed_api_exhausted", "failed_unknown"
     ]
     HYBRID_COUNTERS = [
         "failed_extraction_non_json_wrapper", "failed_extraction_invalid_json",
         "failed_extraction_invalid_decision_type", "failed_extraction_invalid_calculator",
         "failed_extraction_missing_parameters", "failed_extraction_exception",
-        "failed_ground_truth_calculation_exception", "failed_unknown"
+        "failed_ground_truth_calculation_exception", "failed_ground_truth_missing_key",
+        "failed_api_exhausted", "failed_unknown"
     ]
     expected_counters = HYBRID_COUNTERS if arch_name == "Hybrid" else PURE_RAG_COUNTERS
 
