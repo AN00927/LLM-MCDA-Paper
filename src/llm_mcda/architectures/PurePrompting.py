@@ -76,6 +76,7 @@ PURE_FAILURE_COUNTER_KEYS = [
     "failed_missing_score",
     "failed_out_of_bounds",
     "failed_invalid_score_type",
+    "failed_api_exhausted",
     "failed_unknown"
 ]
 
@@ -177,7 +178,9 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
             time.sleep(min(2 ** min(attempt - 1, 6), 60))
             continue
 
-    # We're done here, retries didn't save it
+    # Retries exhausted — mark API exhaustion explicitly so callers can
+    # distinguish a transient infrastructure failure from a parse error.
+    diagnostics["failure_types"] = ["failed_api_exhausted"]
     return None, diagnostics
 
 
@@ -217,10 +220,16 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
 
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    system_prompt = """You are an expert household energy decision analyst. Score alternatives on 
-four criteria using the full 0-10 scale:
+    # Boundaries are inclusive (0.0 and 10.0 are valid scores). The validator
+    # rejects anything outside [0.0, 10.0] with the failed_out_of_bounds counter.
+    # NOTE: deliberately not adding numeric calibration anchors (e.g. "9.0 means
+    # excellent") to this prompt. This is the Pure Prompting baseline — adding
+    # anchors would conflate prompt-engineering improvements with the
+    # zero-shot-scoring measurement we're trying to make. (Audit issue E5.)
+    system_prompt = """You are an expert household energy decision analyst. Score alternatives on
+four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0; do not exceed 10.0 or go below 0.0):
 - energy_cost: lower cost = higher score
-- environmental: lower emissions = higher score  
+- environmental: lower emissions = higher score
 - comfort: higher comfort = higher score
 - practicality: easier adoption = higher score
 
@@ -234,14 +243,14 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     ]
 
     response, diagnostics = query_openrouter(messages)
-    diagnostics["failure_types"] = []
+    # Preserve any failure_types set by query_openrouter (e.g. failed_api_exhausted).
+    diagnostics.setdefault("failure_types", [])
 
     api_fallback_scores = {
         "energy_cost": 1928,
         "environmental": 1928,
         "comfort": 1928,
         "practicality": 1928,
-        "reasoning": "API/environment failure - using neutral defaults"
     }
 
     parse_failure_scores = {
@@ -249,12 +258,12 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
         "environmental": 1928,
         "comfort": 1928,
         "practicality": 1928,
-        "reasoning": "Parsing/validation failure - using sentinel defaults"
     }
 
     if not response:
         logging.error(f"LLM scoring failed for alternative: {alternative}")
-        diagnostics["failure_types"] = ["failed_unknown"]
+        if not diagnostics.get("failure_types"):
+            diagnostics["failure_types"] = ["failed_unknown"]
         return api_fallback_scores, diagnostics
 
 
@@ -303,10 +312,8 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
         if validation_failed:
             diagnostics["success"] = False
             diagnostics["failure_types"] = sorted(validation_failure_types) if validation_failure_types else ["failed_unknown"]
-            validated_scores["reasoning"] = "Validation failure - sentinel applied"
             return validated_scores, diagnostics
 
-        validated_scores["reasoning"] = scores.get("reasoning", "No reasoning provided")
         diagnostics["failure_types"] = []
 
         return validated_scores, diagnostics
@@ -481,7 +488,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                         "environmental": None,
                         "comfort": None,
                         "practicality": None,
-                        "reasoning": "Scenario runtime failure"
                     }
                     for alt in fallback_alternatives
                 ],
@@ -521,10 +527,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
             cumulative_diagnostics["successful_scenarios"] += 1
 
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
-    success_rate = cumulative_diagnostics["successful_scenarios"] / max(cumulative_diagnostics["total_scenarios"], 1)
+    scenario_success_rate = cumulative_diagnostics["successful_scenarios"] / max(cumulative_diagnostics["total_scenarios"], 1)
 
     cumulative_diagnostics["avg_latency_ms"] = avg_latency
-    cumulative_diagnostics["success_rate"] = success_rate
+    cumulative_diagnostics["scenario_success_rate"] = scenario_success_rate
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [

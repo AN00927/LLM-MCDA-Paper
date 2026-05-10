@@ -1,3 +1,4 @@
+import sys
 import logging
 import numpy as np
 from typing import Dict, List, Tuple
@@ -7,6 +8,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from model_config import CRITERION_WEIGHTS
 
 class ShowerGroundTruthCalculator:
     """"Key sources:
@@ -651,12 +656,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         }
 
 
-CRITERION_WEIGHTS = {
-    "energy_cost": 0.30,
-    "environmental": 0.35,
-    "comfort": 0.20,
-    "practicality": 0.15
-}
 # Main execution block
 if __name__ == "__main__":
     process_shower_scenarios()
