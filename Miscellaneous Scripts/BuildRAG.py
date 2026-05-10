@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 import chromadb
 from sentence_transformers import SentenceTransformer
@@ -22,6 +23,29 @@ SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
+
+# Bump this any time the metadata field set written into Chroma changes.
+RAG_SCHEMA_VERSION = 1
+
+
+def compute_source_csv_hash(csv_dir: Path = SCENARIO_DIR) -> str:
+    """SHA-256 of the concatenated bytes of the three RAG source CSVs.
+
+    Used as a fingerprint stored on the Chroma collection's metadata so RAG
+    runtime can detect stale embeddings (BuildRAG not re-run after CSV edit).
+    """
+    h = hashlib.sha256()
+    for decision_type in ('HVAC', 'Appliance', 'Shower'):
+        path = Path(csv_dir) / RAG_FILES[decision_type]['ground_truth']
+        # Stable order: tag with filename so reordering files changes the hash.
+        h.update(decision_type.encode('utf-8'))
+        h.update(b'|')
+        h.update(path.name.encode('utf-8'))
+        h.update(b'|')
+        with open(path, 'rb') as f:
+            h.update(f.read())
+        h.update(b'|')
+    return h.hexdigest()
 
 
 def load_hvac_data(csv_dir: str) -> pd.DataFrame:
@@ -137,10 +161,17 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     except:
         pass
 
-    # Create new collection
+    # Create new collection — store source-CSV hash + schema version so runtime
+    # can detect stale embeddings.
+    source_hash = compute_source_csv_hash(csv_dir)
+    print(f"Source CSV SHA-256: {source_hash}")
     collection = client.create_collection(
         name=COLLECTION_NAME,
-        metadata={"description": "MCDA scenarios with ground truth scores"}
+        metadata={
+            "description": "MCDA scenarios with ground truth scores",
+            "source_csv_sha256": source_hash,
+            "schema_version": RAG_SCHEMA_VERSION,
+        }
     )
     print(f"Created collection: {COLLECTION_NAME}")
 

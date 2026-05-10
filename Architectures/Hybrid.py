@@ -78,6 +78,8 @@ HYBRID_FAILURE_COUNTER_KEYS = [
     "failed_extraction_missing_parameters",
     "failed_extraction_exception",
     "failed_ground_truth_calculation_exception",
+    "failed_ground_truth_missing_key",
+    "failed_api_exhausted",
     "failed_unknown"
 ]
 
@@ -107,8 +109,8 @@ YOUR TASK:
 1. Read the Decision Type from the scenario (HVAC, Appliance, or Shower)
 2. Extract the specific parameters needed for that decision type
 3. No field should be left blank; if a value is not apparent, it is mandatory to reasonably estimate it based off of available information
-3. Select the appropriate ground truth calculator
-4. Format alternatives exactly as shown below
+4. Select the appropriate ground truth calculator
+5. Format alternatives exactly as shown below
 
 Return ONLY valid JSON with this structure:
 
@@ -262,6 +264,8 @@ def _normalize_scenario_fields(scenario: Dict) -> Dict:
             normalized['Housing Type'] = 'Single-family'
         elif 'town' in ht:
             normalized['Housing Type'] = 'Townhouse'
+        elif 'twin' in ht:
+            normalized['Housing Type'] = 'Twin'
     
     # Tidy up insulation labels too
     if 'Insulation' in normalized:
@@ -412,8 +416,10 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         print(f"Extraction error: {e}")
         extraction_diagnostics['extraction_error'] = str(e)
         error_text = str(e).lower()
+        # Distinguish API/network exhaustion (transient infrastructure failure)
+        # from genuine extraction errors (bad LLM output, code bugs).
         if "failed to get response" in error_text or "request failed" in error_text:
-            extraction_diagnostics['failure_types'] = ['failed_unknown']
+            extraction_diagnostics['failure_types'] = ['failed_api_exhausted']
         else:
             extraction_diagnostics['failure_types'] = ["failed_extraction_exception"]
         return None, extraction_diagnostics
@@ -435,7 +441,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
 
     calculator_name = extracted_result['calculator']
     print(f"  Using calculator: {calculator_name}")
-    
+
     if calculator_name == 'HVACGroundTruthCalculator':
         calc = HVACGroundTruthCalculator()
         result = calc.calculate_scenario_scores(gt_scenario)
@@ -470,6 +476,25 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                     'practicality': alt_data['practicality_score']
                 }
             })
+
+    # A2 fix: cross-architecture aggregation groups by (scenario_id, alternative).
+    # The LLM-extracted/calculator-emitted alternative strings (e.g. "72", "7pm")
+    # do not match the verbatim TestScenarios alternatives ("Run dishwasher at
+    # 2:00 AM", "Off (let drift to 85)"). Replace `alternative` with the verbatim
+    # scenario value by ordinal position and keep the LLM form in
+    # `extracted_alternative` for diagnostics.
+    verbatim_alts = [
+        scenario.get('Alternative 1'),
+        scenario.get('Alternative 2'),
+        scenario.get('Alternative 3'),
+    ]
+    if len(alternatives_scores) != 3:
+        print(f"  WARNING: scoring produced {len(alternatives_scores)} alternatives, "
+              f"expected 3. Verbatim alignment may be incorrect.")
+    for idx, alt_data in enumerate(alternatives_scores):
+        alt_data['extracted_alternative'] = alt_data.get('alternative', '')
+        if idx < len(verbatim_alts) and verbatim_alts[idx] not in (None, ''):
+            alt_data['alternative'] = str(verbatim_alts[idx])
     return alternatives_scores
 
 
@@ -524,7 +549,10 @@ def run_scenario(scenario: Dict) -> Dict:
 
     if extraction_result is None:
         extraction_failure_types = extraction_diag.get('failure_types', [])
-        if not extraction_failure_types:
+        # API/environment exhaustion is a transient infrastructure failure, not a
+        # scoring failure: don't count the scenario as failed for cross-architecture
+        # comparison. (Matches PurePrompting's API-vs-parse distinction.)
+        if extraction_failure_types == ['failed_api_exhausted']:
             print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using fallback scores")
 
             neutral_alternatives = []
@@ -552,7 +580,7 @@ def run_scenario(scenario: Dict) -> Dict:
                 'extraction_failed': True,
                 'gt_calculation_failed': False,
                 'scenario_failed': False,
-                'failure_types': [],
+                'failure_types': extraction_failure_types,
                 'extracted_result': None,
                 'alternatives_scores': neutral_alternatives,
                 'ranking_result': ranking_result,
@@ -614,6 +642,22 @@ def run_scenario(scenario: Dict) -> Dict:
     except Exception as e:
         print(f" Ground truth calculation failed: {e}")
 
+        # Distinguish "calculator demanded a scenario key that was not present"
+        # (KeyError) from other exceptions (numeric errors, lookup failures, etc.).
+        # The KeyError path tells us exactly which scenario field is missing —
+        # that's a documentable, actionable failure mode.
+        if isinstance(e, KeyError):
+            missing_key = e.args[0] if e.args else 'unknown'
+            failure_type = 'failed_ground_truth_missing_key'
+            failure_detail = f"missing scenario key: {missing_key!r}"
+            failure_types_out = [failure_type]
+            extra_diag = {'missing_scenario_key': missing_key}
+        else:
+            failure_type = 'failed_ground_truth_calculation_exception'
+            failure_detail = str(e)
+            failure_types_out = [failure_type]
+            extra_diag = {}
+
         # If GT calc blows up, send back sentinel values
         zero_alternatives = []
         for i, alt in enumerate(parameters.get('alternatives', ['Alt1', 'Alt2', 'Alt3'])[:3], 1):
@@ -629,20 +673,22 @@ def run_scenario(scenario: Dict) -> Dict:
 
         ranking_result = apply_mavt_ranking(zero_alternatives)
 
-        return {
+        result_payload = {
             'scenario': scenario.get('Question', 'N/A'),
             'decision_type': decision_type,
             'calculator': calculator,
             'extraction_failed': False,
             'gt_calculation_failed': True,
             'scenario_failed': True,
-            'failure_types': ['failed_ground_truth_calculation_exception'],
+            'failure_types': failure_types_out,
             'extracted_result': extraction_result,
             'alternatives_scores': zero_alternatives,
             'ranking_result': ranking_result,
-            'error': str(e),
+            'error': failure_detail,
             'extraction_diagnostics': extraction_diag
         }
+        result_payload.update(extra_diag)
+        return result_payload
 
     ranking_result = apply_mavt_ranking(alternatives_scores)
 
@@ -801,7 +847,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             'input_decision_type', 'extracted_decision_type', 'decision_type',
             'outdoor_temp', 'appliance_age', 'flow_rate',
             'calculator', 'extraction_failed', 'gt_calculation_failed',
-            'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
+            'alternative', 'extracted_alternative',
+            'energy_cost', 'environmental', 'comfort', 'practicality',
             'rank', 'weighted_score'
         ]
         writer = csv_module.DictWriter(f, fieldnames=fieldnames)
@@ -833,6 +880,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             # Write out each alternative
             for alt_idx, alt_data in enumerate(result['alternatives_scores']):
                 alternative = alt_data['alternative']
+                extracted_alternative = alt_data.get('extracted_alternative', '')
                 scores = alt_data['scores']
 
                 if scenario_failed:
@@ -864,6 +912,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'extraction_failed': extraction_failed,
                     'gt_calculation_failed': gt_calc_failed,
                     'alternative': alternative,
+                    'extracted_alternative': extracted_alternative,
                     'energy_cost': energy_cost,
                     'environmental': environmental,
                     'comfort': comfort,
@@ -971,6 +1020,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     STABLE_META_COLS = ["question", "location", "outdoor_temp", "appliance_age", "flow_rate", "calculator"]
+    # extracted_alternative is per-run diagnostic — keep one example via .first()
+    OPTIONAL_META_COLS = ["extracted_alternative"]
     BOOL_META_COLS = ["extraction_failed", "gt_calculation_failed"]
 
     # Count how many runs contributed a non-NaN value per (scenario, alternative)
@@ -983,6 +1034,12 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     # Stable cols: just take the first one since these should match across runs
     avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[STABLE_META_COLS].first()
+
+    # Optional diagnostic cols — only merge if present in the run files
+    present_optional = [c for c in OPTIONAL_META_COLS if c in combined.columns]
+    if present_optional:
+        opt_first = combined.groupby(GROUP_KEYS, as_index=False)[present_optional].first()
+        avg_meta = avg_meta.merge(opt_first, on=GROUP_KEYS)
 
     # decision_type: use the most common non-UNKNOWN value, or UNKNOWN if everything failed
     def _mode_decision_type(series):

@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import csv
+import hashlib
 import requests
 import time
 from typing import Dict, List, Tuple
@@ -37,7 +38,34 @@ TEMPERATURE = 0.3
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-RETRIEVE_K = 3 
+RETRIEVE_K = 3
+
+# Must match BuildRAG.RAG_SCHEMA_VERSION. Bump in lockstep when metadata fields change.
+EXPECTED_RAG_SCHEMA_VERSION = 1
+RAG_SOURCE_FILES = [
+    ("HVAC", "HVACRagScenarios.csv"),
+    ("Appliance", "ApplianceRAGScenarios.csv"),
+    ("Shower", "ShowerRAGScenarios.csv"),
+]
+
+
+def _compute_expected_source_hash() -> str:
+    """Recompute the hash BuildRAG.compute_source_csv_hash would produce now.
+
+    Kept here (rather than imported) so RAG can validate without taking a hard
+    dependency on the build script's importability.
+    """
+    h = hashlib.sha256()
+    for decision_type, filename in RAG_SOURCE_FILES:
+        path = PROJECT_ROOT / "Scenario Files" / filename
+        h.update(decision_type.encode('utf-8'))
+        h.update(b'|')
+        h.update(path.name.encode('utf-8'))
+        h.update(b'|')
+        with open(path, 'rb') as f:
+            h.update(f.read())
+        h.update(b'|')
+    return h.hexdigest()
 
 MAX_RETRIES = 5
 RETRY_DELAY = 2
@@ -51,6 +79,7 @@ RAG_FAILURE_COUNTER_KEYS = [
     "failed_missing_score",
     "failed_out_of_bounds",
     "failed_invalid_score_type",
+    "failed_api_exhausted",
     "failed_unknown"
 ]
 
@@ -73,19 +102,40 @@ embedding_model = None
 
 
 def init_rag_resources() -> None:
-    """Initialize ChromaDB client and embedding model for a single run."""
+    """Initialize ChromaDB client and embedding model for a single run.
+
+    B5 fix: verify the collection's stored source-CSV hash and schema version
+    against the current source CSVs. Mismatch means BuildRAG was not re-run
+    after a CSV edit (or the schema fields changed). Halt the script — silent
+    drift would invalidate the entire benchmark.
+    """
     global chroma_collection, embedding_model
     print("Loading ChromaDB and embedding model")
-    try:
-        chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
-        chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
-        embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-        print(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available")
-    except Exception as e:
-        print(f" WARNING: Could not load RAG database: {e}")
-        print("  Make sure to run Miscellaneous Files/BuildRAG.py first.")
-        chroma_collection = None
-        embedding_model = None
+    chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
+    chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
+
+    coll_meta = chroma_collection.metadata or {}
+    stored_hash = coll_meta.get("source_csv_sha256")
+    stored_version = coll_meta.get("schema_version")
+    expected_hash = _compute_expected_source_hash()
+
+    if stored_version != EXPECTED_RAG_SCHEMA_VERSION:
+        raise RuntimeError(
+            f"RAG schema version mismatch: collection has "
+            f"schema_version={stored_version!r}, runtime expects "
+            f"{EXPECTED_RAG_SCHEMA_VERSION}. Re-run BuildRAG.py."
+        )
+    if stored_hash != expected_hash:
+        raise RuntimeError(
+            f"RAG source-CSV hash mismatch — Chroma collection is stale.\n"
+            f"  collection source_csv_sha256: {stored_hash}\n"
+            f"  current source_csv_sha256:    {expected_hash}\n"
+            f"Re-run Miscellaneous Scripts/BuildRAG.py to refresh."
+        )
+
+    embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+    print(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available "
+          f"(schema v{stored_version}, hash {stored_hash[:12]}...)")
 
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
@@ -161,11 +211,17 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
             continue
 
-    # We're out of retries at this point
-    raise Exception(f"Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
+    # Retries exhausted — raise so caller can map to failed_api_exhausted.
+    raise Exception(f"failed_api_exhausted: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
-    """Build system prompt."""
+    """Build system prompt.
+
+    NOTE: deliberately not adding numeric calibration anchors (e.g. "9.0 means
+    excellent") to this prompt. RAG already provides scored examples in-context,
+    so adding explicit anchors would conflate the retrieval signal with prompt
+    engineering. (Audit issue E5.)
+    """
     return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
     You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.
 Your task is to score alternatives on four criteria:
@@ -175,7 +231,7 @@ Your task is to score alternatives on four criteria:
 4. Practicality (0-10): Easier to implement/maintain = higher score
 
 Scoring guidelines:
-- Use the full 0-10 scale
+- Use the inclusive 0-10 scale (0.0 <= score <= 10.0; do not exceed 10.0 or go below 0.0)
 - Consider tradeoffs between criteria
 - Base scores on engineering principles, behavioral research, and practical constraints
 - Be consistent across similar scenarios
@@ -248,6 +304,8 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
                 results['documents'][0],
                 results['metadatas'][0]
         ):
+            # B4 fix: default to None (not 0.0) so missing metadata is visible
+            # rather than silently anchoring the LLM at zero.
             retrieved.append({
                 'id': doc_id,
                 'text': doc_text,
@@ -257,28 +315,28 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
                     {
                         'name': metadata.get('alt1', 'N/A'),
                         'scores': {
-                            'energy_cost': metadata.get('alt1_energy_cost', 0.0),
-                            'environmental': metadata.get('alt1_environmental', 0.0),
-                            'comfort': metadata.get('alt1_comfort', 0.0),
-                            'practicality': metadata.get('alt1_practicality', 0.0)
+                            'energy_cost': metadata.get('alt1_energy_cost'),
+                            'environmental': metadata.get('alt1_environmental'),
+                            'comfort': metadata.get('alt1_comfort'),
+                            'practicality': metadata.get('alt1_practicality')
                         }
                     },
                     {
                         'name': metadata.get('alt2', 'N/A'),
                         'scores': {
-                            'energy_cost': metadata.get('alt2_energy_cost', 0.0),
-                            'environmental': metadata.get('alt2_environmental', 0.0),
-                            'comfort': metadata.get('alt2_comfort', 0.0),
-                            'practicality': metadata.get('alt2_practicality', 0.0)
+                            'energy_cost': metadata.get('alt2_energy_cost'),
+                            'environmental': metadata.get('alt2_environmental'),
+                            'comfort': metadata.get('alt2_comfort'),
+                            'practicality': metadata.get('alt2_practicality')
                         }
                     },
                     {
                         'name': metadata.get('alt3', 'N/A'),
                         'scores': {
-                            'energy_cost': metadata.get('alt3_energy_cost', 0.0),
-                            'environmental': metadata.get('alt3_environmental', 0.0),
-                            'comfort': metadata.get('alt3_comfort', 0.0),
-                            'practicality': metadata.get('alt3_practicality', 0.0)
+                            'energy_cost': metadata.get('alt3_energy_cost'),
+                            'environmental': metadata.get('alt3_environmental'),
+                            'comfort': metadata.get('alt3_comfort'),
+                            'practicality': metadata.get('alt3_practicality')
                         }
                     }
                 ]
@@ -293,6 +351,7 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         return ""
 
     context = "RELEVANT SIMILAR SCENARIOS WITH EXPERT SCORES:\n\n"
+    skipped_alts = 0
 
     for i, scenario in enumerate(retrieved_scenarios, 1):
         context += f"Example {i}: {scenario['text']}\n"
@@ -300,6 +359,12 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
 
         for alt in scenario['alternatives']:
             scores = alt['scores']
+            # B4 fix: skip alternatives where any criterion score is missing
+            # (None) — formatting them would either crash on :.1f or silently
+            # anchor the LLM at 0.0. Indicates RAG schema drift.
+            if any(scores.get(c) is None for c in ('energy_cost', 'environmental', 'comfort', 'practicality')):
+                skipped_alts += 1
+                continue
             context += (
                 f"  * {alt['name']}: "
                 f"Energy Cost: {scores['energy_cost']:.1f}/10, "
@@ -308,6 +373,10 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
                 f"Practicality: {scores['practicality']:.1f}/10\n"
             )
         context += "\n"
+
+    if skipped_alts > 0:
+        print(f"   WARNING: skipped {skipped_alts} retrieved alternative(s) with missing scores. "
+              f"Likely RAG metadata schema drift — re-run BuildRAG.")
 
     context += "Use these examples as reference, but score based on the specific scenario below.\n"
     context += "Just because a reference scenario has an extreme value does not mean that the scenario you are analyzing has the same characteristics.\n"
@@ -441,6 +510,12 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'comfort': 1928,
             'practicality': 1928
         }
+        # Distinguish API/network exhaustion from genuine code/parse errors.
+        error_text = str(e).lower()
+        if 'failed_api_exhausted' in error_text:
+            failure_type = 'failed_api_exhausted'
+        else:
+            failure_type = 'failed_unknown'
         diagnostics = {
             'prompt_tokens': 0,
             'completion_tokens': 0,
@@ -449,7 +524,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'model': MODEL_ID,
             'success': False,
             'error': str(e),
-            'failure_types': ['failed_unknown']
+            'failure_types': [failure_type]
         }
 
     # Add the RAG bits to diagnostics
