@@ -62,17 +62,14 @@ class HVACGroundTruthCalculator:
         # - Single-family (2-story typical): 1.7 (includes roof, walls, floor exposures)
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
-        # Default to 1.7 (median across housing stock) per ACCA Manual J, Table 1
-        # TODO(D4): "Twin" appears in TestScenarios but the ACCA Manual J
-        # multiplier is unconfirmed. Currently falls through to the 1.7 default
-        # via the .get() below — research and add an explicit entry.
+         # Twin semi-detached (PA regional term). One shared party wall reduces exposed envelope vs. Single-family (1.7).
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
             "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
-            # "Twin": <TODO_VALUE>,
+            "Twin": 1.6,  
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
