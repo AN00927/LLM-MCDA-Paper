@@ -246,16 +246,16 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
 
     if decision_type == 'HVAC':
         scenario_text = (
-            f"{scenario.get('Outdoor Temp', 'N/A')} deg F outdoor, "
+            f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
             f"{scenario.get('Insulation', 'N/A')} insulation, "
-            f"{scenario.get('Square Footage', 'N/A')} sqft, "
-            f"{scenario.get('Household Size', 'N/A')} occupants, "
+            f"{scenario.get('square_footage', 'N/A')} sqft, "
+            f"{scenario.get('household_size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}"
         )
     elif decision_type == 'Appliance':
         scenario_text = (
             f"{scenario.get('Question', 'N/A')}, "
-            f"{scenario.get('Household Size', 'N/A')} occupants, "
+            f"{scenario.get('household_size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
             f"appliance age range: {scenario.get('Appliance Age', 'N/A')}, "
             f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
@@ -263,8 +263,8 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     elif decision_type == 'Shower':
         scenario_text = (
             f"{scenario.get('Flow rate', 'N/A')} showerhead, "
-            f"{scenario.get('Outdoor Temp', 'N/A')} deg F outdoor, "
-            f"{scenario.get('Household Size', 'N/A')} occupants, "
+            f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
+            f"{scenario.get('household_size', 'N/A')} occupants, "
             f"{scenario.get('Housing Type', 'N/A')}, "
             f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
         )
@@ -394,18 +394,18 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     if decision_type == 'HVAC':
         prompt += (
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')} deg F\n"
-            f"- Square Footage: {scenario.get('Square Footage', 'N/A')} sqft\n"
+            f"- Outdoor Temp: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
+            f"- Square Footage: {scenario.get('square_footage', 'N/A')} sqft\n"
             f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
-            f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
+            f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
-            f"- House Age: {scenario.get('House Age', 'N/A')}\n"
+            f"- House Age: {scenario.get('hvac_age', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
         )
 
     elif decision_type == 'Appliance':
         prompt += (
-            f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
+            f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
             f"- Appliance Age Range: {scenario.get('Appliance Age', 'N/A')} years\n"
@@ -413,8 +413,8 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     elif decision_type == 'Shower':
         prompt += (
-            f"- Outdoor Temp: {scenario.get('Outdoor Temp', 'N/A')} deg F\n"
-            f"- Household Size: {scenario.get('Household Size', 'N/A')} occupants\n"
+            f"- Outdoor Temp: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
+            f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
             f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
@@ -798,7 +798,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             question = result['scenario']
             decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
             location = scenarios[scenario_id - 1].get('Location', 'N/A')
-            outdoor_temp = scenarios[scenario_id - 1].get('Outdoor Temp', '')
+            outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
             appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
             scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
