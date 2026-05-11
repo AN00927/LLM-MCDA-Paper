@@ -733,7 +733,7 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     summed = {}
     for dp in all_diag_paths:
         try:
-            with open(dp, "r", encoding="utf-8") as f:
+            with open(dp, "r", encoding="utf-8-sig") as f:
                 blob = _json.load(f)
             result["diag_files_loaded"] += 1
             for k, v in blob.items():
