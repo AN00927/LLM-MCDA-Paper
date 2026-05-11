@@ -192,24 +192,24 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
     prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
 
     if decision_type == 'HVAC':
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')} deg F\n"
-        prompt += f"- Home Size: {scenario.get('Square Footage', 'N/A')} sq ft\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
+        prompt += f"- Home Size: {scenario.get('square_footage', 'N/A')} sq ft\n"
         prompt += f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
-        prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
+        prompt += f"- Household Size: {scenario.get('household_size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
-        prompt += f"- House Age: {scenario.get('House Age', 'N/A')}\n"
+        prompt += f"- House Age: {scenario.get('hvac_age', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
     elif decision_type == 'Appliance':
         prompt += f"- Appliance Age: {scenario.get('Appliance Age', 'N/A')}\n"
-        prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
+        prompt += f"- Household Size: {scenario.get('household_size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
     elif decision_type == 'Shower':
         prompt += f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
-        prompt += f"- Outdoor Temperature: {scenario.get('Outdoor Temp', 'N/A')} deg F\n"
-        prompt += f"- Household Size: {scenario.get('Household Size', 'N/A')} people\n"
+        prompt += f"- Outdoor Temperature: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
+        prompt += f"- Household Size: {scenario.get('household_size', 'N/A')} people\n"
         prompt += f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
 
@@ -423,7 +423,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
         "question": scenario.get("Question", "N/A"),
         "location": scenario.get("Location", "N/A"),
-        "outdoor_temp": scenario.get("Outdoor Temp", "N/A"),
+        "outdoor_temp": scenario.get("outdoor_temp", "N/A"),
         "appliance_age": scenario.get("Appliance Age", ""),
         "flow_rate": scenario.get("Flow rate", ""),
         "alternatives_scores": alternatives_scores,
@@ -478,7 +478,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                 "scenario_id": scenario.get("scenario_id", "N/A"),
                 "question": scenario.get("Question", "N/A"),
                 "location": scenario.get("Location", "N/A"),
-                "outdoor_temp": scenario.get("Outdoor Temp", "N/A"),
+                "outdoor_temp": scenario.get("outdoor_temp", "N/A"),
                 "appliance_age": scenario.get("Appliance Age", ""),
                 "flow_rate": scenario.get("Flow rate", ""),
                 "alternatives_scores": [

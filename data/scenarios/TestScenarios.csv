@@ -1,4 +1,4 @@
-﻿Decision Type,Question,Location,Square Footage,Insulation,Household Size,Utility Budget,Housing Type,Outdoor Temp,House Age,Appliance Age,Flow rate,Alternative 1,Alternative 2,Alternative 3
+﻿Decision Type,Question,Location,square_footage,Insulation,household_size,Utility Budget,Housing Type,outdoor_temp,hvac_age,Appliance Age,Flow rate,Alternative 1,Alternative 2,Alternative 3
 HVAC,Cold day today with 2 people home. What's a good heating temperature?,"Bethlehem, PA",1400,Good,2,$200 ,Rowhouse,26,20+ years,,,67,70,73
 HVAC,It's hot today and we're home as usual. What temperature should I set the AC to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,91,15+ years,,,72,75,79
 HVAC,It's cold outside and we're home as usual. What should I set the heat to?,"Doylestown, PA",2300,Good,4,$350 ,Single-family,19,15+ years,,,68,71,74

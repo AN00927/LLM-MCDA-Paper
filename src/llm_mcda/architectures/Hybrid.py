@@ -863,7 +863,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             scenario_failed = result.get('scenario_failed', False)
 
             location = scenarios[scenario_id - 1].get('Location', 'N/A')
-            outdoor_temp = scenarios[scenario_id - 1].get('Outdoor Temp', '')
+            outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
             appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
             # input_decision_type: always the value from the scenario CSV
