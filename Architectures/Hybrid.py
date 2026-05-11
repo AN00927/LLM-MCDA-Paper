@@ -820,13 +820,14 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         cumulative_diagnostics['total_tokens_output'] += ext_diag.get('completion_tokens', 0)
         cumulative_diagnostics['total_latency_ms'] += ext_diag.get('latency_ms', 0.0)
 
+        failure_types = result.get('failure_types')
+        if failure_types:
+            _increment_failure_counters(cumulative_diagnostics, failure_types)
+
         if result.get('scenario_failed', False):
             cumulative_diagnostics['failed_calls'] += 1
             cumulative_diagnostics['failed_scenarios'] += 1
-            failure_types = result.get('failure_types')
-            if failure_types:
-                _increment_failure_counters(cumulative_diagnostics, failure_types)
-            elif failure_types is None:
+            if failure_types is None:
                 _increment_failure_counters(cumulative_diagnostics, ['failed_unknown'])
         else:
             cumulative_diagnostics['successful_calls'] += 1
