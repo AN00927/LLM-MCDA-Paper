@@ -3,6 +3,7 @@ import sys
 import json
 import csv
 import hashlib
+import logging
 import requests
 import time
 from typing import Dict, List, Tuple
@@ -24,6 +25,12 @@ OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
@@ -110,7 +117,7 @@ def init_rag_resources() -> None:
     drift would invalidate the entire benchmark.
     """
     global chroma_collection, embedding_model
-    print("Loading ChromaDB and embedding model")
+    logger.info("Loading ChromaDB and embedding model")
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
 
@@ -134,7 +141,7 @@ def init_rag_resources() -> None:
         )
 
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-    print(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available "
+    logger.info(f"OK Loaded RAG database: {chroma_collection.count()} scenarios available "
           f"(schema v{stored_version}, hash {stored_hash[:12]}...)")
 
 
@@ -185,9 +192,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             else:
                 last_error = f"Status {response.status_code}: {response.text}"
                 if _is_transient_http_status(response.status_code):
-                    print(f"  Transient API error (attempt {attempt}): {response.status_code}")
+                    logger.info(f"  Transient API error (attempt {attempt}): {response.status_code}")
                 else:
-                    print(f"  API error (attempt {attempt}): {response.status_code}")
+                    logger.info(f"  API error (attempt {attempt}): {response.status_code}")
 
                 if not retry_forever and attempt >= MAX_RETRIES:
                     break
@@ -197,7 +204,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 
         except requests.exceptions.RequestException as e:
             last_error = str(e)
-            print(f"  Request failed (attempt {attempt}): {e}")
+            logger.info(f"  Request failed (attempt {attempt}): {e}")
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
             time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
@@ -205,7 +212,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 
         except ValueError as e:
             last_error = f"Invalid API JSON envelope: {e}"
-            print(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
+            logger.info(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
             time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
@@ -270,14 +277,14 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
         )
     else:
         scenario_text = scenario.get('Question', f'Unknown decision type: {decision_type}')
-        print(f"   Warning: Unknown decision type '{decision_type}'")
+        logger.info(f"   Warning: Unknown decision type '{decision_type}'")
 
     return scenario_text, decision_type
 
 def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict]:
     """Retrieve similar scenarios."""
     if chroma_collection is None or embedding_model is None:
-        print("   RAG database not available, skipping retrieval")
+        logger.info("   RAG database not available, skipping retrieval")
         return []
 
     # Turn the scenario into plain text
@@ -294,7 +301,7 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
             where={"decision_type": decision_type}
         )
     except Exception as e:
-        print(f"   Retrieval error: {e}")
+        logger.info(f"   Retrieval error: {e}")
         return []
 
     retrieved = []
@@ -375,7 +382,7 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         context += "\n"
 
     if skipped_alts > 0:
-        print(f"   WARNING: skipped {skipped_alts} retrieved alternative(s) with missing scores. "
+        logger.info(f"   WARNING: skipped {skipped_alts} retrieved alternative(s) with missing scores. "
               f"Likely RAG metadata schema drift — re-run BuildRAG.")
 
     context += "Use these examples as reference, but score based on the specific scenario below.\n"
@@ -442,7 +449,7 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
         validation_failure_types = set()
         for criterion in ['energy_cost', 'environmental', 'comfort', 'practicality']:
             if criterion not in scores:
-                print(f"   Missing score for {criterion}; using sentinel 1928")
+                logger.info(f"   Missing score for {criterion}; using sentinel 1928")
                 validated_scores[criterion] = 1928
                 validation_failed = True
                 validation_failure_types.add('failed_missing_score')
@@ -455,12 +462,12 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
                 if 0.0 <= raw_value <= 10.0:
                     validated_scores[criterion] = raw_value
                 else:
-                    print(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
+                    logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
                     validated_scores[criterion] = 1928
                     validation_failed = True
                     validation_failure_types.add('failed_out_of_bounds')
             else:
-                print(f"   Invalid score type for {criterion}: {raw_score}; using sentinel 1928")
+                logger.info(f"   Invalid score type for {criterion}: {raw_score}; using sentinel 1928")
                 validated_scores[criterion] = 1928
                 validation_failed = True
                 validation_failure_types.add('failed_invalid_score_type')
@@ -471,7 +478,7 @@ def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
 
         return validated_scores, []
     except (json.JSONDecodeError, ValueError) as e:
-        print("   Could not parse scores; failed")
+        logger.info("   Could not parse scores; failed")
         failed_scores = {
             'energy_cost': 1928,
             'environmental': 1928,
@@ -503,7 +510,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         diagnostics['success'] = not scores.get('_failed', False)
         diagnostics['failure_types'] = failure_types if scores.get('_failed', False) else []
     except Exception as e:
-        print(f"   Scoring failed for alternative '{alternative}': {e}")
+        logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
         scores = {
             'energy_cost': 1928,
             'environmental': 1928,
@@ -580,7 +587,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
 
 def run_scenario(scenario: Dict) -> Dict:
     """Run scenario."""
-    print(f"SCENARIO: {scenario.get('Question', 'N/A')}")
+    logger.info(f"SCENARIO: {scenario.get('Question', 'N/A')}")
 
     alternatives_scores = []
     total_diagnostics = {
@@ -598,7 +605,7 @@ def run_scenario(scenario: Dict) -> Dict:
             continue
 
         alternative = scenario[alt_key]
-        print(f"\nScoring: {alternative}")
+        logger.info(f"\nScoring: {alternative}")
 
         scores, diagnostics = score_alternative_with_rag(scenario, alternative)
         total_diagnostics['api_calls'] += 1
@@ -607,7 +614,7 @@ def run_scenario(scenario: Dict) -> Dict:
         total_diagnostics['total_latency_ms'] += diagnostics.get('latency_ms', 0.0)
 
         if scores.get('_failed'):
-            print(f" FAILED -- skipping alternative")
+            logger.info(f" FAILED -- skipping alternative")
             failure_types = diagnostics.get('failure_types')
             if failure_types:
                 total_diagnostics['failed_calls'] += 1
@@ -622,11 +629,11 @@ def run_scenario(scenario: Dict) -> Dict:
             })
             continue
 
-        print(f"  Scores: Energy={scores['energy_cost']:.1f}, "
+        logger.info(f"  Scores: Energy={scores['energy_cost']:.1f}, "
               f"Env={scores['environmental']:.1f}, "
               f"Comfort={scores['comfort']:.1f}, "
               f"Pract={scores['practicality']:.1f}")
-        print(f"  Retrieved {diagnostics.get('rag_retrieved_count', 0)} similar scenarios")
+        logger.info(f"  Retrieved {diagnostics.get('rag_retrieved_count', 0)} similar scenarios")
 
         alternatives_scores.append({
             'alternative': alternative,
@@ -647,11 +654,11 @@ def run_scenario(scenario: Dict) -> Dict:
     total_diagnostics['scenario_failed'] = total_diagnostics['failed_calls'] > 0
     ranking_result = apply_mavt_ranking(alternatives_scores)
 
-    print(f"\nRANKING:")
+    logger.info(f"\nRANKING:")
     alt_names = [ad['alternative'] for ad in alternatives_scores]
     for i, alt in enumerate(ranking_result['ranked_alternatives'], 1):
         ws = ranking_result['weighted_scores'][alt_names.index(alt)]
-        print(f"  {i}. {alt} (weighted score: {ws:.2f})")
+        logger.info(f"  {i}. {alt} (weighted score: {ws:.2f})")
 
     return {
         'scenario': scenario.get('Question', 'N/A'),
@@ -676,9 +683,9 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     if chroma_collection is None or embedding_model is None:
         raise RuntimeError("RAG database not available; run BuildRAG.py first.")
 
-    print(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
+    logger.info(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
 
-    print(f"Loading test scenarios from: {test_csv_path}")
+    logger.info(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
     with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
@@ -695,8 +702,8 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         scenarios.append(first_row)
         scenarios.extend(list(reader))
 
-    print(f"OK Loaded {len(scenarios)} test scenarios")
-    print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
+    logger.info(f"OK Loaded {len(scenarios)} test scenarios")
+    logger.info(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
 
     # Run through all scenarios
     all_results = []
@@ -713,12 +720,12 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
         **_init_failure_counters()
     }
     for i, scenario in enumerate(scenarios):
-        print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
+        logger.info(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
 
         try:
             result = run_scenario(scenario)
         except Exception as e:
-            print(f"  Scenario crashed and was marked failed: {e}")
+            logger.info(f"  Scenario crashed and was marked failed: {e}")
             fallback_alternatives = [
                 scenario.get('Alternative 1', ''),
                 scenario.get('Alternative 2', ''),
@@ -783,7 +790,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             max(cumulative_diagnostics['total_scenarios'], 1)
     )
     # Write the results to CSV
-    print(f"\nSaving results to: {output_csv_path}")
+    logger.info(f"\nSaving results to: {output_csv_path}")
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         fieldnames = [
@@ -844,25 +851,25 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                     'weighted_score': weighted_score
                 })
 
-    print(f"OK Results saved to: {output_csv_path}")
+    logger.info(f"OK Results saved to: {output_csv_path}")
 
     # Save the diagnostics blob
-    print(f"Saving diagnostics to: {output_diagnostics_path}")
+    logger.info(f"Saving diagnostics to: {output_diagnostics_path}")
 
     with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
         json.dump(cumulative_diagnostics, f, indent=2)
 
-    print(f"OK Diagnostics saved to: {output_diagnostics_path}")
+    logger.info(f"OK Diagnostics saved to: {output_diagnostics_path}")
 
-    print(f"RAG-ENHANCED TEST COMPLETE")
-    print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
-    print(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
-    print(f"Successful calls: {cumulative_diagnostics['successful_calls']}")
-    print(f"Failed calls: {cumulative_diagnostics['failed_calls']}")
-    print(f"Total tokens (input): {cumulative_diagnostics['total_tokens_input']}")
-    print(f"Total tokens (output): {cumulative_diagnostics['total_tokens_output']}")
-    print(f"Average latency: {cumulative_diagnostics['avg_latency_ms']:.0f} ms")
-    print(f"Success rate: {cumulative_diagnostics['success_rate']:.1%}")
+    logger.info(f"RAG-ENHANCED TEST COMPLETE")
+    logger.info(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
+    logger.info(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
+    logger.info(f"Successful calls: {cumulative_diagnostics['successful_calls']}")
+    logger.info(f"Failed calls: {cumulative_diagnostics['failed_calls']}")
+    logger.info(f"Total tokens (input): {cumulative_diagnostics['total_tokens_input']}")
+    logger.info(f"Total tokens (output): {cumulative_diagnostics['total_tokens_output']}")
+    logger.info(f"Average latency: {cumulative_diagnostics['avg_latency_ms']:.0f} ms")
+    logger.info(f"Success rate: {cumulative_diagnostics['success_rate']:.1%}")
 
     return cumulative_diagnostics
 
@@ -885,32 +892,32 @@ if a _run_NN.csv already exists and is non-empty it is
             try:
                 existing = pd.read_csv(run_path, encoding='utf-8-sig')
                 if len(existing) > 0:
-                    print(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+                    logger.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
                     run_paths.append(run_path)
                     skipped_runs.append(run_idx)
                     continue
             except Exception:
                 pass  # Unreadable file 
-        print(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
+        logger.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
             run_paths.append(run_path)
         except Exception as e:
-            print(f"ERROR: Run {run_idx} failed and will be excluded from aggregation: {e}")
+            logger.info(f"ERROR: Run {run_idx} failed and will be excluded from aggregation: {e}")
 
     if skipped_runs:
-        print(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
+        logger.info(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
 
     n_runs = len(run_paths)
     if n_runs == 0:
-        print("ERROR: All runs failed. No aggregation possible.")
+        logger.info("ERROR: All runs failed. No aggregation possible.")
         return
     if n_runs < N_RUNS:
-        print(
+        logger.info(
             f"WARNING: Only {n_runs}/{N_RUNS} runs completed. "
             f"Aggregating over {n_runs} runs."
         )
-    print(f"{n_runs}/{N_RUNS} runs complete. Aggregating scores...")
+    logger.info(f"{n_runs}/{N_RUNS} runs complete. Aggregating scores...")
 
     valid_run_paths = []
     run_dfs = []
@@ -919,13 +926,13 @@ if a _run_NN.csv already exists and is non-empty it is
             run_dfs.append(pd.read_csv(p, encoding='utf-8-sig'))
             valid_run_paths.append(p)
         except Exception as e:
-            print(f"WARNING: Could not read {p.name}, skipping from aggregation: {e}")
+            logger.info(f"WARNING: Could not read {p.name}, skipping from aggregation: {e}")
     if len(run_dfs) == 0:
-        print("ERROR: No run files could be read. Aggregation aborted.")
+        logger.info("ERROR: No run files could be read. Aggregation aborted.")
         return
     n_readable = len(run_dfs)
     if n_readable < n_runs:
-        print(f"WARNING: Aggregating over {n_readable}/{n_runs} readable runs.")
+        logger.info(f"WARNING: Aggregating over {n_readable}/{n_runs} readable runs.")
     combined = pd.concat(run_dfs, ignore_index=True)
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
@@ -963,7 +970,7 @@ if a _run_NN.csv already exists and is non-empty it is
 
     # When N=1, pandas std returns NaN — annotate clearly in the stats CSV
     if n_readable == 1:
-        print("WARNING: Only 1 run aggregated — std columns will be NaN (undefined for N=1).")
+        logger.info("WARNING: Only 1 run aggregated — std columns will be NaN (undefined for N=1).")
         for c in CRITERIA_COLS:
             col = f"{c}_std"
             if col in stats_df.columns:
@@ -1000,11 +1007,11 @@ if a _run_NN.csv already exists and is non-empty it is
     ]
     avg = avg.reindex(columns=col_order)
     avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
-    print(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
+    logger.info(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
     stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')
-    print(f"Score statistics saved to {stats_path}")
+    logger.info(f"Score statistics saved to {stats_path}")
 
 
 if __name__ == "__main__":
@@ -1013,8 +1020,8 @@ if __name__ == "__main__":
     test_csv = TEST_SCENARIOS_CSV
 
     if not test_csv.exists():
-        print(f"Test scenarios file not found: {test_csv}")
-        print("Please upload your test scenarios CSV first.")
+        logger.info(f"Test scenarios file not found: {test_csv}")
+        logger.info("Please upload your test scenarios CSV first.")
         sys.exit(1)
 
     run_multi_and_aggregate(
