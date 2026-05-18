@@ -342,6 +342,8 @@ def build_gt_lookup(gt_by_type):
     gt_lookup = defaultdict(list)
 
     for dtype, gt_df in gt_by_type.items():
+        if gt_df.empty or "scenario_id" not in gt_df.columns:
+            continue
         for sid in gt_df["scenario_id"].unique():
             sub = gt_df[gt_df["scenario_id"] == sid]
             q = sub["question"].iloc[0]
@@ -370,6 +372,8 @@ def build_gt_id_lookup(gt_by_type):
     """Build a lookup like (decision_type, scenario_id) -> GT scenario entry."""
     gt_id_lookup = {}
     for dtype, gt_df in gt_by_type.items():
+        if gt_df.empty or "scenario_id" not in gt_df.columns:
+            continue
         for sid in gt_df["scenario_id"].unique():
             sub = gt_df[gt_df["scenario_id"] == sid]
             alt_map = {}

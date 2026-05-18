@@ -18,6 +18,7 @@ from CalculateMetrics import (
     CONFIG,
     CRITERIA,
     build_gt_lookup,
+    build_gt_id_lookup,
     filter_failed_scenarios,
     load_architecture,
     load_ground_truth,
@@ -95,12 +96,13 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     print("\n[1] Loading ground truth and architectures...")
     gt_by_type = load_ground_truth(CONFIG)
     gt_lookup = build_gt_lookup(gt_by_type)
+    gt_id_lookup = build_gt_id_lookup(gt_by_type)
 
     arch_names = ["Pure", "RAG", "Hybrid"]
     clean_merged: dict[str, pd.DataFrame] = {}
     for name, path in CONFIG["architectures"].items():
         arch_df = load_architecture(path, name)
-        merged = match_scenarios(gt_lookup, arch_df, name)
+        merged, _counts = match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
         if len(merged) == 0:
             print(f"  WARNING: No matched data for {name} — skipping.")
             continue

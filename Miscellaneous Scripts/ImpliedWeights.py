@@ -52,11 +52,19 @@ Outputs: implied_weights_summary.csv
 """
 
 import os
+import sys
 import warnings
 import numpy as np
 import pandas as pd
 from itertools import combinations
 from scipy.optimize import minimize
+
+# Console output contains math symbols (σ, ≥, Σ, −); ensure stdout can encode them
+# on Windows where the default codec (cp1252) cannot.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -299,7 +307,7 @@ def print_implied_result(label: str, res: dict, var_df: pd.DataFrame) -> None:
         scope_var = var_df[var_df["decision_type"] == label].set_index("criterion")
 
     print(f"\n  {'Criterion':20s} {'Implied w':>10s} {'Subj w':>8s} "
-          f"{'Diff':>8s} {'Mean within-σ':>14s} {'% zero-var':>10s}")
+          f"{'Diff':>8s} {'Mean within-std':>15s} {'% zero-var':>10s}")
     print(f"  {'-'*72}")
 
     for c in CRITERIA:
@@ -335,7 +343,7 @@ def main():
 
     print("\nWithin-scenario std dev by decision type:")
     print(f"  {'Decision Type':12s} {'Criterion':20s} "
-          f"{'Mean within-σ':>14s} {'% zero-var scen':>16s}")
+          f"{'Mean within-std':>15s} {'% zero-var scen':>16s}")
     print(f"  {'-'*64}")
     for _, row in var_df.iterrows():
         print(f"  {row['decision_type']:12s} {row['criterion']:20s} "
