@@ -27,7 +27,7 @@ coverage.xml
 # Editor-based HTTP Client requests
 /httpRequests/
 # any large scale plannig prompts for while I am waiting for claude to reset
-.github\prompts
+.github/prompts
 
 # Personal drafting files
 
@@ -61,3 +61,13 @@ Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
 Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
 .claude
 .vscode
+
+paper/Images
+paper/_sync_test.txt
+paper/Charts
+paper/Notebook (text format)
+paper/SensitivityAnalysis.tex
+paper/desktop.ini
+paper/Charts_Significance_Notes.txt
+paper/Bibtex
+paper/paper_draft_citations.tex
