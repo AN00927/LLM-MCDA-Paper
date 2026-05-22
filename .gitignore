@@ -62,6 +62,7 @@ Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
 Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
 .claude
 .vscode
+scripts
 
 paper/Images
 paper/_sync_test.txt
@@ -71,5 +72,4 @@ paper/SensitivityAnalysis.tex
 paper/desktop.ini
 paper/Charts_Significance_Notes.txt
 paper/Bibtex
-paper/paper_draft_working.tex
 paper/test_write.txt

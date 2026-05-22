@@ -221,9 +221,9 @@ scenario_id,question,location,square_footage,insulation,household_size,utility_b
 73,Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,66,0.0,0.0,6.65,7.6,2.4699999999999998,3,28.38,5.39,28.93
 73,Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,69,0.0,0.0,9.25,7.6,2.99,1,30.06,5.71,30.64
 73,Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,72,0.0,0.0,8.46,7.6,2.832,2,31.73,6.03,32.34
-74,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,68,10.0,10.0,8.6,10.0,9.72,2,0.0,0.0,0.0
-74,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,70,10.0,10.0,10.0,9.63,9.9445,1,0.0,0.0,0.0
-74,It's a cold day. What should I set the thermostat to?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,72,10.0,10.0,8.6,9.63,9.6645,3,0.39,0.07,0.4
+74,The weather's quite cold — what heating temperature do you recommend for the thermostat?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,68,10.0,10.0,8.6,10.0,9.72,2,0.0,0.0,0.0
+74,The weather's quite cold — what heating temperature do you recommend for the thermostat?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,70,10.0,10.0,10.0,9.63,9.9445,1,0.0,0.0,0.0
+74,The weather's quite cold — what heating temperature do you recommend for the thermostat?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,72,10.0,10.0,8.6,9.63,9.6645,3,0.39,0.07,0.4
 75,We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,77,2.87,2.98,9.32,8.86,5.0969999999999995,2,12.93,2.46,13.46
 75,We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,80,3.54,3.51,7.0,9.63,5.135,1,12.12,2.3,12.62
 75,We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,83,4.08,4.04,4.06,8.51,4.7265,3,11.32,2.15,11.79
@@ -383,3 +383,9 @@ scenario_id,question,location,square_footage,insulation,household_size,utility_b
 127,We just installed a new high-efficiency AC and it's a warm day. What temperature is ideal?,"Phoenixville, PA",2350,Good,4,$420 ,Single-family,88,2,72,5.52,5.59,6.65,9.63,6.3870000000000005,3,9.17,1.74,9.35
 127,We just installed a new high-efficiency AC and it's a warm day. What temperature is ideal?,"Phoenixville, PA",2350,Good,4,$420 ,Single-family,88,2,76,5.99,6.05,10.0,9.63,7.359,1,8.47,1.61,8.63
 127,We just installed a new high-efficiency AC and it's a warm day. What temperature is ideal?,"Phoenixville, PA",2350,Good,4,$420 ,Single-family,88,2,79,6.35,6.39,7.59,10.0,7.1594999999999995,2,7.94,1.51,8.09
+128,"On a mild spring day, what thermostat setting keeps the house comfortable without wasting energy?","Blue Bell, PA",1600,Medium,3,$240 ,Condo,68,15,68,10.0,10.0,8.6,10.0,9.72,3,0.0,0.0,0.0
+128,"On a mild spring day, what thermostat setting keeps the house comfortable without wasting energy?","Blue Bell, PA",1600,Medium,3,$240 ,Condo,68,15,70,10.0,10.0,10.0,10.0,10.0,1,0.0,0.0,0.0
+128,"On a mild spring day, what thermostat setting keeps the house comfortable without wasting energy?","Blue Bell, PA",1600,Medium,3,$240 ,Condo,68,15,72,10.0,10.0,8.6,10.0,9.72,2,0.0,0.0,0.0
+129,It's a mild early evening. What indoor temperature should I use to stay comfortable?,"West Chester, PA",2100,Good,4,$300 ,Single-family,72,10,68,10.0,10.0,8.46,10.0,9.692,2,0.0,0.0,0.0
+129,It's a mild early evening. What indoor temperature should I use to stay comfortable?,"West Chester, PA",2100,Good,4,$300 ,Single-family,72,10,70,10.0,10.0,10.0,10.0,10.0,1,0.0,0.0,0.0
+129,It's a mild early evening. What indoor temperature should I use to stay comfortable?,"West Chester, PA",2100,Good,4,$300 ,Single-family,72,10,73,10.0,10.0,7.59,10.0,9.518,3,0.0,0.0,0.0
