@@ -2,7 +2,6 @@ Description,Location,Utility Budget,Appliance,Housing Type,Occupants,kwh/cycle,A
 It's late (around 2 AM) and I need to run the dishwasher. Should I do it now or wait?,"Philadelphia, PA",200,dishwasher,Apartment,3,1.4,7,2:00 AM,2:00 AM,3:00 PM,7:00 PM
 It's late (around midnight) and I need to run the dishwasher. Should I do it now or wait?,"Lancaster, PA",200,dishwasher,Single-family,4,1.4,2,12:00 AM,12:00 AM,7:00 PM,2:00 PM
 It's late (around 10 PM) and I need to run the dishwasher. Should I do it now or wait?,"Pittsburgh, PA",120,dishwasher,Apartment,2,0.95,10,10:00 PM,10:00 PM,3:00 PM,2:00 PM
-I want to run my dishwasher this afternoon (around 2 PM). When should I start it?,"Harrisburg, PA",200,dishwasher,Townhouse,3,1.1,7,2:00 PM,2:00 PM,9:00 PM,4:00 PM
 Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Allentown, PA",150,dishwasher,Single-family,2,1.25,2,5:00 PM,5:00 PM,7:00 PM,4:00 PM
 Dinner's done around 5 PM. What's the best time to run the dishwasher?,"Erie, PA",175,dishwasher,Townhouse,2,1.25,10,5:00 PM,5:00 PM,11:00 PM,4:00 PM
 I'm ready to run the dishwasher after dinner (around 8 PM). When should I start it?,"Scranton, PA",150,dishwasher,Apartment,2,1.25,7,8:00 PM,8:00 PM,3:00 PM,4:00 PM
@@ -79,3 +78,4 @@ It's late (around midnight) and I need to dry laundry. Should I start now or wai
 Planning to run the washing machine around 11 PM. Is that okay or should I wait?,"Altoona, PA",155,washing_machine,Apartment,4,0.42,6,11:00 PM,11:00 PM,10:00 AM,3:00 PM
 I want to run the dishwasher at 5 AM before work. Should I wait?,"King of Prussia, PA",165,dishwasher,Single-family,3,1.2,4,5:00 AM,5:00 AM,9:00 AM,7:00 PM
 My laundry is ready to dry around 4 PM. Should I start now or wait?,"Bethlehem, PA",195,dryer,Townhouse,4,2.8,8,4:00 PM,4:00 PM,6:00 PM,10:00 PM
+The dishwasher is ready in Greensburg around 3 PM. Should I run it now or delay?,"Greensburg, PA",180,dishwasher,Townhouse,3,1.05,6,3:00 PM,3:00 PM,9:00 PM,11:00 PM

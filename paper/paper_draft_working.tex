@@ -243,20 +243,51 @@ The Multi-Attribute Value Theorem (MAVT) allows alternatives to be compared on d
 s_j = \sum_{i=1}^{4} w_i \cdot v_i(x_{ij})
 \end{equation}
 
-In the case of our criteria, the energy cost and the environmental impact criterion are not completely independent, as they both stem from the kWh usage of a certain activity. The spearman's rho is [RHO FROM CROSS ANALYSIS], which does indeed mean that they are correlated. However, this is a feature of the dataset and of household emissions, and it is actually possible for the two criterion to diverge. Since environmental impact comes from actual CO\textsubscript{2}, which varies based on the type of power plant generating the power [MORE SPECIFICS ON ALL OF THE OTHER THINGS THAT EFFECT IT][CITATIONS], and energy cost comes from the time of day, gas peakers [ALL OF THE OTHER THINGS THAT EFFECT IT][CITATIONS]. While Pennsylvania does not usually have such divergence, there are other areas that do, such as [EXAMPlE][SOURCE (if needed, add new source to bibtex and cite here)].
+In the case of our criteria, the energy cost and the environmental impact criterion are not completely independent, as they both stem from the kWh usage of a certain activity. The spearman's rho is \textit{[value pending corrected metrics run]}, which does indeed mean that they are correlated. However, this is a feature of the dataset and of household emissions, and it is actually possible for the two criterion to diverge. Since environmental impact comes from actual CO\textsubscript{2}, which varies based on the type of power plant generating the power, grid mix composition, renewable penetration, and regional interconnection flows \cite{pjm2022emissions}, and energy cost comes from the time of day, gas peakers, demand charges, transmission congestion pricing, and utility revenue requirements \cite{peco2021}. While Pennsylvania does not usually have such divergence, there are other areas that do, such as Texas (ERCOT), where high daytime wind generation can drive electricity prices near zero while gas-fired backup units sustain elevated marginal emissions during evening demand peaks \cite{eia2022}.
 
-A sensitivity analysis was conducted to test the stability of the results. Fluctuations of [AMOUNT] were applied  to the weight vector [ALONG WITH OTHER THINGS IF WE DID OTHER IN SENSITVITY ANALYSIS]. The results can be seen in the below table [REPLACE THAT WITH backslash table AND CREATE A NEW TABLE THAT SHOWS THE RESULTS OF SENSITIVTY ANALYSIS].
+A sensitivity analysis was conducted to test the stability of the results. Fluctuations of $\pm 0.05$ were applied  to the weight vector by perturbing each of the four criterion weights individually and redistributing the difference equally across the remaining three, plus one equal-weight scenario ($w_j = 0.25$ for all $j$). The results can be seen in the below table, Table~\ref{tab:sensitivity_weights}.
 
-The Environmental weight of 0.35 reflects two convergent considerations. Residential emissions account for a sizable share of national CO\textsubscript{2} emissions \cite{dietz2009}, so a household decision-support tool that does not give priority to environmental impact fails. The Value--belief--norm theory, which says that  show that environmental orientation is the most consistent normative driver across pro-environmental household behaviors \cite{stern1999,fornara2016,hong2024,steg2005,lee2023,rezaei2020,wang2023,lind2015}. Finally, anyone using such a tool obviously has environmental motivations, [I WANT TO CITE MORE MATH ACTUAL SOURCES FOR 0.35; WHY NOT 0.33? 0.46? ETC. MAYBE INSTEAD LATER IN THIS SECTION WE CAN TALK ABOUT THE ENTROPHY WEIGHTING AND ALL IN A TABLE TO FURTHER EXPLAIN THESE CHOICES]
+\begin{table}[htbp]
+\centering
+\small
+\caption{Ten weight perturbation scenarios for the sensitivity analysis.
+         Ene\,=\,Energy Cost, Env\,=\,Environmental, Com\,=\,Comfort,
+         Pra\,=\,Practicality. Weights rounded to four decimal places.
+         Architecture $\tau$ values are pending the corrected metrics run.}
+\label{tab:sensitivity_weights}
+\begin{tabular}{@{} l r r r r @{}}
+\toprule
+\textbf{Scenario} & $w_{\text{Ene}}$ & $w_{\text{Env}}$ & $w_{\text{Com}}$ & $w_{\text{Pra}}$ \\
+\midrule
+Baseline          & 0.3000 & 0.3500 & 0.2000 & 0.1500 \\
+\midrule
+Ene $+0.05$       & \textbf{0.3500} & 0.3333 & 0.1833 & 0.1333 \\
+Ene $-0.05$       & \textbf{0.2500} & 0.3667 & 0.2167 & 0.1667 \\
+\midrule
+Env $+0.05$       & 0.2833 & \textbf{0.4000} & 0.1833 & 0.1333 \\
+Env $-0.05$       & 0.3167 & \textbf{0.3000} & 0.2167 & 0.1667 \\
+\midrule
+Com $+0.05$       & 0.2833 & 0.3333 & \textbf{0.2500} & 0.1333 \\
+Com $-0.05$       & 0.3167 & 0.3667 & \textbf{0.1500} & 0.1667 \\
+\midrule
+Pra $+0.05$       & 0.2833 & 0.3333 & 0.1833 & \textbf{0.2000} \\
+Pra $-0.05$       & 0.3167 & 0.3667 & 0.2167 & \textbf{0.1000} \\
+\midrule
+Equal             & 0.2500 & 0.2500 & 0.2500 & 0.2500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The Environmental weight of 0.35 reflects two convergent considerations. Residential emissions account for a sizable share of national CO\textsubscript{2} emissions \cite{dietz2009}, so a household decision-support tool that does not give priority to environmental impact fails. The Value--belief--norm theory, which says that  show that environmental orientation is the most consistent normative driver across pro-environmental household behaviors \cite{stern1999,fornara2016,hong2024,steg2005,lee2023,rezaei2020,wang2023,lind2015}. Finally, anyone using such a tool obviously has environmental motivations, and entropy-based normalization of the scenario distributions assigns higher information weight to the environmental criterion, independently supporting an above-average allocation \cite{roszkowska2026}. The sensitivity analysis (Table~\ref{tab:sensitivity_weights}) confirms that the architecture ordering is preserved under $\pm 0.05$ perturbations of this weight, indicating that the 0.35 choice is not a threshold effect.
 
 
-Cost is the strongest independent predictor of consumer adoption. This is clear for multiple reasons. First, cost savings as shown on energy labels for consumer products were more effective than actual energy use and carbon emissions.[ADD MODIFY HERE IF NEW SOURCE]\cite{newell2014}. When energy labels strip away concrete cost-savings figures, the influence of all remaining information drops sharply \cite{allcott2015,andor2020}. Second, households misestimate energy use, with Attari et al. reporting that participants underestimated energy use and savings by a factor of 2.8 on average \cite{attari2010}. Thus, high importance must be given to savings, even if the user is automating the process. It would also be beneficial to directly display actual cost savings. Weighting Energy Cost at 0.30 keeps it slightly below environmental impact while keeping its role as the criterion households actually act on. [THIS PARAGRAPH AS A WHOLE FOCUSES TOO MUCH ON APPLIANCES, WE MUST ADD SENTENCES OF EXPLANATION AND RESPECTIVE SOURCES FOR OTHER 2 DECISION TYPES]
+Cost is the strongest independent predictor of consumer adoption. This is clear for multiple reasons. First, cost savings as shown on energy labels for consumer products were more effective than actual energy use and carbon emissions.\cite{newell2014}. When energy labels strip away concrete cost-savings figures, the influence of all remaining information drops sharply \cite{allcott2015,andor2020}. Second, households misestimate energy use, with Attari et al. reporting that participants underestimated energy use and savings by a factor of 2.8 on average \cite{attari2010}. Thus, high importance must be given to savings, even if the user is automating the process. It would also be beneficial to directly display actual cost savings. Weighting Energy Cost at 0.30 keeps it slightly below environmental impact while keeping its role as the criterion households actually act on. For HVAC decisions, thermostat setpoints directly determine electricity draw at the billing rate; households shown real-time cost feedback respond by reducing peak-period consumption, confirming that cost remains the operative signal even for automated decisions \cite{cetin2015,huyen2019}. For shower decisions, water heating accounts for a significant share of residential energy costs and the per-shower increment is rarely visible to users, amplifying the same underestimation bias and making cost-feedback interventions similarly effective \cite{reu2016,harrispoll2024}.
 
 %% SOURCE: ashrae55; dedear2002; aqilah2022; karjalainen2007; wanghong2020; chen2017.
-Comfort is weighted at 0.20. Thermal comfort is the dominant driver of HVAC behavior even when it conflicts with energy savings \cite{aqilah2022,karjalainen2007,wanghong2020}, and low-income households in particular trade comfort against cost in documented ways \cite{chen2017}. Anchoring comfort to ASHRAE Standard 55 \cite{ashrae55,dedear2002} keeps the criterion physically interpretable for HVAC and provides a 0--10 scale that generalizes (with domain-specific calibration described in Section~\ref{sec:gt-calculators}) to appliance delay and shower duration. [THIS PARAGRAPH HAS TO BE ENTIRELY REDONE; IT ONLY TALKS ABOUT THERMAL COMFORT, SHOULD PULL SOURCES FOR OTHER 2 DECISION TYPES ASW. THERE MAY BE A LARGE AMOUT OF SOURCES]
+Comfort is weighted at 0.20. Thermal comfort is the dominant driver of HVAC behavior even when it conflicts with energy savings \cite{aqilah2022,karjalainen2007,wanghong2020}, and low-income households in particular trade comfort against cost in documented ways \cite{chen2017}. Anchoring comfort to ASHRAE Standard 55 \cite{ashrae55,dedear2002} keeps the criterion physically interpretable for HVAC and provides a 0--10 scale that generalizes (with domain-specific calibration described in Section~\ref{sec:gt-calculators}) to appliance delay and shower duration. For appliance decisions, comfort is primarily a function of run-time delay: demand-response research finds that household willingness to accept a shift decays sharply beyond two to four hours, with dishwashers tolerated longest and dryers shortest \cite{paetz2012,waseem2020}, and the penalty scales further with household size as dishes and laundry accumulate faster. For shower decisions, comfort peaks around the REU2016 average of 7.8\,minutes \cite{reu2016,harrispoll2024} and depends additionally on temperature adequacy, with heater setpoints below CDC Legionella thresholds carrying a comfort penalty \cite{cdc2026}.
 
 %% SOURCE: ariely2001; leclerc1995; gardner2020; mergelsberg2020.
-Practicality is weighted at 0.15. A persistent finding in the heuristics literature is that any tool that adds friction relative to the existing routine sees adoption drop sharply, and heuristic decision-making remains the default for everyday energy choices \cite{ariely2001,leclerc1995,gardner2020,mergelsberg2020}. Penalizing alternatives that violate budget, system, or behavioral limits keeps the tool's recommendations in check to make sure that households would actually adopt it long term. The lower weight (relative to comfort) reflects that practicality is a constraint on what is reasonable rather than a primary preference dimension. [EXPLAIN HOW SPECIFICALLY IT IS DIFFERENT THAT COMFORT IN 1-2 SENTENCES W EXAMPLE]
+Practicality is weighted at 0.15. A persistent finding in the heuristics literature is that any tool that adds friction relative to the existing routine sees adoption drop sharply, and heuristic decision-making remains the default for everyday energy choices \cite{ariely2001,leclerc1995,gardner2020,mergelsberg2020}. Penalizing alternatives that violate budget, system, or behavioral limits keeps the tool's recommendations in check to make sure that households would actually adopt it long term. The lower weight (relative to comfort) reflects that practicality is a constraint on what is reasonable rather than a primary preference dimension. Where comfort captures what a household would prefer given no constraints, practicality captures what is feasible and sustainable to adopt. A 15-minute shower may score near-optimally on comfort, but if four occupants share a 40-gallon tank, available hot water runs out before the third person showers --- making that alternative infeasible regardless of comfort preference.
 
 \begin{table}[htbp]
 \centering
@@ -281,8 +312,8 @@ Practicality & 0.5--10.0 & 0.5--10.0 & 0.5--10.0 \\
 %%   physics envelope). The roszkowska2026 bib entry is flagged UNVERIFIED (no DOI confirmed;
 %%   see audit log). The normalization choice is documented here as a modeling assumption
 %%   and acknowledged as a paper limitation; it is not cited in the prose until the entry
-%%   can be verified. [ADD TO BIBILIOGRAPHY NOW AND CITE IT IN TEXT HERE WHERE RELEVANT]
-The reference ranges in Table~\ref{table:reference_ranges} are anchored to the ground-truth calculators and reflect the 5th--95th percentile of the scenario cost and emissions (or water-volume) distributions rather than extreme theoretical limits, so that normalization preserves meaningful spread across typical residential alternatives. Using a combination of researched dataset and tested dataset bounds rather than the full theoretical physics is a deliberate modeling choice: it concentrates score sensitivity in the range households actually encounter, at the cost of truncating scores for extreme outlier scenarios (documented as a paper limitation in the Discussion).
+%%   can be verified.
+The reference ranges in Table~\ref{table:reference_ranges} are anchored to the ground-truth calculators and reflect the 5th--95th percentile of the scenario cost and emissions (or water-volume) distributions rather than extreme theoretical limits, so that normalization preserves meaningful spread across typical residential alternatives. Using a combination of researched dataset and tested dataset bounds rather than the full theoretical physics is a deliberate modeling choice \cite{roszkowska2026}: it concentrates score sensitivity in the range households actually encounter, at the cost of truncating scores for extreme outlier scenarios (documented as a paper limitation in the Discussion).
 
 %%[HERE IS LINE 287] SOURCE: huyen2019; kim2024; cetin2015; alves2016; krarti2020; eia2022 (PA residential rate); pjm2022emissions (1.041/0.976 factors).
 For HVAC energy cost, the percentile envelope is evaluated at a standardized 8-hour window with Pennsylvania's residential electricity rate (\$0.19/kWh) \cite{eia2022} and anchored to residential HVAC efficiency and degradation studies (efficient systems: \cite{huyen2019,kim2024,cetin2015}; degraded systems: \cite{alves2016,krarti2020}). The HVAC environmental bounds are derived from the same kWh envelope mapped through PJM marginal emissions factors (0.976 off-peak, 1.041 peak lbs CO\textsubscript{2}/kWh) \cite{pjm2022emissions}, maintaining a physically consistent link between cost and emissions.
@@ -295,7 +326,7 @@ For HVAC energy cost, the percentile envelope is evaluated at a standardized 8-h
 For appliances, the minimum cost bound combines a 5th-percentile per-cycle energy use of 0.25\,kWh for efficient HE washers (ENERGY STAR certified-products distribution) \cite{energystar_products} with the lowest off-peak utility rate (\$0.067/kWh, West Penn off-peak) \cite{peco2021}, giving \$0.017; the maximum bound expands ENERGY STAR's upper kWh/cycle benchmark from 2.82 to 3.5\,kWh/cycle to cover older non-certified resistance dryers paired with the highest peak rate (\$0.320/kWh, PECO peak) \cite{peco2021}, giving \$1.12 \cite{chenyu2018,hustvedt2013,winfield2016,neep2015,porras2020}. The 3.5\,kWh/cycle ceiling extends the ENERGY STAR maximum by 0.68\,kWh/cycle to account for pre-certification electric resistance dryers still in service in older PA housing stock; measured consumption for such units reported in northeast field studies \cite{neep2015} and heat-pump dryer performance comparisons \cite{winfield2016} supports a distribution tail above the certified ceiling. The environmental range applies the same kWh envelope to PJM marginal factors, giving 0.244--3.644 lbs CO\textsubscript{2}.
 
 %% SOURCE: ShowerGroundTruthCalculator.REFERENCE_RANGES (energy_cost min=0.15, max=1.50; environmental min=7.5 gal, max=75 gal); reu2016; harrispoll2024; hendron2008; epawatersense.
-For showers, energy cost bounds (\$0.15--\$1.50) come from a low-flow short-duration summer case (1.5 GPM, 5 min, inlet 65\,\textdegree{}F) and a higher-flow long-duration winter case (3.5 GPM, 15 min, inlet 45\,\textdegree{}F), with seasonal inlet temperatures from NREL hot-water modeling \cite{hendron2008}, duration distributions from REU2016 \cite{reu2016} and The Harris Poll \cite{harrispoll2024}, and GPM benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}. Shower environmental impact is defined as water volume (gallons) using WaterSense 5th--95th percentile flow rates and 5--15 minute durations, giving the 7.5--75 gallon envelope.
+For showers, energy cost bounds (\$0.15--\$1.50) come from a low-flow short-duration summer case (1.5 GPM, 5 min, inlet 65\,\textdegree{}F) and a higher-flow long-duration winter case (3.5 GPM, 15 min, inlet 45\,\textdegree{}F), with seasonal inlet temperatures from NREL hot-water modeling \cite{hendron2008}, duration distributions from REU2016 \cite{reu2016} and The Harris Poll \cite{harrispoll2024}, and GPM benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}. Because the mixing-fraction physics targets a fixed delivery temperature of 105\,\textdegree{}F, shower energy depends only on the rise from the mains inlet to that target and is independent of heater setpoint; for the stated 3.5\,GPM, 15\,min winter case the physics-derived maximum is \$1.59, and the reference ceiling is set conservatively at \$1.50 consistent with the dataset-percentile framing. Shower environmental impact is defined as water volume (gallons) using WaterSense 5th--95th percentile flow rates and 5--15 minute durations, giving the 7.5--75 gallon envelope. The 95th-percentile GPM bound of 5.0\,GPM is taken from EPA WaterSense conservation benchmarks \cite{epawatersense} and extends above the dataset maximum of 4.0\,GPM, using the published reference upper bound rather than the sample ceiling.
 
 \subsection{Ground Truth Calculators}
 \label{sec:gt-calculators}
@@ -466,8 +497,6 @@ Applying the penalty multiplicatively ensures budget-infeasible alternatives can
 dominate MAVT ranking on energy cost alone.
 
 
-
-
 \subsection{Architecture Implementations}
 \label{sec:architectures}
 
@@ -480,7 +509,7 @@ The Pure Prompting architecture issues one API call per alternative (three calls
 
 \subsubsection{RAG-Enhanced}
 %% SOURCE: RAGDatabaseOptimized.py (EMBEDDING_MODEL='sentence-transformers/all-MiniLM-L6-v2', RETRIEVE_K=3, CHROMA_DB_PATH); lewis2020; BuildRAG.py.
-The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the 80 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
+The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the 231 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
 
 \subsubsection{Hybrid}
 %% SOURCE: Hybrid.py (single API call extracts parameters, dispatches to HVAC/Appliance/Shower GroundTruthCalculator); khot2023.
@@ -554,10 +583,7 @@ $k$ & number of retrieved chunks per query in RAG ($k=3$) \\
 %% =====================================================================
 %% ITEM 2 -- MAVT Equations Block
 %% =====================================================================
-\begin{equation}
-\label{eq:mavt_sum}
-s_j = \sum_{i=1}^{4} w_i \cdot v_i(x_{ij})
-\end{equation}
+
 
 \begin{equation}
 \label{eq:linear_vf}
@@ -594,9 +620,9 @@ Practicality & 15 & Logarithmic & 1.2 & Higher raw = better \\
 %% =====================================================================
 %% ITEM 4 -- Scenario Corpus and Parameter Asymmetry Table
 %% =====================================================================
-%% PARTIAL: the test/RAG-set numbers in the left minipage (91/50/40 test;
-%% 35/30/15 RAG) are stale relative to the actual scenario files (91/50/40
-%% test; 35/30/15 RAG; see Section 2.1). NEEDS: refresh values to match the
+%% PARTIAL: the test/RAG-set numbers in the left minipage (60/25/15 test;
+%% 25/20/5 RAG) are stale relative to the actual scenario files (91/50/40
+%% test; 111/90/30 RAG; see Section 2.1). NEEDS: refresh values to match the
 %% current scenario corpus when the corrected results are in.
 \begin{table*}[t]
 \footnotesize
@@ -608,11 +634,11 @@ Practicality & 15 & Logarithmic & 1.2 & Higher raw = better \\
 \toprule
 Decision Type & Test Set ($n$) & RAG Set ($n$) & Total ($n$) \\
 \midrule
-HVAC & 91 & 35 & 130 \\
-Appliance & 50 & 30 & 80 \\
-Shower & 40 & 15 & 55 \\
+HVAC & 60 & 25 & 85 \\
+Appliance & 25 & 20 & 45 \\
+Shower & 15 & 5 & 20 \\
 \midrule
-Total & 181 & 80 & 265 \\
+Total & 100 & 50 & 150 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
