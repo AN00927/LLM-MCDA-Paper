@@ -224,10 +224,8 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 def build_system_prompt() -> str:
     """Build system prompt.
 
-    NOTE: deliberately not adding numeric calibration anchors (e.g. "9.0 means
-    excellent") to this prompt. RAG already provides scored examples in-context,
-    so adding explicit anchors would conflate the retrieval signal with prompt
-    engineering. (Audit issue E5.)
+    Numeric calibration anchors are intentionally omitted because RAG already
+    supplies scored in-context examples.
     """
     return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
     You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.

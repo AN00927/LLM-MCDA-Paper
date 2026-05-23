@@ -38,7 +38,6 @@ class HVACGroundTruthCalculator:
     VF_ENERGY_COST = "linear"
 
     # Linear VF for environmental impact - physical units have linear marginal value
-    # Note: This represents a MODELING ASSUMPTION rather than an empirically validated preference.
     # While some environmental psychology literature supports linear preferences for physical
     # impact metrics (e.g., CO2 levels), the specific claim in Kotchen & Moore (2007) does not
     # explicitly endorse this for utility function specification.
@@ -108,16 +107,12 @@ class HVACGroundTruthCalculator:
         # - Single-family (2-story typical): 1.7
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
-        # TODO(D4): "Twin" appears in TestScenarios but the ACCA Manual J
-        # multiplier is unconfirmed. Currently falls through to the 1.7 default
-        # via the .get() below — research and add an explicit entry.
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
             "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
-            # "Twin": <TODO_VALUE>,
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
@@ -383,8 +378,8 @@ class HVACGroundTruthCalculator:
         # window at $0.19/kWh). Dataset-percentile bounds are chosen over a wider
         # physics envelope so that scores spread meaningfully across the [0,10]
         # scale for typical PA residential alternatives; this is a deliberate
-        # entropy-driven normalization choice (Roszkowska 2026) and is documented
-        # as a paper limitation. Cost endpoints are still anchored in real
+        # entropy-driven normalization choice (Roszkowska 2026). Cost endpoints
+        # are still anchored in real
         # residential studies:
         #   Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
         #     Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015),
@@ -403,9 +398,8 @@ class HVACGroundTruthCalculator:
         #   min = 2.474 kWh x 0.976 lbs/kWh = 2.42 lbs CO2  (best case: fully off-peak)
         #   max = 17.421 kWh x 1.041 lbs/kWh = 18.14 lbs CO2 (worst case: fully peak)
         # Source: PJM 2022 Emissions Report (April 2023).
-        # Note for HVAC: alternatives within one scenario share the same emission
-        # factor (collinearity documented as paper limitation - all alternatives
-        # evaluated at same moment, differing only in load magnitude).
+        # For HVAC, alternatives within one scenario share the same emission
+        # factor because they are evaluated at the same moment and differ by load.
         'min': 2.42,
         'max': 18.14,
         'decreasing': True

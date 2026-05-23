@@ -366,7 +366,6 @@ def main():
         results[label] = res
         print_implied_result(label, res, var_df)
 
-    # Interpretation note
     print(f"\n{'='*65}")
     print("  INTERPRETATION NOTE")
     print(f"{'='*65}")
