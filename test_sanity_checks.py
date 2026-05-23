@@ -132,7 +132,7 @@ def run_sanity_checks():
     for arch_name, file_path in arch_configs.items():
         if file_path.exists():
             try:
-                df = load_architecture(str(file_path))
+                df = load_architecture(str(file_path), arch_name)
                 n_rows = len(df)
                 n_scenarios = df['arch_scenario_id'].nunique() if 'arch_scenario_id' in df.columns else "?"
                 has_sentinels = (df == FAIL_SENTINEL).any().any()
