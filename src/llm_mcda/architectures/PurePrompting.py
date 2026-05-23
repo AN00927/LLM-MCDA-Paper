@@ -220,12 +220,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
 
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    # Boundaries are inclusive (0.0 and 10.0 are valid scores). The validator
-    # rejects anything outside [0.0, 10.0] with the failed_out_of_bounds counter.
-    # NOTE: deliberately not adding numeric calibration anchors (e.g. "9.0 means
-    # excellent") to this prompt. This is the Pure Prompting baseline — adding
-    # anchors would conflate prompt-engineering improvements with the
-    # zero-shot-scoring measurement we're trying to make. (Audit issue E5.)
+
     system_prompt = """You are an expert household energy decision analyst. Score alternatives on
 four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0; do not exceed 10.0 or go below 0.0):
 - energy_cost: lower cost = higher score
@@ -235,6 +230,8 @@ four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0; do not excee
 
 Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
+#Add some basic reference for good, bad, with "fuzzy" (not exact) numbers as reference to help guide the scoring
+#should not be precise but a general sense of what defines as good for HVAC, etc.
     user_prompt = build_user_prompt(scenario, alternative)
 
     messages = [

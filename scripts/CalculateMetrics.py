@@ -56,27 +56,18 @@ CONFIG = {
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = 1928
 
-# B2 (documented): scenario matching uses (question, location) content keys
-# only. The strict (decision_type, scenario_id) lookup is intentionally
-# DISABLED because architecture CSV scenario_ids are assigned sequentially
-# from TestScenarios (mixed types) while GT CSVs number independently per
-# domain. The two ID namespaces therefore do NOT correspond and a strict ID
-# match would silently misalign rows. If a shared ID namespace is ever
-# declared, re-enable build_gt_id_lookup as a primary lookup and demote
-# content-matching to fallback only. (Note: standardizing questions could
-# create duplicates — handle that before flipping the flag.)
+# Scenario matching uses (question, location) content keys only. Strict
+# (decision_type, scenario_id) lookup is disabled because architecture CSV
+# scenario_ids are assigned from TestScenarios while GT CSVs number
+# independently by domain, so those ID namespaces do not align.
 #
-# C5 (documented): two aggregation sources of truth exist by design. Each
-# architecture writes a *_results.csv summary for manual inspection
-# (run_multi_and_aggregate); this script ignores those summaries and instead
-# re-aggregates the per-run files via aggregate_run_files. The architectures'
-# summary CSVs are not used in published metrics — this script is the source
-# of truth for everything reported.
+# Architecture *_results.csv files are not used here. This script
+# re-aggregates per-run outputs via aggregate_run_files and serves as the
+# source for reported metrics.
 
-_STRICT_ID_MATCH_ENABLED = False  # see note above
+_STRICT_ID_MATCH_ENABLED = False
 
-# A5 (tie-break): secondary criterion priority used when weighted scores tie.
-# Order matches the audit recommendation: environmental, then energy_cost.
+# Secondary criterion priority used when weighted scores tie.
 TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
 
 
@@ -86,7 +77,7 @@ def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, lo
     Returns a pd.Series of integer ranks aligned to scores_df.index. Ties on
     weighted_score are broken by `tiebreak_cols` (each desc, in order). When
     ties on weighted_score are detected, emits a UserWarning so reviewers can
-    audit cases where the tie-break rule changed the outcome.
+    inspect cases where the tie-break rule changed the outcome.
     """
     df = scores_df.copy()
     if df[weighted_col].duplicated().any():
@@ -397,9 +388,9 @@ def build_gt_id_lookup(gt_by_type):
 def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
     """Match architecture scenarios to GT by (question, location) content keys.
 
-    Note: strict (decision_type, scenario_id) matching is disabled because the
-    two ID namespaces do not correspond (see _STRICT_ID_MATCH_ENABLED note).
-    Content-based matching is logged so reviewers can audit the method used.
+    Strict (decision_type, scenario_id) matching is disabled because the
+    two ID namespaces do not correspond.
+    Content-based matching is logged so reviewers can inspect the method used.
     Warnings are emitted when fewer than 3 alternatives match for a scenario.
     """
     matched_rows = []

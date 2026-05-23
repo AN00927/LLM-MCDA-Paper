@@ -16,7 +16,7 @@ Which AI-MCDA architecture most accurately replicates physics-based ground truth
 
 [Abstract](Abstract.pdf)
 
-This project compares three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **181 scenarios** (for now) (91 HVAC, 50 Appliance, 40 Shower). Each scenario presents three alternatives; each architecture ranks them on four criteria.
+This project compares three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **185 scenarios** (for now) (95 HVAC, 50 Appliance, 40 Shower). Each scenario presents three alternatives; each architecture ranks them on four criteria.
 
 **MAVT Criterion Weights:**
 | Criterion | Weight |
