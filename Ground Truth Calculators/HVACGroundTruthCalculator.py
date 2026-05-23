@@ -113,6 +113,7 @@ class HVACGroundTruthCalculator:
             "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
+            "Twin": 1.6,
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
@@ -659,7 +660,10 @@ def process_hvac_scenarios(
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(csv_path)
+    try:
+        df = pd.read_csv(csv_path, encoding='utf-8-sig')
+    except UnicodeDecodeError:
+        df = pd.read_csv(csv_path, encoding='cp1252')
 
     print(f"Found {len(df)} scenarios")
 
@@ -689,6 +693,7 @@ def process_hvac_scenarios(
             'outdoor_temp': float(row['Outdoor Temp']),
             'seer': int(row['SEER']),
             'hvac_age': int(row['HVAC Age']),
+            'Housing Type': str(row.get('Housing Type', 'Single-family')),
             'occupancy_context': calculator.normalize_occupancy_context(
                 row.get('Occupancy Context', row.get('Occupancy context', 'occupied_all_day'))
             ),
