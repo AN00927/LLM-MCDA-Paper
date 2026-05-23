@@ -73,7 +73,6 @@ class ApplianceGroundTruthCalculator:
     VF_ENERGY_COST = "linear"
 
     # Linear VF for environmental impact - physical units have linear marginal value
-    # Note: This represents a MODELING ASSUMPTION rather than an empirically validated preference.
     # For MAVT framework justification, see:
     # - Keeney, R. L., & Raiffa, H. (1976). Decisions with Multiple Objectives: Preferences 
     #   and Value Trade-offs. Wiley. (Foundation for Multi-Attribute Value Theory axioms)

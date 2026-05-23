@@ -277,7 +277,6 @@ def main():
         if label in results:
             print_merec_result(label, results[label])
 
-    # Zero-variance interpretation note
     print(f"\n{'='*65}")
     print("  INTERPRETATION NOTE — Zero-Variance Scenarios")
     print(f"{'='*65}")
