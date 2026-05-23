@@ -73,7 +73,7 @@ The house will be empty for 4 hours today. What AC temperature should I set?,"Oi
 Cold day today with 3 people home. What's a good heating temperature?,"Reading, PA",2000,Medium,3,$290 ,Single-family,20,18,13,16,13,standard,65,72,79
 Someone's home all day and it's hot outside. What should I set the AC to?,"Carlisle, PA",2000,Poor,3,$300 ,Single-family,102,28,11,25,11,occupied_all_day,78,80,82
 Cold day today with 4 people home. What's a good heating temperature?,"Chambersburg, PA",2200,Poor,4,$280 ,Single-family,5,38,11,35,9,standard,66,69,72
-The weather's quite cold â€” what heating temperature do you recommend for the thermostat?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,13,10,14,standard,68,70,72
+The weather's quite cold — what heating temperature do you recommend for the thermostat?,"Gettysburg, PA",1800,Medium,2,$220 ,Condo,60,12,13,10,14,standard,68,70,72
 We're all out for 8 hours in the heat. What AC setting makes sense?,"Pottstown, PA",2100,Medium,3,$270 ,Single-family,98,22,13,20,13,unoccupied_8hr,77,80,83
 I'm setting the thermostat for bedtime. What heating temperature is best for sleeping?,"Quakertown, PA",1900,Good,3,$240 ,Single-family,22,11,19,9,15,overnight_sleep,70,65,60
 I'm setting the thermostat for bedtime. What AC temperature is best for sleeping?,"Phoenixville, PA",1750,Medium,2,$250 ,Townhouse,92,14,13,12,14,overnight_sleep,78,81,84
