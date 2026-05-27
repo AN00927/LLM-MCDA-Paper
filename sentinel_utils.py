@@ -56,3 +56,102 @@ def coerce_score_series(series):
     """
     import pandas as pd
     return series.apply(coerce_score)
+
+
+def read_csv_clean(path, dtype: dict = None, time_columns: list = None, keep_str_cols: list = None):
+    """
+    Robust CSV reader that attempts common encodings and normalizes column names
+
+    - path: file path or pathlib.Path
+    - dtype: optional dict passed to pd.read_csv to enforce dtypes (e.g. {'Baseline Time': str})
+    - time_columns: list of column names that should be read/treated as string times
+    - keep_str_cols: list of columns to coerce to string and strip whitespace
+
+    Returns a pandas.DataFrame with trimmed column names and string columns stripped.
+    """
+    import pandas as pd
+    from pathlib import Path
+
+    encodings = [
+        "utf-8-sig",  # preferred for Excel compatibility
+        "utf-8",
+        "cp1252",
+    ]
+
+    p = Path(path)
+    last_err = None
+    for enc in encodings:
+        try:
+            if dtype is None:
+                df = pd.read_csv(p, encoding=enc)
+            else:
+                # enforce dtype for selected columns; others inferred
+                df = pd.read_csv(p, encoding=enc, dtype=dtype)
+            last_err = None
+            break
+        except UnicodeDecodeError as e:
+            last_err = e
+            continue
+        except Exception as e:
+            # If parse errors occur with a forced dtype, retry without dtype
+            last_err = e
+            try:
+                df = pd.read_csv(p, encoding=enc)
+                last_err = None
+                break
+            except Exception:
+                continue
+
+    if last_err is not None:
+        raise last_err
+
+    # Normalize column names and strip surrounding whitespace
+    df.columns = [str(c).strip() for c in df.columns]
+
+    # Coerce requested columns to string and strip whitespace
+    strcols = set((keep_str_cols or []) + (time_columns or []))
+    for col in strcols:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
+
+    # Also strip all object (string) columns by default to remove stray spaces/BOMs
+    for col in df.select_dtypes(include=[object]).columns:
+        # avoid re-casting columns explicitly requested to remain as something else
+        if col in strcols:
+            continue
+        df[col] = df[col].astype(str).str.strip()
+
+    return df
+
+
+def parse_utility_budget(budget_value) -> float:
+    """Parse utility budget values that may include currency symbols/commas.
+
+    Returns a non-negative float (0.0 on missing/unparseable).
+    """
+    import pandas as pd
+    import re
+
+    if budget_value is None:
+        return 0.0
+
+    # Handle already-numeric values
+    try:
+        if isinstance(budget_value, (int, float)):
+            return max(0.0, float(budget_value))
+    except Exception:
+        pass
+
+    if pd.isna(budget_value):
+        return 0.0
+
+    s = str(budget_value).strip()
+    # Remove currency symbols, spaces, and thousands separators
+    cleaned = re.sub(r"[^0-9.\-]", "", s)
+    if cleaned == "":
+        return 0.0
+    try:
+        return max(0.0, float(cleaned))
+    except ValueError:
+        return 0.0
+

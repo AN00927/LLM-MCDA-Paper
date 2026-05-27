@@ -247,8 +247,7 @@ Shower (duration):
 
 Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
-#Add some basic reference for good, bad, with "fuzzy" (not exact) numbers as reference to help guide the scoring
-#should not be precise but a general sense of what defines as good for HVAC, etc.
+
     user_prompt = build_user_prompt(scenario, alternative)
 
     messages = [

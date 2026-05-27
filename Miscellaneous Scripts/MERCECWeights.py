@@ -111,7 +111,12 @@ def find_file(filename: str) -> str:
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        df = pd.read_csv(find_file(fname))
+        # Use robust CSV loader to handle encodings and trimming
+        try:
+            from sentinel_utils import read_csv_clean
+            df = read_csv_clean(find_file(fname))
+        except Exception:
+            df = pd.read_csv(find_file(fname))
         missing = [c for c in SCORE_COLS.values() if c not in df.columns]
         if missing:
             raise ValueError(f"[{dtype}] Missing columns: {missing}")
