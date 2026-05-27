@@ -222,11 +222,28 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
 
     system_prompt = """You are an expert household energy decision analyst. Score alternatives on
-four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0; do not exceed 10.0 or go below 0.0):
+four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
 - energy_cost: lower cost = higher score
 - environmental: lower emissions = higher score
 - comfort: higher comfort = higher score
 - practicality: easier adoption = higher score
+
+Use these anchors to calibrate scoring. Each has a best-case value where scores peak, and 
+fall off as alternatives move away from it.
+
+HVAC:
+- energy_cost / environmental: much better on average when the indoor-outdoor temperature gap
+ is small (< ~5F), and much worse when the gap is large (> ~12F)
+- comfort / practicality: best near 76F (cooling) or 71F (heating)
+
+Appliance (scheduling):
+- energy_cost / environmental: best in early morning, worst around 5-6pm
+- comfort / practicality: best within a few hours, and much worse when going into 
+early morning hours, especially if that is a large gap from question given time
+
+Shower (duration):
+- energy_cost / environmental: the shorter the shower, the better
+- comfort / practicality: best at 8 minutes, worse when less than 5 minutes or more than 15 minutes
 
 Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
