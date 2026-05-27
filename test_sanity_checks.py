@@ -43,9 +43,11 @@ def run_sanity_checks():
     # Check 1: Can we load ground truth files?
     print("\n[CHECK 1] Loading ground truth files...")
     try:
-        gt_hvac = pd.read_csv(GROUND_TRUTH_DIR / "ground_truth_hvac.csv")
-        gt_appliance = pd.read_csv(GROUND_TRUTH_DIR / "ground_truth_appliance.csv")
-        gt_shower = pd.read_csv(GROUND_TRUTH_DIR / "ground_truth_shower.csv")
+        # Read ground truth CSVs robustly
+        from sentinel_utils import read_csv_clean
+        gt_hvac = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_hvac.csv")
+        gt_appliance = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_appliance.csv")
+        gt_shower = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_shower.csv")
         print(f"  [OK] HVAC: {len(gt_hvac)} scenarios")
         print(f"  [OK] Appliance: {len(gt_appliance)} scenarios")
         print(f"  [OK] Shower: {len(gt_shower)} scenarios")

@@ -13,6 +13,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS
+from sentinel_utils import read_csv_clean, parse_utility_budget
 
 class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
@@ -591,7 +592,10 @@ def process_appliance_scenarios(
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(csv_path)
+    # Read CSV robustly and keep time-like columns as strings to avoid numeric coercion
+    df = read_csv_clean(csv_path,
+                       time_columns=['Baseline Time'],
+                       keep_str_cols=['Baseline Time', 'Alternative 1', 'Alternative 2', 'Alternative 3'])
 
     print(f"Found {len(df)} appliance scenarios")
 
@@ -613,13 +617,15 @@ def process_appliance_scenarios(
         scenario = {
             'Description': row['Description'],
             'Location': row['Location'],
-            'Utility Budget': float(row['Utility Budget']),
+            # utility budget now stored as plain numeric (no $); parse safely
+            'Utility Budget': parse_utility_budget(row.get('Utility Budget', 0)),
             'Appliance': row['Appliance'],
             'Housing Type': row['Housing Type'],
             'Occupants': int(row['Occupants']),
             'kwh/cycle': float(row['kwh/cycle']),
             'Appliance Age/Type': row['Appliance Age/Type'],
-            'Baseline Time': row['Baseline Time'],
+            # Keep baseline time as string (do not coerce to numeric)
+            'Baseline Time': row.get('Baseline Time', ''),
             'Alternative 1': row['Alternative 1'],
             'Alternative 2': row['Alternative 2'],
             'Alternative 3': row['Alternative 3'],

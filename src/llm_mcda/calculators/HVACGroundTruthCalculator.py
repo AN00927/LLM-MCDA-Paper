@@ -14,6 +14,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS
+from sentinel_utils import read_csv_clean, parse_utility_budget
 
 
 class HVACGroundTruthCalculator:
@@ -660,10 +661,8 @@ def process_hvac_scenarios(
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    try:
-        df = pd.read_csv(csv_path, encoding='utf-8-sig')
-    except UnicodeDecodeError:
-        df = pd.read_csv(csv_path, encoding='cp1252')
+    # Robust read: prefer utf-8-sig (Excel-friendly) then fallback encodings
+    df = read_csv_clean(csv_path)
 
     print(f"Found {len(df)} scenarios")
 
@@ -689,7 +688,8 @@ def process_hvac_scenarios(
             'square_footage': int(row['Square Footage']),
             'r_value': int(row['R-Value']),
             'household_size': int(row['Household Size']),
-            'utility_budget': calculator.parse_utility_budget(row.get('Utility Budget', 0)),
+            # Use centralized parser (Utility Budget now plain numeric, parse defensively)
+            'utility_budget': parse_utility_budget(row.get('Utility Budget', 0)),
             'outdoor_temp': float(row['Outdoor Temp']),
             'seer': int(row['SEER']),
             'hvac_age': int(row['HVAC Age']),
