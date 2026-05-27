@@ -130,7 +130,14 @@ def find_file(filename: str) -> str:
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        df = pd.read_csv(find_file(fname))
+        # Use robust CSV reader to handle encodings and trim whitespace
+        if BASE_DIR not in sys.path:
+            sys.path.insert(0, os.path.dirname(BASE_DIR))
+        try:
+            from sentinel_utils import read_csv_clean
+            df = read_csv_clean(find_file(fname))
+        except Exception:
+            df = pd.read_csv(find_file(fname))
         missing = [c for c in list(SCORE_COLS.values()) + [RANK_COL]
                    if c not in df.columns]
         if missing:

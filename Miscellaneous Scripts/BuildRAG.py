@@ -51,7 +51,11 @@ def compute_source_csv_hash(csv_dir: Path = SCENARIO_DIR) -> str:
 def load_hvac_data(csv_dir: str) -> pd.DataFrame:
     """Load HVAC data (single file contains everything)."""
     gt_path = Path(csv_dir) / RAG_FILES['HVAC']['ground_truth']
-    df = pd.read_csv(gt_path)
+    # Robust CSV read
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    from sentinel_utils import read_csv_clean
+    df = read_csv_clean(gt_path)
     df['Question'] = df['question']
     df['Location'] = df['location']
     df['Square Footage'] = df['square_footage']
@@ -67,7 +71,10 @@ def load_hvac_data(csv_dir: str) -> pd.DataFrame:
 def load_appliance_data(csv_dir: str) -> pd.DataFrame:
     """Load Appliance data (GT file contains everything)."""
     gt_path = Path(csv_dir) / RAG_FILES['Appliance']['ground_truth']
-    df = pd.read_csv(gt_path)
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    from sentinel_utils import read_csv_clean
+    df = read_csv_clean(gt_path)
 
     #rename columns to match expected format
     df['Question'] = df['description']
@@ -81,7 +88,10 @@ def load_appliance_data(csv_dir: str) -> pd.DataFrame:
 def load_shower_data(csv_dir: str) -> pd.DataFrame:
     """Load Shower data (scenario file contains everything)."""
     scenarios_path = Path(csv_dir) / RAG_FILES['Shower']['ground_truth']
-    df = pd.read_csv(scenarios_path)
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    from sentinel_utils import read_csv_clean
+    df = read_csv_clean(scenarios_path)
 
     #rename columns to match expected format
     df['Question'] = df['description']

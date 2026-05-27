@@ -513,12 +513,13 @@ def process_shower_scenarios(
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.csv")):
     """Process shower scenarios."""
     import pandas as pd
+    from sentinel_utils import read_csv_clean, parse_utility_budget
 
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    df = pd.read_csv(csv_path)
+    # Read CSV robustly; no time columns here but ensure string trimming
+    df = read_csv_clean(csv_path)
     print(f"Found {len(df)} shower scenarios")
 
     calculator = ShowerGroundTruthCalculator()
@@ -534,7 +535,8 @@ def process_shower_scenarios(
             'Occupants': int(row['Occupants']),
             'Tank Size': float(row['Tank Size']),
             'GPM': float(row['GPM']),
-            'Utility Budget': float(row['Utility Budget']),
+            # utility budget now parsed safely (no $ expected)
+            'Utility Budget': parse_utility_budget(row.get('Utility Budget', 0)),
             'Housing Type': row['Housing Type'],
             'Outdoor Temp': float(row['Outdoor Temp']),
             'Water Heater Temp': float(row['Water Heater Temp']),
