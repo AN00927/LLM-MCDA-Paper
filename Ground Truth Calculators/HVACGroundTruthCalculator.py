@@ -14,7 +14,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS
-from sentinel_utils import read_csv_clean, parse_utility_budget
+from sentinel_utils import read_table_clean, parse_utility_budget
 
 
 class HVACGroundTruthCalculator:
@@ -661,7 +661,7 @@ def process_hvac_scenarios(
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df = read_csv_clean(csv_path)
+    df = read_table_clean(csv_path)
 
     print(f"Found {len(df)} scenarios")
 

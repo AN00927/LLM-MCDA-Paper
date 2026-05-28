@@ -17,9 +17,15 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
-from sentinel_utils import has_sentinel_scores, read_csv_clean
+from sentinel_utils import (
+    _atomic_write_json,
+    _atomic_write_xlsx,
+    _is_complete_run_file,
+    has_sentinel_scores,
+    read_table_clean,
+)
 
-TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -73,8 +79,8 @@ MAX_RETRIES = 5
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
-OUTPUT_CSV = OUTPUT_DIR / "RAGResults.xlsx"
-OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "RAGDiagnostics.json"
+OUTPUT_CSV = OUTPUT_DIR / "rag_results.xlsx"
+OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "rag_results_diagnostics.json"
 
 RAG_FAILURE_COUNTER_KEYS = [
     "failed_malformed_json",
@@ -602,13 +608,9 @@ def run_scenario(scenario: Dict) -> Dict:
 
         if scores.get('_failed'):
             logger.info(f" FAILED -- skipping alternative")
-            failure_types = diagnostics.get('failure_types')
-            if failure_types:
-                total_diagnostics['failed_calls'] += 1
-                _increment_failure_counters(total_diagnostics, failure_types)
-            elif failure_types is None:
-                total_diagnostics['failed_calls'] += 1
-                _increment_failure_counters(total_diagnostics, ['failed_unknown'])
+            failure_types = diagnostics.get('failure_types') or ['failed_unknown']
+            total_diagnostics['failed_calls'] += 1
+            _increment_failure_counters(total_diagnostics, failure_types)
             alternatives_scores.append({
                 'alternative': alternative,
                 'scores': {'energy_cost': None, 'environmental': None, 'comfort': None, 'practicality': None},
@@ -630,13 +632,9 @@ def run_scenario(scenario: Dict) -> Dict:
         if diagnostics.get('success', False):
             total_diagnostics['successful_calls'] += 1
         else:
-            failure_types = diagnostics.get('failure_types')
-            if failure_types:
-                total_diagnostics['failed_calls'] += 1
-                _increment_failure_counters(total_diagnostics, failure_types)
-            elif failure_types is None:
-                total_diagnostics['failed_calls'] += 1
-                _increment_failure_counters(total_diagnostics, ['failed_unknown'])
+            failure_types = diagnostics.get('failure_types') or ['failed_unknown']
+            total_diagnostics['failed_calls'] += 1
+            _increment_failure_counters(total_diagnostics, failure_types)
 
     total_diagnostics['scenario_failed'] = total_diagnostics['failed_calls'] > 0
     ranking_result = apply_mavt_ranking(alternatives_scores)
@@ -655,26 +653,38 @@ def run_scenario(scenario: Dict) -> Dict:
     }
 
 
-def run_test_set(test_csv_path: str, output_csv_path: str,
+RAG_RESULT_FIELDNAMES = [
+    'scenario_id', 'question', 'location', 'decision_type',
+    'outdoor_temp', 'appliance_age', 'flow_rate', 'alternative',
+    'energy_cost', 'environmental', 'comfort', 'practicality',
+    'rank', 'weighted_score',
+]
+
+
+def _ensure_rag_initialized() -> None:
+    """Init RAG resources once for the multi-run pass; reload if a prior init was lost."""
+    if chroma_collection is None or embedding_model is None:
+        init_rag_resources()
+
+
+def run_test_set(test_path: str, output_path: str,
                  output_diagnostics_path: str) -> Dict:
-    """Run test set."""
-    import csv as csv_module
-    test_csv_path = Path(test_csv_path)
-    output_csv_path = Path(output_csv_path)
+    """Run a single benchmark pass. Caller must have initialized RAG resources."""
+    test_csv_path = Path(test_path)
+    output_csv_path = Path(output_path)
     output_diagnostics_path = Path(output_diagnostics_path)
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
     output_diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
 
-    init_rag_resources()
     if chroma_collection is None or embedding_model is None:
-        raise RuntimeError("RAG database not available; run BuildRAG.py first.")
+        raise RuntimeError("RAG database not initialized; init_rag_resources() must be called before run_test_set.")
 
     logger.info(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
 
     logger.info(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
-    df = read_csv_clean(
+    df = read_table_clean(
         test_csv_path,
         keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
     )
@@ -827,15 +837,10 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                 'weighted_score': weighted_score
             })
 
-    pd.DataFrame(rows).to_excel(output_csv_path, index=False, engine='openpyxl')
+    _atomic_write_xlsx(pd.DataFrame(rows, columns=RAG_RESULT_FIELDNAMES), output_csv_path)
     logger.info(f"OK Results saved to: {output_csv_path}")
 
-    # Save the diagnostics blob
-    logger.info(f"Saving diagnostics to: {output_diagnostics_path}")
-
-    with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
-        json.dump(cumulative_diagnostics, f, indent=2)
-
+    _atomic_write_json(cumulative_diagnostics, output_diagnostics_path)
     logger.info(f"OK Diagnostics saved to: {output_diagnostics_path}")
 
     logger.info(f"RAG-ENHANCED TEST COMPLETE")
@@ -852,29 +857,33 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                             base_diagnostics_path: str) -> None:
-    """Run multi and aggregate.
-if a _run_NN.csv already exists and is non-empty it is
-    included in aggregation without re-running the benchmark.
+    """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
+
+    Resume-aware: a per-run xlsx that already exists, has size > 0, has no
+    leftover .tmp sibling, and reads as a non-empty DataFrame is treated as
+    a completed run and skipped. Any other state triggers a re-run.
+
+    RAG resources (Chroma collection + embedding model) are initialized once
+    up-front. If they are still healthy across runs, no re-init happens. If a
+    later run finds them in a missing state (e.g. a transient error nuked the
+    globals), `_ensure_rag_initialized` lazily reloads them before launching.
     """
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
     run_paths = []
     skipped_runs = []
 
+    _ensure_rag_initialized()
+
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
         diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
-        # skip runs that already have output
-        if run_path.exists():
-            try:
-                existing = read_csv_clean(run_path)
-                if len(existing) > 0:
-                    logger.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
-                    run_paths.append(run_path)
-                    skipped_runs.append(run_idx)
-                    continue
-            except Exception:
-                pass  # Unreadable file 
+        if _is_complete_run_file(run_path):
+            logger.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+            run_paths.append(run_path)
+            skipped_runs.append(run_idx)
+            continue
+        _ensure_rag_initialized()
         logger.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
@@ -900,7 +909,7 @@ if a _run_NN.csv already exists and is non-empty it is
     run_dfs = []
     for p in run_paths:
         try:
-            run_dfs.append(read_csv_clean(p))
+            run_dfs.append(read_table_clean(p))
             valid_run_paths.append(p)
         except Exception as e:
             logger.info(f"WARNING: Could not read {p.name}, skipping from aggregation: {e}")
@@ -982,27 +991,26 @@ if a _run_NN.csv already exists and is non-empty it is
         "rank", "weighted_score",
         "n_runs", "n_successful_runs", "n_failed_runs",
     ]
-    avg = avg.reindex(columns=col_order)
-    avg.to_excel(base_output_csv, index=False, engine="openpyxl")
+    _atomic_write_xlsx(avg.reindex(columns=col_order), base_output_csv)
     logger.info(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
-    stats_df.to_excel(str(stats_path), index=False, engine="openpyxl")
+    _atomic_write_xlsx(stats_df, stats_path)
     logger.info(f"Score statistics saved to {stats_path}")
 
 
-if __name__ == "__main__":
-    import sys
-
-    test_csv = TEST_SCENARIOS_CSV
-
-    if not test_csv.exists():
-        logger.info(f"Test scenarios file not found: {test_csv}")
-        logger.info("Please upload your test scenarios CSV first.")
-        sys.exit(1)
+def main():
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not found in environment variables!")
+    if not TEST_SCENARIOS.exists():
+        raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS}")
 
     run_multi_and_aggregate(
-        test_csv_path=str(test_csv),
+        test_csv_path=str(TEST_SCENARIOS),
         base_output_csv=str(OUTPUT_CSV),
         base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
     )
+
+
+if __name__ == "__main__":
+    main()

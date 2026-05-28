@@ -49,8 +49,8 @@ def load_hvac_data(csv_dir: str) -> pd.DataFrame:
     gt_path = Path(csv_dir) / RAG_FILES['HVAC']['ground_truth']
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    from sentinel_utils import read_csv_clean
-    df = read_csv_clean(gt_path)
+    from sentinel_utils import read_table_clean
+    df = read_table_clean(gt_path)
     df['Question'] = df['question']
     df['Location'] = df['location']
     df['Square Footage'] = df['square_footage']
@@ -68,8 +68,8 @@ def load_appliance_data(csv_dir: str) -> pd.DataFrame:
     gt_path = Path(csv_dir) / RAG_FILES['Appliance']['ground_truth']
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    from sentinel_utils import read_csv_clean
-    df = read_csv_clean(gt_path)
+    from sentinel_utils import read_table_clean
+    df = read_table_clean(gt_path)
 
     #rename columns to match expected format
     df['Question'] = df['description']
@@ -85,8 +85,8 @@ def load_shower_data(csv_dir: str) -> pd.DataFrame:
     scenarios_path = Path(csv_dir) / RAG_FILES['Shower']['ground_truth']
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    from sentinel_utils import read_csv_clean
-    df = read_csv_clean(scenarios_path)
+    from sentinel_utils import read_table_clean
+    df = read_table_clean(scenarios_path)
 
     #rename columns to match expected format
     df['Question'] = df['description']

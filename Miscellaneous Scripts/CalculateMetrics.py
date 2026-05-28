@@ -23,7 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS
-from sentinel_utils import read_csv_clean
+from sentinel_utils import _atomic_write_xlsx, read_table_clean
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -36,7 +36,7 @@ CONFIG = {
     },
     "architectures": {
         "Pure": str(OUTPUT_DIR / "pure_prompting_results.xlsx"),
-        "RAG": str(OUTPUT_DIR / "RAGResults.xlsx"),
+        "RAG": str(OUTPUT_DIR / "rag_results.xlsx"),
         "Hybrid": str(OUTPUT_DIR / "hybrid_results.xlsx"),
     },
     "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.xlsx"),
@@ -179,7 +179,7 @@ def load_ground_truth(config):
     gt_by_type = {}
 
     for dtype, filepath in config["ground_truth"].items():
-        df = read_csv_clean(filepath)
+        df = read_table_clean(filepath)
         df["decision_type"] = dtype
 
         if "description" in df.columns and "question" not in df.columns:
@@ -209,7 +209,7 @@ def load_architecture(source, arch_name):
     if isinstance(source, pd.DataFrame):
         df = source.copy()
     else:
-        df = read_csv_clean(source)
+        df = read_table_clean(source)
     df["architecture"] = arch_name
     df["question"] = df["question"].str.strip()
     df["location"] = df["location"].str.strip()
@@ -246,7 +246,7 @@ def aggregate_run_files(run_paths):
     """
     run_dfs = []
     for p in run_paths:
-        run_dfs.append(read_csv_clean(p))
+        run_dfs.append(read_table_clean(p))
     n_readable = len(run_dfs)
     combined = pd.concat(run_dfs, ignore_index=True)
 
@@ -691,34 +691,11 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     base_path = Path(arch_path_str)
     result = {"arch_name": arch_name, "diag_files_loaded": 0}
 
-    # Collect candidate paths: per-run first, then the single-run fallback
-    _stem_no_results = (
-        base_path.stem[:-len("_results")]
-        if base_path.stem.endswith("_results")
-        else base_path.stem
+    # All three architectures now write diagnostics as
+    # `{output_stem}_diagnostics_run_NN.json` next to the results xlsx.
+    all_diag_paths = sorted(
+        base_path.parent.glob(f"{base_path.stem}_diagnostics_run_*.json")
     )
-    diag_candidates = sorted(
-        base_path.parent.glob(f"{_stem_no_results}_diagnostics_run_*.json")
-    )
-    # Also try the standard per-architecture naming
-    if not diag_candidates:
-        diag_candidates = sorted(
-            base_path.parent.glob(f"*diagnostics_run_*.json")
-        )
-    # Single-run fallback
-    single_diag_names = [
-        base_path.with_name(f"{base_path.stem}_diagnostics.json"),
-        base_path.with_name("RAGDiagnostics.json"),
-        base_path.with_name("hybrid_diagnostics.json"),
-        base_path.with_name("pure_prompting_results_diagnostics.json"),
-    ]
-
-    all_diag_paths = list(diag_candidates)
-    if not all_diag_paths:
-        for p in single_diag_names:
-            if p.exists():
-                all_diag_paths.append(p)
-                break
 
     if not all_diag_paths:
         print(f"    [{arch_name}] No diagnostics JSON found next to {base_path.name}")
@@ -1010,9 +987,8 @@ def evaluate_all(config):
         for a in archs:
             row += _fmt(_get(a, dtype, "top1_accuracy"))
         print(row)
-    metrics_df = pd.DataFrame(all_metrics)
-    Path(config["output_csv"]).parent.mkdir(parents=True, exist_ok=True)
-    metrics_df.to_excel(config["output_csv"], index=False, engine="openpyxl")
+    metrics_df = pd.DataFrame(all_metrics, columns=["architecture", "decision_type", "metric", "value"])
+    _atomic_write_xlsx(metrics_df, config["output_csv"])
     print(f"\n\nMetrics saved to: {config['output_csv']}")
     print(f"Total metric rows: {len(metrics_df)}")
 

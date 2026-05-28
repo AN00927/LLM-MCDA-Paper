@@ -42,10 +42,10 @@ def run_sanity_checks():
     # Check 1: Can we load ground truth files?
     print("\n[CHECK 1] Loading ground truth files...")
     try:
-        from sentinel_utils import read_csv_clean
-        gt_hvac = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx")
-        gt_appliance = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx")
-        gt_shower = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")
+        from sentinel_utils import read_table_clean
+        gt_hvac = read_table_clean(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx")
+        gt_appliance = read_table_clean(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx")
+        gt_shower = read_table_clean(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")
         print(f"  [OK] HVAC: {len(gt_hvac)} scenarios")
         print(f"  [OK] Appliance: {len(gt_appliance)} scenarios")
         print(f"  [OK] Shower: {len(gt_shower)} scenarios")
@@ -125,7 +125,7 @@ def run_sanity_checks():
     print("\n[CHECK 6] Testing architecture result loading...")
     arch_configs = {
         "Pure": OUTPUT_DIR / "pure_prompting_results.xlsx",
-        "RAG": OUTPUT_DIR / "RAGResults.xlsx",
+        "RAG": OUTPUT_DIR / "rag_results.xlsx",
         "Hybrid": OUTPUT_DIR / "hybrid_results.xlsx",
     }
     
