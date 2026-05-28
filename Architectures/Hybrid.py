@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
-from sentinel_utils import has_sentinel_scores
+from sentinel_utils import has_sentinel_scores, read_csv_clean
 
 TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -964,7 +964,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         # --- Resume support: skip runs that already have output ---
         if run_path.exists():
             try:
-                existing = pd.read_csv(run_path, encoding='utf-8-sig')
+                existing = read_csv_clean(run_path)
                 if len(existing) > 0:
                     print(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
                     run_paths.append(run_path)
@@ -997,7 +997,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     run_dfs = []
     for p in run_paths:
         try:
-            run_dfs.append(pd.read_csv(p, encoding='utf-8-sig'))
+            run_dfs.append(read_csv_clean(p))
             valid_run_paths.append(p)
         except Exception as e:
             print(f"WARNING: Could not read {p.name}, skipping from aggregation: {e}")

@@ -185,7 +185,7 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     # 6. Export
     output_path = OUTPUT_DIR / f"sensitivity_analysis_{MODEL_KEY}.csv"
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    results_df.to_csv(output_path, index=False)
+    results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
     print(f"\n  Results saved to: {output_path}")
 
     return results_df
