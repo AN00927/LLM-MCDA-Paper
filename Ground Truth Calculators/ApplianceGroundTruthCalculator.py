@@ -585,14 +585,13 @@ class ApplianceGroundTruthCalculator:
 
 
 def process_appliance_scenarios(
-    csv_filename: str = str(SCENARIO_DIR / "ApplianceScenarios.csv"),
-    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_appliance.csv")):
+    csv_filename: str = str(SCENARIO_DIR / "ApplianceScenarios.xlsx"),
+    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx")):
     """Process appliance scenarios."""
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Read CSV robustly and keep time-like columns as strings to avoid numeric coercion
     df = read_csv_clean(csv_path,
                        time_columns=['Baseline Time'],
                        keep_str_cols=['Baseline Time', 'Alternative 1', 'Alternative 2', 'Alternative 3'])
@@ -616,7 +615,7 @@ def process_appliance_scenarios(
             f"row {row_index + 2} missing {missing_cols}" for row_index, missing_cols in invalid_rows[:5]
         )
         raise ValueError(
-            f"ApplianceScenarios.csv contains {len(invalid_rows)} malformed row(s). "
+            f"ApplianceScenarios.xlsx contains {len(invalid_rows)} malformed row(s). "
             f"Fix or remove them before processing. Examples: {preview}"
         )
 
@@ -640,14 +639,12 @@ def process_appliance_scenarios(
         scenario = {
             'Description': row['Description'],
             'Location': row['Location'],
-            # utility budget now stored as plain numeric (no $); parse safely
             'Utility Budget': parse_utility_budget(row.get('Utility Budget', 0)),
             'Appliance': row['Appliance'],
             'Housing Type': row['Housing Type'],
             'Occupants': int(row['Occupants']),
             'kwh/cycle': float(row['kwh/cycle']),
             'Appliance Age/Type': row['Appliance Age/Type'],
-            # Keep baseline time as string (do not coerce to numeric)
             'Baseline Time': row.get('Baseline Time', ''),
             'Alternative 1': row['Alternative 1'],
             'Alternative 2': row['Alternative 2'],
@@ -697,7 +694,7 @@ def process_appliance_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+    results_df.to_excel(output_path, index=False, engine="openpyxl")
 
     print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")

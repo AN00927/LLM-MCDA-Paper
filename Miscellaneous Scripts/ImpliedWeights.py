@@ -47,8 +47,8 @@ Methodological grounding:
     - Dyer, J.S., & Sarin, R.K. (1979). Measurable multiattribute value
       functions. Operations Research, 27(4), 810–822.
 
-Inputs:  ground_truth_hvac.csv, ground_truth_appliance.csv, ground_truth_shower.csv
-Outputs: implied_weights_summary.csv
+Inputs:  ground_truth_hvac.xlsx, ground_truth_appliance.xlsx, ground_truth_shower.xlsx
+Outputs: implied_weights_summary.xlsx
 """
 
 import os
@@ -71,9 +71,9 @@ except (AttributeError, OSError):
 # ---------------------------------------------------------------------------
 
 GT_FILES = {
-    "HVAC":      "ground_truth_hvac.csv",
-    "Appliance": "ground_truth_appliance.csv",
-    "Shower":    "ground_truth_shower.csv",
+    "HVAC":      "ground_truth_hvac.xlsx",
+    "Appliance": "ground_truth_appliance.xlsx",
+    "Shower":    "ground_truth_shower.xlsx",
 }
 
 SCORE_COLS = {
@@ -93,7 +93,7 @@ SUBJECTIVE_WEIGHTS = {
     "practicality":  0.15,
 }
 
-OUTPUT_CSV  = "implied_weights_summary.csv"
+OUTPUT_CSV  = "implied_weights_summary.xlsx"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Prefer repository-level Ground Truth and deterministic script-relative locations
@@ -130,7 +130,6 @@ def find_file(filename: str) -> str:
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        # Use robust CSV reader to handle encodings and trim whitespace
         if BASE_DIR not in sys.path:
             sys.path.insert(0, os.path.dirname(BASE_DIR))
         try:
@@ -404,7 +403,7 @@ def main():
                 "r2_pairwise":       round(res["r2"], 4),
             })
 
-    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False, encoding='utf-8-sig')
+    pd.DataFrame(rows).to_excel(OUTPUT_CSV, index=False, engine="openpyxl")
     print(f"\n  Saved: {OUTPUT_CSV}")
     print("\nDone.\n")
 
