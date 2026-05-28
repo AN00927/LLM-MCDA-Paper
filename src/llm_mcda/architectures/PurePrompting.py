@@ -42,11 +42,19 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
-from sentinel_utils import has_sentinel_scores, read_csv_clean
+from sentinel_utils import (
+    _atomic_write_json,
+    _atomic_write_xlsx,
+    _is_complete_run_file,
+    has_sentinel_scores,
+    read_table_clean,
+)
 
-TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_XLSX = OUTPUT_DIR / "pure_prompting_results.xlsx"
+OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "pure_prompting_results_diagnostics.json"
 
 # Pull in the env vars
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
@@ -417,13 +425,9 @@ def run_scenario(scenario: Dict) -> Dict:
         if diagnostics["success"]:
             total_diagnostics["successful_calls"] += 1
         else:
-            failure_types = diagnostics.get("failure_types")
-            if failure_types:
-                total_diagnostics["failed_calls"] += 1
-                _increment_failure_counters(total_diagnostics, failure_types)
-            elif failure_types is None:
-                total_diagnostics["failed_calls"] += 1
-                _increment_failure_counters(total_diagnostics, ["failed_unknown"])
+            failure_types = diagnostics.get("failure_types") or ["failed_unknown"]
+            total_diagnostics["failed_calls"] += 1
+            _increment_failure_counters(total_diagnostics, failure_types)
 
     total_diagnostics["scenario_failed"] = total_diagnostics["failed_calls"] > 0
 
@@ -444,14 +448,24 @@ def run_scenario(scenario: Dict) -> Dict:
     }
 
 
-def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
-    """Run test set."""
-    test_csv_path = Path(test_csv_path)
-    output_csv_path = Path(output_csv_path)
+PURE_RESULT_FIELDNAMES = [
+    "scenario_id", "decision_type", "question", "location", "outdoor_temp",
+    "appliance_age", "flow_rate", "alternative",
+    "energy_cost", "environmental", "comfort", "practicality",
+    "rank", "weighted_score",
+]
+
+
+def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str) -> Dict:
+    """Run a single benchmark pass over the test scenarios and write its xlsx + diagnostics."""
+    test_csv_path = Path(test_path)
+    output_csv_path = Path(output_path)
+    output_diagnostics_path = Path(output_diagnostics_path)
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    output_diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
 
     scenarios = []
-    df = read_csv_clean(
+    df = read_table_clean(
         test_csv_path,
         keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
     )
@@ -597,44 +611,39 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
                 "weighted_score": weighted_score
             })
 
-    pd.DataFrame(rows).to_excel(output_csv_path, index=False, engine="openpyxl")
+    _atomic_write_xlsx(pd.DataFrame(rows, columns=PURE_RESULT_FIELDNAMES), output_csv_path)
     logging.info(f"Results saved to {output_csv_path}")
 
-    diagnostics_path = output_csv_path.with_name(f"{output_csv_path.stem}_diagnostics.json")
-    with open(diagnostics_path, 'w') as f:
-        json.dump(cumulative_diagnostics, f, indent=2)
-
-    logging.info(f"Diagnostics saved to {diagnostics_path}")
+    _atomic_write_json(cumulative_diagnostics, output_diagnostics_path)
+    logging.info(f"Diagnostics saved to {output_diagnostics_path}")
 
     return cumulative_diagnostics
 
 
-def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
-    """Run multi and aggregate.
+def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
+                            base_diagnostics_path: str) -> None:
+    """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
 
-    if a _run_NN.csv already exists and is non-empty it is
-    included in aggregation without re-running the benchmark.
+    Resume-aware: a per-run xlsx that already exists, has size > 0, has no
+    leftover .tmp sibling, and is a readable non-empty DataFrame is treated as
+    a completed run and skipped. Any other state triggers a re-run.
     """
     base = Path(base_output_csv)
+    base_diag = Path(base_diagnostics_path)
     run_paths = []
     skipped_runs = []
 
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
-        # skip runs that already have output
-        if run_path.exists():
-            try:
-                existing = read_csv_clean(run_path)
-                if len(existing) > 0:
-                    logging.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
-                    run_paths.append(run_path)
-                    skipped_runs.append(run_idx)
-                    continue
-            except Exception:
-                pass  # Unreadable file
+        diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
+        if _is_complete_run_file(run_path):
+            logging.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+            run_paths.append(run_path)
+            skipped_runs.append(run_idx)
+            continue
         logging.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
-            run_test_set(str(test_csv_path), str(run_path))
+            run_test_set(str(test_csv_path), str(run_path), str(diag_path))
             run_paths.append(run_path)
         except Exception as e:
             logging.error(f"Run {run_idx} failed and will be excluded from aggregation: {e}")
@@ -657,7 +666,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
     run_dfs = []
     for p in run_paths:
         try:
-            run_dfs.append(read_csv_clean(p))
+            run_dfs.append(read_table_clean(p))
             valid_run_paths.append(p)
         except Exception as e:
             logging.warning(f"Could not read {p.name}, skipping from aggregation: {e}")
@@ -742,12 +751,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
         "rank", "weighted_score",
         "n_runs", "n_successful_runs", "n_failed_runs",
     ]
-    avg = avg.reindex(columns=col_order)
-    avg.to_excel(base_output_csv, index=False, engine="openpyxl")
+    _atomic_write_xlsx(avg.reindex(columns=col_order), base_output_csv)
     logging.info(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
-    stats_df.to_excel(str(stats_path), index=False, engine="openpyxl")
+    _atomic_write_xlsx(stats_df, stats_path)
     logging.info(f"Score statistics saved to {stats_path}")
 
 
@@ -757,15 +765,12 @@ def main():
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return
 
-    test_csv = TEST_SCENARIOS_CSV
-    output_csv = OUTPUT_DIR / "pure_prompting_results.xlsx"
-
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
     logging.info(f"Temperature: {API_CONFIG['temperature']}")
     try:
-        df = read_csv_clean(
-            test_csv,
+        df = read_table_clean(
+            TEST_SCENARIOS,
             keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
         )
         required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
@@ -782,13 +787,13 @@ def main():
         logging.info(f"  Decision types found: {decision_types}")
 
     except FileNotFoundError:
-        logging.error(f"Test file not found: {test_csv}")
+        logging.error(f"Test file not found: {TEST_SCENARIOS}")
         return
     except Exception as e:
         logging.error(f" Input validation error: {e}")
         return
 
-    run_multi_and_aggregate(str(test_csv), str(output_csv))
+    run_multi_and_aggregate(str(TEST_SCENARIOS), str(OUTPUT_XLSX), str(OUTPUT_DIAGNOSTICS))
     logging.info("PURE PROMPTING MULTI-RUN COMPLETE")
 
 

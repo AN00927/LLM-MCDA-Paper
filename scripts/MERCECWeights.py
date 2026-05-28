@@ -50,7 +50,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import read_csv_clean
+from sentinel_utils import read_table_clean
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -120,7 +120,7 @@ def find_file(filename: str) -> str:
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        df = read_csv_clean(find_file(fname))
+        df = read_table_clean(find_file(fname))
         missing = [c for c in SCORE_COLS.values() if c not in df.columns]
         if missing:
             raise ValueError(f"[{dtype}] Missing columns: {missing}")

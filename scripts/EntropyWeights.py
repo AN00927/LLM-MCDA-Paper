@@ -17,7 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import read_csv_clean
+from sentinel_utils import read_table_clean
 
 
 SUBJECTIVE_WEIGHTS = {
@@ -87,7 +87,7 @@ def load_ground_truth_data(project_root: Path) -> pd.DataFrame:
     data_frames: list[pd.DataFrame] = []
     for decision_type, relative_candidates in file_specs:
         csv_path = resolve_existing_path(project_root, relative_candidates)
-        df = read_csv_clean(csv_path)
+        df = read_table_clean(csv_path)
         df = df.copy()
         df["decision_type"] = decision_type
         df["source_file"] = csv_path.name

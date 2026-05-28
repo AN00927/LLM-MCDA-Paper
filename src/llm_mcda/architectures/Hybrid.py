@@ -14,9 +14,15 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
-from sentinel_utils import has_sentinel_scores, read_csv_clean
+from sentinel_utils import (
+    _atomic_write_json,
+    _atomic_write_xlsx,
+    _is_complete_run_file,
+    has_sentinel_scores,
+    read_table_clean,
+)
 
-TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"
@@ -68,7 +74,18 @@ MAX_RETRIES = 5
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.xlsx"
-OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_diagnostics.json"
+OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_results_diagnostics.json"
+
+HYBRID_RESULT_FIELDNAMES = [
+    'scenario_id', 'question', 'location',
+    'input_decision_type', 'extracted_decision_type', 'decision_type',
+    'outdoor_temp', 'appliance_age', 'flow_rate',
+    'calculator', 'extraction_failed', 'gt_calculation_failed',
+    'alternative', 'extracted_alternative',
+    'energy_cost', 'environmental', 'comfort', 'practicality',
+    'rank', 'weighted_score',
+]
+
 
 HYBRID_FAILURE_COUNTER_KEYS = [
     "failed_extraction_non_json_wrapper",
@@ -142,7 +159,7 @@ For Appliance decisions:
     "Location": "<city, state>",
     "Appliance": "Dishwasher|Washer|Dryer",
     "kwh/cycle": <number>,
-    "Appliance Age/Type": "<age> OR <type>",
+    "Appliance Age": <number>,
     "Baseline Time": "<time like 7pm, 8am, 9am>",
     "Occupants": <number>,
     "Housing Type": "<Apartment/Single-family/Townhouse>",
@@ -281,11 +298,24 @@ def _normalize_scenario_fields(scenario: Dict) -> Dict:
 
 
 def format_scenario_for_extraction(scenario: Dict) -> str:
-    """Format scenario for extraction."""
+    """Format scenario for extraction.
+
+    Skips the Question (rendered separately) and any cells that are blank,
+    NaN, or the literal string 'nan' so noise from columns irrelevant to the
+    current decision type doesn't leak into the LLM context.
+    """
     lines = []
     for key, value in scenario.items():
-        if key not in ['Question']:  # Don't repeat question in details
-            lines.append(f"- {key}: {value}")
+        if key == 'Question':
+            continue
+        if value is None:
+            continue
+        if isinstance(value, float) and pd.isna(value):
+            continue
+        text = str(value).strip()
+        if text == '' or text.lower() == 'nan':
+            continue
+        lines.append(f"- {key}: {text}")
     return '\n'.join(lines)
 
 
@@ -380,13 +410,16 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
 
             if decision_type == 'HVAC':
                 required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
-                                   'seer', 'hvac_age', 'outdoor_temp', 'alternatives']
+                                   'household_size', 'seer', 'hvac_age', 'outdoor_temp',
+                                   'Housing Type', 'utility_budget', 'alternatives']
             elif decision_type == 'Appliance':
-                required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age/Type',
-                                   'Baseline Time', 'alternatives']
+                required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age',
+                                   'Baseline Time', 'Occupants', 'Housing Type',
+                                   'utility_budget', 'alternatives']
             elif decision_type == 'Shower':
-                required_params = ['Location', 'GPM', 'Tank Size',
-                                   'Water Heater Temp', 'outdoor_temp', 'alternatives']
+                required_params = ['Location', 'GPM', 'Tank Size', 'Water Heater Temp',
+                                   'outdoor_temp', 'Occupants', 'Housing Type',
+                                   'utility_budget', 'alternatives']
             if all(k in params for k in required_params):
                 extraction_diagnostics['success'] = True
                 extraction_diagnostics['failure_types'] = []
@@ -726,7 +759,7 @@ def run_test_set(test_path: str, output_path: str,
     print(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
-    df = read_csv_clean(
+    df = read_table_clean(
         test_csv_path,
         keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
     )
@@ -824,7 +857,7 @@ def run_test_set(test_path: str, output_path: str,
         if result.get('scenario_failed', False):
             cumulative_diagnostics['failed_calls'] += 1
             cumulative_diagnostics['failed_scenarios'] += 1
-            if failure_types is None:
+            if not failure_types:
                 _increment_failure_counters(cumulative_diagnostics, ['failed_unknown'])
         else:
             cumulative_diagnostics['successful_calls'] += 1
@@ -839,7 +872,7 @@ def run_test_set(test_path: str, output_path: str,
     )
     print(f"\nSaving results to: {output_csv_path}")
 
-    rows = []
+    rows: List[Dict] = []
     for scenario_id, result in enumerate(all_results, 1):
         question = result['scenario']
         calculator = result['calculator']
@@ -897,15 +930,10 @@ def run_test_set(test_path: str, output_path: str,
                 'weighted_score': weighted_score,
             })
 
-    pd.DataFrame(rows).to_excel(output_csv_path, index=False, engine='openpyxl')
+    _atomic_write_xlsx(pd.DataFrame(rows, columns=HYBRID_RESULT_FIELDNAMES), output_csv_path)
     print(f" Results saved to: {output_csv_path}")
 
-    # Save the diagnostics blob
-    print(f"Saving diagnostics to: {output_diagnostics_path}")
-
-    with open(output_diagnostics_path, 'w', encoding='utf-8-sig') as f:
-        json.dump(cumulative_diagnostics, f, indent=2)
-
+    _atomic_write_json(cumulative_diagnostics, output_diagnostics_path)
     print(f" Diagnostics saved to: {output_diagnostics_path}")
 
 
@@ -924,10 +952,11 @@ def run_test_set(test_path: str, output_path: str,
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                             base_diagnostics_path: str) -> None:
-    """Run multi and aggregate.
+    """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
 
-    Resume-aware: if a _run_NN.csv already exists and is non-empty it is
-    included in aggregation without re-running the benchmark.
+    Resume-aware: a per-run xlsx that already exists, has size > 0, has no
+    leftover .tmp sibling, and reads as a non-empty DataFrame is treated as
+    a completed run and skipped. Any other state triggers a re-run.
     """
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
@@ -937,17 +966,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
         diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
-        # --- Resume support: skip runs that already have output ---
-        if run_path.exists():
-            try:
-                existing = read_csv_clean(run_path)
-                if len(existing) > 0:
-                    print(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
-                    run_paths.append(run_path)
-                    skipped_runs.append(run_idx)
-                    continue
-            except Exception:
-                pass  # Unreadable file — re-run it
+        if _is_complete_run_file(run_path):
+            print(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+            run_paths.append(run_path)
+            skipped_runs.append(run_idx)
+            continue
         print(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
@@ -973,7 +996,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     run_dfs = []
     for p in run_paths:
         try:
-            run_dfs.append(read_csv_clean(p))
+            run_dfs.append(read_table_clean(p))
             valid_run_paths.append(p)
         except Exception as e:
             print(f"WARNING: Could not read {p.name}, skipping from aggregation: {e}")
@@ -1091,12 +1114,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "rank", "weighted_score",
         "n_runs", "n_successful_runs", "n_failed_runs",
     ]
-    avg = avg.reindex(columns=col_order)
-    avg.to_excel(base_output_csv, index=False, engine='openpyxl')
+    _atomic_write_xlsx(avg.reindex(columns=col_order), base_output_csv)
     print(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
-    stats_df.to_excel(str(stats_path), index=False, engine='openpyxl')
+    _atomic_write_xlsx(stats_df, stats_path)
     print(f"Score statistics saved to {stats_path}")
 
 
@@ -1104,15 +1126,15 @@ def main():
     if not os.getenv("OPENROUTER_API_KEY"):
         raise RuntimeError("OPENROUTER_API_KEY not found in .env file")
 
-    if not TEST_SCENARIOS_CSV.exists():
-        raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS_CSV}")
+    if not TEST_SCENARIOS.exists():
+        raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS}")
 
     print("Starting Hybrid Architecture Test...")
     print(f"Model: {MODEL_ID}")
     print(f"Temperature: {TEMPERATURE}")
 
     run_multi_and_aggregate(
-        test_csv_path=str(TEST_SCENARIOS_CSV),
+        test_csv_path=str(TEST_SCENARIOS),
         base_output_csv=str(OUTPUT_CSV),
         base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
     )

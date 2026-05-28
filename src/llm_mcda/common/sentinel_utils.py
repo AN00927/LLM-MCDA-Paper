@@ -124,12 +124,67 @@ def read_table_clean(path, dtype: dict = None, time_columns: list = None, keep_s
             continue
         df[col] = df[col].astype(str).str.strip()
 
+    # Excel stores 1800 as 1800.0; downcast integer-valued floats so prompts
+    # and downstream string formatting render "1800" instead of "1800.0".
+    for col in df.select_dtypes(include=["float"]).columns:
+        if col in strcols:
+            continue
+        series = df[col]
+        non_null = series.dropna()
+        if len(non_null) == 0:
+            continue
+        if (non_null == non_null.astype("int64")).all():
+            df[col] = series.astype("Int64")
+
     return df
 
 
-def read_csv_clean(path, dtype: dict = None, time_columns: list = None, keep_str_cols: list = None):
-    """Backwards-compatible wrapper for read_table_clean."""
-    return read_table_clean(path, dtype=dtype, time_columns=time_columns, keep_str_cols=keep_str_cols)
+def _atomic_write_xlsx(df, path) -> None:
+    """Write df to xlsx atomically: stage to .tmp, fsync, rename onto path.
+
+    Prevents a crash mid-write from leaving a half-written file that resume
+    logic would later treat as a complete run.
+    """
+    import os
+    from pathlib import Path
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    df.to_excel(tmp, index=False, engine="openpyxl")
+    os.replace(tmp, p)
+
+
+def _atomic_write_json(obj, path) -> None:
+    """Write obj to JSON atomically (same staging strategy as _atomic_write_xlsx)."""
+    import json
+    import os
+    from pathlib import Path
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2)
+    os.replace(tmp, p)
+
+
+def _is_complete_run_file(path) -> bool:
+    """Return True iff *path* is a readable xlsx with at least one data row.
+
+    Used by resume logic to validate that an existing per-run output came from
+    a successful previous launch (vs. a crashed-mid-write file).
+    """
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists() or p.stat().st_size == 0:
+        return False
+    if p.with_suffix(p.suffix + ".tmp").exists():
+        # A leftover .tmp means the previous write didn't finish.
+        return False
+    try:
+        df = read_table_clean(p)
+    except Exception:
+        return False
+    return len(df) > 0
 
 
 def parse_utility_budget(budget_value) -> float:
