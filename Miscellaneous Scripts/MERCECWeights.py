@@ -116,7 +116,7 @@ def load_ground_truth() -> pd.DataFrame:
             from sentinel_utils import read_csv_clean
             df = read_csv_clean(find_file(fname))
         except Exception:
-            df = pd.read_csv(find_file(fname))
+            df = read_csv_clean(find_file(fname))
         missing = [c for c in SCORE_COLS.values() if c not in df.columns]
         if missing:
             raise ValueError(f"[{dtype}] Missing columns: {missing}")
@@ -312,7 +312,7 @@ def main():
                 "zero_var_scenarios": res["zero_variance_counts"][c],
             })
 
-    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
+    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False, encoding='utf-8-sig')
     print(f"\n  Saved: {OUTPUT_CSV}")
     print("\nDone.\n")
 

@@ -23,6 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS
+from sentinel_utils import read_csv_clean
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -178,7 +179,7 @@ def load_ground_truth(config):
     gt_by_type = {}
 
     for dtype, filepath in config["ground_truth"].items():
-        df = pd.read_csv(filepath, encoding='utf-8-sig')
+        df = read_csv_clean(filepath)
         df["decision_type"] = dtype
 
         if "description" in df.columns and "question" not in df.columns:
@@ -208,7 +209,7 @@ def load_architecture(source, arch_name):
     if isinstance(source, pd.DataFrame):
         df = source.copy()
     else:
-        df = pd.read_csv(source, encoding='utf-8-sig')
+        df = read_csv_clean(source)
     df["architecture"] = arch_name
     df["question"] = df["question"].str.strip()
     df["location"] = df["location"].str.strip()
@@ -245,7 +246,7 @@ def aggregate_run_files(run_paths):
     """
     run_dfs = []
     for p in run_paths:
-        run_dfs.append(pd.read_csv(p, encoding="utf-8-sig"))
+        run_dfs.append(read_csv_clean(p))
     n_readable = len(run_dfs)
     combined = pd.concat(run_dfs, ignore_index=True)
 
@@ -1011,7 +1012,7 @@ def evaluate_all(config):
         print(row)
     metrics_df = pd.DataFrame(all_metrics)
     Path(config["output_csv"]).parent.mkdir(parents=True, exist_ok=True)
-    metrics_df.to_csv(config["output_csv"], index=False)
+    metrics_df.to_csv(config["output_csv"], index=False, encoding='utf-8-sig')
     print(f"\n\nMetrics saved to: {config['output_csv']}")
     print(f"Total metric rows: {len(metrics_df)}")
 

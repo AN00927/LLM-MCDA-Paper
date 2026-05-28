@@ -597,13 +597,36 @@ def process_appliance_scenarios(
                        time_columns=['Baseline Time'],
                        keep_str_cols=['Baseline Time', 'Alternative 1', 'Alternative 2', 'Alternative 3'])
 
-    print(f"Found {len(df)} appliance scenarios")
+    required_cols = ['Description', 'Location', 'Utility Budget', 'Appliance', 'Housing Type',
+                     'Occupants', 'kwh/cycle', 'Appliance Age/Type', 'Baseline Time']
+
+    def is_missing(value) -> bool:
+        if value is None or pd.isna(value):
+            return True
+        return str(value).strip().lower() in {'', 'nan', 'none'}
+
+    invalid_rows = []
+    for row_index, row in df.iterrows():
+        missing_cols = [col for col in required_cols if is_missing(row.get(col))]
+        if missing_cols:
+            invalid_rows.append((row_index, missing_cols))
+
+    if invalid_rows:
+        preview = ", ".join(
+            f"row {row_index + 2} missing {missing_cols}" for row_index, missing_cols in invalid_rows[:5]
+        )
+        raise ValueError(
+            f"ApplianceScenarios.csv contains {len(invalid_rows)} malformed row(s). "
+            f"Fix or remove them before processing. Examples: {preview}"
+        )
+
+    print(f"Found {len(df)} valid appliance scenarios")
 
     calculator = ApplianceGroundTruthCalculator()
 
     results = []
 
-    for idx, row in df.iterrows():
+    for idx, row in df.reset_index(drop=True).iterrows():
         print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['Appliance']} in {row['Location']}")
 
         # Collect alternatives
@@ -649,7 +672,7 @@ def process_appliance_scenarios(
                     'scenario_id': idx,
                     'description': row['Description'],
                     'location': row['Location'],
-                    'utility_budget': row['Utility Budget'],
+                    'utility_budget': parse_utility_budget(row.get('Utility Budget', 0)),
                     'appliance': row['Appliance'],
                     'appliance_age_type': row['Appliance Age/Type'],
                     'housing_type': row['Housing Type'],
@@ -674,7 +697,7 @@ def process_appliance_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False)
+    results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
 
     print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")
