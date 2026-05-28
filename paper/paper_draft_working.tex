@@ -33,7 +33,7 @@
             state={PA},
             country={USA}}
 
-\author{Dr. River Huang}
+\author{River Huang}
 \affiliation{organization={Paul Scherrer Institut},
             city={Villigen},
             state={Aargau},
@@ -327,7 +327,6 @@ For appliances, the minimum cost bound combines a 5th-percentile per-cycle energ
 
 %% SOURCE: ShowerGroundTruthCalculator.REFERENCE_RANGES (energy_cost min=0.15, max=1.50; environmental min=7.5 gal, max=75 gal); reu2016; harrispoll2024; hendron2008; epawatersense.
 For showers, energy cost bounds (\$0.15--\$1.50) come from a low-flow short-duration summer case (1.5 GPM, 5 min, inlet 65\,\textdegree{}F) and a higher-flow long-duration winter case (3.5 GPM, 15 min, inlet 45\,\textdegree{}F), with seasonal inlet temperatures from NREL hot-water modeling \cite{hendron2008}, duration distributions from REU2016 \cite{reu2016} and The Harris Poll \cite{harrispoll2024}, and GPM benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}. Because the mixing-fraction physics targets a fixed delivery temperature of 105\,\textdegree{}F, shower energy depends only on the rise from the mains inlet to that target and is independent of heater setpoint; for the stated 3.5\,GPM, 15\,min winter case the physics-derived maximum is \$1.59, and the reference ceiling is set conservatively at \$1.50 consistent with the dataset-percentile framing. Shower environmental impact is defined as water volume (gallons) using WaterSense 5th--95th percentile flow rates and 5--15 minute durations, giving the 7.5--75 gallon envelope. The 95th-percentile GPM bound of 5.0\,GPM is taken from EPA WaterSense conservation benchmarks \cite{epawatersense} and extends above the dataset maximum of 4.0\,GPM, using the published reference upper bound rather than the sample ceiling.
-
 \subsection{Ground Truth Calculators}
 \label{sec:gt-calculators}
 
@@ -337,11 +336,9 @@ scores per alternative---Energy Cost (\$), Environmental Impact, Comfort, and Pr
 transformation. Energy cost is always in dollars per 8-hour decision period; Environmental
 Impact is in lbs\,CO\textsubscript{2} for HVAC and Appliance decisions and in gallons of
 water for Shower decisions. Full equation-by-equation derivations are in Appendix~A.
-
 %% SOURCE: HVACGroundTruthCalculator.py:EMISSIONS_FACTOR_*;
 %%         ApplianceGroundTruthCalculator.py same constants; pjm2022emissions.
 For HVAC and Appliance decisions, environmental impact uses PJM marginal emissions factors:
-
 \begin{equation}
   \mathrm{CO_2} = E_{\mathrm{kWh}} \cdot \varepsilon(t), \qquad
   \varepsilon(t) = \begin{cases}
@@ -350,133 +347,13 @@ For HVAC and Appliance decisions, environmental impact uses PJM marginal emissio
   \end{cases}
   \label{eq:emissions}
 \end{equation}
-
 \noindent where $E_{\mathrm{kWh}}$ is the decision-period energy use and $\varepsilon(t)$ is
 the PJM marginal emissions factor at run time $t$ \cite{pjm2022emissions}. Marginal rather
 than average factors are used because shifting a residential load displaces or adds the
 generator at the margin.
-
-%% ---- HVAC CALCULATOR ---------------------------------------------------------
-\paragraph{HVAC Calculator.}
-%% SOURCE: HVACGroundTruthCalculator.py:calculate_cooling_load; polly2011.
-Thermal load decomposes into four ASHRAE-style components. For cooling:
-
-\begin{equation}
-  Q_{\mathrm{cool}} =
-    \underbrace{\frac{m \cdot A}{R}\,\Delta T}_{\text{conductive}}
-    +\underbrace{400n + A + 800}_{\text{internal}}
-    +\underbrace{0.15\,A \times 20}_{\text{solar}}
-    +\underbrace{1.08\,\frac{A\, h_c\, \alpha}{60}\,\Delta T}_{\text{ventilation}}
-  \label{eq:hvac_cooling_load}
-\end{equation}
-
-\noindent where $A$ is floor area (sq\,ft); $m$ is a housing-type envelope multiplier
-(1.7 single-family, 1.5 townhouse/rowhouse, 1.2 apartment/condo) \cite{polly2011};
-$R$ is the wall insulation R-value; $\Delta T = T_{\mathrm{out}} - T_{\mathrm{in}}$;
-$n$ is household size; $h_c = 8$\,ft and $\alpha = 0.35$\,ACH for ceiling height and
-infiltration rate \cite{polly2011}. The 800\,BTU/hr baseline captures
-always-on standby loads per ACCA Manual~J \cite{polly2011}. The heating load uses the
-same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and
-internal gains subtracted rather than added.
-
-%% SOURCE: HVACGroundTruthCalculator.py:calculate_energy_consumption;
-%%         ahri2008; domanski2014; davis2010; fenaughty2018.
-SEER degrades with age via a front-loaded schedule (1.5$\times$ base rate for the first
-ten years, 0.5$\times$ thereafter, capped at 30\%) \cite{domanski2014,davis2010,fenaughty2018}.
-Effective EER is estimated from the age-adjusted SEER via the AHRI\,210/240 quadratic
-\cite{ahri2008}:
-
-\begin{equation}
-  \mathrm{EER}_{\mathrm{eff}} =
-    -0.02\,\mathrm{SEER}_{\mathrm{eff}}^{2} + 1.12\,\mathrm{SEER}_{\mathrm{eff}}
-  \label{eq:eer_quadratic}
-\end{equation}
-
-Energy consumption over the 8-hour decision window is then:
-
-\begin{equation}
-  E_{\mathrm{kWh}} =
-    \frac{Q_{\mathrm{load}}}{\mathrm{EER}_{\mathrm{eff}} \times 1000}
-    \cdot h \cdot m_{\mathrm{occ}}
-  \label{eq:hvac_energy}
-\end{equation}
-
-\noindent where $h = 8$\,hr and $m_{\mathrm{occ}}$ scales for occupancy context: 1.0 for
-fully occupied, 0.75 for overnight, and $1 - 0.5(h_{\mathrm{away}}/24)$ for daytime
-unoccupied periods \cite{houde2021}.
-
-%% SOURCE: HVACGroundTruthCalculator.py:calculate_comfort_score;
-%%         ashrae55_2020; vanhoof2008; fanger1970.
-Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints
-\cite{ashrae55_2020,vanhoof2008,fanger1970}:
-
-\begin{equation}
-  C_{\mathrm{comfort}} = \max\!\bigl(0,\; 10 - \lvert T_{\mathrm{in}} - T^{*}\rvert\bigr)
-  \label{eq:hvac_comfort}
-\end{equation}
-
-\noindent where $T^{*} = 76$\,\textdegree{}F in cooling mode ($T_{\mathrm{out}} > 75$\,\textdegree{}F)
-and $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedentary PMV bands
-\cite{ashrae55_2020}. A small penalty scales with household size beyond three occupants.
-Practicality penalizes extreme setpoints and large outdoor--indoor $\Delta T$
-(signaling operation near system limits) via multipliers calibrated to equipment-stress thresholds.
-
-%% ---- APPLIANCE CALCULATOR ----------------------------------------------------
-\paragraph{Appliance Calculator.}
-%% SOURCE: ApplianceGroundTruthCalculator.py:UTILITY_RATES; peco2021; paetz2012;
-%%         newsham2010; shewale2023; waseem2020; who2018noise.
-Energy cost per cycle is $C = E_{\mathrm{cyc}} \cdot r(t,\ell)$, where $E_{\mathrm{cyc}}$
-is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of
-six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021}.
-The PJM emissions window (7am--11pm) applies to environmental impact regardless of the
-utility's billing window, because emissions follow the regional grid. Comfort is a piecewise
-decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr
-(dishwashers), 8\,hr (washers), and 6\,hr (dryers) \cite{paetz2012,waseem2020}, plus an
-additive noise penalty scaled by housing type for runs after 10\,pm \cite{who2018noise} and a
-household-size penalty. Practicality mirrors the delay schedule with additional penalties for
-late-night timing complexity and household coordination difficulty.
-
-%% ---- SHOWER CALCULATOR -------------------------------------------------------
-\paragraph{Shower Calculator.}
-%% SOURCE: ShowerGroundTruthCalculator.py; hendron2008; maguire2013; zhang2023; rheem2025.
-Mains inlet temperature is interpolated from outdoor temperature between 45\,\textdegree{}F
-(winter, $T_{\mathrm{out}} \le 32$\,\textdegree{}F) and 65\,\textdegree{}F (summer,
-$T_{\mathrm{out}} \ge 75$\,\textdegree{}F) \cite{hendron2008,maguire2013}. Only the
-fraction of flow requiring heating reaches the heater; that mixing fraction is:
-
-\begin{equation}
-  f_{\mathrm{hot}} = \frac{T_{\mathrm{target}} - T_{\mathrm{inlet}}}
-                          {T_{\mathrm{heater}} - T_{\mathrm{inlet}}}
-  \label{eq:shower_fraction}
-\end{equation}
-
-\noindent where $T_{\mathrm{target}} = 105$\,\textdegree{}F is the standard comfortable
-delivery temperature \cite{zhang2023}. Shower energy is then:
-
-\begin{equation}
-  E_{\mathrm{kWh}} = \frac{\dot{V} \cdot f_{\mathrm{hot}} \cdot 8.33 \cdot
-                            (T_{\mathrm{heater}} - T_{\mathrm{inlet}}) \cdot \tau}
-                          {3412 \cdot \eta}
-  \label{eq:shower_energy}
-\end{equation}
-
-\noindent where $\dot{V}$ is flow rate (GPM), 8.33\,lb/gal is water density, $\tau$ is
-shower duration (min), 3412\,BTU/kWh is the standard conversion, and $\eta = 0.92$ is the
-unified energy factor for a 40--55\,gal electric tank \cite{rheem2025}. Environmental impact
-is water volume: $V = \dot{V} \cdot \tau$ (gallons). Comfort is a piecewise function
-peaking at the REU2016 average of 7.8\,min \cite{reu2016,harrispoll2024}, with additive
-penalties for temperature adequacy (CDC Legionella thresholds \cite{cdc2026}) and household
-contention. Practicality additionally penalizes alternatives that exceed available tank
-capacity.
-
-%% ---- SHARED: BUDGET PENALTY --------------------------------------------------
-\paragraph{Shared Budget Penalty.}
-%% SOURCE: HVACGroundTruthCalculator.py:calculate_budget_penalty (identical in all three);
-%%         thaler1999; heath1996; prelec1998; heutel2017; gathergood2012.
 All three calculators apply an identical four-tier budget penalty $P(u)$ multiplicatively to
 the energy-cost value-function output, where $u = C_{\mathrm{monthly}} / B$ is monthly cost
 utilization relative to the household's stated budget $B$:
-
 \begin{equation}
   P(u) = \begin{cases}
     1.0                          & u < 0.80                   \\[4pt]
@@ -486,7 +363,9 @@ utilization relative to the household's stated budget $B$:
   \end{cases}
   \label{eq:budget_penalty}
 \end{equation}
-
+\noindent where $P(u)$ is a unitless multiplicative penalty on the (post value-function) energy-cost score,
+$u$ is monthly budget utilization, $C_{\mathrm{monthly}}$ is estimated monthly energy/water-related cost for the decision type,
+$B$ is the household-stated monthly budget for utilities, and $e$ is Euler's number.
 \noindent The no-penalty zone ($u < 0.80$) reflects mental budget safety margins
 \cite{thaler1999}; the linear decline approaching the limit follows Heath \& Soll's
 budget self-control model \cite{heath1996}; exponential loss aversion for overruns
@@ -494,8 +373,264 @@ follows Prelec \& Loewenstein \cite{prelec1998} and Heutel \cite{heutel2017}; an
 elimination beyond 150\% reflects financial infeasibility \cite{gathergood2012}.
 Applying the penalty multiplicatively ensures budget-infeasible alternatives cannot
 dominate MAVT ranking on energy cost alone.
-
-
+\subsubsection{HVAC Calculator}
+Thermal load decomposes into four ASHRAE-style components. For cooling:
+\begin{equation}
+  Q_{\mathrm{cool}} =
+    \underbrace{\frac{m \cdot A}{R}\,\Delta T}_{\text{conductive}}
+    +\underbrace{400n + A + 800}_{\text{internal}}
+    +\underbrace{0.15\,A \times 20}_{\text{solar}}
+    +\underbrace{1.08\,\frac{A\, h_c\, \alpha}{60}\,\Delta T}_{\text{ventilation}}
+  \label{eq:hvac_cooling_load}
+\end{equation}
+\noindent where $A$ is floor area (sq\,ft); $m$ is a housing-type envelope multiplier
+(1.7 single-family, 1.5 townhouse/rowhouse, 1.2 apartment/condo) \cite{polly2011};
+$R$ is the wall insulation R-value; $\Delta T = T_{\mathrm{out}} - T_{\mathrm{in}}$;
+$n$ is household size; $h_c = 8$\,ft and $\alpha = 0.35$\,ACH for ceiling height and
+infiltration rate \cite{polly2011}. The 800\,BTU/hr baseline captures
+always-on standby loads per ACCA Manual~J \cite{polly2011}. The heating load uses the
+same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and
+internal gains subtracted rather than added.
+%% SOURCE: HVACGroundTruthCalculator.py:calculate_energy_consumption;
+%%         ahri2008; domanski2014; davis2010; fenaughty2018.
+SEER degrades with age via a front-loaded schedule (1.5$\times$ base rate for the first
+ten years, 0.5$\times$ thereafter, capped at 30\%) \cite{domanski2014,davis2010,fenaughty2018}.
+Effective EER is estimated from the age-adjusted SEER via the AHRI\,210/240 quadratic
+\cite{ahri2008}:
+\begin{equation}
+  \mathrm{EER}_{\mathrm{eff}} =
+    -0.02\,\mathrm{SEER}_{\mathrm{eff}}^{2} + 1.12\,\mathrm{SEER}_{\mathrm{eff}}
+  \label{eq:eer_quadratic}
+\end{equation}
+\noindent where $\mathrm{SEER}_{\mathrm{eff}}$ is the age-adjusted seasonal energy efficiency ratio
+and $\mathrm{EER}_{\mathrm{eff}}$ is the resulting effective energy efficiency ratio used for the decision period.
+Energy consumption over the 8-hour decision window is then:
+\begin{equation}
+  E_{\mathrm{kWh}} =
+    \frac{Q_{\mathrm{load}}}{\mathrm{EER}_{\mathrm{eff}} \times 1000}
+    \cdot h \cdot m_{\mathrm{occ}}
+  \label{eq:hvac_energy}
+\end{equation}
+\noindent where $Q_{\mathrm{load}}$ is the thermal load (BTU/hr) for the decision context,
+$h$ is the decision-window duration (8\,hr), and $m_{\mathrm{occ}}$ is an occupancy multiplier.
+\noindent where $h = 8$\,hr and $m_{\mathrm{occ}}$ scales for occupancy context: 1.0 for
+fully occupied, 0.75 for overnight, and $1 - 0.5(h_{\mathrm{away}}/24)$ for daytime
+unoccupied periods \cite{houde2021}, where $h_{\mathrm{away}}$ is hours-away per 24-hour day.
+%% SOURCE: HVACGroundTruthCalculator.py:calculate_comfort_score;
+%%         ashrae55_2020; vanhoof2008; fanger1970.
+Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints
+\cite{ashrae55_2020,vanhoof2008,fanger1970}:
+\begin{equation}
+  C_{\mathrm{comfort}} = \max\!\bigl(0,\; 10 - \lvert T_{\mathrm{in}} - T^{*}\rvert\bigr)
+  \label{eq:hvac_comfort}
+\end{equation}
+\noindent where $C_{\mathrm{comfort}}$ is a 0--10 comfort score, $T_{\mathrm{in}}$ is the indoor setpoint,
+and $T^{*}$ is the context-dependent optimal setpoint used as the peak of the tent function.
+\noindent where $T^{*} = 76$\,\textdegree{}F in cooling mode ($T_{\mathrm{out}} > 75$\,\textdegree{}F)
+and $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedentary PMV bands
+\cite{ashrae55_2020}. A small penalty scales with household size beyond three occupants.
+Practicality penalizes extreme setpoints and large outdoor--indoor $\Delta T$
+(signaling operation near system limits) via multipliers calibrated to equipment-stress thresholds.
+\subsubsection{Appliance Calculator}
+%% SOURCE: ApplianceGroundTruthCalculator.py:UTILITY_RATES; peco2021; paetz2012;
+%%         newsham2010; shewale2023; waseem2020; who2018noise.
+Energy cost per cycle is $C = E_{\mathrm{cyc}} \cdot r(t,\ell)$, where $E_{\mathrm{cyc}}$
+is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of
+six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021}.
+\noindent where $C$ is per-cycle energy cost (dollars/cycle), $E_{\mathrm{cyc}}$ is per-cycle energy use (kWh/cycle),
+$t$ is the appliance run time (time-of-day), and $\ell$ is the household location used to resolve the serving utility.
+The PJM emissions window (7am--11pm) applies to environmental impact regardless of the
+utility's billing window, because emissions follow the regional grid.
+The run-time rate period is selected by mapping location $\ell$ to a utility $U(\ell)$ and
+then applying that utility's TOU peak window otherwise.
+\begin{equation}
+(h^{U}_{\mathrm{pk,s}}, h^{U}_{\mathrm{pk,e}}):
+\quad
+r(t,\ell)=r^{U}_{\mathrm{pk}}
+\text{ if }
+h(t)\in[h^{U}_{\mathrm{pk,s}}, h^{U}_{\mathrm{pk,e}})
+\text{ and }
+r(t,\ell)=r^{U}_{\mathrm{off}}
+\end{equation}
+\noindent where $U(\ell)$ maps location $\ell$ to a serving utility, $h^{U}_{\mathrm{pk,s}}$ and $h^{U}_{\mathrm{pk,e}}$
+are that utility's TOU peak-window start and end hours, $r^{U}_{\mathrm{pk}}$ and $r^{U}_{\mathrm{off}}$ are the utility's
+peak and off-peak energy prices (\$/kWh), and $h(t)$ maps time $t$ to an hour-of-day on a 24-hour clock.
+\noindent In the implementation, the six utilities use
+distinct peak windows (e.g., 2--6pm for PECO and PPL, 2--9pm for most FirstEnergy utilities).
+Comfort is a piecewise
+decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr
+(dishwashers), 8\,hr (washers), and 6\,hr (dryers) \cite{paetz2012,waseem2020}, plus an
+additive noise penalty scaled by housing type for runs after 10\,pm \cite{who2018noise} and a
+household-size penalty.
+Delays are computed as the minimum circular distance from the baseline time $t_0$ on a
+24-hour clock (avoiding wrap-around artifacts), i.e.,
+\begin{equation}
+  d(t,t_0)=\min\!\bigl((h(t)-h(t_0))\bmod 24,\; (h(t_0)-h(t))\bmod 24\bigr),
+  \label{eq:appliance_delay_circular}
+\end{equation}
+\noindent where $d(t,t_0)$ is delay in hours between run time $t$ and baseline time $t_0$,
+$h(\cdot)$ maps a time to hour-of-day, and $\bmod 24$ indicates wrap-around on a 24-hour clock.
+The base comfort component uses the following piecewise schedule on delay hours $d$:
+\begin{equation}
+  C_{\mathrm{base}}(d)=
+  \begin{cases}
+    10                                  & d=0 \\[3pt]
+    10-\frac{2}{3}\,d                   & 0<d\le 3 \\[3pt]
+    8-\frac{1}{2}\,(d-3)                & 3<d\le 7 \\[3pt]
+    6-\frac{2}{5}\,(d-7)                & 7<d\le 12 \\[3pt]
+    2                                   & d>12
+  \end{cases}
+  \label{eq:appliance_base_comfort}
+\end{equation}
+\noindent where $C_{\mathrm{base}}(d)$ is the pre-penalty comfort score (0--10) as a function of delay $d$.
+The late-night noise penalty is applied when running between 10pm and 7am and the appliance
+exceeds a dBA threshold:
+\begin{equation}
+  N(t,\mathrm{type},\mathrm{housing})=
+  \begin{cases}
+    0 & \text{if } h(t)\in[7,22) \text{ or } \mathrm{dBA}(\mathrm{type})\le \theta \\[3pt]
+    2\cdot \kappa(\mathrm{housing}) & \text{otherwise}
+  \end{cases}
+  \label{eq:appliance_noise_penalty}
+\end{equation}
+\noindent where $N(t,\mathrm{type},\mathrm{housing})$ is a nonnegative noise-disruption penalty in comfort-score points,
+$\mathrm{dBA}(\mathrm{type})$ is the appliance noise level for the appliance type, $\theta$ is the dBA threshold,
+and $\kappa(\mathrm{housing})$ is a unitless housing-type multiplier (larger for shared-wall housing).
+\noindent where $\theta=45$\,dBA and $\kappa(\cdot)$ is a housing-type multiplier (larger for
+shared-wall housing).
+The household-size penalty scales with delay relative to the appliance-specific maximum
+acceptable delay $d_{\max}(\mathrm{type})$:
+\begin{equation}
+  S(d,n,\mathrm{type})=\sigma(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
+  \label{eq:appliance_size_penalty}
+\end{equation}
+\noindent where $S(d,n,\mathrm{type})$ is a nonnegative household-size penalty in comfort-score points,
+$n$ is occupants, $d_{\max}(\mathrm{type})$ is the maximum acceptable delay (hours) for the appliance type,
+and $\sigma(n)$ is an occupants-based factor (higher for larger households).
+\noindent where $\sigma(n)$ is an occupants-based factor (higher for larger households).
+Final comfort is then $C_{\mathrm{comfort}}=\mathrm{clip}_{[0,10]}\!\bigl(C_{\mathrm{base}}-N-S\bigr)$.
+\noindent where $\mathrm{clip}_{[a,b]}(x)=\min(b,\max(a,x))$ clamps a value to the interval $[a,b]$.
+Practicality mirrors the delay schedule with additional penalties for
+late-night timing complexity and household coordination difficulty.
+The base practicality component is:
+\begin{equation}
+  P_{\mathrm{base}}(d)=
+  \begin{cases}
+    10                                  & d=0 \\[3pt]
+    10-d                                & 0<d\le 2 \\[3pt]
+    8-\frac{3}{4}\,(d-2)                & 2<d\le 4 \\[3pt]
+    6.5-\frac{1}{2}\,(d-4)              & 4<d\le 8 \\[3pt]
+    4.5-\frac{3}{8}\,(d-8)              & 8<d\le 12 \\[3pt]
+    1.5                                 & d>12
+  \end{cases}
+  \label{eq:appliance_base_practicality}
+\end{equation}
+\noindent where $P_{\mathrm{base}}(d)$ is the pre-penalty practicality score (0--10) as a function of delay $d$.
+Timing complexity applies an additive penalty by run-time hour:
+\begin{equation}
+  T(t)=
+  \begin{cases}
+    2 & 0\le h(t)<6 \\[3pt]
+    1 & 22\le h(t)<24 \\[3pt]
+    0 & \text{otherwise}
+  \end{cases}
+  \label{eq:appliance_timing_penalty}
+\end{equation}
+\noindent where $T(t)$ is a nonnegative timing-complexity penalty in practicality-score points and $h(t)$ is hour-of-day.
+Household coordination difficulty uses the same delay scaling form as in comfort:
+\begin{equation}
+  K(d,n,\mathrm{type})=\kappa_n(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
+  \label{eq:appliance_coordination_penalty}
+\end{equation}
+\noindent where $K(d,n,\mathrm{type})$ is a nonnegative household-coordination penalty in practicality-score points
+and $\kappa_n(n)$ is an occupants-based factor increasing with occupants.
+\noindent with $\kappa_n(n)$ increasing with occupants.
+Final practicality is $C_{\mathrm{prac}}=\mathrm{clip}_{[1.5,10]}\!\bigl(P_{\mathrm{base}}-T-K\bigr)$,
+with a daytime floor applied for $h(t)\in[7,22)$ and $d\le d_{\max}(\mathrm{type})$.
+\noindent where $C_{\mathrm{prac}}$ is the final 0--10 practicality score (after penalties and clipping).
+For budget utilization in \eqref{eq:budget_penalty}, the appliance calculator converts per-cycle
+cost to a monthly estimate as:
+\begin{equation}
+  C_{\mathrm{monthly}} = 30\,C_{\mathrm{cycle}}.
+  \label{eq:appliance_monthly_cost}
+\end{equation}
+\noindent where $C_{\mathrm{cycle}}$ is per-cycle energy cost and the factor $30$ assumes 30 cycles per month.
+\subsubsection{Shower Calculator.}
+%% SOURCE: ShowerGroundTruthCalculator.py; hendron2008; maguire2013; zhang2023; rheem2025.
+Mains inlet temperature is interpolated from outdoor temperature between 45\,\textdegree{}F
+(winter, $T_{\mathrm{out}} \le 32$\,\textdegree{}F) and 65\,\textdegree{}F (summer,
+$T_{\mathrm{out}} \ge 75$\,\textdegree{}F) \cite{hendron2008,maguire2013}. Only the
+fraction of flow requiring heating reaches the heater; that mixing fraction is:
+\begin{equation}
+  f_{\mathrm{hot}} = \frac{T_{\mathrm{target}} - T_{\mathrm{inlet}}}
+                          {T_{\mathrm{heater}} - T_{\mathrm{inlet}}}
+  \label{eq:shower_fraction}
+\end{equation}
+\noindent where $f_{\mathrm{hot}}$ is the fraction of total flow drawn as hot water,
+$T_{\mathrm{target}}$ is desired delivery temperature, $T_{\mathrm{inlet}}$ is mains inlet temperature,
+and $T_{\mathrm{heater}}$ is the water-heater setpoint temperature.
+\noindent where $T_{\mathrm{target}} = 105$\,\textdegree{}F is the standard comfortable
+delivery temperature \cite{zhang2023}. Shower energy is then:
+\begin{equation}
+  E_{\mathrm{kWh}} = \frac{\dot{V} \cdot f_{\mathrm{hot}} \cdot 8.33 \cdot
+                            (T_{\mathrm{heater}} - T_{\mathrm{inlet}}) \cdot \tau}
+                          {3412 \cdot \eta}
+  \label{eq:shower_energy}
+\end{equation}
+\noindent where $E_{\mathrm{kWh}}$ is shower energy use (kWh), $\dot{V}$ is total flow rate (GPM),
+$\tau$ is shower duration (min), $\eta$ is electric heater efficiency (UEF), and $3412$ is the BTU-per-kWh conversion;
+the constant $8.33$ converts gallons to pounds of water (lb/gal).
+\noindent where $\dot{V}$ is flow rate (GPM), 8.33\,lb/gal is water density, $\tau$ is
+shower duration (min), 3412\,BTU/kWh is the standard conversion, and $\eta = 0.92$ is the
+unified energy factor for a 40--55\,gal electric tank \cite{rheem2025}. Environmental impact
+is water volume: $V = \dot{V} \cdot \tau$ (gallons).
+\noindent where $V$ is water volume used (gallons).
+Energy cost uses a flat electricity rate $p_e$:
+\begin{equation}
+  C_{\$}=p_e\,E_{\mathrm{kWh}}.
+  \label{eq:shower_cost}
+\end{equation}
+\noindent where $C_{\$}$ is shower energy cost (dollars) and $p_e$ is the electricity price (\$/kWh).
+Comfort is a piecewise function
+peaking at the REU2016 average of 7.8\,min \cite{reu2016,harrispoll2024}, with additive
+penalties for temperature adequacy (CDC Legionella thresholds \cite{cdc2026}) and household
+contention.
+The implementation uses a duration-based piecewise base comfort $C_{\mathrm{base}}(\tau)$
+(with a short-duration cubic ramp to reflect severely rushed showers), then subtracts a
+temperature penalty $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ and a household contention
+penalty $\Delta_{\mathrm{cont}}(\tau,n)$, and clips to $[0,10]$:
+\begin{equation}
+  C_{\mathrm{comfort}}(\tau,T_{\mathrm{heater}},n)
+  = \mathrm{clip}_{[0,10]}\!\Bigl(C_{\mathrm{base}}(\tau)
+  -\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})
+  -\Delta_{\mathrm{cont}}(\tau,n)\Bigr).
+  \label{eq:shower_comfort_full}
+\end{equation}
+\noindent where $\tau$ is shower duration (min), $n$ is occupants, $C_{\mathrm{base}}(\tau)$ is the base comfort curve,
+$\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ is a temperature-adequacy penalty, and $\Delta_{\mathrm{cont}}(\tau,n)$ is a household-contention penalty.
+Practicality additionally penalizes alternatives that exceed available tank
+capacity.
+The practicality model uses a duration-based base practicality $P_{\mathrm{base}}(\tau)$ and
+a capacity constraint computed from hot-water demand. Hot-water per shower is
+$\tau\,\dot V\,f_{\mathrm{hot}}$ (gal), total household hot-water need is
+$n\,\tau\,\dot V\,f_{\mathrm{hot}}$, and available draw is approximated as $0.8$ of nominal
+tank size $S$:
+\begin{equation}
+  H_{\mathrm{need}} = n\,\tau\,\dot V\,f_{\mathrm{hot}}, \qquad
+  H_{\mathrm{avail}} = 0.8\,S.
+  \label{eq:shower_capacity_need_avail}
+\end{equation}
+\noindent where $H_{\mathrm{need}}$ is total hot-water volume required for the household's showers over the relevant period (gal),
+$H_{\mathrm{avail}}$ is available hot-water draw volume (gal), and $S$ is nominal tank capacity (gal).
+A fixed penalty is applied when $H_{\mathrm{need}}>H_{\mathrm{avail}}$, yielding a clipped
+final practicality score.
+For budget utilization in \eqref{eq:budget_penalty}, shower monthly cost is estimated from
+per-shower cost using an average showers-per-person-per-day rate:
+\begin{equation}
+  C_{\mathrm{monthly}} = C_{\mathrm{shower}} \cdot \bigl(n \cdot 0.9 \cdot 30\bigr).
+  \label{eq:shower_monthly_cost}
+\end{equation}
+\noindent where $C_{\mathrm{shower}}$ is per-shower energy cost, $n$ is occupants, $0.9$ is showers/person/day, and $30$ is days/month.
 \subsection{Architecture Implementations}
 \label{sec:architectures}
 
@@ -520,6 +655,16 @@ The Hybrid architecture issues a single API call per scenario to extract structu
 %% SOURCE: CalculateMetrics.py (computes MAE, RMSE, kendall_tau, spearman_rho, top1_accuracy, top2_accuracy via scipy.stats); metrics_summary_mistral.csv.
 Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--10 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ and Spearman's $\rho$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). Efficiency is evaluated using total tokens (input plus output) and total latency, both summed across the 181-scenario test set. Failure rate is reported as the fraction of scenarios with malformed output, missing scores, out-of-bounds scores, or invalid score types. Scenario matching between architectures and ground truth uses (question, location) content keys to handle the case where scenario IDs drift across runs.
 
+\subsection{Architectures}
+
+Figure~\ref{fig:intro-placeholder-3} reproduces the Dietz et al.\ display of behavioral plasticity, net carbon effect, and the Reasonably Achievable Emission Reduction (RAER) per action.
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.5\textwidth]{FULLFlowMCDA.png}
+	\caption{}
+	\label{fig:intro-placeholder-2}
+\end{figure}
+
 \section{Results}
 \label{sec3}
 
@@ -533,12 +678,139 @@ Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (M
 \section{Discussion}
 \label{sec4}
 
-%% BLOCKED: per project ground rules, the Discussion section (4.1--4.6,
-%% including multi-model comparison and the MEREC weighting discussion
-%% \cite{keshavarzghorabaee2021}) is not written in this draft. Prose
-%% will be added once corrected results and the multi-model benchmark are
-%% available.
-\textit{[BLOCKED in this draft: see audit log. The Discussion (why Hybrid works, why Pure fails, intermediate RAG, efficiency, limitations including the researcher-as-designer threat, and future work including multi-model benchmarking against Mistral, Qwen, Claude, and Gemini) is not written here because it depends on the corrected metrics and the multi-model comparison, which are out of scope for this draft.]}
+%% BLOCKED: per project ground rules, the \subsection{Limitations}
+\label{sec:limitations}
+
+%% SOURCE: model_config.py:26-27 (Mistral only model with confirmed results)
+%% SOURCE: Output Files Claude/.gitkeep, Output Files Qwen/.gitkeep,
+%%         Output Files Gemini/.gitkeep (empty — no results)
+The results reported in this study derive exclusively from a single
+model, Mistral Small 3.2~24B, via OpenRouter. Although the
+multi-model benchmark pipeline is fully implemented for four
+models --- Mistral Small 3.2~24B, Qwen 2.5~72B, Claude Sonnet~4,
+and Gemini 2.5~Pro --- no completed output exists for the three
+non-Mistral models at the time of writing. Architecture-level
+conclusions therefore cannot yet be separated from model-level
+effects; it remains unknown whether the Hybrid advantage holds
+across model families and parameter scales, or whether it narrows
+for stronger frontier models.
+
+%% SOURCE: model_config.py:2 (N_RUNS=10 defined)
+%% SOURCE: Architectures/PurePrompting.py:37-38,
+%%         Architectures/Hybrid.py:15-16 (N_RUNS imported)
+%% NOT FOUND: completed multi-run output CSVs in any output folder
+A multi-run protocol of $N = 10$ runs per model is defined in the
+codebase, but no completed multi-run results exist in any output
+folder. All reported metrics --- Kendall's $\tau$, Top-1 accuracy,
+MAE --- therefore reflect a single run at temperature $T = 0.3$.
+Variance across runs is unknown, and no standard deviation columns
+appear in the current metrics output. This means the performance
+gaps reported between architectures are not accompanied by
+confidence intervals and cannot be assessed for statistical
+significance.
+
+%% SOURCE: context: researcher designed GT calculators and Hybrid
+The most critical validity threat is that the same researcher
+designed both the ground truth calculators and the Hybrid
+architecture. Hybrid's advantage may partly reflect design
+alignment --- the calculator the Hybrid calls is the same one that
+produces the ground truth --- rather than a generalizable
+architectural superiority. This threat cannot be eliminated within
+the current study design and must be weighed when interpreting the
+magnitude of Hybrid's performance gap over RAG-Enhanced and Pure
+Prompting.
+
+%% SOURCE: context: PJM marginal rates, PA-only scenarios
+Results are specific to Pennsylvania's grid and utility rate
+structure. The PJM marginal emissions factors (peak:
+1.041~lbs~CO$_2$/kWh; off-peak: 0.976~lbs~CO$_2$/kWh) and PPL
+time-of-use rate tiers used in the ground truth calculators do not
+generalize to high-renewables grids, where lower and more variable
+emissions intensities would compress environmental score
+distributions and potentially change which architecture performs
+best.
+
+%% SOURCE: context: shower environmental = gallons proxy
+The environmental criterion for shower decisions uses water
+consumption in gallons as a proxy rather than CO$_2$ emissions.
+This makes the environmental dimension semantically heterogeneous
+across decision types: HVAC and Appliance environmental scores
+reflect grid emissions, while Shower environmental scores reflect
+water volume. Cross-decision-type comparisons of environmental MAE
+should be interpreted with this distinction in mind; the proxy does
+not affect within-type ranking validity.
+
+%% NOT FOUND: prompt_utils.py; Hybrid conditional schema injection
+%%            not confirmed in audit
+Prompt consistency across architectures has not been fully
+verified. A shared prompt utility module is not present in the
+repository, meaning Pure Prompting and RAG-Enhanced may use
+independently maintained prompt strings. Additionally, whether the
+Hybrid extraction prompt applies conditional schema injection ---
+one schema per decision type rather than all three simultaneously
+--- could not be confirmed from the available code. Prompt
+inconsistencies across architectures introduce an uncontrolled
+variable in the comparison.
+
+\subsection{Future Work}
+\label{sec:futurework}
+
+%% SOURCE: model_config.py:25-33 (all four models configured)
+%% SOURCE: Output Files Claude/.gitkeep, Qwen/.gitkeep,
+%%         Gemini/.gitkeep (runs pending)
+The immediate priority is completing the multi-model benchmark.
+The pipeline is fully configured for Mistral Small 3.2~24B,
+Qwen~2.5~72B, Claude Sonnet~4, and Gemini~2.5~Pro, representing a
+2$\times$2 grid of open versus closed-weight and small versus
+large model classes. Running all four models across the same 100
+scenarios will allow architecture-level conclusions to be separated
+from model-specific effects and will establish whether the Hybrid
+advantage is robust or model-dependent.
+
+%% SOURCE: model_config.py:2 (N_RUNS=10); per-run naming:
+%%         Architectures/PurePrompting.py:602,
+%%         Architectures/Hybrid.py:959-960
+%% NOT FOUND: std deviation columns in CalculateMetrics output
+Completing $N = 10$ runs per model using the existing per-run file
+naming infrastructure will enable variance measurement across runs.
+Standard deviation columns should be added to the
+\texttt{CalculateMetrics.py} output to accompany each mean metric,
+making the performance gaps between architectures statistically
+interpretable.
+
+%% NOT FOUND: prompt_utils.py
+A shared prompt utility module (\texttt{prompt\_utils.py})
+implementing a unified \texttt{build\_prompt()} function with an
+optional \texttt{rag\_block} parameter should be built to
+consolidate the prompt logic currently maintained independently
+across Pure Prompting and RAG-Enhanced. This would eliminate prompt
+inconsistency as a confounding variable in the multi-model
+comparison.
+
+%% NOT FOUND: PlotDistributions.py
+Distribution plots --- violin or box plots of per-scenario score
+distributions across runs --- should be generated via a
+\texttt{PlotDistributions.py} script to visualize run-to-run
+variance per architecture and model. These are necessary to
+characterize whether Hybrid's deterministic calculator component
+suppresses variance relative to the two fully LLM-driven
+architectures.
+
+%% SOURCE: context: Appliance tau=0.68, Shower tau=0.60 vs HVAC 0.90
+The Hybrid architecture shows a pronounced performance drop from
+HVAC ($\tau = 0.90$) to Appliance ($\tau = 0.68$) and Shower
+($\tau = 0.60$). Scenario-type-specific extraction prompts for
+Appliance and Shower decisions should be developed to address
+this gap, as the current single extraction prompt was optimized
+primarily against HVAC scenarios.
+
+
+Replacing the water-consumption proxy in the Shower environmental
+criterion with a lifecycle CO$_2$ factor --- converting gallons of
+hot water to grid emissions using a standardized heating
+efficiency --- would make the environmental criterion semantically
+consistent across all three decision types and enable valid
+cross-type environmental MAE comparisons.
 
 \section{Conclusion}
 \label{sec5}
