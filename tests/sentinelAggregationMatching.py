@@ -8,7 +8,7 @@ Scope (per task specification):
   - scenario matching: content match, alt drop warnings, Hybrid input_decision_type
   - RAG: missing metadata fields, successful metadata fields
 
-Does NOT test anything that requires TestScenarios.csv to exist.
+Does NOT test anything that requires TestScenarios.xlsx to exist.
 """
 
 import sys

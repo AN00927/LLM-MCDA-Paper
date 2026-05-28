@@ -8,13 +8,13 @@ import sys
 RAG_FILES = {
     'HVAC': {
 
-        'ground_truth': 'HVACRagScenarios.csv'
+        'ground_truth': 'HVACRagScenarios.xlsx'
     },
     'Appliance': {
-        'ground_truth': 'ApplianceRAGScenarios.csv'
+        'ground_truth': 'ApplianceRAGScenarios.xlsx'
     },
     'Shower': {
-        'ground_truth': 'ShowerRAGScenarios.csv'
+        'ground_truth': 'ShowerRAGScenarios.xlsx'
     }
 }
 
@@ -25,15 +25,11 @@ COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 
 # Bump this any time the metadata field set written into Chroma changes.
-RAG_SCHEMA_VERSION = 1
+RAG_SCHEMA_VERSION = 2
 
 
-def compute_source_csv_hash(csv_dir: Path = SCENARIO_DIR) -> str:
-    """SHA-256 of the concatenated bytes of the three RAG source CSVs.
-
-    Used as a fingerprint stored on the Chroma collection's metadata so RAG
-    runtime can detect stale embeddings (BuildRAG not re-run after CSV edit).
-    """
+def compute_source_table_hash(csv_dir: Path = SCENARIO_DIR) -> str:
+    """SHA-256 of the concatenated bytes of the three RAG source files."""
     h = hashlib.sha256()
     for decision_type in ('HVAC', 'Appliance', 'Shower'):
         path = Path(csv_dir) / RAG_FILES[decision_type]['ground_truth']
@@ -51,7 +47,6 @@ def compute_source_csv_hash(csv_dir: Path = SCENARIO_DIR) -> str:
 def load_hvac_data(csv_dir: str) -> pd.DataFrame:
     """Load HVAC data (single file contains everything)."""
     gt_path = Path(csv_dir) / RAG_FILES['HVAC']['ground_truth']
-    # Robust CSV read
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
     from sentinel_utils import read_csv_clean
@@ -143,16 +138,7 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
 
 
 def build_rag_database(csv_dir=SCENARIO_DIR):
-    """
-    Build ChromaDB vector database from RAG scenario CSV files.
-    Process:
-    1. Load all scenario files (with appropriate merging)
-    2. Convert each scenario to text using decision-type-specific formatting
-    3. Generate embeddings using sentence-transformers
-    4. Store in ChromaDB with metadata (decision type, ground truth scores)
-    Args:
-        csv_dir: Directory containing the CSV files
-    """
+    """Build ChromaDB vector database from RAG scenario files."""
     print("BUILDING RAG DATABASE")
 
     # Initialize embedding model
@@ -171,15 +157,13 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     except:
         pass
 
-    # Create new collection — store source-CSV hash + schema version so runtime
-    # can detect stale embeddings.
-    source_hash = compute_source_csv_hash(csv_dir)
-    print(f"Source CSV SHA-256: {source_hash}")
+    source_hash = compute_source_table_hash(csv_dir)
+    print(f"Source SHA-256: {source_hash}")
     collection = client.create_collection(
         name=COLLECTION_NAME,
         metadata={
             "description": "MCDA scenarios with ground truth scores",
-            "source_csv_sha256": source_hash,
+            "source_table_sha256": source_hash,
             "schema_version": RAG_SCHEMA_VERSION,
         }
     )

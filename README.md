@@ -41,9 +41,9 @@ LLM-MCDA/
 │   ├── PurePrompting.py
 │   └── RAGDatabaseOptimized.py
 ├── Ground Truth/
-│   ├── ground_truth_appliance.csv
-│   ├── ground_truth_hvac.csv
-│   └── ground_truth_shower.csv
+│   ├── ground_truth_appliance.xlsx
+│   ├── ground_truth_hvac.xlsx
+│   └── ground_truth_shower.xlsx
 ├── Ground Truth Calculators/
 │   ├── ApplianceGroundTruthCalculator.py
 │   ├── HVACGroundTruthCalculator.py
@@ -59,13 +59,13 @@ LLM-MCDA/
 │   ├── RAGDiagnostics.json
 │   └── RAGResults.csv
 ├── Scenario Files/
-│   ├── ApplianceRAGScenariosGT.csv
-│   ├── ApplianceScenarios.csv
-│   ├── HVACRagScenarios.csv
-│   ├── HVACScenarios.csv
-│   ├── ShowerRAGScenarios.csv
-│   ├── ShowerScenarios.csv
-│   └── TestScenarios.csv
+│   ├── ApplianceRAGScenarios.xlsx
+│   ├── ApplianceScenarios.xlsx
+│   ├── HVACRagScenarios.xlsx
+│   ├── HVACScenarios.xlsx
+│   ├── ShowerRAGScenarios.xlsx
+│   ├── ShowerScenarios.xlsx
+│   └── TestScenarios.xlsx
 ├── BuildRAG.py
 ├── MCDA Files Consolidated.xlsx
 ├── README.md

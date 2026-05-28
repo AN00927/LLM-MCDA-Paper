@@ -1,6 +1,6 @@
 """Compute Shannon entropy weights for the ground-truth MCDA datasets.
 
-This script loads the HVAC, Appliance, and Shower ground-truth CSV files,
+This script loads the HVAC, Appliance, and Shower ground-truth XLSX files,
 concatenates them into one DataFrame, and compares the subjective MAVT weights
 with objective entropy-derived weights overall and by decision type.
 """
@@ -66,16 +66,16 @@ def resolve_criterion_columns(df: pd.DataFrame) -> dict[str, str]:
 
 
 def load_ground_truth_data(project_root: Path) -> pd.DataFrame:
-    """Load and concatenate all ground-truth CSVs into one DataFrame."""
+    """Load and concatenate all ground-truth tables into one DataFrame."""
     file_specs = (
-        ("HVAC", ("Ground Truth/ground_truth_hvac.csv", "Output Files/ground_truth_hvac.csv")),
+        ("HVAC", ("Ground Truth/ground_truth_hvac.xlsx", "Output Files/ground_truth_hvac.xlsx")),
         (
             "Appliance",
-            ("Ground Truth/ground_truth_appliance.csv", "Output Files/ground_truth_appliance.csv"),
+            ("Ground Truth/ground_truth_appliance.xlsx", "Output Files/ground_truth_appliance.xlsx"),
         ),
         (
             "Shower",
-            ("Ground Truth/ground_truth_shower.csv", "Output Files/ground_truth_shower.csv"),
+            ("Ground Truth/ground_truth_shower.xlsx", "Output Files/ground_truth_shower.xlsx"),
         ),
     )
 
@@ -182,11 +182,11 @@ def build_comparison_table(data: pd.DataFrame, column_map: dict[str, str]) -> pd
 
 
 def export_results(comparison_table: pd.DataFrame, project_root: Path) -> Path:
-    """Write the comparison table to Scoring Logic and Documentation/method/entropy_weights.csv."""
+    """Write the comparison table to Scoring Logic and Documentation/method/entropy_weights.xlsx."""
     output_dir = project_root / "Scoring Logic and Documentation" / "method"
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / "entropy_weights.csv"
-    comparison_table.reset_index().to_csv(output_path, index=False, encoding='utf-8-sig')
+    output_path = output_dir / "entropy_weights.xlsx"
+    comparison_table.reset_index().to_excel(output_path, index=False, engine="openpyxl")
     return output_path
 
 

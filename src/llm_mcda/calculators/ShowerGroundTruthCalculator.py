@@ -509,8 +509,8 @@ class ShowerGroundTruthCalculator:
 
 
 def process_shower_scenarios(
-    csv_filename: str = str(SCENARIO_DIR / "ShowerScenarios.csv"),
-    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.csv")):
+    csv_filename: str = str(SCENARIO_DIR / "ShowerScenarios.xlsx"),
+    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")):
     """Process shower scenarios."""
     import pandas as pd
     from sentinel_utils import read_csv_clean, parse_utility_budget
@@ -518,7 +518,6 @@ def process_shower_scenarios(
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    # Read CSV robustly; no time columns here but ensure string trimming
     df = read_csv_clean(csv_path)
     print(f"Found {len(df)} shower scenarios")
 
@@ -535,7 +534,6 @@ def process_shower_scenarios(
             'Occupants': int(row['Occupants']),
             'Tank Size': float(row['Tank Size']),
             'GPM': float(row['GPM']),
-            # utility budget now parsed safely (no $ expected)
             'Utility Budget': parse_utility_budget(row.get('Utility Budget', 0)),
             'Housing Type': row['Housing Type'],
             'Outdoor Temp': float(row['Outdoor Temp']),
@@ -558,7 +556,7 @@ def process_shower_scenarios(
                 for alt_data in result['alternatives']
             ]
             ranking_result = apply_mavt_ranking(alts_for_ranking)
-            # Extract scores from result and flatten to CSV rows
+            # Extract scores from result and flatten to rows
             for alt_data in result['alternatives']:
                 alt_idx = result['alternatives'].index(alt_data)
                 result_row = {
@@ -590,9 +588,8 @@ def process_shower_scenarios(
             traceback.print_exc()
             continue
 
-    # Save results to CSV
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+    results_df.to_excel(output_path, index=False, engine="openpyxl")
 
     print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")
