@@ -16,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
 from sentinel_utils import has_sentinel_scores, read_csv_clean
 
-TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
+TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"
@@ -717,7 +717,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                  output_diagnostics_path: str) -> Dict:
     """Run test set."""
     import csv as csv_module
-
     test_csv_path = Path(test_csv_path)
     output_csv_path = Path(output_csv_path)
     output_diagnostics_path = Path(output_diagnostics_path)
@@ -728,19 +727,18 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     print(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
-    with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
-        reader = csv_module.DictReader(f)
-        first_row = next(reader)
+    df = read_csv_clean(
+        test_csv_path,
+        keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
+    )
+    required_cols = ['Question', 'Decision Type']
+    missing_cols = [col for col in required_cols if col not in df.columns]
 
-        # Make sure the columns we need are actually there
-        required_cols = ['Question', 'Decision Type']
-        missing_cols = [col for col in required_cols if col not in first_row]
+    if missing_cols:
+        raise ValueError(f" Missing required columns: {missing_cols}")
 
-        if missing_cols:
-            raise ValueError(f" Missing required columns: {missing_cols}")
-
-        scenarios.append(first_row)
-        scenarios.extend(list(reader))
+    for _, row in df.iterrows():
+        scenarios.append(row.to_dict())
 
     print(f" Loaded {len(scenarios)} test scenarios")
     print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
@@ -867,7 +865,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
             appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
             flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
-            # input_decision_type: always the value from the scenario CSV
+            # input_decision_type: always the value from the scenario file
             input_decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
             # extracted_decision_type: what the LLM said (may differ from input)
             extracted_decision_type = result.get('decision_type', 'UNKNOWN')
@@ -1076,7 +1074,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # When N=1, pandas std returns NaN — annotate clearly in the stats CSV
+    # When N=1, pandas std returns NaN — annotate clearly in the stats output
     if n_readable == 1:
         print("WARNING: Only 1 run aggregated — std columns will be NaN (undefined for N=1).")
         for c in CRITERIA_COLS:
@@ -1129,7 +1127,7 @@ if __name__ == "__main__":
 
     if not test_csv.exists():
         print(f" ERROR: Test scenarios file not found: {test_csv}")
-        print("Please upload your test scenarios CSV first.")
+        print("Please provide your test scenarios XLSX first.")
         sys.exit(1)
 
     if (HVACGroundTruthCalculator is None or

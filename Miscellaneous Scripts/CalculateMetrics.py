@@ -30,9 +30,9 @@ OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 
 CONFIG = {
     "ground_truth": {
-        "HVAC": str(GROUND_TRUTH_DIR / "ground_truth_hvac.csv"),
-        "Appliance": str(GROUND_TRUTH_DIR / "ground_truth_appliance.csv"),
-        "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.csv"),
+        "HVAC": str(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx"),
+        "Appliance": str(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx"),
+        "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx"),
     },
     "architectures": {
         "Pure": str(OUTPUT_DIR / "pure_prompting_results.csv"),
@@ -58,11 +58,11 @@ CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = 1928
 
 # Scenario matching uses (question, location) content keys only. Strict
-# (decision_type, scenario_id) lookup is disabled because architecture CSV
-# scenario_ids are assigned from TestScenarios while GT CSVs number
+# (decision_type, scenario_id) lookup is disabled because architecture
+# scenario_ids are assigned from TestScenarios while GT tables number
 # independently by domain, so those ID namespaces do not align.
 #
-# Architecture *_results.csv files are not used here. This script
+# Architecture *_results files are not used here. This script
 # re-aggregates per-run outputs via aggregate_run_files and serves as the
 # source for reported metrics.
 

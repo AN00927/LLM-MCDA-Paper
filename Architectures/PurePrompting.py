@@ -45,7 +45,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
 from sentinel_utils import has_sentinel_scores, read_csv_clean
 
-TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
+TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -452,11 +452,14 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
 
     scenarios = []
-    with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for i, row in enumerate(reader):
-            row['scenario_id'] = i + 1
-            scenarios.append(row)
+    df = read_csv_clean(
+        test_csv_path,
+        keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
+    )
+    for i, row in df.iterrows():
+        record = row.to_dict()
+        record["scenario_id"] = i + 1
+        scenarios.append(record)
 
     logging.info(f"Loaded {len(scenarios)} test scenarios from {test_csv_path}")
 
@@ -707,7 +710,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # When N=1, pandas std returns NaN — annotate clearly in the stats CSV
+    # When N=1, pandas std returns NaN — annotate clearly in the stats output
     if n_readable == 1:
         logging.warning(
             "Only 1 run aggregated — std columns will be NaN (undefined for N=1)."
@@ -767,34 +770,29 @@ def main():
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
     logging.info(f"Temperature: {API_CONFIG['temperature']}")
-    import csv as csv_module
     try:
-        with open(test_csv, 'r', encoding='utf-8-sig') as f:
-            reader = csv_module.DictReader(f)
-            first_row = next(reader)
+        df = read_csv_clean(
+            test_csv,
+            keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
+        )
+        required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
+        missing_cols = [col for col in required_cols if col not in df.columns]
 
-            required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
-            missing_cols = [col for col in required_cols if col not in first_row]
+        if missing_cols:
+            logging.error(f"Missing required columns: {missing_cols}")
+            logging.error("Input must have: Question, Decision Type, Alternative 1, Alternative 2, Alternative 3")
+            logging.error("Plus decision-type-specific columns")
+            return
 
-            if missing_cols:
-                logging.error(f"Missing required columns: {missing_cols}")
-                logging.error("CSV must have: Question, Decision Type, Alternative 1, Alternative 2, Alternative 3")
-                logging.error("Plus decision-type-specific columns")
-                return
-
-            # Make sure the decision types look right
-            f.seek(0)
-            fresh_reader = csv_module.DictReader(f)
-            decision_types = set([row.get('Decision Type', 'UNKNOWN') for row in fresh_reader])
-
-            logging.info(f"CSV validation passed")
-            logging.info(f"  Decision types found: {decision_types}")
+        decision_types = set(df.get('Decision Type', pd.Series(dtype=str)).fillna('UNKNOWN'))
+        logging.info("Input validation passed")
+        logging.info(f"  Decision types found: {decision_types}")
 
     except FileNotFoundError:
         logging.error(f"Test file not found: {test_csv}")
         return
     except Exception as e:
-        logging.error(f" CSV validation error: {e}")
+        logging.error(f" Input validation error: {e}")
         return
 
     run_multi_and_aggregate(str(test_csv), str(output_csv))

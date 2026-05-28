@@ -58,13 +58,13 @@ def coerce_score_series(series):
     return series.apply(coerce_score)
 
 
-def read_csv_clean(path, dtype: dict = None, time_columns: list = None, keep_str_cols: list = None):
+def read_table_clean(path, dtype: dict = None, time_columns: list = None, keep_str_cols: list = None):
     """
-    Robust CSV reader that attempts common encodings and normalizes column names
+    Read a CSV or XLSX file and normalize column names/strings.
 
     - path: file path or pathlib.Path
-    - dtype: optional dict passed to pd.read_csv to enforce dtypes (e.g. {'Baseline Time': str})
-    - time_columns: list of column names that should be read/treated as string times
+    - dtype: optional dict passed to pandas for dtype enforcement
+    - time_columns: list of column names that should be treated as string times
     - keep_str_cols: list of columns to coerce to string and strip whitespace
 
     Returns a pandas.DataFrame with trimmed column names and string columns stripped.
@@ -72,56 +72,64 @@ def read_csv_clean(path, dtype: dict = None, time_columns: list = None, keep_str
     import pandas as pd
     from pathlib import Path
 
-    encodings = [
-        "utf-8-sig",  # preferred for Excel compatibility
-        "utf-8",
-        "cp1252",
-    ]
-
     p = Path(path)
-    last_err = None
-    for enc in encodings:
-        try:
-            if dtype is None:
-                df = pd.read_csv(p, encoding=enc)
-            else:
-                # enforce dtype for selected columns; others inferred
-                df = pd.read_csv(p, encoding=enc, dtype=dtype)
-            last_err = None
-            break
-        except UnicodeDecodeError as e:
-            last_err = e
-            continue
-        except Exception as e:
-            # If parse errors occur with a forced dtype, retry without dtype
-            last_err = e
+
+    strcols = set((keep_str_cols or []) + (time_columns or []))
+
+    def _to_str(value):
+        if value is None:
+            return ""
+        if isinstance(value, float) and pd.isna(value):
+            return ""
+        return str(value).strip()
+
+    converters = {col: _to_str for col in strcols} if strcols else None
+
+    if p.suffix.lower() in {".xlsx", ".xlsm", ".xls"}:
+        df = pd.read_excel(p, dtype=dtype, converters=converters, engine="openpyxl")
+    else:
+        encodings = ["utf-8-sig", "utf-8", "cp1252"]
+        last_err = None
+        for enc in encodings:
             try:
-                df = pd.read_csv(p, encoding=enc)
+                if dtype is None:
+                    df = pd.read_csv(p, encoding=enc)
+                else:
+                    df = pd.read_csv(p, encoding=enc, dtype=dtype)
                 last_err = None
                 break
-            except Exception:
+            except UnicodeDecodeError as e:
+                last_err = e
                 continue
+            except Exception as e:
+                last_err = e
+                try:
+                    df = pd.read_csv(p, encoding=enc)
+                    last_err = None
+                    break
+                except Exception:
+                    continue
 
-    if last_err is not None:
-        raise last_err
+        if last_err is not None:
+            raise last_err
 
-    # Normalize column names and strip surrounding whitespace
     df.columns = [str(c).strip() for c in df.columns]
 
-    # Coerce requested columns to string and strip whitespace
-    strcols = set((keep_str_cols or []) + (time_columns or []))
     for col in strcols:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
 
-    # Also strip all object (string) columns by default to remove stray spaces/BOMs
     for col in df.select_dtypes(include=[object]).columns:
-        # avoid re-casting columns explicitly requested to remain as something else
         if col in strcols:
             continue
         df[col] = df[col].astype(str).str.strip()
 
     return df
+
+
+def read_csv_clean(path, dtype: dict = None, time_columns: list = None, keep_str_cols: list = None):
+    """Backwards-compatible wrapper for read_table_clean."""
+    return read_table_clean(path, dtype=dtype, time_columns=time_columns, keep_str_cols=keep_str_cols)
 
 
 def parse_utility_budget(budget_value) -> float:

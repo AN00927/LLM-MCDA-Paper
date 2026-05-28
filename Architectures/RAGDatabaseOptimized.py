@@ -20,7 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
 from sentinel_utils import has_sentinel_scores, read_csv_clean
 
-TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.csv"
+TEST_SCENARIOS_CSV = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -48,20 +48,16 @@ EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 RETRIEVE_K = 3
 
 # Must match BuildRAG.RAG_SCHEMA_VERSION. Bump in lockstep when metadata fields change.
-EXPECTED_RAG_SCHEMA_VERSION = 1
+EXPECTED_RAG_SCHEMA_VERSION = 2
 RAG_SOURCE_FILES = [
-    ("HVAC", "HVACRagScenarios.csv"),
-    ("Appliance", "ApplianceRAGScenarios.csv"),
-    ("Shower", "ShowerRAGScenarios.csv"),
+    ("HVAC", "HVACRagScenarios.xlsx"),
+    ("Appliance", "ApplianceRAGScenarios.xlsx"),
+    ("Shower", "ShowerRAGScenarios.xlsx"),
 ]
 
 
 def _compute_expected_source_hash() -> str:
-    """Recompute the hash BuildRAG.compute_source_csv_hash would produce now.
-
-    Kept here (rather than imported) so RAG can validate without taking a hard
-    dependency on the build script's importability.
-    """
+    """Recompute the hash BuildRAG.compute_source_table_hash would produce now."""
     h = hashlib.sha256()
     for decision_type, filename in RAG_SOURCE_FILES:
         path = PROJECT_ROOT / "Scenario Files" / filename
@@ -109,20 +105,14 @@ embedding_model = None
 
 
 def init_rag_resources() -> None:
-    """Initialize ChromaDB client and embedding model for a single run.
-
-    B5 fix: verify the collection's stored source-CSV hash and schema version
-    against the current source CSVs. Mismatch means BuildRAG was not re-run
-    after a CSV edit (or the schema fields changed). Halt the script — silent
-    drift would invalidate the entire benchmark.
-    """
+    """Initialize ChromaDB client and embedding model for a single run."""
     global chroma_collection, embedding_model
     logger.info("Loading ChromaDB and embedding model")
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     chroma_collection = chroma_client.get_collection(COLLECTION_NAME)
 
     coll_meta = chroma_collection.metadata or {}
-    stored_hash = coll_meta.get("source_csv_sha256")
+    stored_hash = coll_meta.get("source_table_sha256")
     stored_version = coll_meta.get("schema_version")
     expected_hash = _compute_expected_source_hash()
 
@@ -134,9 +124,9 @@ def init_rag_resources() -> None:
         )
     if stored_hash != expected_hash:
         raise RuntimeError(
-            f"RAG source-CSV hash mismatch — Chroma collection is stale.\n"
-            f"  collection source_csv_sha256: {stored_hash}\n"
-            f"  current source_csv_sha256:    {expected_hash}\n"
+            f"RAG source hash mismatch — Chroma collection is stale.\n"
+            f"  collection source_table_sha256: {stored_hash}\n"
+            f"  current source_table_sha256:    {expected_hash}\n"
             f"Re-run Miscellaneous Scripts/BuildRAG.py to refresh."
         )
 
@@ -670,7 +660,6 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
                  output_diagnostics_path: str) -> Dict:
     """Run test set."""
     import csv as csv_module
-
     test_csv_path = Path(test_csv_path)
     output_csv_path = Path(output_csv_path)
     output_diagnostics_path = Path(output_diagnostics_path)
@@ -686,19 +675,18 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     logger.info(f"Loading test scenarios from: {test_csv_path}")
 
     scenarios = []
-    with open(test_csv_path, 'r', encoding='utf-8-sig') as f:
-        reader = csv_module.DictReader(f)
-        first_row = next(reader)
+    df = read_csv_clean(
+        test_csv_path,
+        keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
+    )
+    required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
+    missing_cols = [col for col in required_cols if col not in df.columns]
 
-        # Make sure the required columns are there
-        required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
-        missing_cols = [col for col in required_cols if col not in first_row]
+    if missing_cols:
+        raise ValueError(f" Missing required columns: {missing_cols}")
 
-        if missing_cols:
-            raise ValueError(f" Missing required columns: {missing_cols}")
-
-        scenarios.append(first_row)
-        scenarios.extend(list(reader))
+    for _, row in df.iterrows():
+        scenarios.append(row.to_dict())
 
     logger.info(f"OK Loaded {len(scenarios)} test scenarios")
     logger.info(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
@@ -787,7 +775,7 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
             cumulative_diagnostics['successful_scenarios'] /
             max(cumulative_diagnostics['total_scenarios'], 1)
     )
-    # Write the results to CSV
+    # Write the results to the output file
     logger.info(f"\nSaving results to: {output_csv_path}")
 
     with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
@@ -966,7 +954,7 @@ if a _run_NN.csv already exists and is non-empty it is
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # When N=1, pandas std returns NaN — annotate clearly in the stats CSV
+    # When N=1, pandas std returns NaN — annotate clearly in the stats output
     if n_readable == 1:
         logger.info("WARNING: Only 1 run aggregated — std columns will be NaN (undefined for N=1).")
         for c in CRITERIA_COLS:

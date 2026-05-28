@@ -35,8 +35,8 @@ MEREC formula (all criteria are beneficial, higher score = better):
     Step 4: Removal effect  E_j = Σ_i |S_i^(-j) - S_i|
     Step 5: Weight  w_j = E_j / Σ_k E_k
 
-Inputs:  ground_truth_hvac.csv, ground_truth_appliance.csv, ground_truth_shower.csv
-Outputs: merec_weights_summary.csv
+Inputs:  ground_truth_hvac.xlsx, ground_truth_appliance.xlsx, ground_truth_shower.xlsx
+Outputs: merec_weights_summary.xlsx
 """
 
 import os
@@ -48,9 +48,9 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 
 GT_FILES = {
-    "HVAC":      "ground_truth_hvac.csv",
-    "Appliance": "ground_truth_appliance.csv",
-    "Shower":    "ground_truth_shower.csv",
+    "HVAC":      "ground_truth_hvac.xlsx",
+    "Appliance": "ground_truth_appliance.xlsx",
+    "Shower":    "ground_truth_shower.xlsx",
 }
 
 SCORE_COLS = {
@@ -70,7 +70,7 @@ SUBJECTIVE_WEIGHTS = {
     "practicality":  0.15,
 }
 
-OUTPUT_CSV  = "merec_weights_summary.csv"
+OUTPUT_CSV  = "merec_weights_summary.xlsx"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SEARCH_DIRS = [
@@ -111,7 +111,6 @@ def find_file(filename: str) -> str:
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        # Use robust CSV loader to handle encodings and trimming
         try:
             from sentinel_utils import read_csv_clean
             df = read_csv_clean(find_file(fname))
@@ -295,7 +294,6 @@ def main():
         "  the calculator (occupant-comfort-based fixed score)."
     )
 
-    # Save CSV
     rows = []
     for label, res in results.items():
         all_w = pd.concat(res["per_scenario_weights"], axis=1)
@@ -312,7 +310,7 @@ def main():
                 "zero_var_scenarios": res["zero_variance_counts"][c],
             })
 
-    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False, encoding='utf-8-sig')
+    pd.DataFrame(rows).to_excel(OUTPUT_CSV, index=False, engine="openpyxl")
     print(f"\n  Saved: {OUTPUT_CSV}")
     print("\nDone.\n")
 
