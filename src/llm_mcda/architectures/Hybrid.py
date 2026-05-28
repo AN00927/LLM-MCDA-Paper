@@ -67,7 +67,7 @@ TEMPERATURE = 0.3
 MAX_RETRIES = 5
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
-OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.csv"
+OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.xlsx"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_diagnostics.json"
 
 HYBRID_FAILURE_COUNTER_KEYS = [
@@ -713,12 +713,11 @@ def run_scenario(scenario: Dict) -> Dict:
     }
 
 
-def run_test_set(test_csv_path: str, output_csv_path: str,
+def run_test_set(test_path: str, output_path: str,
                  output_diagnostics_path: str) -> Dict:
     """Run test set."""
-    import csv as csv_module
-    test_csv_path = Path(test_csv_path)
-    output_csv_path = Path(output_csv_path)
+    test_csv_path = Path(test_path)
+    output_csv_path = Path(output_path)
     output_diagnostics_path = Path(output_diagnostics_path)
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
     output_diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
@@ -840,86 +839,65 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     )
     print(f"\nSaving results to: {output_csv_path}")
 
-    with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
-        fieldnames = [
-            'scenario_id', 'question', 'location',
-            'input_decision_type', 'extracted_decision_type', 'decision_type',
-            'outdoor_temp', 'appliance_age', 'flow_rate',
-            'calculator', 'extraction_failed', 'gt_calculation_failed',
-            'alternative', 'extracted_alternative',
-            'energy_cost', 'environmental', 'comfort', 'practicality',
-            'rank', 'weighted_score'
-        ]
-        writer = csv_module.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+    rows = []
+    for scenario_id, result in enumerate(all_results, 1):
+        question = result['scenario']
+        calculator = result['calculator']
+        extraction_failed = result.get('extraction_failed', False)
+        gt_calc_failed = result.get('gt_calculation_failed', False)
+        scenario_failed = result.get('scenario_failed', False)
 
-        for scenario_id, result in enumerate(all_results, 1):
-            question = result['scenario']
-            decision_type = result['decision_type']
-            calculator = result['calculator']
-            extraction_failed = result.get('extraction_failed', False)
-            gt_calc_failed = result.get('gt_calculation_failed', False)
-            scenario_failed = result.get('scenario_failed', False)
+        location = scenarios[scenario_id - 1].get('Location', 'N/A')
+        outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
+        appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
+        flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
+        input_decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
+        extracted_decision_type = result.get('decision_type', 'UNKNOWN')
+        decision_type = input_decision_type
 
-            location = scenarios[scenario_id - 1].get('Location', 'N/A')
-            outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
-            appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
-            flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
-            # input_decision_type: always the value from the scenario file
-            input_decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
-            # extracted_decision_type: what the LLM said (may differ from input)
-            extracted_decision_type = result.get('decision_type', 'UNKNOWN')
-            # decision_type kept as the input type for backwards-compatibility
-            decision_type = input_decision_type
+        ranks = result['ranking_result']['ranks']
+        weighted_scores = result['ranking_result']['weighted_scores']
 
-            # Grab ranking details in input order
-            ranks = result['ranking_result']['ranks']
-            weighted_scores = result['ranking_result']['weighted_scores']
+        for alt_idx, alt_data in enumerate(result['alternatives_scores']):
+            alternative = alt_data['alternative']
+            extracted_alternative = alt_data.get('extracted_alternative', '')
+            scores = alt_data['scores']
 
-            # Write out each alternative
-            for alt_idx, alt_data in enumerate(result['alternatives_scores']):
-                alternative = alt_data['alternative']
-                extracted_alternative = alt_data.get('extracted_alternative', '')
-                scores = alt_data['scores']
+            if scenario_failed:
+                energy_cost = environmental = comfort = practicality = 1928
+                rank = weighted_score = 1928
+            else:
+                energy_cost = scores['energy_cost']
+                environmental = scores['environmental']
+                comfort = scores['comfort']
+                practicality = scores['practicality']
+                rank = ranks[alt_idx]
+                weighted_score = weighted_scores[alt_idx]
 
-                if scenario_failed:
-                    energy_cost = 1928
-                    environmental = 1928
-                    comfort = 1928
-                    practicality = 1928
-                    rank = 1928
-                    weighted_score = 1928
-                else:
-                    energy_cost = scores['energy_cost']
-                    environmental = scores['environmental']
-                    comfort = scores['comfort']
-                    practicality = scores['practicality']
-                    rank = ranks[alt_idx]
-                    weighted_score = weighted_scores[alt_idx]
+            rows.append({
+                'scenario_id': scenario_id,
+                'question': question,
+                'location': location,
+                'input_decision_type': input_decision_type,
+                'extracted_decision_type': extracted_decision_type,
+                'decision_type': decision_type,
+                'outdoor_temp': outdoor_temp,
+                'appliance_age': appliance_age,
+                'flow_rate': flow_rate,
+                'calculator': calculator,
+                'extraction_failed': extraction_failed,
+                'gt_calculation_failed': gt_calc_failed,
+                'alternative': alternative,
+                'extracted_alternative': extracted_alternative,
+                'energy_cost': energy_cost,
+                'environmental': environmental,
+                'comfort': comfort,
+                'practicality': practicality,
+                'rank': rank,
+                'weighted_score': weighted_score,
+            })
 
-                writer.writerow({
-                    'scenario_id': scenario_id,
-                    'question': question,
-                    'location': location,
-                    'input_decision_type': input_decision_type,
-                    'extracted_decision_type': extracted_decision_type,
-                    'decision_type': decision_type,
-                    'outdoor_temp': outdoor_temp,
-                    'appliance_age': appliance_age,
-                    'flow_rate': flow_rate,
-                    'calculator': calculator,
-                    'extraction_failed': extraction_failed,
-                    'gt_calculation_failed': gt_calc_failed,
-                    'alternative': alternative,
-                    'extracted_alternative': extracted_alternative,
-                    'energy_cost': energy_cost,
-                    'environmental': environmental,
-                    'comfort': comfort,
-                    'practicality': practicality,
-                    'rank': rank,
-                    'weighted_score': weighted_score
-                })
-
+    pd.DataFrame(rows).to_excel(output_csv_path, index=False, engine='openpyxl')
     print(f" Results saved to: {output_csv_path}")
 
     # Save the diagnostics blob
@@ -1114,33 +1092,32 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "n_runs", "n_successful_runs", "n_failed_runs",
     ]
     avg = avg.reindex(columns=col_order)
-    avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
+    avg.to_excel(base_output_csv, index=False, engine='openpyxl')
     print(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
-    stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')
+    stats_df.to_excel(str(stats_path), index=False, engine='openpyxl')
     print(f"Score statistics saved to {stats_path}")
 
 
-if __name__ == "__main__":
-    test_csv = TEST_SCENARIOS_CSV
+def main():
+    if not os.getenv("OPENROUTER_API_KEY"):
+        raise RuntimeError("OPENROUTER_API_KEY not found in .env file")
 
-    if not test_csv.exists():
-        print(f" ERROR: Test scenarios file not found: {test_csv}")
-        print("Please provide your test scenarios XLSX first.")
-        sys.exit(1)
+    if not TEST_SCENARIOS_CSV.exists():
+        raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS_CSV}")
 
-    if (HVACGroundTruthCalculator is None or
-            ApplianceGroundTruthCalculator is None or
-            ShowerGroundTruthCalculator is None):
-        print(" ERROR: Could not load one or more ground truth calculators.")
-        print("Please ensure HVACGroundTruthCalculator.py, ApplianceGroundTruthCalculator.py, and ShowerGroundTruthCalculator.py are in the Ground Truth Calculators folder.")
-        sys.exit(1)
-    else:
-        print(" Ground truth calculators loaded")
+    print("Starting Hybrid Architecture Test...")
+    print(f"Model: {MODEL_ID}")
+    print(f"Temperature: {TEMPERATURE}")
 
     run_multi_and_aggregate(
-        test_csv_path=str(test_csv),
+        test_csv_path=str(TEST_SCENARIOS_CSV),
         base_output_csv=str(OUTPUT_CSV),
         base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
     )
+    print("HYBRID MULTI-RUN COMPLETE")
+
+
+if __name__ == "__main__":
+    main()

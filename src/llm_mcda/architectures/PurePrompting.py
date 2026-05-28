@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import csv
 import time
 import logging
 import numpy as np
@@ -548,63 +547,57 @@ def run_test_set(test_csv_path: str, output_csv_path: str) -> Dict:
     cumulative_diagnostics["avg_latency_ms"] = avg_latency
     cumulative_diagnostics["scenario_success_rate"] = scenario_success_rate
 
-    with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
-        fieldnames = [
-            "scenario_id", "decision_type", "question", "location", "outdoor_temp", "appliance_age", "flow_rate",
-            "alternative", "energy_cost", "environmental", "comfort", "practicality",
-            "rank", "weighted_score"
-        ]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+    # Build a rows list and write via pandas to preserve Excel output semantics
+    rows = []
+    for result in all_results:
+        scenario_id = result["scenario_id"]
+        question = result["question"]
+        location = result["location"]
+        outdoor_temp = result["outdoor_temp"]
+        appliance_age = result["appliance_age"]
+        flow_rate = result["flow_rate"]
+        decision_type = result["decision_type"]
+        scenario_failed = result.get("diagnostics", {}).get("scenario_failed", False)
 
-        for result in all_results:
-            scenario_id = result["scenario_id"]
-            question = result["question"]
-            location = result["location"]
-            outdoor_temp = result["outdoor_temp"]
-            appliance_age = result["appliance_age"]
-            flow_rate = result["flow_rate"]
-            decision_type = result["decision_type"]
-            scenario_failed = result.get("diagnostics", {}).get("scenario_failed", False)
+        ranks = result["ranking_results"]["ranks"]
+        weighted_scores = result["ranking_results"]["weighted_scores"]
 
-            ranks = result["ranking_results"]["ranks"]
-            weighted_scores = result["ranking_results"]["weighted_scores"]
+        for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
+            alt = alt_scores["alternative"]
 
-            for alt_idx, alt_scores in enumerate(result["alternatives_scores"]):
-                alt = alt_scores["alternative"]
+            if scenario_failed:
+                energy_cost = 1928
+                environmental = 1928
+                comfort = 1928
+                practicality = 1928
+                rank = 1928
+                weighted_score = 1928
+            else:
+                energy_cost = alt_scores["energy_cost"]
+                environmental = alt_scores["environmental"]
+                comfort = alt_scores["comfort"]
+                practicality = alt_scores["practicality"]
+                rank = ranks[alt_idx]
+                weighted_score = weighted_scores[alt_idx]
 
-                if scenario_failed:
-                    energy_cost = 1928
-                    environmental = 1928
-                    comfort = 1928
-                    practicality = 1928
-                    rank = 1928
-                    weighted_score = 1928
-                else:
-                    energy_cost = alt_scores["energy_cost"]
-                    environmental = alt_scores["environmental"]
-                    comfort = alt_scores["comfort"]
-                    practicality = alt_scores["practicality"]
-                    rank = ranks[alt_idx]
-                    weighted_score = weighted_scores[alt_idx]
+            rows.append({
+                "scenario_id": scenario_id,
+                "decision_type": decision_type,
+                "question": question,
+                "location": location,
+                "outdoor_temp": outdoor_temp,
+                "appliance_age": appliance_age,
+                "flow_rate": flow_rate,
+                "alternative": alt,
+                "energy_cost": energy_cost,
+                "environmental": environmental,
+                "comfort": comfort,
+                "practicality": practicality,
+                "rank": rank,
+                "weighted_score": weighted_score
+            })
 
-                writer.writerow({
-                    "scenario_id": scenario_id,
-                    "decision_type": decision_type,
-                    "question": question,
-                    "location": location,
-                    "outdoor_temp": outdoor_temp,
-                    "appliance_age": appliance_age,
-                    "flow_rate": flow_rate,
-                    "alternative": alt,
-                    "energy_cost": energy_cost,
-                    "environmental": environmental,
-                    "comfort": comfort,
-                    "practicality": practicality,
-                    "rank": rank,
-                    "weighted_score": weighted_score
-                })
-
+    pd.DataFrame(rows).to_excel(output_csv_path, index=False, engine="openpyxl")
     logging.info(f"Results saved to {output_csv_path}")
 
     diagnostics_path = output_csv_path.with_name(f"{output_csv_path.stem}_diagnostics.json")
@@ -750,11 +743,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str) -> None:
         "n_runs", "n_successful_runs", "n_failed_runs",
     ]
     avg = avg.reindex(columns=col_order)
-    avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
+    avg.to_excel(base_output_csv, index=False, engine="openpyxl")
     logging.info(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
-    stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')
+    stats_df.to_excel(str(stats_path), index=False, engine="openpyxl")
     logging.info(f"Score statistics saved to {stats_path}")
 
 
@@ -765,7 +758,7 @@ def main():
         return
 
     test_csv = TEST_SCENARIOS_CSV
-    output_csv = OUTPUT_DIR / "pure_prompting_results.csv"
+    output_csv = OUTPUT_DIR / "pure_prompting_results.xlsx"
 
     logging.info("Starting Pure Prompting Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")

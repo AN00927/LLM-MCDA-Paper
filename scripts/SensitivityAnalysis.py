@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MISC_DIR = PROJECT_ROOT / "Miscellaneous Files"
+MISC_DIR = PROJECT_ROOT / "Miscellaneous Scripts"
 
 for p in (str(PROJECT_ROOT), str(MISC_DIR)):
     if p not in sys.path:
@@ -183,9 +183,9 @@ def run_sensitivity_analysis() -> pd.DataFrame:
           f"{preserved}/{n_total_scen} scenarios")
 
     # 6. Export
-    output_path = OUTPUT_DIR / f"sensitivity_analysis_{MODEL_KEY}.csv"
+    output_path = OUTPUT_DIR / f"sensitivity_analysis_{MODEL_KEY}.xlsx"
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+    results_df.to_excel(output_path, index=False, engine="openpyxl")
     print(f"\n  Results saved to: {output_path}")
 
     return results_df

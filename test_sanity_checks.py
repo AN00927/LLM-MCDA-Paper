@@ -56,7 +56,7 @@ def run_sanity_checks():
     # Check 2: Can we detect run files?
     print("\n[CHECK 2] Detecting run files in output directory...")
     from glob import glob
-    run_files = sorted(glob(str(OUTPUT_DIR / "*_run_*.csv")))
+    run_files = sorted(glob(str(OUTPUT_DIR / "*_run_*.xlsx")))
     if run_files:
         print(f"  [OK] Found {len(run_files)} run files:")
         for rf in run_files[:3]:
@@ -124,9 +124,9 @@ def run_sanity_checks():
     # Check 6: Try loading architecture results if they exist
     print("\n[CHECK 6] Testing architecture result loading...")
     arch_configs = {
-        "Pure": OUTPUT_DIR / "pure_prompting_results.csv",
-        "RAG": OUTPUT_DIR / "RAGResults.csv",
-        "Hybrid": OUTPUT_DIR / "hybrid_results.csv",
+        "Pure": OUTPUT_DIR / "pure_prompting_results.xlsx",
+        "RAG": OUTPUT_DIR / "RAGResults.xlsx",
+        "Hybrid": OUTPUT_DIR / "hybrid_results.xlsx",
     }
     
     for arch_name, file_path in arch_configs.items():
