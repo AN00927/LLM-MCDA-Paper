@@ -513,12 +513,12 @@ def process_shower_scenarios(
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")):
     """Process shower scenarios."""
     import pandas as pd
-    from sentinel_utils import read_csv_clean, parse_utility_budget
+    from sentinel_utils import read_table_clean, parse_utility_budget
 
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df = read_csv_clean(csv_path)
+    df = read_table_clean(csv_path)
     print(f"Found {len(df)} shower scenarios")
 
     calculator = ShowerGroundTruthCalculator()

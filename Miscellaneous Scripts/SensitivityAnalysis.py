@@ -14,6 +14,7 @@ for p in (str(PROJECT_ROOT), str(MISC_DIR)):
         sys.path.insert(0, p)
 
 from model_config import CRITERION_WEIGHTS, MODEL_KEY, get_output_folder
+from sentinel_utils import _atomic_write_xlsx
 from CalculateMetrics import (
     CONFIG,
     CRITERIA,
@@ -185,7 +186,7 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     # 6. Export
     output_path = OUTPUT_DIR / f"sensitivity_analysis_{MODEL_KEY}.xlsx"
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    results_df.to_excel(output_path, index=False, engine="openpyxl")
+    _atomic_write_xlsx(results_df, output_path)
     print(f"\n  Results saved to: {output_path}")
 
     return results_df

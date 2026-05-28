@@ -272,9 +272,9 @@ class TestLoadDiagnosticsJson:
             json.dump(data, f)
 
     def test_pure_counters_loaded(self, tmp_path):
-        csv_path = tmp_path / "pure_prompting_results.csv"
-        csv_path.touch()
-        diag_path = tmp_path / "pure_prompting_results_diagnostics.json"
+        results_path = tmp_path / "pure_prompting_results.xlsx"
+        results_path.touch()
+        diag_path = tmp_path / "pure_prompting_results_diagnostics_run_01.json"
         self._write_diag(diag_path, {
             "total_scenarios": 10,
             "failed_scenarios": 2,
@@ -287,7 +287,7 @@ class TestLoadDiagnosticsJson:
             "failed_invalid_score_type": 0,
             "failed_unknown": 2,
         })
-        result = self._cm._load_diagnostics_json(str(csv_path), "Pure")
+        result = self._cm._load_diagnostics_json(str(results_path), "Pure")
         assert result["diag_failed_scenarios"] == 2
         assert result["diag_failed_malformed_json"] == 1
         assert result["diag_failed_missing_score"] == 1
@@ -295,9 +295,9 @@ class TestLoadDiagnosticsJson:
         assert "diag_failed_extraction_invalid_json" not in result
 
     def test_hybrid_counters_loaded(self, tmp_path):
-        csv_path = tmp_path / "hybrid_results.csv"
-        csv_path.touch()
-        diag_path = tmp_path / "hybrid_diagnostics.json"
+        results_path = tmp_path / "hybrid_results.xlsx"
+        results_path.touch()
+        diag_path = tmp_path / "hybrid_results_diagnostics_run_01.json"
         self._write_diag(diag_path, {
             "total_scenarios": 5,
             "failed_scenarios": 1,
@@ -308,7 +308,7 @@ class TestLoadDiagnosticsJson:
             "failed_ground_truth_calculation_exception": 0,
             "failed_unknown": 0,
         })
-        result = self._cm._load_diagnostics_json(str(csv_path), "Hybrid")
+        result = self._cm._load_diagnostics_json(str(results_path), "Hybrid")
         assert result["diag_failed_extraction_invalid_json"] == 1
         # Pure counter should NOT appear in Hybrid result
         assert "diag_failed_malformed_json" not in result
