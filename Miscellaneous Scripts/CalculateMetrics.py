@@ -353,7 +353,7 @@ def build_gt_lookup(gt_by_type):
                 "used": False,
                 # Little tie-breaker fields for each decision type
                 "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
-                "appliance_age_type": str(sub["appliance_age_type"].iloc[0]).strip() if "appliance_age_type" in sub.columns else "",
+                "appliance_age": str(sub["appliance_age"].iloc[0]).strip() if "appliance_age" in sub.columns else "",
                 "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
             })
 
@@ -380,7 +380,7 @@ def build_gt_id_lookup(gt_by_type):
                 "question": sub["question"].iloc[0],
                 "location": sub["location"].iloc[0],
                 "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
-                "appliance_age_type": str(sub["appliance_age_type"].iloc[0]).strip() if "appliance_age_type" in sub.columns else "",
+                "appliance_age": str(sub["appliance_age"].iloc[0]).strip() if "appliance_age" in sub.columns else "",
                 "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
             }
     return gt_id_lookup
@@ -432,7 +432,7 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             gt_param_key = "outdoor_temp"
         elif arch_dtype == "Appliance":
             arch_param = _clean(arch_sub["appliance_age"].iloc[0]) if "appliance_age" in arch_sub.columns else ""
-            gt_param_key = "appliance_age_type"
+            gt_param_key = "appliance_age"
         else:  # Shower
             arch_param = _clean(arch_sub["flow_rate"].iloc[0]) if "flow_rate" in arch_sub.columns else ""
             gt_param_key = "gpm"

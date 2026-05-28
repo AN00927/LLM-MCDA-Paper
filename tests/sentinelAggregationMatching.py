@@ -355,7 +355,7 @@ class TestMatchScenarios:
                     "gt_energy_cost": ec, "gt_environmental": env,
                     "gt_comfort": com, "gt_practicality": pra,
                     "gt_rank": 1, "gt_mavt_score": 7.0,
-                    "outdoor_temp": "85", "appliance_age_type": "", "gpm": "",
+                    "outdoor_temp": "85", "appliance_age": "", "gpm": "",
                 })
         return pd.DataFrame(rows)
 
