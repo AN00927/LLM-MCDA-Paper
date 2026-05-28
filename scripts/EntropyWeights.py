@@ -12,6 +12,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from sentinel_utils import read_csv_clean
+
 
 SUBJECTIVE_WEIGHTS = {
     "environmental": 0.35,
@@ -80,7 +82,7 @@ def load_ground_truth_data(project_root: Path) -> pd.DataFrame:
     data_frames: list[pd.DataFrame] = []
     for decision_type, relative_candidates in file_specs:
         csv_path = resolve_existing_path(project_root, relative_candidates)
-        df = pd.read_csv(csv_path, encoding='utf-8-sig')
+        df = read_csv_clean(csv_path)
         df = df.copy()
         df["decision_type"] = decision_type
         df["source_file"] = csv_path.name
@@ -184,7 +186,7 @@ def export_results(comparison_table: pd.DataFrame, project_root: Path) -> Path:
     output_dir = project_root / "Scoring Logic and Documentation" / "method"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "entropy_weights.csv"
-    comparison_table.reset_index().to_csv(output_path, index=False)
+    comparison_table.reset_index().to_csv(output_path, index=False, encoding='utf-8-sig')
     return output_path
 
 

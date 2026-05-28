@@ -743,7 +743,7 @@ def process_hvac_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False)
+    results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
 
     print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")

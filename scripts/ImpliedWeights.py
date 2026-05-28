@@ -137,7 +137,7 @@ def load_ground_truth() -> pd.DataFrame:
             from sentinel_utils import read_csv_clean
             df = read_csv_clean(find_file(fname))
         except Exception:
-            df = pd.read_csv(find_file(fname))
+            df = read_csv_clean(find_file(fname))
         missing = [c for c in list(SCORE_COLS.values()) + [RANK_COL]
                    if c not in df.columns]
         if missing:
@@ -404,7 +404,7 @@ def main():
                 "r2_pairwise":       round(res["r2"], 4),
             })
 
-    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
+    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False, encoding='utf-8-sig')
     print(f"\n  Saved: {OUTPUT_CSV}")
     print("\nDone.\n")
 

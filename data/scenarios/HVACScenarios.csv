@@ -1,5 +1,4 @@
 Question,Location,Square Footage,Insulation,Household Size,Utility Budget,Housing Type,Outdoor Temp,House Age,R-Value,HVAC Age,SEER,Occupancy context,Alternative 1,Alternative 2,Alternative 3
-I'm heading out for the day — what AC temperature should I set?,"Chester Springs, PA",1800,Poor,1,205,Condo,88,22,9,18,12,unoccupied_8hr,78,80,83
 I'm working from home today with 1 person — what AC temperature should I set?,"Lancaster, PA",1050,Good,1,160,Apartment,92,27,22,20,13,occupied_all_day,72,76,80
 I'm home all day with 2 people — what heat temperature should I set?,"Lancaster, PA",1150,Good,2,195,Apartment,20,27,23,20,13,occupied_all_day,68,71,74
 I'm not going anywhere with 2 people — what AC temperature should I set?,"West Chester, PA",1600,Medium,2,255,Townhouse,90,37,14,30,11,occupied_all_day,77,80,83
@@ -70,7 +69,6 @@ I'm not planning to leave today with 4 people — what AC temperature should I set
 "With 3 people home, what AC temperature should I set?","Hazleton, PA",2100,Poor,3,350,Single-family,91,48,10,33,9,standard,74,78,82
 "With 3 people home, what AC temperature should I set?","Blue Bell, PA",1600,Medium,3,270,Condo,68,15,17,8,14,standard,68,70,72
 I'm staying home today with 2 people — what heat temperature should I set?,"Scranton, PA",980,Medium,2,185,Apartment,8,18,16,6,16,occupied_all_day,66,69,72
-I'm gone most of the day — what heat temperature should I set?,It's just past midnight — when should I run the dishwasher?,1350,Poor,3,210,Rowhouse,12,68,10,17,12,unoccupied_8hr,60,64,68
 We're just getting in for the night — what heat temperature should I set overnight?,"Erie, PA",2750,Good,6,285,Single-family,5,11,24,4,18,overnight_sleep,63,66,69
 I'm home and not going out with 4 people — what heat temperature should I set?,"Allentown, PA",1600,Medium,4,205,Townhouse,42,29,15,11,15,occupied_all_day,65,68,71
 I'm stepping out for a few hours — what heat temperature should I set for the condo?,"King of Prussia, PA",1120,Good,1,155,Condo,50,9,21,5,17,unoccupied_4hr,62,66,69
@@ -86,6 +84,21 @@ I'm out running errands all day — what AC temperature should I set?,"West Cheste
 I'm home all day with 4 people — what AC temperature should I set?,"Media, PA",1720,Good,4,230,Townhouse,96,7,24,4,19,occupied_all_day,72,76,80
 I'm leaving for work shortly — what AC temperature should I set?,"Norristown, PA",1180,Medium,2,175,Condo,98,26,15,12,14,unoccupied_8hr,78,81,84
 I'm not going anywhere with 5 people — what AC temperature should I set?,"Philadelphia, PA",1450,Poor,5,255,Rowhouse,90,86,8,21,11,occupied_all_day,73,77,81
-We're winding down for the night — what AC temperature should I set overnight?,It's just got home — it's around 6 PM — and I need to run the dishwasher. When should I start it?,2050,Medium,3,220,Single-family,87,33,17,14,14,overnight_sleep,72,75,78
 I'm heading out for a quick errand — what heat temperature should I set for the single-family?,"Altoona, PA",1780,Medium,2,200,Single-family,29,41,13,15,13,unoccupied_4hr,62,66,69
 I'm sticking around the house with 1 person — what heat temperature should I set?,"Bethlehem, PA",690,Good,1,130,Apartment,24,12,20,6,16,occupied_all_day,66,69,72
+I'm gone for the entire workday — what heat temperature should I set?,"Erie, PA",1700,Medium,2,220,Single-family,18,25,14,22,13,unoccupied_12hr,60,63,66
+I'm working from home today with 3 people — what AC temperature should I set?,"Pittsburgh, PA",1750,Good,3,250,Townhouse,87,15,22,12,14,occupied_all_day,73,76,79
+I'm heading out for the day — what heat temperature should I set?,"West Mifflin, PA",1500,Medium,2,200,Single-family,22,30,14,25,12,unoccupied_8hr,60,63,66
+"With 4 people home, what AC temperature should I set?","Pittsburgh, PA",2200,Medium,4,320,Single-family,92,28,14,22,13,standard,76,79,82
+I'm staying in today with 3 people — what heat temperature should I set?,"Meadville, PA",1900,Good,3,265,Single-family,25,22,20,18,14,occupied_all_day,64,67,70
+"With 4 people home, what heat temperature should I set?","Greensburg, PA",2100,Medium,4,290,Single-family,18,28,15,24,12,standard,62,65,68
+I'm heading out for the day — what heat temperature should I set?,"McKeesport, PA",1350,Poor,2,195,Apartment,14,35,10,28,11,unoccupied_8hr,58,61,64
+I'm around all day with 2 people — what heat temperature should I set?,"Monroeville, PA",1500,Medium,2,215,Townhouse,28,20,14,16,13,occupied_all_day,64,67,70
+We're calling it a night — what heat temperature should I set overnight?,"New Castle, PA",2000,Good,3,275,Single-family,10,18,22,14,15,overnight_sleep,60,63,66
+I'm not going anywhere with 3 people — what heat temperature should I set?,"Bradford, PA",1700,Poor,3,235,Single-family,5,40,9,32,10,occupied_all_day,62,65,68
+I'm stepping out for a few hours — what heat temperature should I set?,"Oil City, PA",1600,Medium,2,210,Rowhouse,22,30,14,22,13,unoccupied_4hr,60,63,66
+"With 5 people home, what heat temperature should I set?","Uniontown, PA",2400,Poor,5,365,Single-family,12,25,9,20,11,standard,62,65,68
+I'm working from home today with 2 people — what AC temperature should I set?,"Gettysburg, PA",1800,Good,2,235,Single-family,89,15,22,12,14,occupied_all_day,73,76,79
+I'm out running errands all day — what AC temperature should I set?,"Chambersburg, PA",1650,Medium,3,250,Townhouse,91,22,16,18,13,unoccupied_12hr,78,81,84
+I'm gone most of the day — what heat temperature should I set?,"Philadelphia, PA",1350,Poor,3,210,Rowhouse,12,68,10,40,9,unoccupied_8hr,60,64,68
+We're winding down for the night — what AC temperature should I set overnight?,"Pittsburgh, PA",2050,Medium,3,220,Single-family,87,33,15,28,12,sleep,72,75,78
