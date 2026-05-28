@@ -597,7 +597,7 @@ def process_appliance_scenarios(
                        keep_str_cols=['Baseline Time', 'Alternative 1', 'Alternative 2', 'Alternative 3'])
 
     required_cols = ['Description', 'Location', 'Utility Budget', 'Appliance', 'Housing Type',
-                     'Occupants', 'kwh/cycle', 'Appliance Age/Type', 'Baseline Time']
+                     'Occupants', 'kwh/cycle', 'Appliance Age', 'Baseline Time']
 
     def is_missing(value) -> bool:
         if value is None or pd.isna(value):
@@ -644,7 +644,7 @@ def process_appliance_scenarios(
             'Housing Type': row['Housing Type'],
             'Occupants': int(row['Occupants']),
             'kwh/cycle': float(row['kwh/cycle']),
-            'Appliance Age/Type': row['Appliance Age/Type'],
+            'Appliance Age': row['Appliance Age'],
             'Baseline Time': row.get('Baseline Time', ''),
             'Alternative 1': row['Alternative 1'],
             'Alternative 2': row['Alternative 2'],
@@ -671,7 +671,7 @@ def process_appliance_scenarios(
                     'location': row['Location'],
                     'utility_budget': parse_utility_budget(row.get('Utility Budget', 0)),
                     'appliance': row['Appliance'],
-                    'appliance_age_type': row['Appliance Age/Type'],
+                    'appliance_age': row['Appliance Age'],
                     'housing_type': row['Housing Type'],
                     'occupants': row['Occupants'],
                     'kwh_per_cycle': row['kwh/cycle'],
