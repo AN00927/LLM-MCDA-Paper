@@ -165,8 +165,8 @@ class TestCoerceScoreSeries:
 def _make_run_csv(tmp_path, run_idx, rows):
     """Write a minimal run CSV and return its Path."""
     df = pd.DataFrame(rows)
-    p = tmp_path / f"arch_results_run_{run_idx:02d}.csv"
-    df.to_csv(p, index=False, encoding="utf-8-sig")
+    p = tmp_path / f"arch_results_run_{run_idx:02d}.xlsx"
+    df.to_excel(p, index=False, engine="openpyxl")
     return p
 
 

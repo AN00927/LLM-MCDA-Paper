@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import csv
 import hashlib
 import logging
 import requests
@@ -74,7 +73,7 @@ MAX_RETRIES = 5
 RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
-OUTPUT_CSV = OUTPUT_DIR / "RAGResults.csv"
+OUTPUT_CSV = OUTPUT_DIR / "RAGResults.xlsx"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "RAGDiagnostics.json"
 
 RAG_FAILURE_COUNTER_KEYS = [
@@ -778,65 +777,57 @@ def run_test_set(test_csv_path: str, output_csv_path: str,
     # Write the results to the output file
     logger.info(f"\nSaving results to: {output_csv_path}")
 
-    with open(output_csv_path, 'w', newline='', encoding='utf-8-sig') as f:
-        fieldnames = [
-            'scenario_id', 'question', 'location', 'decision_type', 'outdoor_temp', 'appliance_age', 'flow_rate',
-            'alternative', 'energy_cost', 'environmental', 'comfort', 'practicality',
-            'rank', 'weighted_score'
-        ]
-        writer = csv_module.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+    # Build rows then write to Excel
+    rows = []
+    for scenario_id, result in enumerate(all_results, 1):
+        question = result['scenario']
+        decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
+        location = scenarios[scenario_id - 1].get('Location', 'N/A')
+        outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
+        appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
+        flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
+        scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
 
-        for scenario_id, result in enumerate(all_results, 1):
-            question = result['scenario']
-            decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
-            location = scenarios[scenario_id - 1].get('Location', 'N/A')
-            outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
-            appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
-            flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
-            scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
+        ranks = result['ranking_result']['ranks']
+        weighted_scores = result['ranking_result']['weighted_scores']
 
-            # Grab ranking details in input order
-            ranks = result['ranking_result']['ranks']
-            weighted_scores = result['ranking_result']['weighted_scores']
+        for alt_idx, alt_data in enumerate(result['alternatives_scores']):
+            alternative = alt_data['alternative']
+            scores = alt_data['scores']
 
-            # Write out each alternative
-            for alt_idx, alt_data in enumerate(result['alternatives_scores']):
-                alternative = alt_data['alternative']
-                scores = alt_data['scores']
+            if scenario_failed:
+                energy_cost = 1928
+                environmental = 1928
+                comfort = 1928
+                practicality = 1928
+                rank = 1928
+                weighted_score = 1928
+            else:
+                energy_cost = scores['energy_cost']
+                environmental = scores['environmental']
+                comfort = scores['comfort']
+                practicality = scores['practicality']
+                rank = ranks[alt_idx]
+                weighted_score = weighted_scores[alt_idx]
 
-                if scenario_failed:
-                    energy_cost = 1928
-                    environmental = 1928
-                    comfort = 1928
-                    practicality = 1928
-                    rank = 1928
-                    weighted_score = 1928
-                else:
-                    energy_cost = scores['energy_cost']
-                    environmental = scores['environmental']
-                    comfort = scores['comfort']
-                    practicality = scores['practicality']
-                    rank = ranks[alt_idx]
-                    weighted_score = weighted_scores[alt_idx]
+            rows.append({
+                'scenario_id': scenario_id,
+                'question': question,
+                'location': location,
+                'decision_type': decision_type,
+                'outdoor_temp': outdoor_temp,
+                'appliance_age': appliance_age,
+                'flow_rate': flow_rate,
+                'alternative': alternative,
+                'energy_cost': energy_cost,
+                'environmental': environmental,
+                'comfort': comfort,
+                'practicality': practicality,
+                'rank': rank,
+                'weighted_score': weighted_score
+            })
 
-                writer.writerow({
-                    'scenario_id': scenario_id,
-                    'question': question,
-                    'location': location,
-                    'decision_type': decision_type,
-                    'outdoor_temp': outdoor_temp,
-                    'appliance_age': appliance_age,
-                    'flow_rate': flow_rate,
-                    'alternative': alternative,
-                    'energy_cost': energy_cost,
-                    'environmental': environmental,
-                    'comfort': comfort,
-                    'practicality': practicality,
-                    'rank': rank,
-                    'weighted_score': weighted_score
-                })
-
+    pd.DataFrame(rows).to_excel(output_csv_path, index=False, engine='openpyxl')
     logger.info(f"OK Results saved to: {output_csv_path}")
 
     # Save the diagnostics blob
@@ -992,11 +983,11 @@ if a _run_NN.csv already exists and is non-empty it is
         "n_runs", "n_successful_runs", "n_failed_runs",
     ]
     avg = avg.reindex(columns=col_order)
-    avg.to_csv(base_output_csv, index=False, encoding='utf-8-sig')
+    avg.to_excel(base_output_csv, index=False, engine="openpyxl")
     logger.info(f"Averaged results ({n_readable} runs) saved to {base_output_csv}")
 
     stats_path = base.with_name(f"{base.stem}_stats{base.suffix}")
-    stats_df.to_csv(str(stats_path), index=False, encoding='utf-8-sig')
+    stats_df.to_excel(str(stats_path), index=False, engine="openpyxl")
     logger.info(f"Score statistics saved to {stats_path}")
 
 

@@ -7,10 +7,15 @@ with objective entropy-derived weights overall and by decision type.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from sentinel_utils import read_csv_clean
 
@@ -34,7 +39,7 @@ CRITERION_COLUMN_MAP = {
 
 def get_project_root() -> Path:
     """Return the repository root directory."""
-    return Path(__file__).resolve().parents[1]
+    return PROJECT_ROOT
 
 
 def resolve_existing_path(project_root: Path, relative_candidates: tuple[str, ...]) -> Path:
