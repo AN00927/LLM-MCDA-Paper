@@ -35,11 +35,11 @@ CONFIG = {
         "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx"),
     },
     "architectures": {
-        "Pure": str(OUTPUT_DIR / "pure_prompting_results.csv"),
-        "RAG": str(OUTPUT_DIR / "RAGResults.csv"),
-        "Hybrid": str(OUTPUT_DIR / "hybrid_results.csv"),
+        "Pure": str(OUTPUT_DIR / "pure_prompting_results.xlsx"),
+        "RAG": str(OUTPUT_DIR / "RAGResults.xlsx"),
+        "Hybrid": str(OUTPUT_DIR / "hybrid_results.xlsx"),
     },
-    "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.csv"),
+    "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.xlsx"),
     "gt_score_cols": {
         "energy_cost": "energy_cost_score",
         "environmental": "environmental_score",
@@ -784,7 +784,7 @@ def evaluate_all(config):
     arch_dfs = {}
     for name, path in config["architectures"].items():
         base_path = Path(path)
-        run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.csv"))
+        run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.xlsx"))
         if run_paths:
             aggregated = aggregate_run_files(run_paths)
             arch_dfs[name] = load_architecture(aggregated, name)
@@ -1012,7 +1012,7 @@ def evaluate_all(config):
         print(row)
     metrics_df = pd.DataFrame(all_metrics)
     Path(config["output_csv"]).parent.mkdir(parents=True, exist_ok=True)
-    metrics_df.to_csv(config["output_csv"], index=False, encoding='utf-8-sig')
+    metrics_df.to_excel(config["output_csv"], index=False, engine="openpyxl")
     print(f"\n\nMetrics saved to: {config['output_csv']}")
     print(f"Total metric rows: {len(metrics_df)}")
 

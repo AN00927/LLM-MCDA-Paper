@@ -54,10 +54,18 @@ Outputs: implied_weights_summary.xlsx
 import os
 import sys
 import warnings
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from itertools import combinations
 from scipy.optimize import minimize
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from sentinel_utils import read_csv_clean
 
 # Console output contains math symbols (σ, ≥, Σ, −); ensure stdout can encode them
 # on Windows where the default codec (cp1252) cannot.
@@ -130,13 +138,7 @@ def find_file(filename: str) -> str:
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        if BASE_DIR not in sys.path:
-            sys.path.insert(0, os.path.dirname(BASE_DIR))
-        try:
-            from sentinel_utils import read_csv_clean
-            df = read_csv_clean(find_file(fname))
-        except Exception:
-            df = read_csv_clean(find_file(fname))
+        df = read_csv_clean(find_file(fname))
         missing = [c for c in list(SCORE_COLS.values()) + [RANK_COL]
                    if c not in df.columns]
         if missing:
