@@ -26,7 +26,16 @@ This project compares three LLM-MCDA architectures for household energy decision
 | Comfort | 20% |
 | Practicality | 15% |
 
-**Underlying LLM:** Mistral Small 3.2 24B via OpenRouter  
+**Finalized Benchmark Model Set (2x2 open/closed x small/large):**
+| Slot | Model | GPQA Diamond | IFBench | GDPval | OpenRouter string |
+|---|---|---:|---:|---:|---|
+| Large Closed | GPT-5.4 | 87.1% | 65.9% | 50.1% | `openai/gpt-5.4` |
+| Small Closed | Gemini 3.5 Flash | 82.8% | 47.3% | 47.2% | `google/gemini-3.5-flash` |
+| Large Open | Qwen 3.5 27B | 85.8% | 75.6% | 33.1% | `qwen/qwen3.5-27b` |
+| Small Open | DeepSeek V4 Flash | TBD | TBD | TBD | `deepseek/deepseek-v4-flash` |
+
+Model selection and output routing are controlled in `model_config.py`.
+
 **RAG Database:** ChromaDB  
 **Score Scale:** 0–10
 
@@ -50,14 +59,10 @@ LLM-MCDA/
 │   └── ShowerGroundTruthCalculator.py
 ├── Miscellaneous Files/
 │   └── CalculateMetrics.py
-├── Output Files/
-│   ├── hybrid_diagnostics.json
-│   ├── hybrid_results.csv
-│   ├── metrics_summary.csv
-│   ├── pure_prompting_results.csv
-│   ├── pure_prompting_results_diagnostics.json
-│   ├── RAGDiagnostics.json
-│   └── RAGResults.csv
+├── Output Files DeepSeek V4 Flash/
+├── Output Files Qwen3.5 27B/
+├── Output Files Gemini 3.5 Flash/
+└── Output Files GPT-5.4/
 ├── Scenario Files/
 │   ├── ApplianceRAGScenarios.xlsx
 │   ├── ApplianceScenarios.xlsx
@@ -150,6 +155,14 @@ Ground truth scores are calculated using deterministic MAVT value functions with
 ---
 
 [Notebook](Notebook.pdf) | [Evaluation Metrics](Evaluation_Metrics_Derivations.pdf) | [How Budget Penalties Were applied](Budget_Penalties.pdf) | [Reference Ranges for Value Functions](Reference_Ranges_for_Value_Functions) | [Worked Calculator Examples](Calculator_Examples.pdf)
+
+---
+
+## Haiku
+
+Four minds weigh one home,
+Open, closed, both small and large,
+Truth keeps every score.
 
 ---
 

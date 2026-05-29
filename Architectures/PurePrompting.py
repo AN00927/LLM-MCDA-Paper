@@ -41,7 +41,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
+from model_config import (
+    CRITERION_WEIGHTS,
+    get_model_id,
+    get_output_folder,
+    get_reasoning_payload,
+    N_RUNS,
+)
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
@@ -73,7 +79,8 @@ MODEL_ID = get_model_id()
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "model": MODEL_ID,
-    "temperature": 0.3  # Keep it consistent so results are reliable
+    "temperature": 0.3,  # Keep it consistent so results are reliable
+    "reasoning": get_reasoning_payload(),
 }
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
@@ -117,7 +124,8 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
     payload = {
         "model": API_CONFIG["model"],
         "messages": messages,
-        "temperature": API_CONFIG["temperature"]
+        "temperature": API_CONFIG["temperature"],
+        "reasoning": API_CONFIG["reasoning"],
     }
 
     diagnostics = {
