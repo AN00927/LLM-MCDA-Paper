@@ -104,6 +104,20 @@ def _to_float_or_nan(val):
         return float("nan")
 
 
+def _clean_match_value(value):
+    """Coerce a match parameter to a clean string; return '' for blanks/N/A."""
+    s = str(value).strip()
+    return "" if s.lower() in ("", "n/a", "nan", "none") else s
+
+
+def _numeric_close(a, b, tolerance=0.5):
+    """Return True if both a and b parse as floats and |a - b| <= tolerance."""
+    try:
+        return abs(float(a) - float(b)) <= tolerance
+    except (ValueError, TypeError):
+        return False
+
+
 def is_failed_row(row):
     """Check if a row has the 1928 failure sentinel in any score column.
 
@@ -351,10 +365,15 @@ def build_gt_lookup(gt_by_type):
                 "decision_type": dtype,
                 "alt_map": alt_map,
                 "used": False,
-                # Little tie-breaker fields for each decision type
+                # Tie-breaker fields for each decision type
                 "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
                 "appliance_age": str(sub["appliance_age"].iloc[0]).strip() if "appliance_age" in sub.columns else "",
                 "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
+                # Additional Shower match fields
+                "household_size": str(sub["household_size"].iloc[0]).strip() if "household_size" in sub.columns else "",
+                "occupants": str(sub["occupants"].iloc[0]).strip() if "occupants" in sub.columns else "",
+                "utility_budget": str(sub["utility_budget"].iloc[0]).strip() if "utility_budget" in sub.columns else "",
+                "housing_type": str(sub["housing_type"].iloc[0]).strip() if "housing_type" in sub.columns else "",
             })
 
     return gt_lookup
@@ -420,23 +439,33 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             arch_norm_alts[norm_alt] = row
 
         best_match = None
-        best_score = -1
+        best_score = 0
+        best_param_count = 0
 
-        # Pull the one extra parameter for this decision type (skip blanks and N/A)
-        def _clean(val):
-            s = str(val).strip()
-            return "" if s.lower() in ("", "n/a", "nan", "none") else s
-
+        # Build (arch_value, gt_key) pairs for this decision type.
+        # Each pair that matches adds +100 to the candidate score.
+        # Shower gets more pairs since its scenarios share (question, location)
+        # more often and need multiple parameters to disambiguate.
+        param_pairs = []  # [(arch_value, gt_key), ...]
         if arch_dtype == "HVAC":
-            arch_param = _clean(arch_sub["outdoor_temp"].iloc[0]) if "outdoor_temp" in arch_sub.columns else ""
-            gt_param_key = "outdoor_temp"
+            _pairs = [("outdoor_temp", "outdoor_temp")]
         elif arch_dtype == "Appliance":
-            arch_param = _clean(arch_sub["appliance_age"].iloc[0]) if "appliance_age" in arch_sub.columns else ""
-            gt_param_key = "appliance_age"
+            _pairs = [("appliance_age", "appliance_age")]
         else:  # Shower
-            arch_param = _clean(arch_sub["flow_rate"].iloc[0]) if "flow_rate" in arch_sub.columns else ""
-            gt_param_key = "gpm"
+            _pairs = [
+                ("outdoor_temp",   "outdoor_temp"),
+                ("flow_rate",      "gpm"),
+                ("household_size", "household_size"),
+                ("occupants",      "occupants"),
+                ("utility_budget", "utility_budget"),
+                ("housing_type",   "housing_type"),
+            ]
+        for arch_col, gt_key in _pairs:
+            v = _clean_match_value(arch_sub[arch_col].iloc[0]) if arch_col in arch_sub.columns else ""
+            if v:
+                param_pairs.append((v, gt_key))
 
+        candidates = []  # (score, param_match_count, gt_entry)
         for gt_entry in gt_lookup[key]:
             if gt_entry["used"]:
                 continue
@@ -444,13 +473,30 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
                 continue
             overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
             extra = 0
-            gt_param = _clean(gt_entry.get(gt_param_key, ""))
-            if arch_param and gt_param and arch_param == gt_param:
-                extra += 100
+            param_count = 0
+            for arch_val, gt_key in param_pairs:
+                gt_val = _clean_match_value(gt_entry.get(gt_key, ""))
+                if gt_val and arch_val == gt_val:
+                    extra += 100
+                    param_count += 1
             score = overlap + extra
-            if score > best_score:
-                best_score = score
-                best_match = gt_entry
+            candidates.append((score, param_count, gt_entry))
+
+        valid_candidates = [(s, pc, e) for s, pc, e in candidates if s > 0]
+        if valid_candidates:
+            best_score = max(s for s, _, _ in valid_candidates)
+            top = [(s, pc, e) for s, pc, e in valid_candidates if s == best_score]
+            _, best_param_count, best_match = top[0]
+            if len(top) > 1:
+                warnings_log.append(
+                    f"WARN: {len(top)}-way tie (score={best_score}) for "
+                    f"sid={arch_sid} ({arch_dtype}, '{q[:40]}') — using first GT candidate"
+                )
+            if arch_dtype == "Shower" and best_param_count == 0:
+                warnings_log.append(
+                    f"WARN: Shower sid={arch_sid} matched on alternative overlap only "
+                    f"(no parameter matches) — match confidence is low"
+                )
 
         if best_match is None or best_score == 0:
             warnings_log.append(

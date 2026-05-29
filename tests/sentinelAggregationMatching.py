@@ -461,7 +461,166 @@ class TestMatchScenarios:
 
 
 # ===========================================================================
-# 5. RAG metadata field tests
+# 5. Shower scenario matching tests
+# ===========================================================================
+
+class TestShowerScenarioMatching:
+    """Multi-field Shower matching: repeated keys, parameter disambiguation, ties."""
+
+    @pytest.fixture(autouse=True)
+    def cm(self):
+        self._cm = _load_calc_metrics()
+
+    def _make_shower_gt_row(self, sid, q, loc, alt_val, ec, env, com, pra, rank=1, **params):
+        return {
+            "scenario_id": sid, "question": q, "location": loc,
+            "decision_type": "Shower", "alternative": str(alt_val),
+            "gt_energy_cost": ec, "gt_environmental": env,
+            "gt_comfort": com, "gt_practicality": pra,
+            "gt_rank": rank, "gt_mavt_score": 7.0,
+            "outdoor_temp": params.get("outdoor_temp", ""),
+            "appliance_age": "",
+            "gpm": params.get("gpm", ""),
+            "household_size": params.get("household_size", ""),
+            "utility_budget": params.get("utility_budget", ""),
+            "housing_type": params.get("housing_type", ""),
+        }
+
+    def _make_arch_rows(self, sid, q, loc, alts, **params):
+        rows = []
+        for alt_val, ec, env, com, pra in alts:
+            rows.append({
+                "scenario_id": sid, "decision_type": "Shower",
+                "question": q, "location": loc, "alternative": str(alt_val),
+                "energy_cost": ec, "environmental": env, "comfort": com, "practicality": pra,
+                "outdoor_temp": params.get("outdoor_temp", ""),
+                "appliance_age": "",
+                "flow_rate": params.get("flow_rate", ""),
+                "household_size": params.get("household_size", ""),
+                "utility_budget": params.get("utility_budget", ""),
+                "housing_type": params.get("housing_type", ""),
+            })
+        return rows
+
+    _ALTS = [("5 min", 8, 7, 6, 5), ("10 min", 6, 6, 7, 5), ("15 min", 4, 5, 8, 6)]
+
+    def test_repeated_key_matches_correct_gt(self):
+        """Two Shower GT scenarios sharing (q, loc) are each matched to the
+        arch row whose outdoor_temp / gpm align with theirs."""
+        q, loc = "How long should I shower?", "Denver, CO"
+        gt_rows = []
+        for alt_val, ec, env, com, pra in self._ALTS:
+            gt_rows.append(self._make_shower_gt_row(
+                1, q, loc, alt_val, ec, env, com, pra, outdoor_temp="30", gpm="2.0"
+            ))
+        for alt_val, ec, env, com, pra in self._ALTS:
+            gt_rows.append(self._make_shower_gt_row(
+                2, q, loc, alt_val, ec + 1, env + 1, com + 1, pra + 1,
+                outdoor_temp="70", gpm="2.5"
+            ))
+        gt_df = pd.DataFrame(gt_rows)
+        gt_by_type = {"HVAC": pd.DataFrame(), "Appliance": pd.DataFrame(), "Shower": gt_df}
+        gt_lookup = self._cm.build_gt_lookup(gt_by_type)
+        gt_id_lookup = self._cm.build_gt_id_lookup(gt_by_type)
+
+        arch_rows = self._make_arch_rows(1, q, loc, self._ALTS, outdoor_temp="30", flow_rate="2.0")
+        arch_df = self._cm.load_architecture(pd.DataFrame(arch_rows), "Pure")
+        merged, counts = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "Pure")
+
+        assert counts["content"] == 1
+        assert len(merged) == 3
+        assert merged["gt_scenario_id"].iloc[0] == 1, (
+            f"Expected GT sid=1 (outdoor_temp=30), got sid={merged['gt_scenario_id'].iloc[0]}"
+        )
+
+    def test_same_alts_different_params_matches_correct(self):
+        """When GT candidates share identical alternatives but differ in
+        outdoor_temp / gpm, the arch row matches the GT with matching params."""
+        q, loc = "How long should I shower?", "Boston, MA"
+        gt_rows = []
+        for alt_val, ec, env, com, pra in self._ALTS:
+            gt_rows.append(self._make_shower_gt_row(
+                1, q, loc, alt_val, ec, env, com, pra, outdoor_temp="20", gpm="1.5"
+            ))
+        for alt_val, ec, env, com, pra in self._ALTS:
+            gt_rows.append(self._make_shower_gt_row(
+                2, q, loc, alt_val, ec, env, com, pra, outdoor_temp="80", gpm="2.5"
+            ))
+        gt_df = pd.DataFrame(gt_rows)
+        gt_by_type = {"HVAC": pd.DataFrame(), "Appliance": pd.DataFrame(), "Shower": gt_df}
+        gt_lookup = self._cm.build_gt_lookup(gt_by_type)
+        gt_id_lookup = self._cm.build_gt_id_lookup(gt_by_type)
+
+        # Arch row matches GT #2 by outdoor_temp + gpm
+        arch_rows = self._make_arch_rows(10, q, loc, self._ALTS, outdoor_temp="80", flow_rate="2.5")
+        arch_df = self._cm.load_architecture(pd.DataFrame(arch_rows), "Pure")
+        merged, _ = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "Pure")
+
+        assert len(merged) == 3
+        assert merged["gt_scenario_id"].iloc[0] == 2, (
+            f"Expected GT sid=2 (outdoor_temp=80), got sid={merged['gt_scenario_id'].iloc[0]}"
+        )
+
+    def test_ambiguous_tie_warns_and_does_not_crash(self):
+        """Two GT Shower candidates with identical alts AND identical params
+        produce a tie warning in stdout but the call completes and returns a match."""
+        q, loc = "How long should I shower?", "Identical, TX"
+        gt_rows = []
+        for sid in (1, 2):
+            for alt_val, ec, env, com, pra in self._ALTS:
+                gt_rows.append(self._make_shower_gt_row(
+                    sid, q, loc, alt_val, ec, env, com, pra, outdoor_temp="60", gpm="2.0"
+                ))
+        gt_df = pd.DataFrame(gt_rows)
+        gt_by_type = {"HVAC": pd.DataFrame(), "Appliance": pd.DataFrame(), "Shower": gt_df}
+        gt_lookup = self._cm.build_gt_lookup(gt_by_type)
+        gt_id_lookup = self._cm.build_gt_id_lookup(gt_by_type)
+
+        arch_rows = self._make_arch_rows(20, q, loc, self._ALTS, outdoor_temp="60", flow_rate="2.0")
+        arch_df = self._cm.load_architecture(pd.DataFrame(arch_rows), "Pure")
+
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            merged, counts = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "Pure")
+        output = buf.getvalue()
+
+        assert counts["content"] == 1
+        assert len(merged) == 3
+        assert "tie" in output.lower(), f"Expected tie warning in stdout, got:\n{output}"
+
+    def test_weak_evidence_warns_when_no_param_match(self):
+        """When GT and arch have no usable params, match falls back to alt overlap
+        only and a weak-evidence warning is emitted."""
+        q, loc = "How long should I shower?", "NoParams, CA"
+        gt_rows = []
+        for alt_val, ec, env, com, pra in self._ALTS:
+            gt_rows.append(self._make_shower_gt_row(
+                1, q, loc, alt_val, ec, env, com, pra, outdoor_temp="", gpm=""
+            ))
+        gt_df = pd.DataFrame(gt_rows)
+        gt_by_type = {"HVAC": pd.DataFrame(), "Appliance": pd.DataFrame(), "Shower": gt_df}
+        gt_lookup = self._cm.build_gt_lookup(gt_by_type)
+        gt_id_lookup = self._cm.build_gt_id_lookup(gt_by_type)
+
+        arch_rows = self._make_arch_rows(30, q, loc, self._ALTS, outdoor_temp="", flow_rate="")
+        arch_df = self._cm.load_architecture(pd.DataFrame(arch_rows), "Pure")
+
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            merged, counts = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "Pure")
+        output = buf.getvalue()
+
+        assert len(merged) == 3, "Should still match on alternative overlap"
+        assert counts["content"] == 1
+        assert "overlap only" in output.lower() or "no parameter" in output.lower(), (
+            f"Expected weak-evidence warning in stdout, got:\n{output}"
+        )
+
+
+# ===========================================================================
+# 6. RAG metadata field tests
 # ===========================================================================
 
 class TestRAGMetadataFields:
