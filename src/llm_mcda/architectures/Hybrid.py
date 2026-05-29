@@ -13,7 +13,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import CRITERION_WEIGHTS, get_model_id, get_output_folder, N_RUNS
+from model_config import (
+    CRITERION_WEIGHTS,
+    get_model_id,
+    get_output_folder,
+    get_reasoning_payload,
+    N_RUNS,
+)
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
@@ -69,6 +75,7 @@ OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 
 MODEL_ID = get_model_id()
 TEMPERATURE = 0.3
+REASONING_PAYLOAD = get_reasoning_payload()
 
 MAX_RETRIES = 5
 RETRY_DELAY = 2
@@ -207,7 +214,8 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": temperature
+        "temperature": temperature,
+        "reasoning": REASONING_PAYLOAD,
     }
 
     attempt = 0
