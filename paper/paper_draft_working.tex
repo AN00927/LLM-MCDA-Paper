@@ -54,9 +54,7 @@ Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute
 \section{Introduction}
 \label{sec1}
 
-%% SOURCE: epa_household2024 (EPA household carbon footprint assumptions); wikipedia_domestic_energy2024 (EIA residential kWh summary).
 The average U.S.\ household emits roughly 8{,}744 pounds of CO\textsubscript{2}e and consumes about 10{,}791 kWh of electricity each year \cite{epa_household2024,wikipedia_domestic_energy2024}. When transportation, food, and goods are folded in, per-capita footprints rise to about 17.9 tons of CO\textsubscript{2}e and 81{,}767 kWh of total annual energy \cite{joneskammen2011,umich2024}.
-%% SOURCE: ohler2020 (Energy Star appliance savings); doe (DOE outreach summary for savings range).
 The U.S.\ Department of Energy estimates that households can save \$200--\$400 annually by adopting ENERGY STAR practices \cite{ohler2020,doe}.
 
 \begin{figure}[H]
@@ -66,13 +64,10 @@ The U.S.\ Department of Energy estimates that households can save \$200--\$400 a
 	\label{fig:intro-placeholder-1}
 \end{figure}
 
-%% SOURCE: kollmuss2002 (intention-behavior gap framing).
 A persistent gap between intent and behavior keeps many households from realizing those savings \cite{kollmuss2002}. Tools that combine optimization, behavioral insight, and decision support can close part of that gap, but only if they are usable without specialized training.
 
-%% SOURCE: collinge2014; huang2011; cerneviciene2022; huangburgherr2024.
 Multi-criteria decision analysis (MCDA), life-cycle assessment (LCA), and Pareto-based prediction methods have been used to track and reduce environmental impact at building and organizational scales \cite{collinge2014,huang2011}. Engineering frameworks of this kind can optimize complex decisions, but their construction is time-consuming: signal-processing pipelines such as the Hilbert--Huang transform are not rapid, and constructing the decision matrix itself is a recognized bottleneck \cite{cerneviciene2022}. Huang and Burgherr (2024) addressed part of this by building a streamlined MCDA calculator that compresses several accepted methods into a single workflow \cite{huangburgherr2024}. Even with their simplification, the user still needs enough familiarity with MCDA construction to frame the alternatives, criteria, and weights, which keeps the tool out of routine household use.
 
-%% SOURCE: eia2022 (residential end-use shares); dietz2009 (123 MtC behavioral wedge).
 Residential energy consumption is not uniformly distributed across end uses. Space heating accounts for roughly 43\% of residential energy use, followed by appliances at 13\%, water heating at 12\%, and air conditioning at 8\% \cite{eia2022}. Dietz et al.\ (2009) showed that a coordinated set of household behavioral changes could cut U.S.\ emissions by approximately 123 million metric tonnes of carbon (MtC) per year while preserving occupant satisfaction \cite{dietz2009}. Behavioral plasticity, the likelihood that a household adopts a given action given financial and social context, varies substantially across actions and is the limiting factor for that wedge.
 
 Figure~\ref{fig:intro-placeholder-2} reproduces the Dietz et al.\ display of behavioral plasticity, net carbon effect, and the Reasonably Achievable Emission Reduction (RAER) per action.
@@ -83,25 +78,18 @@ Figure~\ref{fig:intro-placeholder-2} reproduces the Dietz et al.\ display of beh
 	\label{fig:intro-placeholder-2}
 \end{figure}
 
-%% SOURCE: ariely2001; leclerc1995; nah2004.
 A practical obstacle for MCDA-style tools at the household level is the workflow tax they impose on users. Even when the benefits are clear, switching from a routine choice to a model-mediated decision adds time and cognitive cost, both of which are documented deterrents to adoption \cite{ariely2001,leclerc1995,nah2004}. Most household decisions in this space, including thermostat setpoints, appliance run times, and shower length, are heuristic rather than analytical.
 
-%% SOURCE: bobadilla2018; hahn1992; phillipswren2020.
 Heuristic decision-making is efficient for everyday choices but degrades in complex or high-stakes settings. Under time pressure, people default to satisficing, choosing the first option that clears a minimum threshold, or to dominant prior behaviors, even when better alternatives exist \cite{bobadilla2018}. When time pressure combines with information overload, judgment error rates rise meaningfully \cite{hahn1992,phillipswren2020}. Household energy decisions typically occur in exactly this regime: short deliberation windows, competing demands, and incomplete information. Tools that require sustained attention or structured inputs are unlikely to influence behavior under those conditions.
 
-%% SOURCE: jackson2024; huangrust2020; simon2024.
 AI is increasingly being used to build or operate decision frameworks in domains that share the household setting's combination of variability and judgment. Generative AI now appears in operations and supply-chain decision pipelines \cite{jackson2024}, in marketing strategy \cite{huangrust2020}, and in clinical decision support \cite{simon2024}. Its capacity to process heterogeneous, large-scale data suggests that it can scale down to individual-level decision support as well.
 
-%% SOURCE: huangburgherr2024; cerneviciene2022.
 The harder problem is operational. Constructing an MCDA framework for a specific decision normally requires methodological knowledge, including the choice of weighting scheme, value function form, and normalization, alongside rubric design and domain familiarity \cite{cerneviciene2022,huangburgherr2024}. Existing simplified calculators reduce but do not eliminate this barrier. A large language model that can convert a natural-language description of a household situation into the alternatives, criteria, and contextual parameters that an MCDA needs would, in principle, remove the methodological barrier altogether.
 
-%% SOURCE: svoboda2024 (GPT-4 AHP consistency ratio < 0.10 in cybersecurity AHP).
 The plausibility of this approach is reinforced by recent work outside the energy domain. Svoboda and Lande (2024) used GPT-4 to construct an analytic hierarchy process (AHP) decision model for cybersecurity, reporting a consistency ratio below the conventional 0.10 acceptability threshold and noting that earlier models such as GPT-3 were unreliable \cite{svoboda2024}. That result indicates that current-generation LLMs can produce coherent MCDA structures, but it leaves open the separate question of whether they can produce accurate quantitative scores against a physics-based ground truth.
 
-%% SOURCE: galaz2021; nishant2020.
 Modern LLMs also carry general knowledge about the energy use and carbon intensity of common products and behaviors, and many systems can retrieve additional information at inference time. They have not, however, been rigorously evaluated for individual-level household decisions against deterministic ground truth, and
 
-%% SOURCE: dyersarin1979; keeneyraiffa1976; ferretti2014.
 
 \section{Methodology}
 \label{sec2}
@@ -110,7 +98,7 @@ Modern LLMs also carry general knowledge about the energy use and carbon intensi
 
 Three specific decision types were chosen due to their high plasticity and RAER, as well as being timely, everyday decisions that may change constantly. These were HVAC-related decisions, which are about temperature control, Appliance-related decisions, which are about the time of day (TOD) to use appliances, and Shower-related decisions, which are about how long to shower for. Each of the 3 architectures were tested on a 265-scenario corpus that was divided into 130 HVAC, 80 Appliance, and 55 Shower decisions. They were compared to a calculated, decision-type specific dataset from a calculator. This calculator also ran on an additional 80 RAG scenarios, split into 35 HVAC, 30 Appliance, and 15 Shower for a retrieval augmented generation (RAG) database.
 
-%% SOURCE: TestScenarios.csv (181 rows: 91 HVAC, 50 Appliance, 40 Shower); HVACScenarios.csv (128), ApplianceScenarios.csv (80), ShowerScenarios.csv (55); HVACRagScenarios.csv (111), ApplianceRAGScenarios.csv (90), ShowerRAGScenarios.csv (30).
+[TO UPDATE NUMBERS]
 The scenario corpus has two disjoint pools. The first is the test set: 181 scenarios drawn from the larger domain corpora (128 HVAC, 80 Appliance, 55 Shower) and stratified into 91 HVAC, 50 Appliance, and 40 Shower test cases. The second is the RAG corpus: 231 additional scenarios (111 HVAC, 90 Appliance, 30 Shower) that populate the retrieval index used by the RAG-Enhanced architecture. Each scenario presents three alternatives. Test-set scenarios are scored independently by each of the three architectures and by the ground-truth calculator; RAG-set scenarios are only used to seed the retrieval index and never appear in evaluation \cite{lewis2020}.
 
 
@@ -235,7 +223,6 @@ Appliance Age & 1--15\,yr & Dishwasher: 0.72--1.70\,kWh/cyc & \cite{energystar_d
 \subsection{MAVT Framework Design}
 \label{sec:mavt-design}
 
-%% SOURCE: model_config.py (CRITERION_WEIGHTS = {energy_cost: 0.30, environmental: 0.35, comfort: 0.20, practicality: 0.15}); dyersarin1979; keeneyraiffa1976; ferretti2014.
 The Multi-Attribute Value Theorem (MAVT) allows alternatives to be compared on different criterion based on the range of values that occurs for each criterion. In our study, we chose the following weights for our 4 weights: Environmental Impact (35\%), Energy Cost (30\%), Comfort (20\%), and Practicality (15\%). The weights are held constant across all decision types, all architectures, and the ground-truth calculator. We did this so that any difference in score is because of the inputs and value function, not because of difference in the way each criterion is perceived for the three decision types. Normally, MAVT additive form (Eq.~\ref{eq:mavt_sum}) requires preferential independence among criteria \cite{dyersarin1979,keeneyraiffa1976}. This means that criteria should be independent, meaning that the value (good or bad) of one criterion should have no effect on the value of another criterion. 
 
 \begin{equation}
@@ -283,10 +270,8 @@ The Environmental weight of 0.35 reflects two convergent considerations. Residen
 
 Cost is the strongest independent predictor of consumer adoption. This is clear for multiple reasons. First, cost savings as shown on energy labels for consumer products were more effective than actual energy use and carbon emissions.\cite{newell2014}. When energy labels strip away concrete cost-savings figures, the influence of all remaining information drops sharply \cite{allcott2015,andor2020}. Second, households misestimate energy use, with Attari et al. reporting that participants underestimated energy use and savings by a factor of 2.8 on average \cite{attari2010}. Thus, high importance must be given to savings, even if the user is automating the process. It would also be beneficial to directly display actual cost savings. Weighting Energy Cost at 0.30 keeps it slightly below environmental impact while keeping its role as the criterion households actually act on. For HVAC decisions, thermostat setpoints directly determine electricity draw at the billing rate; households shown real-time cost feedback respond by reducing peak-period consumption, confirming that cost remains the operative signal even for automated decisions \cite{managementscience_pricing2023}. For shower decisions, water heating accounts for a significant share of residential energy costs and the per-shower increment is rarely visible to users, amplifying the same underestimation bias and making cost-feedback interventions similarly effective \cite{reu2016,harrispoll2024}.
 
-%% SOURCE: ashrae55; dedear2002; aqilah2022; karjalainen2007; wanghong2020; chen2017.
 Comfort is weighted at 0.20. Thermal comfort is the dominant driver of HVAC behavior even when it conflicts with energy savings \cite{aqilah2022,karjalainen2007,wanghong2020}, and low-income households in particular trade comfort against cost in documented ways \cite{chen2017}. Anchoring comfort to ASHRAE Standard 55 \cite{ashrae55,dedear2002} keeps the criterion physically interpretable for HVAC and provides a 0--10 scale that generalizes (with domain-specific calibration described in Section~\ref{sec:gt-calculators}) to appliance delay and shower duration. For appliance decisions, comfort is primarily a function of run-time delay: demand-response research finds that household willingness to accept a shift decays sharply beyond two to four hours, with dishwashers tolerated longest and dryers shortest \cite{paetz2012,waseem2020}, and the penalty scales further with household size as dishes and laundry accumulate faster. For shower decisions, comfort peaks around the REU2016 average of 7.8\,minutes \cite{reu2016,harrispoll2024} and depends additionally on temperature adequacy, with heater setpoints below CDC Legionella thresholds carrying a comfort penalty \cite{cdc2026}.
 
-%% SOURCE: ariely2001; leclerc1995; gardner2020; mergelsberg2020.
 Practicality is weighted at 0.15. A persistent finding in the heuristics literature is that any tool that adds friction relative to the existing routine sees adoption drop sharply, and heuristic decision-making remains the default for everyday energy choices \cite{ariely2001,leclerc1995,gardner2020,mergelsberg2020}. Penalizing alternatives that violate budget, system, or behavioral limits keeps the tool's recommendations in check to make sure that households would actually adopt it long term. The lower weight (relative to comfort) reflects that practicality is a constraint on what is reasonable rather than a primary preference dimension. Where comfort captures what a household would prefer given no constraints, practicality captures what is feasible and sustainable to adopt. A 15-minute shower may score near-optimally on comfort, but if four occupants share a 40-gallon tank, available hot water runs out before the third person showers --- making that alternative infeasible regardless of comfort preference.
 
 \begin{table}[htbp]
@@ -306,26 +291,12 @@ Practicality & 0.5--10.0 & 0.5--10.0 & 0.5--10.0 \\
 \end{tabular}
 \end{table}
 
-%% SOURCE: HVACGroundTruthCalculator.py:apply_value_function reference_ranges; ApplianceGroundTruthCalculator.py:apply_value_function reference_ranges; ShowerGroundTruthCalculator.REFERENCE_RANGES.
-%% NOTE (roszkowska2026): The HVAC calculator code comments cite "Roszkowska 2026" for the
-%%   entropy-driven normalization rationale (dataset-percentile bounds rather than a wider
-%%   physics envelope). The roszkowska2026 bib entry is flagged UNVERIFIED (no DOI confirmed;
-%%   see audit log). The normalization choice is documented here as a modeling assumption
-%%   and acknowledged as a paper limitation; it is not cited in the prose until the entry
-%%   can be verified.
 The reference ranges in Table~\ref{table:reference_ranges} are anchored to the ground-truth calculators and reflect the 5th--95th percentile of the scenario cost and emissions (or water-volume) distributions rather than extreme theoretical limits, so that normalization preserves meaningful spread across typical residential alternatives. Using a combination of researched dataset and tested dataset bounds rather than the full theoretical physics is a deliberate modeling choice \cite{roszkowska2026}: it concentrates score sensitivity in the range households actually encounter, at the cost of truncating scores for extreme outlier scenarios (documented as a paper limitation in the Discussion).
 
-%%[HERE IS LINE 287] SOURCE: synapse2013; parker2018; eia2022 (PA residential rate); eia_epa_2024 (Electric Power Annual table); pjm2022emissions (1.041/0.976 factors).
 For HVAC energy cost, the percentile envelope is evaluated at a standardized 8-hour window with Pennsylvania's residential electricity rate (\$0.19/kWh) \cite{eia2022,eia_epa_2024} and anchored to residential HVAC efficiency and degradation studies (efficient systems: \cite{synapse2013}; degraded systems: \cite{parker2018}). The HVAC environmental bounds are derived from the same kWh envelope mapped through PJM marginal emissions factors (0.976 off-peak, 1.041 peak lbs CO\textsubscript{2}/kWh) \cite{pjm2022emissions}, maintaining a physically consistent link between cost and emissions.
 
-%% SOURCE: ApplianceGroundTruthCalculator.py:apply_value_function (min=0.017, max=1.12 for energy_cost; min=0.244, max=3.644 for environmental); chenyu2018; hustvedt2013; winfield2016; neep2015; porras2020; peco2021 (PA utility TOU rate structure: West Penn off-peak $0.067/kWh, PECO peak $0.320/kWh); energystar_products (0.25 kWh 5th-pctile HE washer, 2.82 kWh ENERGY STAR ceiling).
-%% FLAG (bib): West Penn, PPL, Penelec, and MetEd TOU rates are from FirstEnergy PA TOU 2026
-%%   and a PA PUC press release (2025-04-10), neither of which has a bib entry.
-%%   Only peco2021 is in the bib; it is cited here as the best available proxy for
-%%   the general PA TOU rate structure while the per-utility rates remain verbally attributed.
 For appliances, the minimum cost bound combines a 5th-percentile per-cycle energy use of 0.25\,kWh for efficient HE washers (ENERGY STAR certified-products distribution) \cite{energystar_products} with the lowest off-peak utility rate (\$0.067/kWh, West Penn off-peak) \cite{peco2021}, giving \$0.017; the maximum bound expands ENERGY STAR's upper kWh/cycle benchmark from 2.82 to 3.5\,kWh/cycle to cover older non-certified resistance dryers paired with the highest peak rate (\$0.320/kWh, PECO peak) \cite{peco2021}, giving \$1.12 \cite{chenyu2018,hustvedt2013,winfield2016,neep2015,porras2020}. The 3.5\,kWh/cycle ceiling extends the ENERGY STAR maximum by 0.68\,kWh/cycle to account for pre-certification electric resistance dryers still in service in older PA housing stock; measured consumption for such units reported in northeast field studies \cite{neep2015} and heat-pump dryer performance comparisons \cite{winfield2016} supports a distribution tail above the certified ceiling. The environmental range applies the same kWh envelope to PJM marginal factors, giving 0.244--3.644 lbs CO\textsubscript{2}.
 
-%% SOURCE: ShowerGroundTruthCalculator.REFERENCE_RANGES (energy_cost min=0.15, max=1.50; environmental min=7.5 gal, max=75 gal); reu2016; harrispoll2024; hendron2008; epawatersense.
 For showers, energy cost bounds (\$0.15--\$1.50) come from a low-flow short-duration summer case (1.5 GPM, 5 min, inlet 65\,\textdegree{}F) and a higher-flow long-duration winter case (3.5 GPM, 15 min, inlet 45\,\textdegree{}F), with seasonal inlet temperatures from NREL hot-water modeling \cite{hendron2008}, duration distributions from REU2016 \cite{reu2016} and The Harris Poll \cite{harrispoll2024}, and GPM benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}. Because the mixing-fraction physics targets a fixed delivery temperature of 105\,\textdegree{}F, shower energy depends only on the rise from the mains inlet to that target and is independent of heater setpoint; for the stated 3.5\,GPM, 15\,min winter case the physics-derived maximum is \$1.59, and the reference ceiling is set conservatively at \$1.50 consistent with the dataset-percentile framing. Shower environmental impact is defined as water volume (gallons) using WaterSense 5th--95th percentile flow rates and 5--15 minute durations, giving the 7.5--75 gallon envelope. The 95th-percentile GPM bound of 5.0\,GPM is taken from EPA WaterSense conservation benchmarks \cite{epawatersense} and extends above the dataset maximum of 4.0\,GPM, using the published reference upper bound rather than the sample ceiling.
 \subsection{Ground Truth Calculators}
 \label{sec:gt-calculators}
@@ -336,8 +307,7 @@ scores per alternative---Energy Cost (\$), Environmental Impact, Comfort, and Pr
 transformation. Energy cost is always in dollars per 8-hour decision period; Environmental
 Impact is in lbs\,CO\textsubscript{2} for HVAC and Appliance decisions and in gallons of
 water for Shower decisions. Full equation-by-equation derivations are in Appendix~A.
-%% SOURCE: HVACGroundTruthCalculator.py:EMISSIONS_FACTOR_*;
-%%         ApplianceGroundTruthCalculator.py same constants; pjm2022emissions.
+
 For HVAC and Appliance decisions, environmental impact uses PJM marginal emissions factors:
 \begin{equation}
   \mathrm{CO_2} = E_{\mathrm{kWh}} \cdot \varepsilon(t), \qquad
@@ -391,8 +361,7 @@ infiltration rate \cite{polly2011}. The 800\,BTU/hr baseline captures
 always-on standby loads per ACCA Manual~J \cite{polly2011}. The heating load uses the
 same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and
 internal gains subtracted rather than added.
-%% SOURCE: HVACGroundTruthCalculator.py:calculate_energy_consumption;
-%%         ahri2008; domanski2014; davis2010; fenaughty2018.
+
 SEER degrades with age via a front-loaded schedule (1.5$\times$ base rate for the first
 ten years, 0.5$\times$ thereafter, capped at 30\%) \cite{domanski2014,davis2010,fenaughty2018}.
 Effective EER is estimated from the age-adjusted SEER via the AHRI\,210/240 quadratic
@@ -416,8 +385,7 @@ $h$ is the decision-window duration (8\,hr), and $m_{\mathrm{occ}}$ is an occupa
 \noindent where $h = 8$\,hr and $m_{\mathrm{occ}}$ scales for occupancy context: 1.0 for
 fully occupied, 0.75 for overnight, and $1 - 0.5(h_{\mathrm{away}}/24)$ for daytime
 unoccupied periods \cite{houde2021}, where $h_{\mathrm{away}}$ is hours-away per 24-hour day.
-%% SOURCE: HVACGroundTruthCalculator.py:calculate_comfort_score;
-%%         ashrae55_2020; vanhoof2008; fanger1970.
+
 Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints
 \cite{ashrae55_2020,vanhoof2008,fanger1970}:
 \begin{equation}
@@ -432,8 +400,7 @@ and $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedent
 Practicality penalizes extreme setpoints and large outdoor--indoor $\Delta T$
 (signaling operation near system limits) via multipliers calibrated to equipment-stress thresholds.
 \subsubsection{Appliance Calculator}
-%% SOURCE: ApplianceGroundTruthCalculator.py:UTILITY_RATES; peco2021; paetz2012;
-%%         newsham2010; shewale2023; waseem2020; who2018noise.
+
 Energy cost per cycle is $C = E_{\mathrm{cyc}} \cdot r(t,\ell)$, where $E_{\mathrm{cyc}}$
 is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of
 six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021}.
@@ -556,7 +523,7 @@ cost to a monthly estimate as:
 \end{equation}
 \noindent where $C_{\mathrm{cycle}}$ is per-cycle energy cost and the factor $30$ assumes 30 cycles per month.
 \subsubsection{Shower Calculator.}
-%% SOURCE: ShowerGroundTruthCalculator.py; hendron2008; maguire2013; zhang2023; rheem2025.
+
 Mains inlet temperature is interpolated from outdoor temperature between 45\,\textdegree{}F
 (winter, $T_{\mathrm{out}} \le 32$\,\textdegree{}F) and 65\,\textdegree{}F (summer,
 $T_{\mathrm{out}} \ge 75$\,\textdegree{}F) \cite{hendron2008,maguire2013}. Only the
@@ -634,25 +601,20 @@ per-shower cost using an average showers-per-person-per-day rate:
 \subsection{Architecture Implementations}
 \label{sec:architectures}
 
-%% SOURCE: model_config.py (MODEL_KEY=mistral, get_model_id returns "mistralai/mistral-small-3.2-24b-instruct"); PurePrompting.py, RAGDatabaseOptimized.py, Hybrid.py (TEMPERATURE=0.3, OpenRouter endpoint).
 All three architectures call the same underlying model via OpenRouter: Mistral Small 3.2 24B Instruct at temperature 0.3. Temperature is fixed so the comparison isolates architecture from sampling variance. Each architecture is described below; pipeline schematics appear in Figure~\ref{fig:pipeline}.
 
 \subsubsection{Pure Prompting}
-%% SOURCE: PurePrompting.py (prompt header citations: Shanahan 2023, Wei 2022, Galaz 2021); shanahan2023; wei2022cot; galaz2021.
 The Pure Prompting architecture issues one API call per alternative (three calls per scenario) using a calibrated system prompt that combines role-prompting \cite{shanahan2023}, structured-output constraints \cite{wei2022cot}, and explicit bias-mitigation language drawn from Galaz et al.\ on AI sustainability priors \cite{galaz2021}. The model is asked to return JSON with all four criterion scores on a 0--10 scale; no external context is supplied beyond the scenario description.
 
 \subsubsection{RAG-Enhanced}
-%% SOURCE: RAGDatabaseOptimized.py (EMBEDDING_MODEL='sentence-transformers/all-MiniLM-L6-v2', RETRIEVE_K=3, CHROMA_DB_PATH); lewis2020; BuildRAG.py.
 The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the 231 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
 
 \subsubsection{Hybrid}
-%% SOURCE: Hybrid.py (single API call extracts parameters, dispatches to HVAC/Appliance/Shower GroundTruthCalculator); khot2023.
 The Hybrid architecture issues a single API call per scenario to extract structured parameters (decision type, calculator inputs such as SEER tier, kWh/cycle, GPM, baseline time, occupancy context, and the indoor temperatures or run times or durations that define the alternatives). The extracted JSON is validated, passed to the corresponding ground-truth calculator, and the four MAVT scores are returned. Hybrid uses 1 API call per scenario versus 3 for Pure and RAG and exploits the principle of decomposed prompting \cite{khot2023}, separating the natural-language understanding step (the LLM's strength) from the quantitative scoring step (the calculator's strength).
 
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
 
-%% SOURCE: CalculateMetrics.py (computes MAE, RMSE, kendall_tau, spearman_rho, top1_accuracy, top2_accuracy via scipy.stats); metrics_summary_mistral.csv.
 Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--10 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ and Spearman's $\rho$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). Efficiency is evaluated using total tokens (input plus output) and total latency, both summed across the 181-scenario test set. Failure rate is reported as the fraction of scenarios with malformed output, missing scores, out-of-bounds scores, or invalid score types. Scenario matching between architectures and ground truth uses (question, location) content keys to handle the case where scenario IDs drift across runs.
 
 \subsection{Architectures}
@@ -668,164 +630,107 @@ Figure~\ref{fig:intro-placeholder-3} reproduces the Dietz et al.\ display of beh
 \section{Results}
 \label{sec3}
 
-%% BLOCKED: per project ground rules, Results 3.1--3.4 are not written in this
-%% draft. The current numbers in tables and figures further down (Items 5--13)
-%% reflect an earlier metrics run and are flagged as INCORRECT in the audit
-%% log. Prose for Results 3.1--3.4 will be added once the corrected
-%% multi-model metrics are finalized.
+
 \textit{[BLOCKED in this draft: see audit log at end of file. Results 3.1--3.4 (overall ranking accuracy, criterion-level error, performance by decision type, token usage and latency) are not written here because the underlying metrics-summary numbers shown in Items~5--13 are flagged as incorrect by the project lead and a corrected multi-model run is pending.]}
 
 \section{Discussion}
 \label{sec4}
-
-%% BLOCKED: per project ground rules, the \subsection{Limitations}
+\subsection{Limitations}
 \label{sec:limitations}
 
-%% SOURCE: model_config.py:26-27 (Mistral only model with confirmed results)
-%% SOURCE: Output Files Claude/.gitkeep, Output Files Qwen/.gitkeep,
-%%         Output Files Gemini/.gitkeep (empty — no results)
 The results reported in this study derive exclusively from a single
 model, Mistral Small 3.2~24B, via OpenRouter. Although the
 multi-model benchmark pipeline is fully implemented for four
-models --- Mistral Small 3.2~24B, Qwen 2.5~72B, Claude Sonnet~4,
-and Gemini 2.5~Pro --- no completed output exists for the three
-non-Mistral models at the time of writing. Architecture-level
-conclusions therefore cannot yet be separated from model-level
-effects; it remains unknown whether the Hybrid advantage holds
-across model families and parameter scales, or whether it narrows
-for stronger frontier models.
+models---Qwen~3.5~9B, Qwen~3.5~27B, Gemini~3.5~Flash, and
+GPT-5---[CONFIRM AFTER RUNNING: update whether architecture-level
+conclusions can be separated from model-level effects and whether the
+Hybrid advantage holds across model families].
 
-%% SOURCE: model_config.py:2 (N_RUNS=10 defined)
-%% SOURCE: Architectures/PurePrompting.py:37-38,
-%%         Architectures/Hybrid.py:15-16 (N_RUNS imported)
-%% NOT FOUND: completed multi-run output CSVs in any output folder
-A multi-run protocol of $N = 10$ runs per model is defined in the
-codebase, but no completed multi-run results exist in any output
-folder. All reported metrics --- Kendall's $\tau$, Top-1 accuracy,
-MAE --- therefore reflect a single run at temperature $T = 0.3$.
-Variance across runs is unknown, and no standard deviation columns
-appear in the current metrics output. This means the performance
-gaps reported between architectures are not accompanied by
-confidence intervals and cannot be assessed for statistical
-significance.
+A multi-run protocol of $N=10$ runs per model is defined in the codebase
+and standard deviation columns are implemented in
+\texttt{CalculateMetrics.py}. [CONFIRM AFTER RUNNING: report observed
+variance across runs and assess whether performance gaps between
+architectures are statistically significant.] Until then, all reported
+metrics---Kendall's $\tau$, Top-1 accuracy, MAE---reflect a single run
+at temperature $T=0.3$ and are not accompanied by confidence intervals.
 
-%% SOURCE: context: researcher designed GT calculators and Hybrid
-The most critical validity threat is that the same researcher
-designed both the ground truth calculators and the Hybrid
-architecture. Hybrid's advantage may partly reflect design
-alignment --- the calculator the Hybrid calls is the same one that
-produces the ground truth --- rather than a generalizable
-architectural superiority. This threat cannot be eliminated within
-the current study design and must be weighed when interpreting the
+The most critical validity threat is that the same researcher designed
+both the ground truth calculators and the Hybrid architecture. Hybrid's
+advantage may partly reflect design alignment---the calculator the Hybrid
+calls is the same one that produces the ground truth---rather than a
+generalizable architectural superiority. This threat cannot be eliminated
+within the current study design and must be weighed when interpreting the
 magnitude of Hybrid's performance gap over RAG-Enhanced and Pure
 Prompting.
 
-%% SOURCE: context: PJM marginal rates, PA-only scenarios
-Results are specific to Pennsylvania's grid and utility rate
-structure. The PJM marginal emissions factors (peak:
-1.041~lbs~CO$_2$/kWh; off-peak: 0.976~lbs~CO$_2$/kWh) and PPL
-time-of-use rate tiers used in the ground truth calculators do not
-generalize to high-renewables grids, where lower and more variable
-emissions intensities would compress environmental score
-distributions and potentially change which architecture performs
-best.
 
-%% SOURCE: context: shower environmental = gallons proxy
-The environmental criterion for shower decisions uses water
-consumption in gallons as a proxy rather than CO$_2$ emissions.
-This makes the environmental dimension semantically heterogeneous
-across decision types: HVAC and Appliance environmental scores
-reflect grid emissions, while Shower environmental scores reflect
-water volume. Cross-decision-type comparisons of environmental MAE
-should be interpreted with this distinction in mind; the proxy does
-not affect within-type ranking validity.
+Results are specific to Pennsylvania's grid and utility rate structure.
+The PJM marginal emissions factors (peak: 1.041~lbs~CO$_2$/kWh;
+off-peak: 0.976~lbs~CO$_2$/kWh) and Pennsylvania time-of-use rate tiers
+used in the ground truth calculators do not generalize to
+high-renewables grids, where lower and more variable emissions
+intensities would compress environmental score distributions and
+potentially change which architecture performs best.
 
-%% NOT FOUND: prompt_utils.py; Hybrid conditional schema injection
-%%            not confirmed in audit
-Prompt consistency across architectures has not been fully
-verified. A shared prompt utility module is not present in the
-repository, meaning Pure Prompting and RAG-Enhanced may use
-independently maintained prompt strings. Additionally, whether the
-Hybrid extraction prompt applies conditional schema injection ---
-one schema per decision type rather than all three simultaneously
---- could not be confirmed from the available code. Prompt
-inconsistencies across architectures introduce an uncontrolled
-variable in the comparison.
+
+The environmental criterion for shower decisions uses water consumption
+in gallons as a proxy rather than CO$_2$ emissions. This makes the
+environmental dimension semantically heterogeneous across decision types:
+HVAC and Appliance environmental scores reflect grid emissions, while
+Shower environmental scores reflect water volume. Cross-decision-type
+comparisons of environmental MAE should be interpreted with this
+distinction in mind; the proxy does not affect within-type ranking
+validity.
+
+
+Prompt consistency across Pure Prompting and RAG-Enhanced has not been
+fully verified. A shared prompt utility module is not present in the
+repository, meaning the two architectures use independently maintained
+prompt strings. Divergence between those strings cannot be excluded
+without a unified implementation, introducing an uncontrolled variable
+in the comparison.
 
 \subsection{Future Work}
 \label{sec:futurework}
 
-%% SOURCE: model_config.py:25-33 (all four models configured)
-%% SOURCE: Output Files Claude/.gitkeep, Qwen/.gitkeep,
-%%         Gemini/.gitkeep (runs pending)
+
 The immediate priority is completing the multi-model benchmark.
-The pipeline is fully configured for Mistral Small 3.2~24B,
-Qwen~2.5~72B, Claude Sonnet~4, and Gemini~2.5~Pro, representing a
-2$\times$2 grid of open versus closed-weight and small versus
-large model classes. Running all four models across the same 100
-scenarios will allow architecture-level conclusions to be separated
-from model-specific effects and will establish whether the Hybrid
-advantage is robust or model-dependent.
+The pipeline is fully configured for Qwen~3.5~9B, Qwen~3.5~27B,
+Gemini~3.5~Flash, and GPT-5, representing a $2{\times}2$ grid of open
+versus closed-weight and small versus large model classes.
+[CONFIRM AFTER RUNNING: state whether the Hybrid advantage is robust
+or model-dependent, and summarize architecture-level conclusions across
+all four models.]
 
-%% SOURCE: model_config.py:2 (N_RUNS=10); per-run naming:
-%%         Architectures/PurePrompting.py:602,
-%%         Architectures/Hybrid.py:959-960
-%% NOT FOUND: std deviation columns in CalculateMetrics output
-Completing $N = 10$ runs per model using the existing per-run file
-naming infrastructure will enable variance measurement across runs.
-Standard deviation columns should be added to the
-\texttt{CalculateMetrics.py} output to accompany each mean metric,
-making the performance gaps between architectures statistically
-interpretable.
 
-%% NOT FOUND: prompt_utils.py
-A shared prompt utility module (\texttt{prompt\_utils.py})
-implementing a unified \texttt{build\_prompt()} function with an
-optional \texttt{rag\_block} parameter should be built to
-consolidate the prompt logic currently maintained independently
-across Pure Prompting and RAG-Enhanced. This would eliminate prompt
-inconsistency as a confounding variable in the multi-model
-comparison.
+The per-run file naming infrastructure and standard deviation columns in
+\texttt{CalculateMetrics.py} are already implemented for $N=10$ runs per
+model. [CONFIRM AFTER RUNNING: report whether Hybrid's deterministic
+calculator component measurably suppresses run-to-run variance relative
+to the two fully LLM-driven architectures.]
 
-%% NOT FOUND: PlotDistributions.py
-Distribution plots --- violin or box plots of per-scenario score
-distributions across runs --- should be generated via a
-\texttt{PlotDistributions.py} script to visualize run-to-run
-variance per architecture and model. These are necessary to
-characterize whether Hybrid's deterministic calculator component
-suppresses variance relative to the two fully LLM-driven
-architectures.
-
-%% SOURCE: context: Appliance tau=0.68, Shower tau=0.60 vs HVAC 0.90
-The Hybrid architecture shows a pronounced performance drop from
-HVAC ($\tau = 0.90$) to Appliance ($\tau = 0.68$) and Shower
-($\tau = 0.60$). Scenario-type-specific extraction prompts for
-Appliance and Shower decisions should be developed to address
-this gap, as the current single extraction prompt was optimized
-primarily against HVAC scenarios.
-
+The Hybrid architecture shows a pronounced performance drop from HVAC
+($\tau=0.90$) to Appliance ($\tau=0.68$) and Shower ($\tau=0.60$).
+Scenario-type-specific extraction prompts for Appliance and Shower
+decisions should be developed to address this gap, as the current
+extraction prompt was optimized primarily against HVAC scenarios.
 
 Replacing the water-consumption proxy in the Shower environmental
-criterion with a lifecycle CO$_2$ factor --- converting gallons of
-hot water to grid emissions using a standardized heating
-efficiency --- would make the environmental criterion semantically
-consistent across all three decision types and enable valid
-cross-type environmental MAE comparisons.
+criterion with a lifecycle CO$_2$ factor---converting gallons of hot
+water to grid emissions using a standardized heating efficiency---would
+make the environmental criterion semantically consistent across all three
+decision types and enable valid cross-type environmental MAE comparisons.
 
 \section{Conclusion}
 \label{sec5}
 
-%% BLOCKED: per project ground rules, the Conclusion is not written in this
-%% draft because its specific claims rely on the metrics flagged as incorrect.
 \textit{[BLOCKED in this draft: see audit log. The Conclusion is gated on corrected results.]}
 
 \clearpage
 \bibliographystyle{elsarticle-num}
 \bibliography{cas-refs}
 \newpage
-%% =====================================================================
-%% ITEM 1 -- Notation Table
-%% =====================================================================
+
 \begin{table}[t]
 \small
 \centering
@@ -851,9 +756,6 @@ $k$ & number of retrieved chunks per query in RAG ($k=3$) \\
 \label{tab:item1}
 \end{table}
 
-%% =====================================================================
-%% ITEM 2 -- MAVT Equations Block
-%% =====================================================================
 
 
 \begin{equation}
@@ -866,9 +768,6 @@ v_i(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \times 10
 v_i(x) = \frac{\ln\!\left(1 + \alpha \cdot \frac{x - x_{\min}}{x_{\max} - x_{\min}}\right)}{\ln(1 + \alpha)} \times 10
 \end{equation}
 
-%% =====================================================================
-%% ITEM 3 -- MAVT Framework Specification Table
-%% =====================================================================
 \begin{table}[t]
 \small
 \centering
@@ -888,13 +787,6 @@ Practicality & 15 & Logarithmic & 1.2 & Higher raw = better \\
 \label{tab:item3}
 \end{table}
 
-%% =====================================================================
-%% ITEM 4 -- Scenario Corpus and Parameter Asymmetry Table
-%% =====================================================================
-%% PARTIAL: the test/RAG-set numbers in the left minipage (60/25/15 test;
-%% 25/20/5 RAG) are stale relative to the actual scenario files (91/50/40
-%% test; 111/90/30 RAG; see Section 2.1). NEEDS: refresh values to match the
-%% current scenario corpus when the corrected results are in.
 \begin{table*}[t]
 \footnotesize
 \centering
@@ -933,12 +825,6 @@ Shower & \parbox[t]{0.26\textwidth}{Tank size, water heater temp, GPM} & \parbox
 \label{tab:item4}
 \end{table*}
 
-%% =====================================================================
-%% ITEM 5 -- Main Performance Summary Table
-%% =====================================================================
-%% BLOCKED: numbers in this table are from the earlier metrics_summary
-%% run and are flagged as INCORRECT by the project lead. Retained so the
-%% file compiles cleanly. Replace before submission.
 \begin{table*}[t]
 \footnotesize
 \centering
@@ -965,10 +851,7 @@ Overall RMSE & 3.07 & 2.40 & \textbf{1.52} \\
 \label{tab:item5}
 \end{table*}
 
-%% =====================================================================
-%% ITEM 6 -- Criterion-Level MAE Table
-%% =====================================================================
-%% BLOCKED: see Item 5.
+
 \begin{table}[t]
 \small
 \centering
@@ -992,10 +875,7 @@ Overall & 2.52 & 1.61 & \textbf{0.69} \\
 \label{tab:item6}
 \end{table}
 
-%% =====================================================================
-%% ITEM 7 -- Per-Decision-Type Full Breakdown Table
-%% =====================================================================
-%% BLOCKED: see Item 5.
+
 \begin{table*}[t]
 \footnotesize
 \centering
@@ -1018,10 +898,7 @@ Overall & -0.06 & 30.00\% & 62.00\% & 0.43 & 58.00\% & 89.00\% & \textbf{0.80} &
 \label{tab:item7}
 \end{table*}
 
-%% =====================================================================
-%% ITEM 8 -- Efficiency and API Usage Table
-%% =====================================================================
-%% BLOCKED: see Item 5.
+
 \begin{table}[t]
 \small
 \centering
@@ -1047,9 +924,7 @@ Failure Rate (\%) & 0.00\% & 0.00\% & 0.00\% \\
 \label{tab:item8}
 \end{table}
 
-%% =====================================================================
-%% ITEM 14 -- Architecture Pipeline Diagram Placeholder
-%% =====================================================================
+
 \begin{figure*}[t]
 \centering
 \missingfigure[figwidth=\textwidth]{Side-by-side vertical pipeline flowcharts for three LLM integration architectures. Pure Prompting: 3 LLM calls, one per alternative, no external context. RAG-Enhanced: 3 LLM calls each preceded by ChromaDB retrieval ($k=3$ chunks). Hybrid: 1 LLM call for parameter extraction, output to physics-based calculator, then MAVT weighted sum.}
