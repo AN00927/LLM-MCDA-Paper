@@ -13,26 +13,26 @@ CRITERION_WEIGHTS = {
 MODEL_SPECS = {
     "deepseek_small": {
         "label": "Small Open - DeepSeek V4 Flash",
-        "openrouter_id": "deepseek/deepseek-v4-flash: exacto",
+        "openrouter_id": "deepseek/deepseek-v4-flash",
         "output_folder": "Output Files DeepSeek V4 Flash",
         "reasoning_effort": "non-reasoning",
     },
     "qwen_large": {
         "label": "Large Open - Qwen 3.5 27B",
-        "openrouter_id": "qwen/qwen3.5-27b: exacto",
+        "openrouter_id": "qwen/qwen3.5-27b",
         "output_folder": "Output Files Qwen3.5 27B",
     },
     "gemini": {
-        "label": "Small Closed - Gemini 3.5 Flash",
-        "openrouter_id": "google/gemini-3.5-flash: exacto",
-        "output_folder": "Output Files Gemini 3.5 Flash",
-        "reasoning_effort": "minimal",
+        "label": "Small Closed - GPT-5.4 nano",
+        "openrouter_id": "openai/gpt-5.4",
+        "output_folder": "Output Files GPT-5.4 nano",
+        "reasoning_effort": "medium",
     },
     "gpt54": {
-        "label": "Large Closed - GPT-5.4",
-        "openrouter_id": "openai/gpt-5.4: exacto",
-        "output_folder": "Output Files GPT-5.4",
-        "reasoning_effort": "low",
+        "label": "Large Closed - Gemini 3.5 Flash",
+        "openrouter_id": "google/gemini-3.5-flash",
+        "output_folder": "Output Files Gemini 3.5 Flash",
+        "reasoning_effort": "minimal",
     },
 }
 
@@ -61,5 +61,5 @@ def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:
 
 
 def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
-    if "reasoning_effort"  in MODEL_SPECS[_resolve_model_key(model_key)]:
+    if "reasoning_effort"  not in MODEL_SPECS[_resolve_model_key(model_key)]:
         return {"effort": get_reasoning_effort(model_key)}
