@@ -125,8 +125,9 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
         "model": API_CONFIG["model"],
         "messages": messages,
         "temperature": API_CONFIG["temperature"],
-        "reasoning": API_CONFIG["reasoning"],
     }
+    if API_CONFIG["reasoning"]:
+        payload["reasoning"] = API_CONFIG["reasoning"]
 
     diagnostics = {
         "tokens_input": 0,

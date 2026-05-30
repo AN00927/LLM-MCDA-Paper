@@ -162,8 +162,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         "model": model,
         "messages": messages,
         "temperature": temperature,
-        "reasoning": REASONING_PAYLOAD,
     }
+    if REASONING_PAYLOAD:
+        payload["reasoning"] = REASONING_PAYLOAD
 
     last_error = None
     response = None

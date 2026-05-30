@@ -215,8 +215,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         "model": model,
         "messages": messages,
         "temperature": temperature,
-        "reasoning": REASONING_PAYLOAD,
     }
+    if REASONING_PAYLOAD:
+        payload["reasoning"] = REASONING_PAYLOAD
 
     attempt = 0
     retry_forever = MAX_RETRIES <= 0

@@ -30,11 +30,39 @@ This project compares three LLM-MCDA architectures for household energy decision
 | Slot | Model | GPQA Diamond | IFBench | GDPval | OpenRouter string |
 |---|---|---:|---:|---:|---|
 | Large Closed | GPT-5.4 | 87.1% | 65.9% | 50.1% | `openai/gpt-5.4` |
-| Small Closed | Gemini 3.5 Flash | 82.8% | 47.3% | 47.2% | `google/gemini-3.5-flash` |
-| Large Open | Qwen 3.5 27B | 85.8% | 75.6% | 33.1% | `qwen/qwen3.5-27b` |
-| Small Open | DeepSeek V4 Flash | TBD | TBD | TBD | `deepseek/deepseek-v4-flash` |
+| Small Closed | GPT-5.4 Nano | 81.7% | 75.9% | 34.8% | `openai/gpt-5.4-nano` |
+| Large Open | Gemini 3.5 Flash | 82.8% | 47.3% | 47.2% | `google/gemini-3.5-flash` |
+| Small Open | DeepSeek V4 Flash (Non-reasoning) | 71.6% | 47.2% | 44.5% | `deepseek/deepseek-v4-flash` |
+
 
 Model selection and output routing are controlled in `model_config.py`.
+
+### DeepSeek V4 Flash (Non-reasoning) — Benchmarks
+
+Overall intelligence score combining multiple benchmarks: **36.5** — Artificial Analysis Intelligence Index (Better than 66% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=intelligence#benchmarks)).
+
+Composite coding capability score: **35.2** — Artificial Analysis Coding Index (Better than 73% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=coding#benchmarks)).
+
+Composite agentic capability score: **61.3** — Artificial Analysis Agentic Index (Better than 89% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=agentic#benchmarks)).
+
+#### Reasoning (selected benchmarks)
+- GPQA Diamond (graduate-level scientific reasoning): **71.6%**
+- HLE (Humanity's Last Exam): **7.0%**
+- IFBench (instruction-following): **47.2%**
+- τ²-Bench Telecom (dual-control conversational agents): **94.4%**
+- AA-LCR (long-context reasoning): **33.3%**
+- GDPval-AA (economically valuable tasks): **44.5%**
+- CritPt (research-level physics reasoning): **0.3%**
+
+#### Coding (selected benchmarks)
+- SciCode (Python scientific computing): **37.3%**
+- Terminal-Bench Hard (agentic coding & terminal use): **34.1%**
+
+#### Knowledge
+- AA-Omniscience Accuracy (proportion correct): **26.1%**
+- AA-Omniscience Non-Hallucination Rate: **4.9%**
+
+Metrics sourced from [Artificial Analysis](https://artificialanalysis.ai/models/deepseek-v4-flash-non-reasoning) and OpenRouter model pages. DeepSeek is configured here as a non-reasoning model in `model_config.py` (the architectures omit the `reasoning` payload for non-reasoning models).
 
 **RAG Database:** ChromaDB  
 **Score Scale:** 0–10
@@ -60,8 +88,8 @@ LLM-MCDA/
 ├── Miscellaneous Files/
 │   └── CalculateMetrics.py
 ├── Output Files DeepSeek V4 Flash/
-├── Output Files Qwen3.5 27B/
 ├── Output Files Gemini 3.5 Flash/
+├── Output Files GPT-5.4 Nano/
 └── Output Files GPT-5.4/
 ├── Scenario Files/
 │   ├── ApplianceRAGScenarios.xlsx
