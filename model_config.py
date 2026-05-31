@@ -1,4 +1,4 @@
-MODEL_KEY = "deepseek_small"
+MODEL_KEY = "gptoss_smallest"
 N_RUNS = 10
 
 
@@ -11,26 +11,27 @@ CRITERION_WEIGHTS = {
 
 
 MODEL_SPECS = {
-    "deepseek_small": {
-        "label": "Small Open - DeepSeek V4 Flash",
-        "openrouter_id": "deepseek/deepseek-v4-flash",
+    "gptoss_smallest": {
+        "label": "Smallest - GPT-OSS-20B",
+        "openrouter_id": "openai/gpt-oss-20b:exacto",
+        "output_folder": "Output Files GPT-OSS 20B",
+        "reasoning_effort": "low",
+    },
+    "qwen_small": {
+        "label": "Small - Qwen 3.5 9B",
+        "openrouter_id": "qwen/qwen3.5-9b:exacto",
+        "output_folder": "Output Files Qwen3.5 9B",
+        "reasoning_effort": "low",
+    },
+    "deepseek_medium": {
+        "label": "Medium - DeepSeek V4 Flash",
+        "openrouter_id": "deepseek/deepseek-v4-flash:exacto",
         "output_folder": "Output Files DeepSeek V4 Flash",
-        "reasoning_effort": "non-reasoning",
+        "reasoning_effort": "minimal",
     },
-    "qwen_large": {
-        "label": "Large Open - Qwen 3.5 27B",
-        "openrouter_id": "qwen/qwen3.5-27b",
-        "output_folder": "Output Files Qwen3.5 27B",
-    },
-    "gemini": {
-        "label": "Small Closed - GPT-5.4 nano",
-        "openrouter_id": "openai/gpt-5.4",
-        "output_folder": "Output Files GPT-5.4 nano",
-        "reasoning_effort": "medium",
-    },
-    "gpt54": {
-        "label": "Large Closed - Gemini 3.5 Flash",
-        "openrouter_id": "google/gemini-3.5-flash",
+    "gemini_large": {
+        "label": "Large - Gemini 3.5 Flash",
+        "openrouter_id": "google/gemini-3.5-flash:exacto",
         "output_folder": "Output Files Gemini 3.5 Flash",
         "reasoning_effort": "minimal",
     },
@@ -61,5 +62,8 @@ def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:
 
 
 def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
-    if "reasoning_effort"  not in MODEL_SPECS[_resolve_model_key(model_key)]:
-        return {"effort": get_reasoning_effort(model_key)}
+    resolved_key = _resolve_model_key(model_key)
+    reasoning_effort = MODEL_SPECS[resolved_key].get("reasoning_effort")
+    if not reasoning_effort or reasoning_effort == "non-reasoning":
+        return {}
+    return {"enabled": True, "effort": reasoning_effort}
