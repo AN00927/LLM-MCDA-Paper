@@ -26,13 +26,13 @@ This project compares three LLM-MCDA architectures for household energy decision
 | Comfort | 20% |
 | Practicality | 15% |
 
-**Finalized Benchmark Model Set (2x2 open/closed x small/large):**
+**Finalized Benchmark Model Set (2x2 small/large):**
 | Slot | Model | GPQA Diamond | IFBench | GDPval | OpenRouter string |
 |---|---|---:|---:|---:|---|
-| Large Closed | GPT-5.4 | 87.1% | 65.9% | 50.1% | `openai/gpt-5.4` |
-| Small Closed | GPT-5.4 Nano | 81.7% | 75.9% | 34.8% | `openai/gpt-5.4-nano` |
-| Large Open | Gemini 3.5 Flash | 82.8% | 47.3% | 47.2% | `google/gemini-3.5-flash` |
-| Small Open | DeepSeek V4 Flash (Non-reasoning) | 71.6% | 47.2% | 44.5% | `deepseek/deepseek-v4-flash` |
+| Large | GPT-5.4 | 87.1% | 65.9% | 50.1% | `openai/gpt-5.4` |
+| Small | GPT-5.4 Nano | 81.7% | 75.9% | 34.8% | `openai/gpt-5.4-nano` |
+| Large | Gemini 3.5 Flash | 82.8% | 47.3% | 47.2% | `google/gemini-3.5-flash` |
+| Small | DeepSeek V4 Flash (Non-reasoning) | 71.6% | 47.2% | 44.5% | `deepseek/deepseek-v4-flash` |
 
 
 Model selection and output routing are controlled in `model_config.py`.
