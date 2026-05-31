@@ -244,22 +244,24 @@ four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
 - comfort: higher comfort = higher score
 - practicality: easier adoption = higher score
 
-Use these anchors to calibrate scoring. Each has a best-case value where scores peak, and 
-fall off as alternatives move away from it.
-
 HVAC:
-- energy_cost / environmental: much better on average when the indoor-outdoor temperature gap
- is small (< ~5F), and much worse when the gap is large (> ~12F)
-- comfort / practicality: best near 76F (cooling) or 71F (heating)
+- energy_cost / environmental: good when the setpoint demands little from the system
+  given outdoor conditions; moderate when it must work noticeably harder; poor when
+  the setpoint is extreme relative to outdoor temperature
+- comfort / practicality: good when the setpoint feels naturally comfortable for the
+  season; moderate when slightly outside typical preference; poor when extreme
 
 Appliance (scheduling):
-- energy_cost / environmental: best in early morning, worst around 5-6pm
-- comfort / practicality: best within a few hours, and much worse when going into 
-early morning hours, especially if that is a large gap from question given time
+- energy_cost / environmental: good during off-peak hours; moderate in shoulder
+  periods; poor during peak demand hours
+- comfort / practicality: good when the delay is short; moderate when pushed later
+  into the evening; poor when running in the middle of the night or after a long wait
 
 Shower (duration):
-- energy_cost / environmental: the shorter the shower, the better
-- comfort / practicality: best at 8 minutes, worse when less than 5 minutes or more than 15 minutes
+- energy_cost / environmental: good when short, declining continuously toward poor
+  as duration increases
+- comfort / practicality: good near a typical shower length; poor when too short to
+  feel adequate or long enough to be wasteful
 
 Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
