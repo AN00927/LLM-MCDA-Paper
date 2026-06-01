@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS
+from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
 from sentinel_utils import _atomic_write_xlsx, read_table_clean
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
@@ -68,8 +68,9 @@ FAIL_SENTINEL = 1928
 
 _STRICT_ID_MATCH_ENABLED = False
 
-# Secondary criterion priority used when weighted scores tie.
-TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
+# Secondary criterion priority used when weighted scores tie is imported from
+# model_config so the ground-truth calculators and this script break ties
+# identically (single source of truth).
 
 
 def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, log_prefix=""):
@@ -621,8 +622,11 @@ def compute_criterion_metrics(merged_df):
         all_abs_errors.extend(ae.tolist())
         all_sq_errors.extend(se.tolist())
 
-    results["overall_MAE"] = round(np.mean(all_abs_errors), 4)
-    results["overall_RMSE"] = round(np.sqrt(np.mean(all_sq_errors)), 4)
+    # Use nan-skipping aggregation to stay consistent with the per-criterion
+    # MAE/RMSE above (pandas .mean() already skips NaN). Plain np.mean would
+    # return NaN for the overall figure if any single cell were missing.
+    results["overall_MAE"] = round(np.nanmean(all_abs_errors), 4) if all_abs_errors else np.nan
+    results["overall_RMSE"] = round(np.sqrt(np.nanmean(all_sq_errors)), 4) if all_sq_errors else np.nan
     return results
 
 
@@ -926,9 +930,9 @@ def evaluate_all(config):
         print(f"      Kendall tau:  {rank['kendall_tau']:.4f}")
         print(f"      Spearman rho: {rank['spearman_rho']:.4f}")
         print(f"      Top-1:      {rank['top1_accuracy']:.4f} "
-              f"({int(rank['top1_accuracy'] * n_eval)}/{n_eval})")
+              f"({round(rank['top1_accuracy'] * n_eval)}/{n_eval})")
         print(f"      Top-2:      {rank['top2_accuracy']:.4f} "
-              f"({int(rank['top2_accuracy'] * n_eval)}/{n_eval})")
+              f"({round(rank['top2_accuracy'] * n_eval)}/{n_eval})")
 
         # Store overall
         for k, v in {**crit, **rank}.items():
@@ -963,9 +967,9 @@ def evaluate_all(config):
             print(f"    tau={dt_rank['kendall_tau']:.4f}  "
                   f"rho={dt_rank['spearman_rho']:.4f}  "
                   f"Top1={dt_rank['top1_accuracy']:.4f} "
-                  f"({int(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
+                  f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
                   f"Top2={dt_rank['top2_accuracy']:.4f} "
-                  f"({int(dt_rank['top2_accuracy']*n_dt)}/{n_dt})")
+                  f"({round(dt_rank['top2_accuracy']*n_dt)}/{n_dt})")
 
             for k, v in {**dt_crit, **dt_rank}.items():
                 all_metrics.append({

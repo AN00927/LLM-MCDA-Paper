@@ -31,7 +31,7 @@ Why MEREC over CRITIC here:
 MEREC formula (all criteria are beneficial, higher score = better):
     Step 1: Normalize  n_ij = (min_j + ε) / (x_ij + ε)
     Step 2: Overall performance  S_i = ln(1 + (1/m) * Σ_j |ln(n_ij)|)
-    Step 3: Performance without j  S_i^(-j) = ln(1 + (1/(m-1)) * Σ_{k≠j} |ln(n_ik)|)
+    Step 3: Performance without j  S_i^(-j) = ln(1 + (1/m) * Σ_{k≠j} |ln(n_ik)|)
     Step 4: Removal effect  E_j = Σ_i |S_i^(-j) - S_i|
     Step 5: Weight  w_j = E_j / Σ_k E_k
 
@@ -161,7 +161,10 @@ def merec_scenario(matrix: np.ndarray) -> np.ndarray:
         mask = np.ones(m_crit, dtype=bool)
         mask[j] = False
         remaining = abs_log_norm[:, mask]        # shape (n_alt, m_crit-1)
-        S_minus_j = np.log(1.0 + (1.0 / (m_crit - 1)) * remaining.sum(axis=1))
+        # Canonical MEREC (Keshavarz-Ghorabaee et al. 2021, Eq. 5) keeps the SAME
+        # 1/m normalization as the overall score S_i (Eq. 3); the removal effect
+        # comes from dropping the j-th term, not from rescaling by (m-1).
+        S_minus_j = np.log(1.0 + (1.0 / m_crit) * remaining.sum(axis=1))
         E[j] = np.abs(S_minus_j - S).sum()
 
     return E

@@ -37,7 +37,7 @@ This project compares three LLM-MCDA architectures for household energy decision
 
 Model selection and output routing are controlled in `model_config.py`.
 
-### DeepSeek V4 Flash (Non-reasoning) — Benchmarks
+### DeepSeek V4 Flash (Non-reasoning) — Benchmarks. BENCHMARKS ARE NOT SHOWN FOR OTHER MODELS BUT SAME REASONING APPLIES
 
 Overall intelligence score combining multiple benchmarks: **36.5** — Artificial Analysis Intelligence Index (Better than 66% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=intelligence#benchmarks)).
 

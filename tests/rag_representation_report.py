@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import csv
 import json
 import re
 from collections import Counter
 from pathlib import Path
+
+import pandas as pd
 
 
 ROOT = Path(r"C:\Users\Ahaan\LLM-MCDA Paper")
@@ -15,8 +16,9 @@ def norm(value):
 
 
 def rows(path):
-    with (ROOT / path).open(newline="", encoding="utf-8-sig") as fh:
-        return list(csv.DictReader(fh))
+    """Read an .xlsx scenario/RAG file as string-valued dict rows."""
+    df = pd.read_excel(ROOT / path, dtype=str, engine="openpyxl").fillna("")
+    return df.to_dict("records")
 
 
 def unique_by(rows_, key_col, loc_col):
@@ -81,14 +83,20 @@ def pct(counter):
     return {k: {"count": v, "pct": round(v / total, 3)} for k, v in sorted(counter.items())}
 
 
-hvac_s = rows("Scenario Files/HVACScenarios.csv")
-hvac_r = unique_by(rows("Scenario Files/HVACRagScenarios.csv"), "question", "location")
+hvac_s = rows("Scenario Files/HVACScenarios.xlsx")
+hvac_r = unique_by(rows("Scenario Files/HVACRagScenarios.xlsx"), "question", "location")
 hvac_lookup = {(norm(r["Question"]), norm(r["Location"])): r for r in hvac_s}
-hvac_r_src = [hvac_lookup[(norm(r["question"]), norm(r["location"]))] for r in hvac_r]
-app_s = rows("Scenario Files/ApplianceScenarios.csv")
-app_r = unique_by(rows("Scenario Files/ApplianceRAGScenarios.csv"), "description", "location")
-sh_s = rows("Scenario Files/ShowerScenarios.csv")
-sh_r = unique_by(rows("Scenario Files/ShowerRAGScenarios.csv"), "description", "location")
+# Skip RAG rows whose source scenario is no longer in the current scenario set
+# (e.g. when the RAG export is stale relative to HVACScenarios) instead of
+# crashing on a missing key.
+hvac_r_src = [
+    hvac_lookup[k] for r in hvac_r
+    if (k := (norm(r["question"]), norm(r["location"]))) in hvac_lookup
+]
+app_s = rows("Scenario Files/ApplianceScenarios.xlsx")
+app_r = unique_by(rows("Scenario Files/ApplianceRAGScenarios.xlsx"), "description", "location")
+sh_s = rows("Scenario Files/ShowerScenarios.xlsx")
+sh_r = unique_by(rows("Scenario Files/ShowerRAGScenarios.xlsx"), "description", "location")
 
 report = {
     "HVAC": {
