@@ -26,13 +26,13 @@ This project compares three LLM-MCDA architectures for household energy decision
 | Comfort | 20% |
 | Practicality | 15% |
 
-**Finalized Benchmark Model Set (2x2 small/large):**
-| Slot | Model | GPQA Diamond | IFBench | GDPval | OpenRouter string |
-|---|---|---:|---:|---:|---|
-| Large | GPT-5.4 | 87.1% | 65.9% | 50.1% | `openai/gpt-5.4` |
-| Small | GPT-5.4 Nano | 81.7% | 75.9% | 34.8% | `openai/gpt-5.4-nano` |
-| Large | Gemini 3.5 Flash | 82.8% | 47.3% | 47.2% | `google/gemini-3.5-flash` |
-| Small | DeepSeek V4 Flash (Non-reasoning) | 71.6% | 47.2% | 44.5% | `deepseek/deepseek-v4-flash` |
+**Current benchmark model set (from `model_config.py`):**
+| Key | Label | OpenRouter string | Reasoning effort | Output folder |
+|---|---|---|---|---|
+| `gptoss_smallest` | Smallest - GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
+| `qwen_small` | Small - Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | low | `Output Files Qwen3.5 9B` |
+| `deepseek_medium` | Medium - DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | minimal | `Output Files DeepSeek V4 Flash` |
+| `gemini_large` | Large - Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
 
 
 Model selection and output routing are controlled in `model_config.py`.
@@ -69,10 +69,10 @@ Metrics sourced from [Artificial Analysis](https://artificialanalysis.ai/models/
 
 ---
 
-## Repository Structure TO UPDATE
+## Repository Structure
 
 ```
-LLM-MCDA/
+LLM-MCDA-Paper/
 ├── Architectures/
 │   ├── Hybrid.py
 │   ├── PurePrompting.py
@@ -85,12 +85,13 @@ LLM-MCDA/
 │   ├── ApplianceGroundTruthCalculator.py
 │   ├── HVACGroundTruthCalculator.py
 │   └── ShowerGroundTruthCalculator.py
-├── Miscellaneous Files/
-│   └── CalculateMetrics.py
-├── Output Files DeepSeek V4 Flash/
-├── Output Files Gemini 3.5 Flash/
-├── Output Files GPT-5.4 Nano/
-└── Output Files GPT-5.4/
+├── Miscellaneous Scripts/
+│   ├── BuildRAG.py
+│   ├── CalculateMetrics.py
+│   ├── EntropyWeights.py
+│   ├── ImpliedWeights.py
+│   ├── MERCECWeights.py
+│   └── SensitivityAnalysis.py
 ├── Scenario Files/
 │   ├── ApplianceRAGScenarios.xlsx
 │   ├── ApplianceScenarios.xlsx
@@ -99,8 +100,15 @@ LLM-MCDA/
 │   ├── ShowerRAGScenarios.xlsx
 │   ├── ShowerScenarios.xlsx
 │   └── TestScenarios.xlsx
-├── BuildRAG.py
-├── MCDA Files Consolidated.xlsx
+├── Scoring Logic and Documentation/
+│   ├── method/
+│   └── paper/
+├── Output Files Claude/
+├── Output Files Gemini/
+├── tests/
+├── model_config.py
+├── sentinel_utils.py
+├── XLSX_Schema_Map.md
 ├── README.md
 └── requirements.txt
 ```
@@ -146,7 +154,7 @@ LLM-MCDA/
 
 ---
 
-## Ground Truth Methodology TO UPDATEEE
+## Ground Truth Methodology
 
 Ground truth scores are calculated using deterministic MAVT value functions with empirically derived reference ranges (5th–95th percentile from actual scenario data).
 
@@ -182,7 +190,7 @@ Ground truth scores are calculated using deterministic MAVT value functions with
 
 ---
 
-[Notebook](Notebook.pdf) | [Evaluation Metrics](Evaluation_Metrics_Derivations.pdf) | [How Budget Penalties Were applied](Budget_Penalties.pdf) | [Reference Ranges for Value Functions](Reference_Ranges_for_Value_Functions) | [Worked Calculator Examples](Calculator_Examples.pdf)
+[Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [How Budget Penalties Were Applied](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges for Value Functions](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
 
 ---
 
