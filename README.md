@@ -3,69 +3,61 @@
 **Author:** Ahaan Nigam  
 **Institution:** Downingtown East High School  
 **Collaborator:** Dr. River Huang, Paul Scherrer Institut (PSI), Switzerland  
+**Target Journal:** Decision Support Systems
 
 ---
 
 ## Research Question
 
-Which AI-MCDA architecture most accurately replicates physics-based ground truth for household energy decisions, while still maintaining reasonable failure rate and API costs?
+Which LLM integration architecture most accurately replicates physics-based MAVT ground truth for household energy decisions, while maintaining acceptable failure rates and API costs?
 
 ---
 
 ## Project Overview
 
-[Abstract](Abstract.pdf)
+This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **185 test scenarios** (69 HVAC, 62 Appliance, 54 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **240-scenario RAG corpus** (105 HVAC, 90 Appliance, 45 Shower) seeds the retrieval index used by the RAG-Enhanced architecture and never appears in evaluation.
 
-This project compares three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **185 scenarios** (for now) (95 HVAC, 50 Appliance, 40 Shower). Each scenario presents three alternatives; each architecture ranks them on four criteria.
+The three decision types were selected for their high behavioral plasticity and contribution to residential energy/water use: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
 
-**MAVT Criterion Weights:**
-| Criterion | Weight |
-|---|---|
-| Environmental Impact | 35% |
-| Energy Cost | 30% |
-| Comfort | 20% |
-| Practicality | 15% |
+> **Note on quantitative results:** Multi-model benchmark runs are in progress. Accuracy metrics (Top-1, Kendall's τ, MAE, token counts, latencies) are not reported here pending a corrected multi-model run; placeholder values from earlier runs have been removed to avoid citing stale numbers.
 
-**Current benchmark model set (from `model_config.py`):**
+---
+
+## MAVT Criterion Weights
+
+Weights are held constant across all decision types, all architectures, and the ground-truth calculator so that score differences reflect input and value-function fidelity rather than criterion framing.
+
+| Criterion | Weight | Justification summary |
+| --- | --- | --- |
+| Environmental Impact | 35% | VBN theory identifies environmental orientation as the most consistent normative driver of pro-environmental household behavior; entropy-based normalization independently assigns it above-average information weight |
+| Energy Cost | 30% | Strongest independent predictor of consumer adoption; households underestimate energy use by ~2.8× on average (Attari et al., 2010), making explicit cost feedback essential |
+| Comfort | 20% | Dominant driver of HVAC behavior even when it conflicts with energy savings; ASHRAE 55 provides a physically interpretable anchor |
+| Practicality | 15% | Constraint on feasibility and long-term adoption rather than a primary preference; weighted below comfort to reflect that role |
+
+A sensitivity analysis confirms architecture ordering is stable under ±0.05 perturbations to each criterion weight (see [Sensitivity Analysis](#sensitivity-analysis) below).
+
+---
+
+## Model Set
+
+Model selection and output routing are controlled in [model_config.py](model_config.py).
+
 | Key | Label | OpenRouter string | Reasoning effort | Output folder |
-|---|---|---|---|---|
-| `gptoss_smallest` | Smallest - GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
-| `qwen_small` | Small - Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | low | `Output Files Qwen3.5 9B` |
-| `deepseek_medium` | Medium - DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | minimal | `Output Files DeepSeek V4 Flash` |
-| `gemini_large` | Large - Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
+| --- | --- | --- | --- | --- |
+| `gptoss_smallest` | Smallest — GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
+| `qwen_small` | Small — Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | low | `Output Files Qwen3.5 9B` |
+| `deepseek_medium` | Medium — DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | minimal | `Output Files DeepSeek V4 Flash` |
+| `gemini_large` | Large — Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
 
+### DeepSeek V4 Flash (Non-reasoning) — Representative Benchmarks
 
-Model selection and output routing are controlled in `model_config.py`.
+Overall intelligence: **36.5** — Artificial Analysis Intelligence Index (better than 66% of compared models)  
+Coding capability: **35.2** — Artificial Analysis Coding Index (better than 73%)  
+Agentic capability: **61.3** — Artificial Analysis Agentic Index (better than 89%)
 
-### DeepSeek V4 Flash (Non-reasoning) — Benchmarks. BENCHMARKS ARE NOT SHOWN FOR OTHER MODELS BUT SAME REASONING APPLIES
+Selected benchmarks: GPQA Diamond 71.6% · HLE 7.0% · IFBench 47.2% · τ²-Bench Telecom 94.4% · SciCode 37.3% · AA-Omniscience Non-Hallucination Rate 4.9%
 
-Overall intelligence score combining multiple benchmarks: **36.5** — Artificial Analysis Intelligence Index (Better than 66% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=intelligence#benchmarks)).
-
-Composite coding capability score: **35.2** — Artificial Analysis Coding Index (Better than 73% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=coding#benchmarks)).
-
-Composite agentic capability score: **61.3** — Artificial Analysis Agentic Index (Better than 89% of models compared) ([OpenRouter rankings](https://openrouter.ai/rankings?benchmark=agentic#benchmarks)).
-
-#### Reasoning (selected benchmarks)
-- GPQA Diamond (graduate-level scientific reasoning): **71.6%**
-- HLE (Humanity's Last Exam): **7.0%**
-- IFBench (instruction-following): **47.2%**
-- τ²-Bench Telecom (dual-control conversational agents): **94.4%**
-- AA-LCR (long-context reasoning): **33.3%**
-- GDPval-AA (economically valuable tasks): **44.5%**
-- CritPt (research-level physics reasoning): **0.3%**
-
-#### Coding (selected benchmarks)
-- SciCode (Python scientific computing): **37.3%**
-- Terminal-Bench Hard (agentic coding & terminal use): **34.1%**
-
-#### Knowledge
-- AA-Omniscience Accuracy (proportion correct): **26.1%**
-- AA-Omniscience Non-Hallucination Rate: **4.9%**
-
-Metrics sourced from [Artificial Analysis](https://artificialanalysis.ai/models/deepseek-v4-flash-non-reasoning) and OpenRouter model pages. DeepSeek is configured here as a non-reasoning model in `model_config.py` (the architectures omit the `reasoning` payload for non-reasoning models).
-
-**RAG Database:** ChromaDB  
-**Score Scale:** 0–10
+Metrics from [Artificial Analysis](https://artificialanalysis.ai/models/deepseek-v4-flash-non-reasoning) and OpenRouter model pages. DeepSeek is configured as a non-reasoning model; the architectures omit the `reasoning` payload for non-reasoning models.
 
 ---
 
@@ -78,9 +70,9 @@ LLM-MCDA-Paper/
 │   ├── PurePrompting.py
 │   └── RAGDatabaseOptimized.py
 ├── Ground Truth/
-│   ├── ground_truth_appliance.xlsx
-│   ├── ground_truth_hvac.xlsx
-│   └── ground_truth_shower.xlsx
+│   ├── ground_truth_appliance.xlsx     # 288 rows (96 scenarios × 3 alternatives)
+│   ├── ground_truth_hvac.xlsx          # 309 rows (103 scenarios × 3 alternatives)
+│   └── ground_truth_shower.xlsx        # 231 rows (77 scenarios × 3 alternatives)
 ├── Ground Truth Calculators/
 │   ├── ApplianceGroundTruthCalculator.py
 │   ├── HVACGroundTruthCalculator.py
@@ -93,18 +85,23 @@ LLM-MCDA-Paper/
 │   ├── MERCECWeights.py
 │   └── SensitivityAnalysis.py
 ├── Scenario Files/
-│   ├── ApplianceRAGScenarios.xlsx
-│   ├── ApplianceScenarios.xlsx
-│   ├── HVACRagScenarios.xlsx
-│   ├── HVACScenarios.xlsx
-│   ├── ShowerRAGScenarios.xlsx
-│   ├── ShowerScenarios.xlsx
-│   └── TestScenarios.xlsx
+│   ├── ApplianceRAGScenarios.xlsx      # 90 RAG-only scenarios
+│   ├── ApplianceScenarios.xlsx         # 98 total appliance scenarios
+│   ├── HVACRagScenarios.xlsx           # 105 RAG-only scenarios
+│   ├── HVACScenarios.xlsx              # 103 total HVAC scenarios
+│   ├── ShowerRAGScenarios.xlsx         # 45 RAG-only scenarios
+│   ├── ShowerScenarios.xlsx            # 77 total shower scenarios
+│   └── TestScenarios.xlsx              # 185 test scenarios (69 HVAC, 62 Appliance, 54 Shower)
 ├── Scoring Logic and Documentation/
 │   ├── method/
 │   └── paper/
+├── Output Files GPT-OSS 20B/
+├── Output Files Qwen3.5 9B/
+├── Output Files DeepSeek V4 Flash/
+├── Output Files Gemini 3.5 Flash/
 ├── Output Files Claude/
 ├── Output Files Gemini/
+├── chroma_rag_db/
 ├── tests/
 ├── model_config.py
 ├── sentinel_utils.py
@@ -119,78 +116,212 @@ LLM-MCDA-Paper/
 
 ### 1. Pure Prompting
 
-**NOTE**: API CALLS NUMBERS ARE ESTIMATES
-
-- **Approach:** LLM scores all four criteria directly via calibrated system prompts
-- **Input:** Natural language scenario description
-- **Output:** Four 0–10 scores per alternative
+- **Approach:** LLM scores all four criteria directly via calibrated system prompts with per-decision-type rubric guidance
+- **Input:** Natural language scenario description + structured context fields
+- **Output:** Four 0–10 scores per alternative → MAVT ranking
 - **API calls per scenario:** 3 (one per alternative)
-- **API calls per run (181 scenarios):** 543
-- **API calls per 10-run benchmark:** 5,430
+- **API calls per run (185 scenarios):** 555
+- **API calls per 10-run benchmark:** 5,550
 
 ### 2. RAG-Enhanced
-- **Approach:** LLM retrieves relevant ground truth scenario chunks from ChromaDB vector database before scoring
-- **Input:** User description → semantic retrieval → LLM scores with retrieved context
-- **Output:** Four 0–10 scores per alternative
+
+- **Approach:** Semantic retrieval from a ChromaDB vector index (240 pre-scored RAG scenarios) provides calibration examples before the LLM scores each alternative
+- **Input:** Scenario description → sentence-transformer embedding → top-k retrieval → LLM scores with retrieved context
+- **Output:** Four 0–10 scores per alternative → MAVT ranking
 - **API calls per scenario:** 3 (one per alternative)
-- **API calls per run (181 scenarios):** 543
-- **API calls per 10-run benchmark:** 5,430
+- **API calls per run (185 scenarios):** 555
+- **API calls per 10-run benchmark:** 5,550
+- **Vector DB:** ChromaDB with sentence-transformers embeddings
 
 ### 3. Hybrid (AI Extraction + Deterministic Calculator)
-- **Approach:** LLM extracts structured parameters (SEER tier, appliance age, flow rate, etc.) → deterministic MAVT calculator computes scores using physics formulas
-- **Input:** User description → AI maps to parameters → calculator runs
-- **Output:** Four 0–10 scores from physics-backed formulas
-- **API calls per scenario:** 1 (single call processes all three alternatives)
-- **API calls per run (181 scenarios):** 181
-- **API calls per 10-run benchmark:** 1,810
 
-**Four-model full benchmark estimates (10 runs each):**
+- **Approach:** LLM extracts structured engineering parameters (SEER tier, appliance age kWh/cycle, GPM estimate, etc.) from the natural-language description; a deterministic MAVT calculator runs the physics
+- **Input:** Scenario description → LLM parameter extraction → ground-truth-style calculator
+- **Output:** Four 0–10 scores from physics formulas → MAVT ranking
+- **API calls per scenario:** 1 (all three alternatives processed in one call)
+- **API calls per run (185 scenarios):** 185
+- **API calls per 10-run benchmark:** 1,850
+
+### Estimated API Call Totals (10-run benchmark, 4 models)
+
 | Architecture | Calls/model | × 4 models |
-|---|---|---|
-| Pure | 5,430 | 21,720 |
-| RAG | 5,430 | 21,720 |
-| Hybrid | 1,810 | 7,240 |
-| **Total** | **12,670** | **50,680** |
+| --- | --- | --- |
+| Pure | 5,550 | 22,200 |
+| RAG | 5,550 | 22,200 |
+| Hybrid | 1,850 | 7,400 |
+| **Total** | **12,950** | **51,800** |
 
 ---
 
-## Ground Truth Methodology
+## Scenario Corpus
 
-Ground truth scores are calculated using deterministic MAVT value functions with empirically derived reference ranges (5th–95th percentile from actual scenario data).
+### Test vs. RAG Pools
 
-**Value function structure (identical across all three calculators):**
-- Energy Cost & Environmental Impact: Linear value function
-- Comfort: Logarithmic (a = 1.5)
-- Practicality: Logarithmic (a = 1.2)
+The 185 test scenarios and 240 RAG scenarios are **disjoint**. Test scenarios are evaluated by all three architectures and the ground-truth calculator. RAG scenarios seed only the ChromaDB retrieval index.
 
-**Budget penalty tiers** (Thaler 1999; Heath & Soll 1996; Prelec & Loewenstein 1998; Gathergood 2012):
-- Less than 80% of budget: no penalty
-- 80–100%: linear penalty
-- 100–150%: exponential penalty
-- Greater than 150%: eliminated
+| Pool | HVAC | Appliance | Shower | Total |
+| --- | --- | --- | --- | --- |
+| Test set | 69 | 62 | 54 | **185** |
+| RAG corpus | 105 | 90 | 45 | **240** |
 
-**Domain-specific methods:**
-| Domain | Method |
-|---|---|
-| HVAC Energy | ASHRAE cooling/heating load calculations, SEER degradation (Domanski 2014) |
-| Appliance Energy | DOE consumption benchmarks, Energy Star data |
-| Shower Energy | Flow rate × temperature × duration |
-| Emissions | EPA eGRID PJM factor: **0.6458 lbs CO₂/kWh** |
-| Comfort | ASHRAE 55 thermal comfort standards |
-| Practicality | Behavioral adoption research; floor = 1.5 |
+### Parameter Generalization
 
-**Reference ranges:**
-| Domain | Energy Cost | Environmental |
-|---|---|---|
-| HVAC | $0.47–$3.31 | 1.60–11.25 lbs CO₂ |
-| Appliance | $0.02–$0.90 | 0.09–3.83 lbs CO₂ |
-| Shower | $0.20–$1.40 | 1.10–5.90 lbs CO₂ |
+The ground-truth calculators receive exact engineering values; architectures receive homeowner-accessible labels or infer parameters from context (consistent with what a household member would actually know, Attari et al. 2010).
 
-> Pre-transformation clamping is NOT applied — values extrapolate beyond reference bounds freely; final clamping occurs only after value function transformation to preserve MAVT independence.
+| Parameter | LLM Label | Calculator Value | Source |
+| --- | --- | --- | --- |
+| **HVAC — Insulation** | Poor | R-11 | CEC JA4.3; ENERGY STAR |
+| | Medium | R-13 | |
+| | Good | R-19 | |
+| **Shower — Flow Rate** | `low_flow` | 1.5 GPM | EPA WaterSense |
+| | `standard` | 2.5 GPM | Energy Policy Act 1992 |
+| **Appliance — Age** | 1–15 yr | Dishwasher: 0.72–1.70 kWh/cycle | ENERGY STAR certified datasets |
+| | | Washer: 0.15–0.45 kWh/cycle | |
+| | | Dryer: 1.15–3.50 kWh/cycle | |
+
+The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. The Hybrid architecture infers structured estimates of these parameters before invoking the calculator.
 
 ---
 
-[Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [How Budget Penalties Were Applied](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges for Value Functions](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
+## MAVT Framework
+
+### Value Function
+
+MAVT additive form:
+
+```
+s_j = Σ w_i · v_i(x_ij)   for i ∈ {energy_cost, environmental, comfort, practicality}
+```
+
+All four criterion scores are on a 0–10 scale before weighting.
+
+### Reference Ranges (5th–95th percentile of scenario distributions)
+
+| Criterion | HVAC | Appliance | Shower |
+| --- | --- | --- | --- |
+| Energy Cost ($) | $0.47 – $3.31 | $0.017 – $1.12 | $0.15 – $1.50 |
+| Environmental Impact | 2.42 – 18.14 lbs CO₂ | 0.244 – 3.644 lbs CO₂ | 7.5 – 75.0 gal water |
+| Comfort | 0.0 – 10.0 | 0.0 – 10.0 | 0.0 – 10.0 |
+| Practicality | 0.5 – 10.0 | 0.5 – 10.0 | 0.5 – 10.0 |
+
+Shower environmental impact is defined as **water volume (gallons)**, not CO₂. HVAC and Appliance environmental impact is in lbs CO₂ using PJM marginal emissions factors (not the EPA eGRID average factor).
+
+Reference ranges are anchored to 5th–95th percentiles of the actual scenario distributions rather than theoretical extremes, concentrating score sensitivity in the range households actually encounter.
+
+### Budget Penalty
+
+A four-tier multiplicative budget penalty is applied to the post-value-function energy-cost score, where `u = monthly_cost / budget`:
+
+| Utilization `u` | Penalty |
+| --- | --- |
+| `u < 0.80` | 1.0 (no penalty) |
+| `0.80 ≤ u < 1.00` | Linear decay: `1 − 2.5(u − 0.80)` |
+| `1.00 ≤ u < 1.50` | Exponential: `0.5 · e^{−3(u − 1.0)}` |
+| `u ≥ 1.50` | 0 (eliminated) |
+
+Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-control (Heath & Soll 1996); exponential loss aversion (Prelec & Loewenstein 1998); infeasibility elimination (Gathergood 2012).
+
+---
+
+## Ground Truth Calculators
+
+Each calculator takes a scenario with three alternatives and returns four scores per alternative (Energy Cost in $, Environmental Impact, Comfort 0–10, Practicality 0–10) plus raw physical quantities before value-function transformation.
+
+### Emissions Factors
+
+HVAC and Appliance environmental impact uses **PJM marginal emissions factors** (marginal rather than average, because shifting a residential load displaces the generator at the margin):
+
+| Period | Factor |
+| --- | --- |
+| Peak (7am–11pm) | 1.041 lbs CO₂/kWh |
+| Off-peak | 0.976 lbs CO₂/kWh |
+
+### HVAC Calculator
+
+Thermal load uses four ASHRAE-style components (conductive + internal + solar + ventilation). Energy consumption over the 8-hour decision window:
+
+```
+E_kWh = (Q_load / (EER_eff × 1000)) · 8 hr · m_occ
+```
+
+where `EER_eff` is derived from age-degraded SEER via the AHRI 210/240 quadratic (`EER_eff = −0.02·SEER²_eff + 1.12·SEER_eff`), and `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 − 0.5·(h_away/24)`).
+
+Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 °F cooling, 70 °F heating).
+
+### Appliance Calculator
+
+Per-cycle energy cost: `C = E_cyc · r(t, ℓ)` where `r` is the TOU rate for one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) resolved by location `ℓ` and run-time `t`.
+
+Comfort decays piecewise from 10 at zero delay, with appliance-specific tolerance ceilings (dishwashers 12 hr, washers 8 hr, dryers 6 hr), plus a late-night noise penalty (applied when dBA exceeds 45 and run time is 10pm–7am) and a household-size penalty.
+
+Delays are computed as minimum circular distance on a 24-hour clock to avoid wrap-around artifacts.
+
+### Shower Calculator
+
+Mains inlet temperature interpolated from outdoor temperature (45 °F at ≤32 °F outdoor, 65 °F at ≥75 °F outdoor, NREL seasonal model). Hot-water fraction:
+
+```
+f_hot = (T_target − T_inlet) / (T_heater − T_inlet),   T_target = 105 °F
+```
+
+Shower energy:
+
+```
+E_kWh = (GPM · f_hot · 8.33 · (T_heater − T_inlet) · duration_min) / (3412 · η)
+```
+
+where η = 0.92 (UEF for 40–55 gal electric tank). Environmental impact = GPM × duration (gallons of water used).
+
+Comfort peaks at the REU2016 average of 7.8 min with penalties for temperature adequacy (CDC Legionella thresholds) and household contention. Practicality additionally penalizes alternatives that exhaust available tank capacity.
+
+---
+
+## Sensitivity Analysis
+
+Ten weight scenarios test stability of architecture ordering under ±0.05 perturbations to each criterion weight (difference redistributed equally across the remaining three) plus an equal-weight scenario.
+
+| Scenario | w(EnergyCost) | w(Environmental) | w(Comfort) | w(Practicality) |
+| --- | --- | --- | --- | --- |
+| Baseline | 0.3000 | 0.3500 | 0.2000 | 0.1500 |
+| Ene +0.05 | **0.3500** | 0.3333 | 0.1833 | 0.1333 |
+| Ene −0.05 | **0.2500** | 0.3667 | 0.2167 | 0.1667 |
+| Env +0.05 | 0.2833 | **0.4000** | 0.1833 | 0.1333 |
+| Env −0.05 | 0.3167 | **0.3000** | 0.2167 | 0.1667 |
+| Com +0.05 | 0.2833 | 0.3333 | **0.2500** | 0.1333 |
+| Com −0.05 | 0.3167 | 0.3667 | **0.1500** | 0.1667 |
+| Pra +0.05 | 0.2833 | 0.3333 | 0.1833 | **0.2000** |
+| Pra −0.05 | 0.3167 | 0.3667 | 0.2167 | **0.1000** |
+| Equal | 0.2500 | 0.2500 | 0.2500 | 0.2500 |
+
+Architecture Kendall's τ values across these scenarios are pending the corrected multi-model run.
+
+---
+
+## Objective Weight Validation Scripts
+
+Two scripts independently validate the subjective MAVT weights against the ground-truth score distributions:
+
+- **[EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py)** — Shannon entropy weights overall and by decision type. The environmental criterion receives above-average entropy weight, independently supporting the 0.35 allocation.
+- **[MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py)** — MEREC (Method based on Removal Effects of Criteria) weights computed per-scenario then averaged. MEREC is used over CRITIC because comfort and practicality use nonlinear value functions; MEREC is correlation-free and robust to nonlinearity.
+
+---
+
+## Miscellaneous Scripts
+
+| Script | Purpose |
+| --- | --- |
+| [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes the ChromaDB vector index from RAG scenario files |
+| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1 accuracy, Kendall's τ, MAE per architecture/model/decision-type |
+| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics across the 10 weight perturbation scenarios |
+| [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Shannon entropy weight validation |
+| [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | MEREC objective weight validation |
+| [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers implied criterion weights from architecture outputs |
+
+---
+
+## Documentation
+
+[Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [Budget Penalties](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
 
 ---
 
