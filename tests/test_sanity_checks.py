@@ -46,10 +46,10 @@ def run_sanity_checks():
         # Use robust reader to avoid encoding/whitespace issues
         if PROJECT_ROOT not in sys.path:
             sys.path.insert(0, str(PROJECT_ROOT))
-        from sentinel_utils import read_csv_clean
-        gt_hvac = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_hvac.csv")
-        gt_appliance = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_appliance.csv")
-        gt_shower = read_csv_clean(GROUND_TRUTH_DIR / "ground_truth_shower.csv")
+        from sentinel_utils import read_table_clean
+        gt_hvac = read_table_clean(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx")
+        gt_appliance = read_table_clean(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx")
+        gt_shower = read_table_clean(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")
         print(f"  [OK] HVAC: {len(gt_hvac)} scenarios")
         print(f"  [OK] Appliance: {len(gt_appliance)} scenarios")
         print(f"  [OK] Shower: {len(gt_shower)} scenarios")
@@ -60,7 +60,7 @@ def run_sanity_checks():
     # Check 2: Can we detect run files?
     print("\n[CHECK 2] Detecting run files in output directory...")
     from glob import glob
-    run_files = sorted(glob(str(OUTPUT_DIR / "*_run_*.csv")))
+    run_files = sorted(glob(str(OUTPUT_DIR / "*_run_*.xlsx")))
     if run_files:
         print(f"  [OK] Found {len(run_files)} run files:")
         for rf in run_files[:3]:
@@ -128,9 +128,9 @@ def run_sanity_checks():
     # Check 6: Try loading architecture results if they exist
     print("\n[CHECK 6] Testing architecture result loading...")
     arch_configs = {
-        "Pure": OUTPUT_DIR / "pure_prompting_results.csv",
-        "RAG": OUTPUT_DIR / "RAGResults.csv",
-        "Hybrid": OUTPUT_DIR / "hybrid_results.csv",
+        "Pure": OUTPUT_DIR / "pure_prompting_results.xlsx",
+        "RAG": OUTPUT_DIR / "rag_results.xlsx",
+        "Hybrid": OUTPUT_DIR / "hybrid_results.xlsx",
     }
     
     for arch_name, file_path in arch_configs.items():

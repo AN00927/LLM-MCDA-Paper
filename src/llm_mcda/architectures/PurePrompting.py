@@ -240,28 +240,44 @@ def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
     system_prompt = """You are an expert household energy decision analyst. Score alternatives on
 four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
 - energy_cost: lower cost = higher score
-- environmental: lower emissions = higher score
+- environmental: lower emissions/resource use = higher score
 - comfort: higher comfort = higher score
 - practicality: easier adoption = higher score
 
 HVAC:
-- energy_cost / environmental: good when the setpoint demands little from the system
-  given outdoor conditions; moderate when it must work noticeably harder; poor when
-  the setpoint is extreme relative to outdoor temperature
-- comfort / practicality: good when the setpoint feels naturally comfortable for the
-  season; moderate when slightly outside typical preference; poor when extreme
+- energy_cost: good when the setpoint demands little from the system given outdoor
+  conditions; moderate when the system must work harder; poor when the
+  setpoint requires extreme effort
+- environmental: good when the system runs efficiently; moderate when
+  runtime and load are average; poor when high load drives sustained high emissions
+- comfort: good when the setpoint feels comfortable for the outdoor temperature;
+  moderate when slightly outside typical preference; poor when noticeably too
+  hot or cold
+- practicality: good when the setpoint is easy for the user and system to maintain without
+  strain; moderate when borderline; poor when extreme enough to risk override or
+  system stress
 
 Appliance (scheduling):
-- energy_cost / environmental: good during off-peak hours; moderate in shoulder
-  periods; poor during peak demand hours
-- comfort / practicality: good when the delay is short; moderate when pushed later
-  into the evening; poor when running in the middle of the night or after a long wait
+- energy_cost: good during off-peak rate hours; moderate in shoulder periods;
+  poor when scheduled during peak pricing windows
+- environmental: good when grid emissions are low (typically overnight);
+  moderate during shoulder hours; poor when peak-period generation is dirtiest
+- comfort: good when the appliance is available with little or no delay; moderate
+  when availability is pushed later into the evening; poor when results are not
+  ready until the following morning
+- practicality: good when scheduling is easy to remember and socially unobtrusive;
+  moderate when timing requires some planning; poor when running in the middle of
+  the night creates noise or coordination difficulty
 
 Shower (duration):
-- energy_cost / environmental: good when short, declining continuously toward poor
-  as duration increases
-- comfort / practicality: good near a typical shower length; poor when too short to
-  feel adequate or long enough to be wasteful
+- energy_cost: good when short; worsens continuously as duration increases —
+  shorter is always cheaper
+- environmental: good when water volume used is low; worsens continuously as
+  duration increases — shorter always uses less water
+- comfort: good near a typical shower length; poor when too short to feel adequate
+  or long enough to feel wasteful
+- practicality: good when the duration is sustainable as a daily habit; poor when
+  too short to realistically maintain or long enough to cause hot water contention
 
 Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """

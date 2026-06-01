@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import csv
 import json
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
+
+import pandas as pd
 
 
 ROOT = Path(r"C:\Users\Ahaan\LLM-MCDA Paper")
@@ -15,8 +16,9 @@ def norm(value):
 
 
 def rows(path):
-    with (ROOT / path).open(newline="", encoding="utf-8-sig") as fh:
-        return list(csv.DictReader(fh))
+    """Read an .xlsx scenario/ground-truth file as string-valued dict rows."""
+    df = pd.read_excel(ROOT / path, dtype=str, engine="openpyxl").fillna("")
+    return df.to_dict("records")
 
 
 def key(row, key_col, loc_col="Location"):
@@ -103,28 +105,28 @@ def time_bucket(value):
 def audit():
     data = {
         "HVAC": {
-            "scenarios": rows("Scenario Files/HVACScenarios.csv"),
-            "gt": rows("Ground Truth/ground_truth_hvac.csv"),
-            "rag": rows("Scenario Files/HVACRagScenarios.csv"),
+            "scenarios": rows("Scenario Files/HVACScenarios.xlsx"),
+            "gt": rows("Ground Truth/ground_truth_hvac.xlsx"),
+            "rag": rows("Scenario Files/HVACRagScenarios.xlsx"),
             "key_col": "Question",
             "gt_key_col": "question",
         },
         "Appliance": {
-            "scenarios": rows("Scenario Files/ApplianceScenarios.csv"),
-            "gt": rows("Ground Truth/ground_truth_appliance.csv"),
-            "rag": rows("Scenario Files/ApplianceRAGScenarios.csv"),
+            "scenarios": rows("Scenario Files/ApplianceScenarios.xlsx"),
+            "gt": rows("Ground Truth/ground_truth_appliance.xlsx"),
+            "rag": rows("Scenario Files/ApplianceRAGScenarios.xlsx"),
             "key_col": "Description",
             "gt_key_col": "description",
         },
         "Shower": {
-            "scenarios": rows("Scenario Files/ShowerScenarios.csv"),
-            "gt": rows("Ground Truth/ground_truth_shower.csv"),
-            "rag": rows("Scenario Files/ShowerRAGScenarios.csv"),
+            "scenarios": rows("Scenario Files/ShowerScenarios.xlsx"),
+            "gt": rows("Ground Truth/ground_truth_shower.xlsx"),
+            "rag": rows("Scenario Files/ShowerRAGScenarios.xlsx"),
             "key_col": "Description",
             "gt_key_col": "description",
         },
     }
-    test_rows = rows("Scenario Files/TestScenarios.csv")
+    test_rows = rows("Scenario Files/TestScenarios.xlsx")
     out = {"counts": {}, "underrepresented": {}, "checks": {}}
     for dtype, cfg in data.items():
         sc = cfg["scenarios"]
