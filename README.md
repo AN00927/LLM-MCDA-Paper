@@ -190,7 +190,7 @@ Ground truth scores are calculated using deterministic MAVT value functions with
 
 ---
 
-[Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [How Budget Penalties Were applied](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges for Value Functions](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
+[Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [How Budget Penalties Were Applied](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges for Value Functions](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
 
 ---
 
