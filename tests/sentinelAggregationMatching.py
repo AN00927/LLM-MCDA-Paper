@@ -162,7 +162,7 @@ class TestCoerceScoreSeries:
 # 2. Aggregation tests (via CalculateMetrics.aggregate_run_files)
 # ===========================================================================
 
-def _make_run_csv(tmp_path, run_idx, rows):
+def _make_run_xlsx(tmp_path, run_idx, rows):
     """Write a minimal run CSV and return its Path."""
     df = pd.DataFrame(rows)
     p = tmp_path / f"arch_results_run_{run_idx:02d}.xlsx"
@@ -192,19 +192,19 @@ class TestAggregateRunFiles:
 
     def test_one_run_returns_correct_scores(self, tmp_path):
         row = dict(VALID_ROW_TEMPLATE)
-        p = _make_run_csv(tmp_path, 1, [row])
+        p = _make_run_xlsx(tmp_path, 1, [row])
         agg = self._cm.aggregate_run_files([p])
         ec = agg["energy_cost"].iloc[0]
         assert ec == pytest.approx(7.0)
 
     def test_one_run_n_runs_column(self, tmp_path):
-        p = _make_run_csv(tmp_path, 1, [dict(VALID_ROW_TEMPLATE)])
+        p = _make_run_xlsx(tmp_path, 1, [dict(VALID_ROW_TEMPLATE)])
         agg = self._cm.aggregate_run_files([p])
         assert "n_runs" in agg.columns
         assert agg["n_runs"].iloc[0] == 1
 
     def test_one_run_warns_about_std(self, tmp_path):
-        p = _make_run_csv(tmp_path, 1, [dict(VALID_ROW_TEMPLATE)])
+        p = _make_run_xlsx(tmp_path, 1, [dict(VALID_ROW_TEMPLATE)])
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             self._cm.aggregate_run_files([p])
@@ -214,15 +214,15 @@ class TestAggregateRunFiles:
     def test_two_runs_averages_correctly(self, tmp_path):
         row1 = {**VALID_ROW_TEMPLATE, "energy_cost": 6.0}
         row2 = {**VALID_ROW_TEMPLATE, "energy_cost": 8.0}
-        p1 = _make_run_csv(tmp_path, 1, [row1])
-        p2 = _make_run_csv(tmp_path, 2, [row2])
+        p1 = _make_run_xlsx(tmp_path, 1, [row1])
+        p2 = _make_run_xlsx(tmp_path, 2, [row2])
         agg = self._cm.aggregate_run_files([p1, p2])
         assert agg["energy_cost"].iloc[0] == pytest.approx(7.0)
         assert agg["n_runs"].iloc[0] == 2
 
     def test_all_failed_rows_become_sentinel(self, tmp_path):
-        p1 = _make_run_csv(tmp_path, 1, [dict(FAILED_ROW_TEMPLATE)])
-        p2 = _make_run_csv(tmp_path, 2, [dict(FAILED_ROW_TEMPLATE)])
+        p1 = _make_run_xlsx(tmp_path, 1, [dict(FAILED_ROW_TEMPLATE)])
+        p2 = _make_run_xlsx(tmp_path, 2, [dict(FAILED_ROW_TEMPLATE)])
         agg = self._cm.aggregate_run_files([p1, p2])
         assert agg["energy_cost"].iloc[0] == self._cm.FAIL_SENTINEL
 
@@ -230,8 +230,8 @@ class TestAggregateRunFiles:
         """Failed rows are masked to NaN before averaging; only valid rows contribute."""
         row_ok = dict(VALID_ROW_TEMPLATE)   # energy_cost = 7.0
         row_fail = dict(FAILED_ROW_TEMPLATE)
-        p1 = _make_run_csv(tmp_path, 1, [row_ok])
-        p2 = _make_run_csv(tmp_path, 2, [row_fail])
+        p1 = _make_run_xlsx(tmp_path, 1, [row_ok])
+        p2 = _make_run_xlsx(tmp_path, 2, [row_fail])
         agg = self._cm.aggregate_run_files([p1, p2])
         # Average of [7.0, NaN] = 7.0
         assert agg["energy_cost"].iloc[0] == pytest.approx(7.0)
@@ -241,7 +241,7 @@ class TestAggregateRunFiles:
     def test_malformed_numeric_coerces_to_nan(self, tmp_path):
         """String sentinels and garbage in score columns should coerce safely."""
         row = {**VALID_ROW_TEMPLATE, "energy_cost": "1928", "environmental": "bad_value"}
-        p = _make_run_csv(tmp_path, 1, [row])
+        p = _make_run_xlsx(tmp_path, 1, [row])
         agg = self._cm.aggregate_run_files([p])
         # "1928" → sentinel → NaN → restored to FAIL_SENTINEL
         assert agg["energy_cost"].iloc[0] == self._cm.FAIL_SENTINEL
@@ -250,8 +250,8 @@ class TestAggregateRunFiles:
 
     def test_partial_run_set_n_runs_is_count(self, tmp_path):
         """If caller passes 2 paths, n_runs should be 2 regardless of N_RUNS config."""
-        p1 = _make_run_csv(tmp_path, 1, [dict(VALID_ROW_TEMPLATE)])
-        p2 = _make_run_csv(tmp_path, 2, [dict(VALID_ROW_TEMPLATE)])
+        p1 = _make_run_xlsx(tmp_path, 1, [dict(VALID_ROW_TEMPLATE)])
+        p2 = _make_run_xlsx(tmp_path, 2, [dict(VALID_ROW_TEMPLATE)])
         agg = self._cm.aggregate_run_files([p1, p2])
         assert agg["n_runs"].iloc[0] == 2
 
@@ -314,20 +314,20 @@ class TestLoadDiagnosticsJson:
         assert "diag_failed_malformed_json" not in result
 
     def test_no_diag_file_graceful(self, tmp_path):
-        csv_path = tmp_path / "pure_prompting_results.csv"
-        csv_path.touch()
-        result = self._cm._load_diagnostics_json(str(csv_path), "Pure")
+        results_path = tmp_path / "pure_prompting_results.xlsx"
+        results_path.touch()
+        result = self._cm._load_diagnostics_json(str(results_path), "Pure")
         assert result["diag_files_loaded"] == 0
 
     def test_per_run_diag_files_aggregated(self, tmp_path):
         """Multiple _run_NN diagnostics files should be summed."""
-        csv_path = tmp_path / "pure_prompting_results.csv"
-        csv_path.touch()
+        results_path = tmp_path / "pure_prompting_results.xlsx"
+        results_path.touch()
         for i in (1, 2):
             p = tmp_path / f"pure_prompting_results_diagnostics_run_{i:02d}.json"
             self._write_diag(p, {"failed_scenarios": 1, "failed_malformed_json": 1,
                                   "total_scenarios": 5})
-        result = self._cm._load_diagnostics_json(str(csv_path), "Pure")
+        result = self._cm._load_diagnostics_json(str(results_path), "Pure")
         assert result["diag_files_loaded"] == 2
         assert result["diag_failed_scenarios"] == 2      # 1+1
         assert result["diag_failed_malformed_json"] == 2  # 1+1

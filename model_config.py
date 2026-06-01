@@ -10,6 +10,13 @@ CRITERION_WEIGHTS = {
 }
 
 
+# Secondary criterion priority used to break ties when weighted MAVT scores are
+# equal (each applied descending, in order). Shared by the ground-truth
+# calculators and CalculateMetrics so that ground-truth and architecture
+# rankings break ties identically and deterministically.
+TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
+
+
 MODEL_SPECS = {
     "gptoss_smallest": {
         "label": "Smallest - GPT-OSS-20B",

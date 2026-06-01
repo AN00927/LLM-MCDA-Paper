@@ -11,7 +11,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from model_config import CRITERION_WEIGHTS
+from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
 
 class ShowerGroundTruthCalculator:
     """"Key sources:
@@ -375,7 +375,7 @@ class ShowerGroundTruthCalculator:
             alt_key = f'Alternative {i}'
             if alt_key in scenario:
                 val = scenario[alt_key]
-                if pd.isna(val) if hasattr(pd, 'isna') else str(val).lower() in ('nan', '', 'none'):
+                if pd.isna(val) or str(val).strip().lower() in ('nan', '', 'none'):
                     continue
                 duration = float(val)
                 alternatives.append({
@@ -611,13 +611,21 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             )
             weighted_scores.append(weighted_sum)
 
-        # Rank alternatives (higher weighted sum = better = lower rank number)
-        ranked_indices = np.argsort(weighted_scores)[::-1]  # Descending order
-        ranked_alternatives = [alternatives[i] for i in ranked_indices]
+        # Rank alternatives: higher weighted sum = better (rank 1). Ties are
+        # broken deterministically by TIE_BREAK_PRIORITY criteria (each desc) so
+        # tied alternatives get a stable order instead of np.argsort's arbitrary
+        # one, and identically to how CalculateMetrics breaks ties.
+        order = sorted(
+            range(len(alternatives)),
+            key=lambda i: (weighted_scores[i],
+                           *[alternatives_scores[i][c] for c in TIE_BREAK_PRIORITY]),
+            reverse=True,
+        )
+        ranked_alternatives = [alternatives[i] for i in order]
 
         # Create rank numbers (1 = best, 2 = second, 3 = third)
         ranks = [0] * len(alternatives)
-        for rank_position, alt_index in enumerate(ranked_indices):
+        for rank_position, alt_index in enumerate(order):
             ranks[alt_index] = rank_position + 1
 
         return {
