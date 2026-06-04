@@ -57,6 +57,88 @@ Agentic capability: **61.3** — Artificial Analysis Agentic Index (better than 
 
 Selected benchmarks: GPQA Diamond 71.6% · HLE 7.0% · IFBench 47.2% · τ²-Bench Telecom 94.4% · SciCode 37.3% · AA-Omniscience Non-Hallucination Rate 4.9%
 
+### GPT-OSS-20B — Benchmarks
+
+Overall intelligence score combining multiple benchmarks: **24.5** — Artificial Analysis Intelligence Index (Better than 41% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/openai/gpt-oss-20b/benchmarks)).
+
+Composite coding capability score: **18.5** — Artificial Analysis Coding Index (Better than 39% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/openai/gpt-oss-20b/benchmarks)).
+
+Composite agentic capability score: **27.6** — Artificial Analysis Agentic Index (Better than 46% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/openai/gpt-oss-20b/benchmarks)).
+
+#### Reasoning (selected benchmarks)
+- GPQA Diamond (graduate-level scientific reasoning): **68.8%**
+- HLE (Humanity's Last Exam): **9.8%**
+- IFBench (instruction-following): **65.1%**
+- τ²-Bench Telecom (dual-control conversational agents): **60.2%**
+- AA-LCR (long-context reasoning): **30.7%**
+- GDPval-AA (economically valuable tasks): **7.6%**
+- CritPt (research-level physics reasoning): **1.4%**
+
+#### Coding (selected benchmarks)
+- SciCode (Python scientific computing): **34.4%**
+- Terminal-Bench Hard (agentic coding & terminal use): **10.6%**
+
+#### Knowledge
+- AA-Omniscience Accuracy (proportion correct): **15.5%**
+- AA-Omniscience Non-Hallucination Rate: **5.9%**
+
+Metrics sourced from OpenRouter benchmark pages and Artificial Analysis model pages.
+
+### Qwen 3.5 9B — Benchmarks
+
+Overall intelligence score combining multiple benchmarks: **32.4** — Artificial Analysis Intelligence Index ([OpenRouter benchmarks](https://openrouter.ai/qwen/qwen3.5-9b/benchmarks)).
+
+Composite coding capability score: **25.3** — Artificial Analysis Coding Index ([OpenRouter benchmarks](https://openrouter.ai/qwen/qwen3.5-9b/benchmarks)).
+
+Composite agentic capability score: **37.4** — Artificial Analysis Agentic Index ([OpenRouter benchmarks](https://openrouter.ai/qwen/qwen3.5-9b/benchmarks)).
+
+#### Reasoning (selected benchmarks)
+- GPQA Diamond (graduate-level scientific reasoning): **80.6%**
+- HLE (Humanity's Last Exam): **13.3%**
+- IFBench (instruction-following): **66.7%**
+- τ²-Bench Telecom (dual-control conversational agents): **86.8%**
+- AA-LCR (long-context reasoning): **59.0%**
+- GDPval-AA (economically valuable tasks): **10.7%**
+- CritPt (research-level physics reasoning): **0.3%**
+
+#### Coding (selected benchmarks)
+- SciCode (Python scientific computing): **27.5%**
+- Terminal-Bench Hard (agentic coding & terminal use): **24.2%**
+
+#### Knowledge
+- AA-Omniscience Accuracy (proportion correct): **15.9%**
+- AA-Omniscience Non-Hallucination Rate: **18.6%**
+
+Metrics sourced from OpenRouter benchmark pages and Artificial Analysis model pages.
+
+### Gemini 3.5 Flash — Benchmarks
+
+Overall intelligence score combining multiple benchmarks: **55.3** — Artificial Analysis Intelligence Index (Better than 97% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/google/gemini-3.5-flash/benchmarks)).
+
+Composite coding capability score: **45.0** — Artificial Analysis Coding Index (Better than 91% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/google/gemini-3.5-flash/benchmarks)).
+
+Composite agentic capability score: **70.3** — Artificial Analysis Agentic Index (Better than 98% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/google/gemini-3.5-flash/benchmarks)).
+
+#### Reasoning (selected benchmarks)
+- GPQA Diamond (graduate-level scientific reasoning): **92.2%**
+- HLE (Humanity's Last Exam): **41.0%**
+- IFBench (instruction-following): **76.3%**
+- τ²-Bench Telecom (dual-control conversational agents): **95.3%**
+- AA-LCR (long-context reasoning): **69.3%**
+- GDPval-AA (economically valuable tasks): **57.8%**
+- CritPt (research-level physics reasoning): **13.1%**
+
+#### Coding (selected benchmarks)
+- SciCode (Python scientific computing): **53.1%**
+- Terminal-Bench Hard (agentic coding & terminal use): **40.9%**
+
+#### Knowledge
+- AA-Omniscience Accuracy (proportion correct): **51.9%**
+- AA-Omniscience Non-Hallucination Rate: **39.3%**
+
+Metrics sourced from OpenRouter benchmark pages and Artificial Analysis model pages.
+
+
 Metrics from [Artificial Analysis](https://artificialanalysis.ai/models/deepseek-v4-flash-non-reasoning) and OpenRouter model pages. DeepSeek is configured as a non-reasoning model; the architectures omit the `reasoning` payload for non-reasoning models.
 
 ---
