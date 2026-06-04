@@ -17,6 +17,7 @@ dist/
 coverage.xml
 .claude/
 Handoff.md
+handoff.md
 # Default ignored files
 /shelf/
 /workspace.xml
