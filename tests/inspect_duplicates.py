@@ -22,13 +22,13 @@ def read_rows(path):
 
 out = {}
 for name, path, key_col in [
-    ("HVAC", "Scenario Files/HVACScenarios.xlsx", "Question"),
-    ("Appliance", "Scenario Files/ApplianceScenarios.xlsx", "Description"),
-    ("Shower", "Scenario Files/ShowerScenarios.xlsx", "Description"),
+    ("HVAC", "Scenario Files/HVACScenarios.xlsx", "question"),
+    ("Appliance", "Scenario Files/ApplianceScenarios.xlsx", "question"),
+    ("Shower", "Scenario Files/ShowerScenarios.xlsx", "question"),
 ]:
     grouped = {}
     for idx, row in enumerate(read_rows(path), start=2):
-        key = (norm(row.get(key_col)), norm(row.get("Location")))
+        key = (norm(row.get(key_col)), norm(row.get("location")))
         grouped.setdefault(key, []).append((idx, row))
     out[name] = [
         {
@@ -37,8 +37,8 @@ for name, path, key_col in [
                 {
                     "row": idx,
                     key_col: row.get(key_col),
-                    "Location": row.get("Location"),
-                    **{k: row.get(k) for k in row if k not in {key_col, "Location"}},
+                    "location": row.get("location"),
+                    **{k: row.get(k) for k in row if k not in {key_col, "location"}},
                 }
                 for idx, row in values
             ],
