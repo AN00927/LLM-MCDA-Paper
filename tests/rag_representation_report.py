@@ -85,7 +85,7 @@ def pct(counter):
 
 hvac_s = rows("Scenario Files/HVACScenarios.xlsx")
 hvac_r = unique_by(rows("Scenario Files/HVACRagScenarios.xlsx"), "question", "location")
-hvac_lookup = {(norm(r["Question"]), norm(r["Location"])): r for r in hvac_s}
+hvac_lookup = {(norm(r["question"]), norm(r["location"])): r for r in hvac_s}
 # Skip RAG rows whose source scenario is no longer in the current scenario set
 # (e.g. when the RAG export is stale relative to HVACScenarios) instead of
 # crashing on a missing key.
@@ -94,27 +94,27 @@ hvac_r_src = [
     if (k := (norm(r["question"]), norm(r["location"]))) in hvac_lookup
 ]
 app_s = rows("Scenario Files/ApplianceScenarios.xlsx")
-app_r = unique_by(rows("Scenario Files/ApplianceRAGScenarios.xlsx"), "description", "location")
+app_r = unique_by(rows("Scenario Files/ApplianceRAGScenarios.xlsx"), "question", "location")
 sh_s = rows("Scenario Files/ShowerScenarios.xlsx")
-sh_r = unique_by(rows("Scenario Files/ShowerRAGScenarios.xlsx"), "description", "location")
+sh_r = unique_by(rows("Scenario Files/ShowerRAGScenarios.xlsx"), "question", "location")
 
 report = {
     "HVAC": {
-        "all_temp_band": pct(Counter(temp_band_hvac(r["Outdoor Temp"]) for r in hvac_s)),
+        "all_temp_band": pct(Counter(temp_band_hvac(r["outdoor_temp"]) for r in hvac_s)),
         "rag_temp_band": pct(Counter(temp_band_hvac(r["outdoor_temp"]) for r in hvac_r)),
-        "all_occupancy": pct(Counter(norm(r["Occupancy context"]) for r in hvac_s)),
-        "rag_occupancy": pct(Counter(norm(r["Occupancy context"]) for r in hvac_r_src)),
+        "all_occupancy": pct(Counter(norm(r["occupancy_context"]) for r in hvac_s)),
+        "rag_occupancy": pct(Counter(norm(r["occupancy_context"]) for r in hvac_r_src)),
     },
     "Appliance": {
-        "all_appliance": pct(Counter(norm(r["Appliance"]) for r in app_s)),
+        "all_appliance": pct(Counter(norm(r["appliance"]) for r in app_s)),
         "rag_appliance": pct(Counter(norm(r["appliance"]) for r in app_r)),
-        "all_time_bucket": pct(Counter(time_bucket(r["Baseline Time"]) for r in app_s)),
+        "all_time_bucket": pct(Counter(time_bucket(r["baseline_time"]) for r in app_s)),
         "rag_time_bucket": "not available in ground_truth-derived RAG rows",
     },
     "Shower": {
-        "all_gpm": pct(Counter(norm(r["GPM"]) for r in sh_s)),
+        "all_gpm": pct(Counter(norm(r["gpm"]) for r in sh_s)),
         "rag_gpm": pct(Counter(norm(r["gpm"]) for r in sh_r)),
-        "all_temp_band": pct(Counter(temp_band_shower(r["Outdoor Temp"]) for r in sh_s)),
+        "all_temp_band": pct(Counter(temp_band_shower(r["outdoor_temp"]) for r in sh_s)),
         "rag_temp_band": pct(Counter(temp_band_shower(r["outdoor_temp"]) for r in sh_r)),
     },
 }
