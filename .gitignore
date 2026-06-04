@@ -78,3 +78,6 @@ paper/test_write.txt
 Scenario Files\backup.xlsx
 XLSX_Schema_Map.md
 Miscellaneous Scripts/RoundScenarioCounts.py
+NORMALIZATION_REPORT.md
+MANUAL_FOLLOWUP.md
+Scenario Files/rebuild_consolidated.py
