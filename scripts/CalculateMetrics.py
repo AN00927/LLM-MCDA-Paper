@@ -26,7 +26,7 @@ from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS, TIE_BR
 from sentinel_utils import _atomic_write_xlsx, read_table_clean
 
 _COMMON_STR_COLS = [
-    'question', 'description', 'location', 'alternative',
+    'question', 'location', 'alternative',
     'housing_type', 'insulation', 'appliance', 'appliance_age', 'house_age',
 ]
 
@@ -202,9 +202,6 @@ def load_ground_truth(config):
         df = read_table_clean(filepath, keep_str_cols=_COMMON_STR_COLS)
         df["decision_type"] = dtype
 
-        if "description" in df.columns and "question" not in df.columns:
-            df = df.rename(columns={"description": "question"})
-
         rename_map = {}
         for criterion, gt_col in config["gt_score_cols"].items():
             if gt_col in df.columns:
@@ -377,7 +374,6 @@ def build_gt_lookup(gt_by_type):
                 "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
                 # Additional Shower match fields
                 "household_size": str(sub["household_size"].iloc[0]).strip() if "household_size" in sub.columns else "",
-                "occupants": str(sub["occupants"].iloc[0]).strip() if "occupants" in sub.columns else "",
                 "utility_budget": str(sub["utility_budget"].iloc[0]).strip() if "utility_budget" in sub.columns else "",
                 "housing_type": str(sub["housing_type"].iloc[0]).strip() if "housing_type" in sub.columns else "",
             })
@@ -462,7 +458,6 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
                 ("outdoor_temp",   "outdoor_temp"),
                 ("flow_rate",      "gpm"),
                 ("household_size", "household_size"),
-                ("occupants",      "occupants"),
                 ("utility_budget", "utility_budget"),
                 ("housing_type",   "housing_type"),
             ]

@@ -71,13 +71,13 @@ CONFIG = {
         "rag_file": "ApplianceRAGScenarios.xlsx",
         "gt_file": "ground_truth_appliance.xlsx",
         "descriptor_cols": [
-            "description",
+            "question",
             "location",
             "utility_budget",
             "appliance",
             "appliance_age",
             "housing_type",
-            "occupants",
+            "household_size",
             "kwh_per_cycle",
             "alternative",
         ],
@@ -86,9 +86,9 @@ CONFIG = {
         "rag_file": "ShowerRAGScenarios.xlsx",
         "gt_file": "ground_truth_shower.xlsx",
         "descriptor_cols": [
-            "description",
+            "question",
             "location",
-            "occupants",
+            "household_size",
             "gpm",
             "utility_budget",
             "housing_type",
@@ -156,7 +156,7 @@ def _col_norm(col_name: str, value: object) -> str:
     """Pick the right normaliser for a column based on its name."""
     numeric_indicators = {
         "square_footage", "household_size", "utility_budget", "outdoor_temp",
-        "house_age", "occupants", "kwh_per_cycle", "gpm", "duration_min",
+        "house_age", "kwh_per_cycle", "gpm", "duration_min",
         "appliance_age",
     }
     if col_name in numeric_indicators:
