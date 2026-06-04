@@ -518,7 +518,13 @@ def process_shower_scenarios(
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df = read_table_clean(csv_path)
+    df = read_table_clean(
+        csv_path,
+        keep_str_cols=[
+            'Description', 'Location', 'Housing Type',
+            'Alternative 1', 'Alternative 2', 'Alternative 3',
+        ],
+    )
     print(f"Found {len(df)} shower scenarios")
 
     calculator = ShowerGroundTruthCalculator()
@@ -589,6 +595,14 @@ def process_shower_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
+    _STR_COLS = ['description', 'location', 'housing_type', 'alternative']
+    _INT_COLS = ['scenario_id', 'occupants', 'rank']
+    for c in _STR_COLS:
+        if c in results_df.columns:
+            results_df[c] = results_df[c].fillna("").astype(str)
+    for c in _INT_COLS:
+        if c in results_df.columns:
+            results_df[c] = results_df[c].astype("Int64")
     results_df.to_excel(output_path, index=False, engine="openpyxl")
 
     print(f"\nGround truth saved to {output_path}")

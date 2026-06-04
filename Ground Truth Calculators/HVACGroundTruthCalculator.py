@@ -661,7 +661,13 @@ def process_hvac_scenarios(
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df = read_table_clean(csv_path)
+    df = read_table_clean(
+        csv_path,
+        keep_str_cols=[
+            'Question', 'Location', 'Insulation', 'Housing Type',
+            'House Age', 'Alternative 1', 'Alternative 2', 'Alternative 3',
+        ],
+    )
 
     print(f"Found {len(df)} scenarios")
 
@@ -741,6 +747,14 @@ def process_hvac_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
+    _STR_COLS = ['question', 'location', 'insulation', 'housing_type', 'house_age', 'alternative']
+    _INT_COLS = ['scenario_id', 'household_size', 'square_footage', 'rank']
+    for c in _STR_COLS:
+        if c in results_df.columns:
+            results_df[c] = results_df[c].fillna("").astype(str)
+    for c in _INT_COLS:
+        if c in results_df.columns:
+            results_df[c] = results_df[c].astype("Int64")
     results_df.to_excel(output_path, index=False, engine="openpyxl")
 
     print(f"\nGround truth saved to {output_path}")
