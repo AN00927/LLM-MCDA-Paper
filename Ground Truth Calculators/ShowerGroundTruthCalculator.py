@@ -359,20 +359,20 @@ class ShowerGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
     def calculate_scenario_scores(self, scenario: dict) -> dict:
         """Calculate scenario scores."""
-        location = scenario.get('Location', 'Unknown')
-        occupants = int(scenario.get('Occupants', 2))
-        tank_size = float(scenario.get('Tank Size', 40))
-        gpm = float(scenario.get('GPM', 2.5))
-        outdoor_temp = float(scenario.get('outdoor_temp', scenario.get('Outdoor Temp', 50)))
-        water_heater_temp = float(scenario.get('Water Heater Temp', 120))
+        location = scenario.get('location', 'Unknown')
+        occupants = int(scenario.get('household_size', 2))
+        tank_size = float(scenario.get('tank_size', 40))
+        gpm = float(scenario.get('gpm', 2.5))
+        outdoor_temp = float(scenario.get('outdoor_temp', 50))
+        water_heater_temp = float(scenario.get('water_heater_temp', 120))
 
-        print(f"SHOWER SCENARIO: {scenario.get('Description', 'N/A')}")
+        print(f"SHOWER SCENARIO: {scenario.get('question', 'N/A')}")
         print(f"Location: {location}")
         print(f"Occupants: {occupants} | Tank: {tank_size} gal | Flow: {gpm} GPM")
         print(f"Outdoor: {outdoor_temp} degrees F | Heater: {water_heater_temp} degrees F")
         alternatives = []
         for i in range(1, 4):
-            alt_key = f'Alternative {i}'
+            alt_key = f'alternative_{i}'
             if alt_key in scenario:
                 val = scenario[alt_key]
                 if pd.isna(val) or str(val).strip().lower() in ('nan', '', 'none'):
@@ -462,8 +462,8 @@ class ShowerGroundTruthCalculator:
             )
 
             # Apply budget penalty to energy cost score if budget constraint exists
-            if 'Utility Budget' in scenario and scenario['Utility Budget'] > 0:
-                occupants = scenario.get('Occupants', 2)
+            if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
+                occupants = scenario.get('household_size', 2)
 
                 # Calculate monthly cost
                 monthly_cost = self.calculate_monthly_cost(
@@ -475,16 +475,16 @@ class ShowerGroundTruthCalculator:
                 # Calculate and apply penalty
                 budget_penalty = self.calculate_budget_penalty(
                     monthly_cost,
-                    scenario['Utility Budget']
+                    scenario['utility_budget']
                 )
 
                 # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
 
-                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['Utility Budget']:.2f} budget")
+                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['utility_budget']:.2f} budget")
                 print(f"  ({occupants} people × 0.9 showers/day × 30 days = {occupants * 0.9 * 30:.0f} showers/month)")
                 print(
-                    f"  Utilization: {monthly_cost / scenario['Utility Budget'] * 100:.1f}% -> penalty: {budget_penalty:.3f}")
+                    f"  Utilization: {monthly_cost / scenario['utility_budget'] * 100:.1f}% -> penalty: {budget_penalty:.3f}")
                 print(f"  Energy score: {energy_vf:.2f} -> {energy_vf_penalized:.2f} (after penalty)")
 
                 energy_vf = energy_vf_penalized
@@ -503,7 +503,7 @@ class ShowerGroundTruthCalculator:
 
 
         return {
-            'scenario': scenario.get('Description', 'N/A'),
+            'scenario': scenario.get('question', 'N/A'),
             'alternatives': results
         }
 
@@ -521,8 +521,8 @@ def process_shower_scenarios(
     df = read_table_clean(
         csv_path,
         keep_str_cols=[
-            'Description', 'Location', 'Housing Type',
-            'Alternative 1', 'Alternative 2', 'Alternative 3',
+            'question', 'location', 'housing_type',
+            'alternative_1', 'alternative_2', 'alternative_3',
         ],
     )
     print(f"Found {len(df)} shower scenarios")
@@ -531,22 +531,22 @@ def process_shower_scenarios(
     results = []
 
     for idx, row in df.iterrows():
-        print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['Location']}")
+        print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['location']}")
 
         # Build scenario dict matching expected format
         scenario = {
-            'Description': row['Description'],
-            'Location': row['Location'],
-            'Occupants': int(row['Occupants']),
-            'Tank Size': float(row['Tank Size']),
-            'GPM': float(row['GPM']),
-            'Utility Budget': parse_utility_budget(row.get('Utility Budget', 0)),
-            'Housing Type': row['Housing Type'],
-            'Outdoor Temp': float(row['Outdoor Temp']),
-            'Water Heater Temp': float(row['Water Heater Temp']),
-            'Alternative 1': row['Alternative 1'],
-            'Alternative 2': row['Alternative 2'],
-            'Alternative 3': row['Alternative 3'],
+            'question': row['question'],
+            'location': row['location'],
+            'household_size': int(row['household_size']),
+            'tank_size': float(row['tank_size']),
+            'gpm': float(row['gpm']),
+            'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+            'housing_type': row['housing_type'],
+            'outdoor_temp': float(row['outdoor_temp']),
+            'water_heater_temp': float(row['water_heater_temp']),
+            'alternative_1': row['alternative_1'],
+            'alternative_2': row['alternative_2'],
+            'alternative_3': row['alternative_3'],
         }
 
         try:
@@ -567,13 +567,13 @@ def process_shower_scenarios(
                 alt_idx = result['alternatives'].index(alt_data)
                 result_row = {
                     'scenario_id': idx,
-                    'description': row['Description'],
-                    'location': row['Location'],
-                    'occupants': row['Occupants'],
-                    'gpm': row['GPM'],
-                    'utility_budget': row['Utility Budget'],
-                    'housing_type': row['Housing Type'],
-                    'outdoor_temp': row['Outdoor Temp'],
+                    'question': row['question'],
+                    'location': row['location'],
+                    'household_size': row['household_size'],
+                    'gpm': row['gpm'],
+                    'utility_budget': row['utility_budget'],
+                    'housing_type': row['housing_type'],
+                    'outdoor_temp': row['outdoor_temp'],
                     'alternative': alt_data['alternative'],
                     'duration_min': alt_data['duration'],
                     'energy_cost_score': alt_data['transformed_values']['energy_cost'],
@@ -595,8 +595,8 @@ def process_shower_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
-    _STR_COLS = ['description', 'location', 'housing_type', 'alternative']
-    _INT_COLS = ['scenario_id', 'occupants', 'rank']
+    _STR_COLS = ['question', 'location', 'housing_type', 'alternative']
+    _INT_COLS = ['scenario_id', 'household_size', 'rank']
     for c in _STR_COLS:
         if c in results_df.columns:
             results_df[c] = results_df[c].fillna("").astype(str)

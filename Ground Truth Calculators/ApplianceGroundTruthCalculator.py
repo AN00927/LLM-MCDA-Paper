@@ -267,7 +267,7 @@ class ApplianceGroundTruthCalculator:
         if not time_match:
             print(f"  : Could not parse run time from: {alt}")
             # Return baseline with no delay
-            baseline_hour = self._parse_time_to_hour(scenario.get('Baseline Time', '7pm'))
+            baseline_hour = self._parse_time_to_hour(scenario.get('baseline_time', '7pm'))
             return baseline_hour, 0.0
 
         hour = int(time_match.group(1))
@@ -282,7 +282,7 @@ class ApplianceGroundTruthCalculator:
             run_time_hour = hour
 
         # Parse baseline time from scenario
-        baseline_str = scenario.get('Baseline Time', '7pm')
+        baseline_str = scenario.get('baseline_time', '7pm')
         baseline_hour = self._parse_time_to_hour(baseline_str)
 
         # Calculate delay from baseline as circular clock distance.
@@ -445,7 +445,7 @@ class ApplianceGroundTruthCalculator:
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
         """Calculate scenario scores."""
         alternatives = []
-        for alt_key in ['Alternative 1', 'Alternative 2', 'Alternative 3']:
+        for alt_key in ['alternative_1', 'alternative_2', 'alternative_3']:
             if alt_key in scenario and scenario[alt_key]:
                 alternatives.append(scenario[alt_key])
 
@@ -464,9 +464,9 @@ class ApplianceGroundTruthCalculator:
             # Calculate raw criterion values
             try:
                 energy_cost = self.calculate_energy_cost(
-                    scenario['kwh/cycle'],
+                    scenario['kwh_per_cycle'],
                     run_time_hour,
-                    scenario['Location']
+                    scenario['location']
                 )
             except Exception as e:
                 print(f"  ✗ Energy cost ERROR: {e}")
@@ -474,7 +474,7 @@ class ApplianceGroundTruthCalculator:
 
             try:
                 emissions = self.calculate_environmental_impact(
-                    scenario['kwh/cycle'],
+                    scenario['kwh_per_cycle'],
                     run_time_hour
                 )
             except Exception as e:
@@ -485,9 +485,9 @@ class ApplianceGroundTruthCalculator:
                 comfort = self.calculate_comfort_score(
                     delay_hours,
                     run_time_hour,
-                    scenario['Housing Type'],
-                    scenario['Occupants'],
-                    scenario['Appliance']
+                    scenario['housing_type'],
+                    scenario['household_size'],
+                    scenario['appliance']
                 )
             except Exception as e:
                 print(f"  ✗ Comfort ERROR: {e}")
@@ -497,9 +497,9 @@ class ApplianceGroundTruthCalculator:
                 practicality = self.calculate_practicality_score(
                     delay_hours,
                     run_time_hour,
-                    scenario['Housing Type'],
-                    scenario['Occupants'],
-                    scenario['Appliance']
+                    scenario['housing_type'],
+                    scenario['household_size'],
+                    scenario['appliance']
                 )
             except Exception as e:
                 print(f"  ✗ Practicality ERROR: {e}")
@@ -525,7 +525,7 @@ class ApplianceGroundTruthCalculator:
             )
             print(f"  After VF linear: Energy = {energy_vf:.2f}/10")
 
-            if 'Utility Budget' in scenario and scenario['Utility Budget'] > 0:
+            if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
                 # Convert per-cycle cost to monthly estimate (assume 30 cycles/month)
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost_dollars'],
@@ -534,15 +534,15 @@ class ApplianceGroundTruthCalculator:
 
                 budget_penalty = self.calculate_budget_penalty(
                     monthly_cost,
-                    scenario['Utility Budget']
+                    scenario['utility_budget']
                 )
 
                 # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
 
-                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['Utility Budget']:.2f} budget")
+                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['utility_budget']:.2f} budget")
                 print(
-                    f"  Utilization: {monthly_cost / scenario['Utility Budget'] * 100:.1f}% : penalty: {budget_penalty:.3f}")
+                    f"  Utilization: {monthly_cost / scenario['utility_budget'] * 100:.1f}% : penalty: {budget_penalty:.3f}")
                 print(f"  Energy score: {energy_vf:.2f} : {energy_vf_penalized:.2f} (after penalty)")
 
                 energy_vf = energy_vf_penalized
@@ -594,16 +594,16 @@ def process_appliance_scenarios(
 
     df = read_table_clean(
         csv_path,
-        time_columns=['Baseline Time'],
+        time_columns=['baseline_time'],
         keep_str_cols=[
-            'Baseline Time', 'Description', 'Location', 'Appliance',
-            'Appliance Age', 'Housing Type',
-            'Alternative 1', 'Alternative 2', 'Alternative 3',
+            'baseline_time', 'question', 'location', 'appliance',
+            'appliance_age', 'housing_type',
+            'alternative_1', 'alternative_2', 'alternative_3',
         ],
     )
 
-    required_cols = ['Description', 'Location', 'Utility Budget', 'Appliance', 'Housing Type',
-                     'Occupants', 'kwh/cycle', 'Appliance Age', 'Baseline Time']
+    required_cols = ['question', 'location', 'utility_budget', 'appliance', 'housing_type',
+                     'household_size', 'kwh_per_cycle', 'appliance_age', 'baseline_time']
 
     def is_missing(value) -> bool:
         if value is None or pd.isna(value):
@@ -632,29 +632,29 @@ def process_appliance_scenarios(
     results = []
 
     for idx, row in df.reset_index(drop=True).iterrows():
-        print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['Appliance']} in {row['Location']}")
+        print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['appliance']} in {row['location']}")
 
         # Collect alternatives
         alternatives = []
-        for alt_col in ['Alternative 1', 'Alternative 2', 'Alternative 3']:
+        for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
             alt_val = str(row[alt_col]).strip()
 
             if pd.isna(row[alt_col]) or alt_val == '' or alt_val == 'nan':
                 continue
             alternatives.append(alt_val)
         scenario = {
-            'Description': row['Description'],
-            'Location': row['Location'],
-            'Utility Budget': parse_utility_budget(row.get('Utility Budget', 0)),
-            'Appliance': row['Appliance'],
-            'Housing Type': row['Housing Type'],
-            'Occupants': int(row['Occupants']),
-            'kwh/cycle': float(row['kwh/cycle']),
-            'Appliance Age': row['Appliance Age'],
-            'Baseline Time': row.get('Baseline Time', ''),
-            'Alternative 1': row['Alternative 1'],
-            'Alternative 2': row['Alternative 2'],
-            'Alternative 3': row['Alternative 3'],
+            'question': row['question'],
+            'location': row['location'],
+            'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+            'appliance': row['appliance'],
+            'housing_type': row['housing_type'],
+            'household_size': int(row['household_size']),
+            'kwh_per_cycle': float(row['kwh_per_cycle']),
+            'appliance_age': row['appliance_age'],
+            'baseline_time': row.get('baseline_time', ''),
+            'alternative_1': row['alternative_1'],
+            'alternative_2': row['alternative_2'],
+            'alternative_3': row['alternative_3'],
         }
 
         try:
@@ -673,14 +673,14 @@ def process_appliance_scenarios(
             for alt, alt_scores in scores.items():
                 result_row = {
                     'scenario_id': idx,
-                    'description': row['Description'],
-                    'location': row['Location'],
-                    'utility_budget': parse_utility_budget(row.get('Utility Budget', 0)),
-                    'appliance': row['Appliance'],
-                    'appliance_age': row['Appliance Age'],
-                    'housing_type': row['Housing Type'],
-                    'occupants': row['Occupants'],
-                    'kwh_per_cycle': row['kwh/cycle'],
+                    'question': row['question'],
+                    'location': row['location'],
+                    'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+                    'appliance': row['appliance'],
+                    'appliance_age': row['appliance_age'],
+                    'housing_type': row['housing_type'],
+                    'household_size': row['household_size'],
+                    'kwh_per_cycle': row['kwh_per_cycle'],
                     'alternative': alt,
                     'energy_cost_score': alt_scores['energy_cost_score'],
                     'environmental_score': alt_scores['environmental_score'],
@@ -700,8 +700,8 @@ def process_appliance_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
-    _STR_COLS = ['description', 'location', 'appliance', 'appliance_age', 'housing_type', 'alternative']
-    _INT_COLS = ['scenario_id', 'occupants', 'rank']
+    _STR_COLS = ['question', 'location', 'appliance', 'appliance_age', 'housing_type', 'alternative']
+    _INT_COLS = ['scenario_id', 'household_size', 'rank']
     for c in _STR_COLS:
         if c in results_df.columns:
             results_df[c] = results_df[c].fillna("").astype(str)

@@ -526,7 +526,7 @@ class HVACGroundTruthCalculator:
                     scenario['household_size'],
                     scenario.get('ceiling_height', 8.0),
                     scenario.get('ach', 0.35),
-                    scenario.get('Housing Type', 'Single-family')
+                    scenario.get('housing_type', 'Single-family')
                 )
             else:
                 load = self.calculate_heating_load(
@@ -537,7 +537,7 @@ class HVACGroundTruthCalculator:
                     scenario['household_size'],
                     scenario.get('ceiling_height', 8.0),
                     scenario.get('ach', 0.35),
-                    scenario.get('Housing Type', 'Single-family')
+                    scenario.get('housing_type', 'Single-family')
                 )
 
             kwh = self.calculate_energy_consumption(
@@ -664,8 +664,8 @@ def process_hvac_scenarios(
     df = read_table_clean(
         csv_path,
         keep_str_cols=[
-            'Question', 'Location', 'Insulation', 'Housing Type',
-            'House Age', 'Alternative 1', 'Alternative 2', 'Alternative 3',
+            'question', 'location', 'insulation', 'housing_type',
+            'house_age', 'alternative_1', 'alternative_2', 'alternative_3',
         ],
     )
 
@@ -676,11 +676,11 @@ def process_hvac_scenarios(
     results = []
 
     for idx, row in df.iterrows():
-        print(f"Processing scenario {idx + 1}/{len(df)}: {row['Location']}")
+        print(f"Processing scenario {idx + 1}/{len(df)}: {row['location']}")
         electricity_rate = 0.19
 
         alternatives = []
-        for alt_col in ['Alternative 1', 'Alternative 2', 'Alternative 3']:
+        for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
             alt_val = str(row[alt_col]).strip()
 
             if pd.isna(row[alt_col]) or alt_val == '' or alt_val == 'nan':
@@ -688,18 +688,18 @@ def process_hvac_scenarios(
             alternatives.append(alt_val)
 
         scenario = {
-            'question': row['Question'],
-            'location': row['Location'],
-            'square_footage': int(row['Square Footage']),
-            'r_value': int(row['R-Value']),
-            'household_size': int(row['Household Size']),
-            'utility_budget': parse_utility_budget(row.get('Utility Budget', 0)),
-            'outdoor_temp': float(row['Outdoor Temp']),
-            'seer': int(row['SEER']),
-            'hvac_age': int(row['HVAC Age']),
-            'Housing Type': str(row.get('Housing Type', 'Single-family')),
+            'question': row['question'],
+            'location': row['location'],
+            'square_footage': int(row['square_footage']),
+            'r_value': int(row['r_value']),
+            'household_size': int(row['household_size']),
+            'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+            'outdoor_temp': float(row['outdoor_temp']),
+            'seer': int(row['seer']),
+            'hvac_age': int(row['hvac_age']),
+            'housing_type': str(row.get('housing_type', 'Single-family')),
             'occupancy_context': calculator.normalize_occupancy_context(
-                row.get('Occupancy Context', row.get('Occupancy context', 'occupied_all_day'))
+                row.get('occupancy_context', 'occupied_all_day')
             ),
             'electricity_rate': electricity_rate,
             'alternatives': alternatives,
@@ -720,15 +720,15 @@ def process_hvac_scenarios(
             for alt, alt_scores in scores.items():
                 result_row = {
                     'scenario_id': idx,
-                    'question': row['Question'],
-                    'location': row['Location'],
-                    'square_footage': row['Square Footage'],
-                    'insulation': row.get('Insulation', ''),
-                    'household_size': row['Household Size'],
-                    'utility_budget': row.get('Utility Budget', ''),
-                    'housing_type': row.get('Housing Type', ''),
-                    'outdoor_temp': row['Outdoor Temp'],
-                    'house_age': row.get('House Age', ''),
+                    'question': row['question'],
+                    'location': row['location'],
+                    'square_footage': row['square_footage'],
+                    'insulation': row.get('insulation', ''),
+                    'household_size': row['household_size'],
+                    'utility_budget': row.get('utility_budget', ''),
+                    'housing_type': row.get('housing_type', ''),
+                    'outdoor_temp': row['outdoor_temp'],
+                    'house_age': row.get('house_age', ''),
                     'alternative': alt,
                     'energy_cost_score': alt_scores['energy_cost_score'],
                     'environmental_score': alt_scores['environmental_score'],

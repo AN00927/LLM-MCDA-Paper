@@ -108,22 +108,22 @@ def audit():
             "scenarios": rows("Scenario Files/HVACScenarios.xlsx"),
             "gt": rows("Ground Truth/ground_truth_hvac.xlsx"),
             "rag": rows("Scenario Files/HVACRagScenarios.xlsx"),
-            "key_col": "Question",
+            "key_col": "question",
             "gt_key_col": "question",
         },
         "Appliance": {
             "scenarios": rows("Scenario Files/ApplianceScenarios.xlsx"),
             "gt": rows("Ground Truth/ground_truth_appliance.xlsx"),
             "rag": rows("Scenario Files/ApplianceRAGScenarios.xlsx"),
-            "key_col": "Description",
-            "gt_key_col": "description",
+            "key_col": "question",
+            "gt_key_col": "question",
         },
         "Shower": {
             "scenarios": rows("Scenario Files/ShowerScenarios.xlsx"),
             "gt": rows("Ground Truth/ground_truth_shower.xlsx"),
             "rag": rows("Scenario Files/ShowerRAGScenarios.xlsx"),
-            "key_col": "Description",
-            "gt_key_col": "description",
+            "key_col": "question",
+            "gt_key_col": "question",
         },
     }
     test_rows = rows("Scenario Files/TestScenarios.xlsx")
@@ -135,9 +135,9 @@ def audit():
         gt_counts = Counter(gt_key(r, cfg["gt_key_col"]) for r in cfg["gt"])
         rag_keys = {gt_key(r, cfg["gt_key_col"]) for r in cfg["rag"]}
         test_keys = {
-            (norm(r.get("Question")), norm(r.get("Location")))
+            (norm(r.get("question")), norm(r.get("location")))
             for r in test_rows
-            if norm(r.get("Decision Type")) == norm(dtype)
+            if norm(r.get("decision_type")) == norm(dtype)
         }
 
         out["counts"][dtype] = {
@@ -156,28 +156,28 @@ def audit():
             "duplicate_scenarios": [list(k) + [v] for k, v in Counter(sc_keys).items() if v > 1],
             "incomplete_alternatives": [
                 i + 2 for i, r in enumerate(sc)
-                if not all(str(r.get(f"Alternative {n}", "")).strip() for n in (1, 2, 3))
+                if not all(str(r.get(f"alternative_{n}", "")).strip() for n in (1, 2, 3))
             ],
         }
 
         flags = []
         if dtype == "HVAC":
             checks = [
-                ("Outdoor Temp band", Counter(temp_band_hvac(r["Outdoor Temp"]) for r in sc), 3),
-                ("Occupancy context", Counter(norm(r.get("Occupancy context")) for r in sc), 3),
-                ("Housing Type", Counter(norm(r.get("Housing Type")) for r in sc), 3),
-                ("Insulation", Counter(norm(r.get("Insulation")) for r in sc), 3),
+                ("outdoor_temp band", Counter(temp_band_hvac(r["outdoor_temp"]) for r in sc), 3),
+                ("occupancy_context", Counter(norm(r.get("occupancy_context")) for r in sc), 3),
+                ("housing_type", Counter(norm(r.get("housing_type")) for r in sc), 3),
+                ("insulation", Counter(norm(r.get("insulation")) for r in sc), 3),
             ]
         elif dtype == "Appliance":
             checks = [
-                ("Appliance", Counter(norm(r.get("Appliance")) for r in sc), 3),
-                ("Utility region", Counter(CITY_TO_UTILITY.get(city(r.get("Location")), "unknown") for r in sc), 2),
-                ("Baseline Time bucket", Counter(time_bucket(r.get("Baseline Time")) for r in sc), 3),
+                ("appliance", Counter(norm(r.get("appliance")) for r in sc), 3),
+                ("Utility region", Counter(CITY_TO_UTILITY.get(city(r.get("location")), "unknown") for r in sc), 2),
+                ("baseline_time bucket", Counter(time_bucket(r.get("baseline_time")) for r in sc), 3),
             ]
         else:
             checks = [
-                ("GPM", Counter(norm(r.get("GPM")) for r in sc), 2),
-                ("Outdoor Temp seasonal band", Counter(temp_band_shower(r["Outdoor Temp"]) for r in sc), 3),
+                ("gpm", Counter(norm(r.get("gpm")) for r in sc), 2),
+                ("outdoor_temp seasonal band", Counter(temp_band_shower(r["outdoor_temp"]) for r in sc), 3),
             ]
         for parameter, counter, minimum in checks:
             for value, count in sorted(counter.items()):

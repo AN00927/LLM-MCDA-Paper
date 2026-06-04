@@ -143,15 +143,15 @@ For HVAC decisions:
   "decision_type": "HVAC",
   "calculator": "HVACGroundTruthCalculator",
   "parameters": {{
-    "Location": "<city, state>",
+    "location": "<city, state>",
     "square_footage": <number>,
-    "Insulation": "<Poor/Medium/Good>",
+    "insulation": "<Poor/Medium/Good>",
     "r_value": <number>,
     "household_size": <number>,
     "outdoor_temp": <number>,
     "seer": <number>,
     "hvac_age": <number>,
-    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "housing_type": "<Apartment/Single-family/Townhouse>",
     "utility_budget": <number>,
     "occupancy_context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
     "alternatives": ["<temp>", "<temp>", "<temp>"]
@@ -163,13 +163,13 @@ For Appliance decisions:
   "decision_type": "Appliance",
   "calculator": "ApplianceGroundTruthCalculator",
   "parameters": {{
-    "Location": "<city, state>",
-    "Appliance": "Dishwasher|Washer|Dryer",
-    "kwh/cycle": <number>,
-    "Appliance Age": <number>,
-    "Baseline Time": "<time like 7pm, 8am, 9am>",
-    "Occupants": <number>,
-    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "location": "<city, state>",
+    "appliance": "Dishwasher|Washer|Dryer",
+    "kwh_per_cycle": <number>,
+    "appliance_age": <number>,
+    "baseline_time": "<time like 7pm, 8am, 9am>",
+    "household_size": <number>,
+    "housing_type": "<Apartment/Single-family/Townhouse>",
     "utility_budget": <number>,
     "alternatives": ["<time>", "<time>", "<time>"]
   }}
@@ -180,13 +180,13 @@ For Shower decisions:
   "decision_type": "Shower",
   "calculator": "ShowerGroundTruthCalculator",
   "parameters": {{
-    "Location": "<city, state>",
-    "GPM": <number>,
-    "Tank Size": <number>,
-    "Water Heater Temp": <number>,
+    "location": "<city, state>",
+    "gpm": <number>,
+    "tank_size": <number>,
+    "water_heater_temp": <number>,
     "outdoor_temp": <number>,
-    "Occupants": <number>,
-    "Housing Type": "<Apartment/Single-family/Townhouse>",
+    "household_size": <number>,
+    "housing_type": "<Apartment/Single-family/Townhouse>",
     "utility_budget": <number>,
     "alternatives": ["<minutes>", "<minutes>", "<minutes>"]
   }}
@@ -194,7 +194,7 @@ For Shower decisions:
 
 CRITICAL: Alternative formats must match exactly:
 - HVAC: "72", "76", "80" (No suffix)
-- Appliance: "7pm", "10pm", "2am" 
+- Appliance: "7pm", "10pm", "2am"
 - Shower: "5", "10", "15" (No suffix)
 
 Return ONLY the JSON, no explanation.
@@ -275,34 +275,34 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 def _normalize_scenario_fields(scenario: Dict) -> Dict:
     """Normalize scenario input fields to handle common formatting quirks."""
     normalized = scenario.copy()
-    
+
     # Clean up the obvious text fields first
-    for key in ['Question', 'Location', 'Decision Type', 'Housing Type', 'Appliance', 'Insulation']:
+    for key in ['question', 'location', 'decision_type', 'housing_type', 'appliance', 'insulation']:
         if key in normalized and isinstance(normalized[key], str):
             normalized[key] = normalized[key].strip()
-    
+
     # Make housing type look consistent
-    if 'Housing Type' in normalized:
-        ht = str(normalized['Housing Type']).lower().strip()
+    if 'housing_type' in normalized:
+        ht = str(normalized['housing_type']).lower().strip()
         if 'apartment' in ht:
-            normalized['Housing Type'] = 'Apartment'
+            normalized['housing_type'] = 'Apartment'
         elif 'single' in ht:
-            normalized['Housing Type'] = 'Single-family'
+            normalized['housing_type'] = 'Single-family'
         elif 'town' in ht:
-            normalized['Housing Type'] = 'Townhouse'
+            normalized['housing_type'] = 'Townhouse'
         elif 'twin' in ht:
-            normalized['Housing Type'] = 'Twin'
-    
+            normalized['housing_type'] = 'Twin'
+
     # Tidy up insulation labels too
-    if 'Insulation' in normalized:
-        ins = str(normalized['Insulation']).lower().strip()
+    if 'insulation' in normalized:
+        ins = str(normalized['insulation']).lower().strip()
         if 'poor' in ins:
-            normalized['Insulation'] = 'Poor'
+            normalized['insulation'] = 'Poor'
         elif 'good' in ins:
-            normalized['Insulation'] = 'Good'
+            normalized['insulation'] = 'Good'
         elif 'medium' in ins or 'avg' in ins:
-            normalized['Insulation'] = 'Medium'
-    
+            normalized['insulation'] = 'Medium'
+
     return normalized
 
 
@@ -315,7 +315,7 @@ def format_scenario_for_extraction(scenario: Dict) -> str:
     """
     lines = []
     for key, value in scenario.items():
-        if key == 'Question':
+        if key == 'question':
             continue
         if value is None:
             continue
@@ -334,7 +334,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     normalized_scenario = _normalize_scenario_fields(scenario)
     
     scenario_text = format_scenario_for_extraction(normalized_scenario)
-    question = normalized_scenario.get('Question', '')
+    question = normalized_scenario.get('question', '')
 
     prompt = UNIFIED_EXTRACTION_PROMPT.format(
         scenario_text=scenario_text,
@@ -418,16 +418,16 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             decision_type = extracted['decision_type']
 
             if decision_type == 'HVAC':
-                required_params = ['Location', 'square_footage', 'Insulation', 'r_value',
+                required_params = ['location', 'square_footage', 'insulation', 'r_value',
                                    'household_size', 'seer', 'hvac_age', 'outdoor_temp',
-                                   'Housing Type', 'utility_budget', 'alternatives']
+                                   'housing_type', 'utility_budget', 'alternatives']
             elif decision_type == 'Appliance':
-                required_params = ['Location', 'Appliance', 'kwh/cycle', 'Appliance Age',
-                                   'Baseline Time', 'Occupants', 'Housing Type',
+                required_params = ['location', 'appliance', 'kwh_per_cycle', 'appliance_age',
+                                   'baseline_time', 'household_size', 'housing_type',
                                    'utility_budget', 'alternatives']
             elif decision_type == 'Shower':
-                required_params = ['Location', 'GPM', 'Tank Size', 'Water Heater Temp',
-                                   'outdoor_temp', 'Occupants', 'Housing Type',
+                required_params = ['location', 'gpm', 'tank_size', 'water_heater_temp',
+                                   'outdoor_temp', 'household_size', 'housing_type',
                                    'utility_budget', 'alternatives']
             if all(k in params for k in required_params):
                 extraction_diagnostics['success'] = True
@@ -469,12 +469,10 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
     gt_scenario = {**scenario, **extracted_result['parameters']}
 
-    if 'utility_budget' in gt_scenario:
-        gt_scenario['Utility Budget'] = gt_scenario['utility_budget']
     alternatives = extracted_result['parameters'].get('alternatives', [])
     for i, alt in enumerate(alternatives[:3], 1):
-        gt_scenario[f'Alternative {i}'] = alt
-    for key in ['Utility Budget', 'Occupants', 'kwh/cycle']:
+        gt_scenario[f'alternative_{i}'] = alt
+    for key in ['utility_budget', 'household_size', 'kwh_per_cycle']:
         if key in gt_scenario and isinstance(gt_scenario[key], str):
             try:
                 gt_scenario[key] = float(gt_scenario[key])
@@ -583,7 +581,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
 
 def run_scenario(scenario: Dict) -> Dict:
     """Run scenario."""
-    print(f"SCENARIO: {scenario.get('Question', 'N/A')}")
+    print(f"SCENARIO: {scenario.get('question', 'N/A')}")
    
     print(f"Extracting decision type, parameters, and calculator...")
 
@@ -599,9 +597,9 @@ def run_scenario(scenario: Dict) -> Dict:
 
             neutral_alternatives = []
             for alt in [
-                scenario.get('Alternative 1', 'Alt1'),
-                scenario.get('Alternative 2', 'Alt2'),
-                scenario.get('Alternative 3', 'Alt3')
+                scenario.get('alternative_1', 'Alt1'),
+                scenario.get('alternative_2', 'Alt2'),
+                scenario.get('alternative_3', 'Alt3')
             ]:
                 neutral_alternatives.append({
                     'alternative': str(alt),
@@ -616,8 +614,8 @@ def run_scenario(scenario: Dict) -> Dict:
             ranking_result = apply_mavt_ranking(neutral_alternatives)
 
             return {
-                'scenario': scenario.get('Question', 'N/A'),
-                'decision_type': scenario.get('Decision Type', 'UNKNOWN'),
+                'scenario': scenario.get('question', 'N/A'),
+                'decision_type': scenario.get('decision_type', 'UNKNOWN'),
                 'calculator': 'NONE',
                 'extraction_failed': True,
                 'gt_calculation_failed': False,
@@ -647,7 +645,7 @@ def run_scenario(scenario: Dict) -> Dict:
         ranking_result = apply_mavt_ranking(zero_alternatives)
 
         return {
-            'scenario': scenario.get('Question', 'N/A'),
+            'scenario': scenario.get('question', 'N/A'),
             'decision_type': 'UNKNOWN',
             'calculator': 'NONE',
             'extraction_failed': True,
@@ -716,7 +714,7 @@ def run_scenario(scenario: Dict) -> Dict:
         ranking_result = apply_mavt_ranking(zero_alternatives)
 
         result_payload = {
-            'scenario': scenario.get('Question', 'N/A'),
+            'scenario': scenario.get('question', 'N/A'),
             'decision_type': decision_type,
             'calculator': calculator,
             'extraction_failed': False,
@@ -741,7 +739,7 @@ def run_scenario(scenario: Dict) -> Dict:
         print(f"  {i}. {alt} (weighted score: {ws:.2f})")
 
     return {
-        'scenario': scenario.get('Question', 'N/A'),
+        'scenario': scenario.get('question', 'N/A'),
         'decision_type': decision_type,
         'calculator': calculator,
         'extraction_failed': False,
@@ -770,9 +768,9 @@ def run_test_set(test_path: str, output_path: str,
     scenarios = []
     df = read_table_clean(
         test_csv_path,
-        keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
+        keep_str_cols=["alternative_1", "alternative_2", "alternative_3"],
     )
-    required_cols = ['Question', 'Decision Type']
+    required_cols = ['question', 'decision_type']
     missing_cols = [col for col in required_cols if col not in df.columns]
 
     if missing_cols:
@@ -782,7 +780,7 @@ def run_test_set(test_path: str, output_path: str,
         scenarios.append(row.to_dict())
 
     print(f" Loaded {len(scenarios)} test scenarios")
-    print(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
+    print(f"  Decision types: {set([s.get('decision_type', 'UNKNOWN') for s in scenarios])}\n")
 
     # Run through every scenario
     all_results = []
@@ -799,20 +797,20 @@ def run_test_set(test_path: str, output_path: str,
         **_init_failure_counters()
     }
     for i, scenario in enumerate(scenarios):
-        print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
+        print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('question', 'N/A')[:60]}...")
 
         try:
             result = run_scenario(scenario)
         except Exception as e:
             print(f" Scenario crashed and was marked failed: {e}")
             fallback_alternatives = [
-                scenario.get('Alternative 1', 'Alt1'),
-                scenario.get('Alternative 2', 'Alt2'),
-                scenario.get('Alternative 3', 'Alt3')
+                scenario.get('alternative_1', 'Alt1'),
+                scenario.get('alternative_2', 'Alt2'),
+                scenario.get('alternative_3', 'Alt3')
             ]
             result = {
-                'scenario': scenario.get('Question', 'N/A'),
-                'decision_type': scenario.get('Decision Type', 'UNKNOWN'),
+                'scenario': scenario.get('question', 'N/A'),
+                'decision_type': scenario.get('decision_type', 'UNKNOWN'),
                 'calculator': 'NONE',
                 'extraction_failed': True,
                 'gt_calculation_failed': False,
@@ -889,11 +887,11 @@ def run_test_set(test_path: str, output_path: str,
         gt_calc_failed = result.get('gt_calculation_failed', False)
         scenario_failed = result.get('scenario_failed', False)
 
-        location = scenarios[scenario_id - 1].get('Location', 'N/A')
+        location = scenarios[scenario_id - 1].get('location', 'N/A')
         outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
-        appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
-        flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
-        input_decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
+        appliance_age = scenarios[scenario_id - 1].get('appliance_age', '')
+        flow_rate = scenarios[scenario_id - 1].get('flow_rate', '')
+        input_decision_type = scenarios[scenario_id - 1].get('decision_type', 'UNKNOWN')
         extracted_decision_type = result.get('decision_type', 'UNKNOWN')
         decision_type = input_decision_type
 
