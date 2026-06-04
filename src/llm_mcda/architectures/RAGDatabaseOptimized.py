@@ -655,7 +655,7 @@ def run_scenario(scenario: Dict) -> Dict:
         logger.info(f"  {i}. {alt} (weighted score: {ws:.2f})")
 
     return {
-        'scenario': scenario.get('Question', 'N/A'),
+        'scenario': scenario.get('question', 'N/A'),
         'alternatives_scores': alternatives_scores,
         'ranking_result': ranking_result,
         'diagnostics': total_diagnostics

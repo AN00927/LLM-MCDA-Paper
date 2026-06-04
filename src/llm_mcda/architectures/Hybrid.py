@@ -524,9 +524,9 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
     # scenario value by ordinal position and keep the LLM form in
     # `extracted_alternative` for diagnostics.
     verbatim_alts = [
-        scenario.get('Alternative 1'),
-        scenario.get('Alternative 2'),
-        scenario.get('Alternative 3'),
+        scenario.get('alternative_1'),
+        scenario.get('alternative_2'),
+        scenario.get('alternative_3'),
     ]
     if len(alternatives_scores) != 3:
         print(f"  WARNING: scoring produced {len(alternatives_scores)} alternatives, "
