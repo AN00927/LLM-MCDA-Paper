@@ -1,0 +1,115 @@
+﻿scenario_id,question,location,square_footage,insulation,household_size,utility_budget,housing_type,outdoor_temp,house_age,alternative,energy_cost_score,environmental_score,comfort_score,practicality_score,mavt_score,rank,raw_kwh,raw_cost,raw_emissions
+1,I'm home all day with 2 people — what heat temperature should I set?,"Lancaster, PA",1150,Good,2,195,Apartment,20,27,68,10.0,9.95,8.6,7.6,9.3425,2,2.46,0.47,2.5
+1,I'm home all day with 2 people — what heat temperature should I set?,"Lancaster, PA",1150,Good,2,195,Apartment,20,27,71,9.81,9.75,9.32,7.6,9.3595,1,2.75,0.52,2.81
+1,I'm home all day with 2 people — what heat temperature should I set?,"Lancaster, PA",1150,Good,2,195,Apartment,20,27,74,9.61,9.56,7.0,7.6,8.769,3,3.05,0.58,3.11
+2,I'm sticking around the house with 2 people — what heat temperature should I set?,"West Chester, PA",1600,Medium,2,270,Townhouse,22,37,65,6.8,6.83,6.11,7.6,6.7925,3,7.26,1.38,7.4
+2,I'm sticking around the house with 2 people — what heat temperature should I set?,"West Chester, PA",1600,Medium,2,270,Townhouse,22,37,68,6.31,6.36,8.6,7.6,6.979,1,7.99,1.52,8.15
+2,I'm sticking around the house with 2 people — what heat temperature should I set?,"West Chester, PA",1600,Medium,2,270,Townhouse,22,37,71,5.82,5.88,9.32,7.6,6.808,2,8.72,1.66,8.89
+3,I'm planning to stay in all day with 1 person — what AC temperature should I set?,"Philadelphia, PA",900,Poor,1,190,Apartment,93,47,78,5.36,5.66,8.6,9.63,6.7535,1,9.07,1.72,9.25
+3,I'm planning to stay in all day with 1 person — what AC temperature should I set?,"Philadelphia, PA",900,Poor,1,190,Apartment,93,47,81,5.98,6.04,6.11,9.63,6.5745,2,8.48,1.61,8.65
+3,I'm planning to stay in all day with 1 person — what AC temperature should I set?,"Philadelphia, PA",900,Poor,1,190,Apartment,93,47,84,6.37,6.42,2.86,7.6,5.87,3,7.9,1.5,8.05
+4,I'm out running errands all day — what AC temperature should I set?,"Harrisburg, PA",1050,Poor,5,295,Condo,94,1,76,8.69,8.61,10.0,9.63,9.065,1,4.43,0.84,4.61
+4,I'm out running errands all day — what AC temperature should I set?,"Harrisburg, PA",1050,Poor,5,295,Condo,94,1,79,8.84,8.75,7.34,9.63,8.627,2,4.21,0.8,4.38
+4,I'm out running errands all day — what AC temperature should I set?,"Harrisburg, PA",1050,Poor,5,295,Condo,94,1,82,8.99,8.9,3.83,9.63,8.0225,3,3.98,0.76,4.15
+5,I'm popping out for a bit — what AC temperature should I set for the rowhouse?,"York, PA",1500,Poor,2,235,Rowhouse,92,4,78,7.33,7.26,8.6,9.63,7.9045,1,6.47,1.23,6.73
+5,I'm popping out for a bit — what AC temperature should I set for the rowhouse?,"York, PA",1500,Poor,2,235,Rowhouse,92,4,81,7.63,7.56,6.11,9.63,7.6015,2,6.02,1.14,6.26
+5,I'm popping out for a bit — what AC temperature should I set for the rowhouse?,"York, PA",1500,Poor,2,235,Rowhouse,92,4,84,7.93,7.85,2.86,7.6,6.8385,3,5.56,1.06,5.79
+6,I'm stepping out for a few hours — what heat temperature should I set for the rowhouse?,"York, PA",1650,Poor,2,255,Rowhouse,20,4,65,7.19,7.12,6.11,7.6,7.011,3,6.67,1.27,6.94
+6,I'm stepping out for a few hours — what heat temperature should I set for the rowhouse?,"York, PA",1650,Poor,2,255,Rowhouse,20,4,68,6.81,6.75,8.6,7.6,7.2655,1,7.24,1.37,7.53
+6,I'm stepping out for a few hours — what heat temperature should I set for the rowhouse?,"York, PA",1650,Poor,2,255,Rowhouse,20,4,71,6.43,6.37,9.32,7.6,7.1625,2,7.81,1.48,8.13
+7,I'm home and not going out with 5 people — what AC temperature should I set?,"Lower Merion, PA",1800,Good,5,325,Rowhouse,90,10,71,5.2,5.28,5.13,9.63,5.8785,3,9.65,1.83,9.84
+7,I'm home and not going out with 5 people — what AC temperature should I set?,"Lower Merion, PA",1800,Good,5,325,Rowhouse,90,10,75,5.58,5.65,9.18,9.63,6.932,1,9.09,1.73,9.26
+7,I'm home and not going out with 5 people — what AC temperature should I set?,"Lower Merion, PA",1800,Good,5,325,Rowhouse,90,10,79,5.95,6.01,7.34,9.63,6.801,2,8.52,1.62,8.69
+8,I'm heading out for a quick errand — what AC temperature should I set for the townhouse?,"King of Prussia, PA",2200,Medium,5,285,Townhouse,93,12,75,3.99,3.95,9.18,9.63,5.86,2,11.46,2.18,11.93
+8,I'm heading out for a quick errand — what AC temperature should I set for the townhouse?,"King of Prussia, PA",2200,Medium,5,285,Townhouse,93,12,78,4.4,4.36,8.3,9.63,5.9505,1,10.85,2.06,11.29
+8,I'm heading out for a quick errand — what AC temperature should I set for the townhouse?,"King of Prussia, PA",2200,Medium,5,285,Townhouse,93,12,81,4.81,4.76,5.13,9.63,5.5795,3,10.23,1.94,10.65
+9,"With 2 people home, what heat temperature should I set?","Carlisle, PA",1650,Poor,2,255,Townhouse,23,21,65,4.39,4.5,6.11,7.6,5.254,2,10.86,2.06,11.07
+9,"With 2 people home, what heat temperature should I set?","Carlisle, PA",1650,Poor,2,255,Townhouse,23,21,68,3.73,3.86,8.6,7.6,5.33,1,11.85,2.25,12.08
+9,"With 2 people home, what heat temperature should I set?","Carlisle, PA",1650,Poor,2,255,Townhouse,23,21,71,2.6,3.21,9.32,7.6,4.9075,3,12.84,2.44,13.09
+10,"With 3 people home, what heat temperature should I set?","Lebanon, PA",2350,Medium,3,335,Single-family,21,25,66,3.09,3.24,7.0,7.6,4.601,1,12.8,2.43,13.04
+10,"With 3 people home, what heat temperature should I set?","Lebanon, PA",2350,Medium,3,335,Single-family,21,25,69,2.34,2.52,9.32,7.6,4.588,2,13.92,2.64,14.19
+10,"With 3 people home, what heat temperature should I set?","Lebanon, PA",2350,Medium,3,335,Single-family,21,25,72,1.59,1.79,8.6,7.6,3.9635,3,15.04,2.86,15.33
+11,"With 5 people home, what AC temperature should I set?","Gettysburg, PA",1800,Good,5,360,Single-family,88,26,74,2.77,2.93,8.3,9.63,4.961,3,13.27,2.52,13.53
+11,"With 5 people home, what AC temperature should I set?","Gettysburg, PA",1800,Good,5,360,Single-family,88,26,77,3.24,3.38,9.18,9.63,5.4355,1,12.58,2.39,12.83
+11,"With 5 people home, what AC temperature should I set?","Gettysburg, PA",1800,Good,5,360,Single-family,88,26,80,3.7,3.83,6.29,10.0,5.2085,2,11.89,2.26,12.12
+12,"With 3 people home, what AC temperature should I set?","Monroeville, PA",2000,Medium,3,270,Condo,92,25,76,3.24,3.38,10.0,9.63,5.5995,1,12.58,2.39,12.83
+12,"With 3 people home, what AC temperature should I set?","Monroeville, PA",2000,Medium,3,270,Condo,92,25,78,3.54,3.67,8.6,9.63,5.511,2,12.13,2.31,12.37
+12,"With 3 people home, what AC temperature should I set?","Monroeville, PA",2000,Medium,3,270,Condo,92,25,80,3.84,3.96,7.0,9.63,5.3825,3,11.68,2.22,11.91
+13,"With 3 people home, what heat temperature should I set?","Indiana, PA",1900,Medium,3,235,Apartment,18,60,65,5.49,5.57,6.11,7.6,5.9585,2,9.21,1.75,9.39
+13,"With 3 people home, what heat temperature should I set?","Indiana, PA",1900,Medium,3,235,Apartment,18,60,68,4.89,4.98,8.6,7.6,6.07,1,10.11,1.92,10.31
+13,"With 3 people home, what heat temperature should I set?","Indiana, PA",1900,Medium,3,235,Apartment,18,60,71,4.27,4.4,9.32,7.6,5.825,3,11.01,2.09,11.23
+14,"With 3 people home, what AC temperature should I set?","DuBois, PA",1950,Medium,3,305,Single-family,89,18,76,4.56,4.66,10.0,9.63,6.4435,1,10.61,2.02,10.81
+14,"With 3 people home, what AC temperature should I set?","DuBois, PA",1950,Medium,3,305,Single-family,89,18,77,4.71,4.81,9.32,9.63,6.405,2,10.38,1.97,10.58
+14,"With 3 people home, what AC temperature should I set?","DuBois, PA",1950,Medium,3,305,Single-family,89,18,78,4.87,4.96,8.6,9.63,6.3615,3,10.15,1.93,10.35
+15,"With 3 people home, what heat temperature should I set?","Reading, PA",2000,Medium,3,340,Single-family,20,18,65,10.0,10.0,6.11,9.63,9.1665,1,0.73,0.14,0.75
+15,"With 3 people home, what heat temperature should I set?","Reading, PA",2000,Medium,3,340,Single-family,20,18,72,4.85,4.94,8.6,7.6,6.044,2,10.17,1.93,10.37
+15,"With 3 people home, what heat temperature should I set?","Reading, PA",2000,Medium,3,340,Single-family,20,18,79,3.64,3.77,1.53,6.03,3.622,3,11.99,2.28,12.22
+16,We're just getting in for the night — what heat temperature should I set overnight?,"Quakertown, PA",1900,Good,3,280,Single-family,22,11,70,9.08,9.15,10.0,7.6,9.0665,1,3.85,0.73,3.75
+16,We're just getting in for the night — what heat temperature should I set overnight?,"Quakertown, PA",1900,Good,3,280,Single-family,22,11,65,9.5,9.54,6.11,7.6,8.551,2,3.23,0.61,3.15
+16,We're just getting in for the night — what heat temperature should I set overnight?,"Quakertown, PA",1900,Good,3,280,Single-family,22,11,60,9.91,9.92,0.0,3.75,7.0075,3,2.61,0.5,2.55
+17,We're done for the day — what heat temperature should I set overnight?,"Wilkes-Barre, PA",1900,Good,2,290,Single-family,17,9,65,9.11,9.18,6.11,7.6,8.308,3,3.8,0.72,3.71
+17,We're done for the day — what heat temperature should I set overnight?,"Wilkes-Barre, PA",1900,Good,2,290,Single-family,17,9,68,8.88,8.97,8.6,7.6,8.6635,2,4.15,0.79,4.05
+17,We're done for the day — what heat temperature should I set overnight?,"Wilkes-Barre, PA",1900,Good,2,290,Single-family,17,9,70,8.73,8.82,10.0,7.6,8.846,1,4.38,0.83,4.27
+18,I'm sticking around the house with 2 people — what AC temperature should I set?,"West Chester, PA",1400,Good,2,220,Condo,79,8,73,8.12,8.11,7.83,10.0,8.3405,3,5.29,1.0,5.39
+18,I'm sticking around the house with 2 people — what AC temperature should I set?,"West Chester, PA",1400,Good,2,220,Condo,79,8,77,8.37,8.35,9.32,10.0,8.7975,1,4.91,0.93,5.01
+18,I'm sticking around the house with 2 people — what AC temperature should I set?,"West Chester, PA",1400,Good,2,220,Condo,79,8,80,8.56,8.54,7.0,10.0,8.457,2,4.63,0.88,4.72
+19,"With 4 people home, what AC temperature should I set?","Reading, PA",2400,Poor,4,380,Single-family,90,28,70,0.0,0.0,4.5,8.16,2.124,3,21.3,4.05,21.71
+19,"With 4 people home, what AC temperature should I set?","Reading, PA",2400,Poor,4,380,Single-family,90,28,76,0.0,0.0,10.0,9.63,3.4445,1,18.18,3.45,18.53
+19,"With 4 people home, what AC temperature should I set?","Reading, PA",2400,Poor,4,380,Single-family,90,28,79,0.54,0.77,7.59,9.63,3.394,2,16.61,3.16,16.94
+20,I'm heading out and won't be back for hours — what AC temperature should I set?,"King of Prussia, PA",1800,Good,2,270,Townhouse,92,14,73,6.76,6.69,7.83,9.63,7.38,2,7.32,1.39,7.62
+20,I'm heading out and won't be back for hours — what AC temperature should I set?,"King of Prussia, PA",1800,Good,2,270,Townhouse,92,14,77,7.07,7.0,9.32,9.63,7.8795,1,6.85,1.3,7.13
+20,I'm heading out and won't be back for hours — what AC temperature should I set?,"King of Prussia, PA",1800,Good,2,270,Townhouse,92,14,82,7.47,7.39,5.13,9.63,7.298,3,6.26,1.19,6.52
+21,"With 3 people home, what heat temperature should I set?","Williamsport, PA",2100,Medium,3,280,Single-family,18,25,64,5.43,5.51,5.13,7.6,5.7235,2,9.31,1.77,9.49
+21,"With 3 people home, what heat temperature should I set?","Williamsport, PA",2100,Medium,3,280,Single-family,18,25,68,4.69,4.79,8.6,7.6,5.9435,1,10.42,1.98,10.62
+21,"With 3 people home, what heat temperature should I set?","Williamsport, PA",2100,Medium,3,280,Single-family,18,25,74,3.57,3.71,7.0,7.6,4.9095,3,12.08,2.3,12.31
+22,I'm spending the day at home with 3 people — what AC temperature should I set?,"Stroudsburg, PA",2300,Good,3,340,Single-family,77,22,73,5.38,5.45,7.83,10.0,6.5875,3,9.39,1.78,9.57
+22,I'm spending the day at home with 3 people — what AC temperature should I set?,"Stroudsburg, PA",2300,Good,3,340,Single-family,77,22,77,6.0,6.06,9.32,10.0,7.285,1,8.45,1.6,8.61
+22,I'm spending the day at home with 3 people — what AC temperature should I set?,"Stroudsburg, PA",2300,Good,3,340,Single-family,77,22,80,6.48,6.52,7.0,10.0,7.126,2,7.74,1.47,7.89
+23,I'm heading out for the day — what heat temperature should I set?,"Lebanon, PA",2000,Poor,2,230,Apartment,44,32,65,9.53,9.44,6.11,8.86,8.714,2,3.18,0.6,3.31
+23,I'm heading out for the day — what heat temperature should I set?,"Lebanon, PA",2000,Poor,2,230,Apartment,44,32,68,8.96,8.87,8.6,8.86,8.8415,1,4.03,0.77,4.19
+23,I'm heading out for the day — what heat temperature should I set?,"Lebanon, PA",2000,Poor,2,230,Apartment,44,32,71,8.39,8.31,9.32,8.86,8.6185,3,4.88,0.93,5.08
+24,"With 2 people home, what heat temperature should I set?","DuBois, PA",1850,Good,2,275,Single-family,10,33,63,5.88,5.95,4.06,7.6,5.7985,2,8.63,1.64,8.79
+24,"With 2 people home, what heat temperature should I set?","DuBois, PA",1850,Good,2,275,Single-family,10,33,68,5.15,5.23,8.6,7.6,6.2355,1,9.73,1.85,9.91
+24,"With 2 people home, what heat temperature should I set?","DuBois, PA",1850,Good,2,275,Single-family,10,33,75,4.12,4.24,6.11,7.6,5.082,3,11.26,2.14,11.48
+25,We're just getting in for the night — what heat temperature should I set overnight?,"Erie, PA",2750,Good,6,285,Single-family,5,11,63,7.59,7.77,1.38,7.6,6.4125,3,6.07,1.15,5.93
+25,We're just getting in for the night — what heat temperature should I set overnight?,"Erie, PA",2750,Good,6,285,Single-family,5,11,66,7.29,7.49,5.92,7.6,7.1325,2,6.53,1.24,6.37
+25,We're just getting in for the night — what heat temperature should I set overnight?,"Erie, PA",2750,Good,6,285,Single-family,5,11,69,6.98,7.21,9.11,7.6,7.5795,1,6.98,1.33,6.81
+26,I'm stepping out for a few hours — what heat temperature should I set for the condo?,"King of Prussia, PA",1120,Good,1,155,Condo,50,9,62,10.0,10.0,2.86,8.28,8.314,3,0.0,0.0,0.0
+26,I'm stepping out for a few hours — what heat temperature should I set for the condo?,"King of Prussia, PA",1120,Good,1,155,Condo,50,9,66,10.0,10.0,7.0,9.63,9.3445,2,0.0,0.0,0.0
+26,I'm stepping out for a few hours — what heat temperature should I set for the condo?,"King of Prussia, PA",1120,Good,1,155,Condo,50,9,69,10.0,10.0,9.32,9.63,9.8085,1,0.0,0.0,0.0
+27,"With 3 people home, what heat temperature should I set?","Reading, PA",2250,Poor,3,245,Single-family,54,52,65,10.0,10.0,6.11,9.63,9.1665,3,0.73,0.14,0.75
+27,"With 3 people home, what heat temperature should I set?","Reading, PA",2250,Poor,3,245,Single-family,54,52,68,10.0,10.0,8.6,9.63,9.6645,2,1.97,0.37,2.01
+27,"With 3 people home, what heat temperature should I set?","Reading, PA",2250,Poor,3,245,Single-family,54,52,70,9.78,9.73,10.0,9.63,9.784,1,2.8,0.53,2.85
+28,I'm staying put today with 1 person — what heat temperature should I set?,"State College, PA",760,Medium,1,135,Apartment,62,24,68,10.0,10.0,8.6,10.0,9.72,1,0.0,0.0,0.0
+28,I'm staying put today with 1 person — what heat temperature should I set?,"State College, PA",760,Medium,1,135,Apartment,62,24,72,10.0,10.0,8.6,9.63,9.6645,2,0.0,0.0,0.0
+28,I'm staying put today with 1 person — what heat temperature should I set?,"State College, PA",760,Medium,1,135,Apartment,62,24,76,10.0,10.0,5.13,9.63,8.9705,3,0.0,0.0,0.0
+29,We're done for the day — what heat temperature should I set overnight?,"York, PA",1480,Medium,3,180,Townhouse,59,35,64,10.0,10.0,5.13,10.0,9.026,3,0.0,0.0,0.0
+29,We're done for the day — what heat temperature should I set overnight?,"York, PA",1480,Medium,3,180,Townhouse,59,35,68,10.0,10.0,8.6,10.0,9.72,1,0.0,0.0,0.0
+29,We're done for the day — what heat temperature should I set overnight?,"York, PA",1480,Medium,3,180,Townhouse,59,35,72,10.0,10.0,8.6,9.63,9.6645,2,0.0,0.0,0.0
+30,I'm away most of today — what AC temperature should I set?,"Lancaster, PA",1550,Medium,3,195,Townhouse,82,31,76,7.8,7.72,10.0,10.0,8.542,1,5.77,1.1,6.0
+30,I'm away most of today — what AC temperature should I set?,"Lancaster, PA",1550,Medium,3,195,Townhouse,82,31,80,8.16,8.08,7.0,10.0,8.176,2,5.23,0.99,5.44
+30,I'm away most of today — what AC temperature should I set?,"Lancaster, PA",1550,Medium,3,195,Townhouse,82,31,83,8.43,8.35,4.06,8.86,7.5925,3,4.82,0.92,5.02
+31,"With 1 person home, what AC temperature should I set?","Wilkes-Barre, PA",880,Poor,1,145,Apartment,80,44,74,8.54,8.52,8.6,10.0,8.764,2,4.65,0.88,4.74
+31,"With 1 person home, what AC temperature should I set?","Wilkes-Barre, PA",880,Poor,1,145,Apartment,80,44,77,8.79,8.77,9.32,10.0,9.0705,1,4.28,0.81,4.36
+31,"With 1 person home, what AC temperature should I set?","Wilkes-Barre, PA",880,Poor,1,145,Apartment,80,44,81,9.12,9.09,6.11,10.0,8.6395,3,3.78,0.72,3.86
+32,I'm out running errands all day — what AC temperature should I set?,"West Chester, PA",2950,Medium,5,300,Single-family,83,22,77,5.75,5.7,9.18,10.0,7.056,1,8.82,1.68,9.19
+32,I'm out running errands all day — what AC temperature should I set?,"West Chester, PA",2950,Medium,5,300,Single-family,83,22,81,6.34,6.28,5.13,10.0,6.626,2,7.95,1.51,8.27
+32,I'm out running errands all day — what AC temperature should I set?,"West Chester, PA",2950,Medium,5,300,Single-family,83,22,84,6.78,6.71,0.64,7.6,5.6505,3,7.29,1.38,7.59
+33,I'm leaving for work shortly — what AC temperature should I set?,"Norristown, PA",1180,Medium,2,175,Condo,98,26,78,7.63,7.55,8.6,8.86,7.9805,1,6.02,1.14,6.27
+33,I'm leaving for work shortly — what AC temperature should I set?,"Norristown, PA",1180,Medium,2,175,Condo,98,26,81,7.82,7.75,6.11,9.63,7.725,2,5.73,1.09,5.96
+33,I'm leaving for work shortly — what AC temperature should I set?,"Norristown, PA",1180,Medium,2,175,Condo,98,26,84,8.02,7.94,2.86,7.29,6.8505,3,5.43,1.03,5.65
+34,I'm gone for the entire workday — what heat temperature should I set?,"Erie, PA",1700,Medium,2,220,Single-family,18,25,60,7.82,7.75,0.0,3.75,5.621,3,5.73,1.09,5.96
+34,I'm gone for the entire workday — what heat temperature should I set?,"Erie, PA",1700,Medium,2,220,Single-family,18,25,63,7.45,7.37,4.06,7.6,6.7665,2,6.29,1.19,6.55
+34,I'm gone for the entire workday — what heat temperature should I set?,"Erie, PA",1700,Medium,2,220,Single-family,18,25,66,7.07,7.0,7.0,7.6,7.111,1,6.85,1.3,7.13
+35,I'm working from home today with 3 people — what AC temperature should I set?,"Pittsburgh, PA",1750,Good,3,250,Townhouse,87,15,73,5.53,5.6,7.83,9.63,6.6295,3,9.15,1.74,9.33
+35,I'm working from home today with 3 people — what AC temperature should I set?,"Pittsburgh, PA",1750,Good,3,250,Townhouse,87,15,76,5.85,5.91,10.0,9.63,7.268,1,8.67,1.65,8.84
+35,I'm working from home today with 3 people — what AC temperature should I set?,"Pittsburgh, PA",1750,Good,3,250,Townhouse,87,15,79,6.17,6.22,7.83,10.0,7.094,2,8.2,1.56,8.35
+36,I'm heading out for the day — what heat temperature should I set?,"West Mifflin, PA",1500,Medium,2,200,Single-family,22,30,60,8.22,8.14,0.0,3.75,5.8775,3,5.14,0.98,5.35
+36,I'm heading out for the day — what heat temperature should I set?,"West Mifflin, PA",1500,Medium,2,200,Single-family,22,30,63,7.82,7.74,4.06,7.6,7.007,2,5.73,1.09,5.97
+36,I'm heading out for the day — what heat temperature should I set?,"West Mifflin, PA",1500,Medium,2,200,Single-family,22,30,66,7.42,7.35,7.0,7.6,7.3385,1,6.32,1.2,6.58
+37,I'm gone most of the day — what heat temperature should I set?,"Philadelphia, PA",1350,Poor,3,210,Rowhouse,12,68,60,4.37,4.75,0.0,3.75,3.536,3,10.26,1.95,10.68
+37,I'm gone most of the day — what heat temperature should I set?,"Philadelphia, PA",1350,Poor,3,210,Rowhouse,12,68,64,2.72,3.98,5.13,7.6,4.375,2,11.41,2.17,11.88
+37,I'm gone most of the day — what heat temperature should I set?,"Philadelphia, PA",1350,Poor,3,210,Rowhouse,12,68,68,1.52,3.22,8.6,7.6,4.443,1,12.56,2.39,13.08
+38,We're winding down for the night — what AC temperature should I set overnight?,"Pittsburgh, PA",2050,Medium,3,220,Single-family,87,33,72,4.16,4.9,7.0,9.63,5.8075,3,10.69,2.03,10.43
+38,We're winding down for the night — what AC temperature should I set overnight?,"Pittsburgh, PA",2050,Medium,3,220,Single-family,87,33,75,4.98,5.34,9.32,9.63,6.6715,2,9.98,1.9,9.74
+38,We're winding down for the night — what AC temperature should I set overnight?,"Pittsburgh, PA",2050,Medium,3,220,Single-family,87,33,78,5.45,5.78,8.6,10.0,6.878,1,9.28,1.76,9.05

@@ -1,0 +1,28 @@
+﻿sheet,source_row,column,before,after,reason
+ApplianceScenarios,5,Appliance,washer,washing_machine,appliance canonicalization
+ApplianceScenarios,18,Appliance,washer,washing_machine,appliance canonicalization
+ApplianceScenarios,27,Appliance,washer,washing_machine,appliance canonicalization
+ApplianceScenarios,37,Appliance,washer,washing_machine,appliance canonicalization
+ApplianceScenarios,39,Appliance,washer,washing_machine,appliance canonicalization
+ApplianceScenarios,40,Appliance,washer,washing_machine,appliance canonicalization
+ApplianceScenarios,100,Appliance,Dryer,dryer,appliance canonicalization
+ApplianceScenarios,100,Baseline Time,6pm,6:00 PM,time -> H:MM AM/PM text
+ApplianceScenarios,100,Alternative 1,6pm,6:00 PM,time -> H:MM AM/PM text
+ApplianceScenarios,100,Alternative 2,10pm,10:00 PM,time -> H:MM AM/PM text
+ApplianceScenarios,100,Alternative 3,6am,6:00 AM,time -> H:MM AM/PM text
+ApplianceScenarios,101,Appliance,Dishwasher,dishwasher,appliance canonicalization
+ApplianceScenarios,101,Baseline Time,8am,8:00 AM,time -> H:MM AM/PM text
+ApplianceScenarios,101,Alternative 1,8am,8:00 AM,time -> H:MM AM/PM text
+ApplianceScenarios,101,Alternative 2,2pm,2:00 PM,time -> H:MM AM/PM text
+ApplianceScenarios,101,Alternative 3,11pm,11:00 PM,time -> H:MM AM/PM text
+HVACRAG,15,rank,3,1,rank recomputed from mavt_score ordering
+SHOWERRAG,2,rank,3,2,rank recomputed from mavt_score ordering
+SHOWERRAG,2,rank,2,3,rank recomputed from mavt_score ordering
+SHOWERRAG,6,rank,2,1,rank recomputed from mavt_score ordering
+SHOWERRAG,6,rank,1,2,rank recomputed from mavt_score ordering
+SHOWERRAG,7,rank,2,1,rank recomputed from mavt_score ordering
+SHOWERRAG,7,rank,3,2,rank recomputed from mavt_score ordering
+SHOWERRAG,11,rank,2,3,rank recomputed from mavt_score ordering
+SHOWERRAG,13,rank,1,2,rank recomputed from mavt_score ordering
+SHOWERRAG,28,rank,3,1,rank recomputed from mavt_score ordering
+SHOWERRAG,28,rank,1,2,rank recomputed from mavt_score ordering
