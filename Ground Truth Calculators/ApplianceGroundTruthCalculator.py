@@ -592,9 +592,15 @@ def process_appliance_scenarios(
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df = read_table_clean(csv_path,
-                       time_columns=['Baseline Time'],
-                       keep_str_cols=['Baseline Time', 'Alternative 1', 'Alternative 2', 'Alternative 3'])
+    df = read_table_clean(
+        csv_path,
+        time_columns=['Baseline Time'],
+        keep_str_cols=[
+            'Baseline Time', 'Description', 'Location', 'Appliance',
+            'Appliance Age', 'Housing Type',
+            'Alternative 1', 'Alternative 2', 'Alternative 3',
+        ],
+    )
 
     required_cols = ['Description', 'Location', 'Utility Budget', 'Appliance', 'Housing Type',
                      'Occupants', 'kwh/cycle', 'Appliance Age', 'Baseline Time']
@@ -694,6 +700,14 @@ def process_appliance_scenarios(
             continue
 
     results_df = pd.DataFrame(results)
+    _STR_COLS = ['description', 'location', 'appliance', 'appliance_age', 'housing_type', 'alternative']
+    _INT_COLS = ['scenario_id', 'occupants', 'rank']
+    for c in _STR_COLS:
+        if c in results_df.columns:
+            results_df[c] = results_df[c].fillna("").astype(str)
+    for c in _INT_COLS:
+        if c in results_df.columns:
+            results_df[c] = results_df[c].astype("Int64")
     results_df.to_excel(output_path, index=False, engine="openpyxl")
 
     print(f"\nGround truth saved to {output_path}")

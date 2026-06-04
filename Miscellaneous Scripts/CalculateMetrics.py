@@ -25,6 +25,11 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
 from sentinel_utils import _atomic_write_xlsx, read_table_clean
 
+_COMMON_STR_COLS = [
+    'question', 'description', 'location', 'alternative',
+    'housing_type', 'insulation', 'appliance', 'appliance_age', 'house_age',
+]
+
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 
@@ -194,7 +199,7 @@ def load_ground_truth(config):
     gt_by_type = {}
 
     for dtype, filepath in config["ground_truth"].items():
-        df = read_table_clean(filepath)
+        df = read_table_clean(filepath, keep_str_cols=_COMMON_STR_COLS)
         df["decision_type"] = dtype
 
         if "description" in df.columns and "question" not in df.columns:
@@ -224,7 +229,7 @@ def load_architecture(source, arch_name):
     if isinstance(source, pd.DataFrame):
         df = source.copy()
     else:
-        df = read_table_clean(source)
+        df = read_table_clean(source, keep_str_cols=_COMMON_STR_COLS)
     df["architecture"] = arch_name
     df["question"] = df["question"].str.strip()
     df["location"] = df["location"].str.strip()
@@ -261,7 +266,7 @@ def aggregate_run_files(run_paths):
     """
     run_dfs = []
     for p in run_paths:
-        run_dfs.append(read_table_clean(p))
+        run_dfs.append(read_table_clean(p, keep_str_cols=_COMMON_STR_COLS))
     n_readable = len(run_dfs)
     combined = pd.concat(run_dfs, ignore_index=True)
 
