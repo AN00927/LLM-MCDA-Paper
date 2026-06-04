@@ -66,7 +66,7 @@ class ShowerGroundTruthCalculator:
     # linear utility is appropriate" (Management Science 26(8):810-822)
     VF_ENERGY_COST = "linear"
 
-    # Linear VF for environmental impact - physical units have linear marginal value
+
     # For MAVT framework justification, see:
     # - Keeney, R. L., & Raiffa, H. (1976). Decisions with Multiple Objectives: Preferences 
     #   and Value Trade-offs. Wiley. (Foundation for Multi-Attribute Value Theory axioms)
@@ -532,8 +532,6 @@ def process_shower_scenarios(
 
     for idx, row in df.iterrows():
         print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['location']}")
-
-        # Build scenario dict matching expected format
         scenario = {
             'question': row['question'],
             'location': row['location'],
@@ -626,9 +624,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             weighted_scores.append(weighted_sum)
 
         # Rank alternatives: higher weighted sum = better (rank 1). Ties are
-        # broken deterministically by TIE_BREAK_PRIORITY criteria (each desc) so
-        # tied alternatives get a stable order instead of np.argsort's arbitrary
-        # one, and identically to how CalculateMetrics breaks ties.
+        # broken deterministically by TIE_BREAK_PRIORITY criteria (each desc)
         order = sorted(
             range(len(alternatives)),
             key=lambda i: (weighted_scores[i],
