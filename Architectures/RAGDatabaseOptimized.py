@@ -251,34 +251,34 @@ Return ONLY a JSON object with four numeric scores (0-10). There should be no ot
 
 def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     """Format scenario text for retrieval."""
-    decision_type = scenario.get('Decision Type', 'HVAC')
+    decision_type = scenario.get('decision_type', 'HVAC')
 
     if decision_type == 'HVAC':
         scenario_text = (
             f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
-            f"{scenario.get('Insulation', 'N/A')} insulation, "
+            f"{scenario.get('insulation', 'N/A')} insulation, "
             f"{scenario.get('square_footage', 'N/A')} sqft, "
             f"{scenario.get('household_size', 'N/A')} occupants, "
-            f"{scenario.get('Housing Type', 'N/A')}"
+            f"{scenario.get('housing_type', 'N/A')}"
         )
     elif decision_type == 'Appliance':
         scenario_text = (
-            f"{scenario.get('Question', 'N/A')}, "
+            f"{scenario.get('question', 'N/A')}, "
             f"{scenario.get('household_size', 'N/A')} occupants, "
-            f"{scenario.get('Housing Type', 'N/A')}, "
-            f"appliance age range: {scenario.get('Appliance Age', 'N/A')}, "
-            f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
+            f"{scenario.get('housing_type', 'N/A')}, "
+            f"appliance age range: {scenario.get('appliance_age', 'N/A')}, "
+            f"budget ${scenario.get('utility_budget', 'N/A')}/month"
         )
     elif decision_type == 'Shower':
         scenario_text = (
-            f"{scenario.get('Flow rate', 'N/A')} showerhead, "
+            f"{scenario.get('flow_rate', 'N/A')} showerhead, "
             f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
             f"{scenario.get('household_size', 'N/A')} occupants, "
-            f"{scenario.get('Housing Type', 'N/A')}, "
-            f"budget ${scenario.get('Utility Budget', 'N/A')}/month"
+            f"{scenario.get('housing_type', 'N/A')}, "
+            f"budget ${scenario.get('utility_budget', 'N/A')}/month"
         )
     else:
-        scenario_text = scenario.get('Question', f'Unknown decision type: {decision_type}')
+        scenario_text = scenario.get('question', f'Unknown decision type: {decision_type}')
         logger.info(f"   Warning: Unknown decision type '{decision_type}'")
 
     return scenario_text, decision_type
@@ -395,38 +395,38 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
 def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: str) -> str:
     prompt = rag_context
     prompt += f'Score this alternative: "{alternative}"\n\n'
-    prompt += f'For the decision: "{scenario.get("Question", "N/A")}"\n\n'
+    prompt += f'For the decision: "{scenario.get("question", "N/A")}"\n\n'
     prompt += "SCENARIO CONTEXT:\n"
-    prompt += f"- Location: {scenario.get('Location', 'N/A')}\n"
+    prompt += f"- Location: {scenario.get('location', 'N/A')}\n"
 
-    decision_type = scenario.get('Decision Type', 'HVAC')
+    decision_type = scenario.get('decision_type', 'HVAC')
 
     if decision_type == 'HVAC':
         prompt += (
             f"- Outdoor Temp: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
             f"- Square Footage: {scenario.get('square_footage', 'N/A')} sqft\n"
-            f"- Insulation: {scenario.get('Insulation', 'N/A')}\n"
+            f"- Insulation: {scenario.get('insulation', 'N/A')}\n"
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
-            f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
+            f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
             f"- House Age: {scenario.get('hvac_age', 'N/A')}\n"
-            f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
+            f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 
     elif decision_type == 'Appliance':
         prompt += (
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
-            f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
-            f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
-            f"- Appliance Age Range: {scenario.get('Appliance Age', 'N/A')} years\n"
+            f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
+            f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
+            f"- Appliance Age Range: {scenario.get('appliance_age', 'N/A')} years\n"
         )
 
     elif decision_type == 'Shower':
         prompt += (
             f"- Outdoor Temp: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
-            f"- Housing Type: {scenario.get('Housing Type', 'N/A')}\n"
-            f"- Flow Rate: {scenario.get('Flow rate', 'N/A')}\n"
-            f"- Utility Budget: ${scenario.get('Utility Budget', 'N/A')}/month\n"
+            f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
+            f"- Flow Rate: {scenario.get('flow_rate', 'N/A')}\n"
+            f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 
     prompt += "\nProvide scores (0-10) for all 4 criteria using the calibrations in the system prompt.\n"
@@ -589,7 +589,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
 
 def run_scenario(scenario: Dict) -> Dict:
     """Run scenario."""
-    logger.info(f"SCENARIO: {scenario.get('Question', 'N/A')}")
+    logger.info(f"SCENARIO: {scenario.get('question', 'N/A')}")
 
     alternatives_scores = []
     total_diagnostics = {
@@ -602,7 +602,7 @@ def run_scenario(scenario: Dict) -> Dict:
         **_init_failure_counters()
     }
     for i in range(1, 4):
-        alt_key = f'Alternative {i}'
+        alt_key = f'alternative_{i}'
         if alt_key not in scenario:
             continue
 
@@ -695,9 +695,9 @@ def run_test_set(test_path: str, output_path: str,
     scenarios = []
     df = read_table_clean(
         test_csv_path,
-        keep_str_cols=["Alternative 1", "Alternative 2", "Alternative 3"],
+        keep_str_cols=["alternative_1", "alternative_2", "alternative_3"],
     )
-    required_cols = ['Question', 'Decision Type', 'Alternative 1', 'Alternative 2', 'Alternative 3']
+    required_cols = ['question', 'decision_type', 'alternative_1', 'alternative_2', 'alternative_3']
     missing_cols = [col for col in required_cols if col not in df.columns]
 
     if missing_cols:
@@ -707,7 +707,7 @@ def run_test_set(test_path: str, output_path: str,
         scenarios.append(row.to_dict())
 
     logger.info(f"OK Loaded {len(scenarios)} test scenarios")
-    logger.info(f"  Decision types: {set([s.get('Decision Type', 'UNKNOWN') for s in scenarios])}\n")
+    logger.info(f"  Decision types: {set([s.get('decision_type', 'UNKNOWN') for s in scenarios])}\n")
 
     # Run through all scenarios
     all_results = []
@@ -724,19 +724,19 @@ def run_test_set(test_path: str, output_path: str,
         **_init_failure_counters()
     }
     for i, scenario in enumerate(scenarios):
-        logger.info(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('Question', 'N/A')[:60]}...")
+        logger.info(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('question', 'N/A')[:60]}...")
 
         try:
             result = run_scenario(scenario)
         except Exception as e:
             logger.info(f"  Scenario crashed and was marked failed: {e}")
             fallback_alternatives = [
-                scenario.get('Alternative 1', ''),
-                scenario.get('Alternative 2', ''),
-                scenario.get('Alternative 3', '')
+                scenario.get('alternative_1', ''),
+                scenario.get('alternative_2', ''),
+                scenario.get('alternative_3', '')
             ]
             result = {
-                'scenario': scenario.get('Question', 'N/A'),
+                'scenario': scenario.get('question', 'N/A'),
                 'alternatives_scores': [
                     {
                         'alternative': alt,
@@ -800,11 +800,11 @@ def run_test_set(test_path: str, output_path: str,
     rows = []
     for scenario_id, result in enumerate(all_results, 1):
         question = result['scenario']
-        decision_type = scenarios[scenario_id - 1].get('Decision Type', 'UNKNOWN')
-        location = scenarios[scenario_id - 1].get('Location', 'N/A')
+        decision_type = scenarios[scenario_id - 1].get('decision_type', 'UNKNOWN')
+        location = scenarios[scenario_id - 1].get('location', 'N/A')
         outdoor_temp = scenarios[scenario_id - 1].get('outdoor_temp', '')
-        appliance_age = scenarios[scenario_id - 1].get('Appliance Age', '')
-        flow_rate = scenarios[scenario_id - 1].get('Flow rate', '')
+        appliance_age = scenarios[scenario_id - 1].get('appliance_age', '')
+        flow_rate = scenarios[scenario_id - 1].get('flow_rate', '')
         scenario_failed = result.get('diagnostics', {}).get('scenario_failed', False)
 
         ranks = result['ranking_result']['ranks']

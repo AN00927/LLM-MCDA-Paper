@@ -51,15 +51,7 @@ def load_hvac_data(csv_dir: str) -> pd.DataFrame:
         sys.path.insert(0, str(PROJECT_ROOT))
     from sentinel_utils import read_table_clean
     df = read_table_clean(gt_path)
-    df['Question'] = df['question']
-    df['Location'] = df['location']
-    df['Square Footage'] = df['square_footage']
-    df['Insulation'] = df['insulation']
-    df['Household Size'] = df['household_size']
-    df['Housing Type'] = df['housing_type']
-    df['Outdoor Temp'] = df['outdoor_temp']
     df['alternative_num'] = df.groupby('scenario_id').cumcount() + 1
-
     return df
 
 
@@ -70,13 +62,6 @@ def load_appliance_data(csv_dir: str) -> pd.DataFrame:
         sys.path.insert(0, str(PROJECT_ROOT))
     from sentinel_utils import read_table_clean
     df = read_table_clean(gt_path)
-
-    #rename columns to match expected format
-    df['Question'] = df['description']
-    df['Location'] = df['location']
-    df['Household Size'] = df['occupants']
-    df['Housing Type'] = df['housing_type']
-
     return df
 
 
@@ -87,12 +72,6 @@ def load_shower_data(csv_dir: str) -> pd.DataFrame:
         sys.path.insert(0, str(PROJECT_ROOT))
     from sentinel_utils import read_table_clean
     df = read_table_clean(scenarios_path)
-
-    #rename columns to match expected format
-    df['Question'] = df['description']
-    df['Location'] = df['location']
-    df['Household Size'] = df['occupants']
-
     return df
 
 
@@ -108,20 +87,20 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
     """
     if decision_type == 'HVAC':
         return (
-            f"{row.get('Outdoor Temp', 'N/A')}°F outdoor, "
-            f"{row.get('Insulation', 'N/A')} insulation, "
-            f"{row.get('Square Footage', 'N/A')} sqft, "
-            f"{row.get('Household Size', 'N/A')} occupants, "
-            f"{row.get('Housing Type', 'N/A')}"
+            f"{row.get('outdoor_temp', 'N/A')}°F outdoor, "
+            f"{row.get('insulation', 'N/A')} insulation, "
+            f"{row.get('square_footage', 'N/A')} sqft, "
+            f"{row.get('household_size', 'N/A')} occupants, "
+            f"{row.get('housing_type', 'N/A')}"
         )
 
     elif decision_type == 'Appliance':
         return (
             f"{row.get('appliance', 'N/A')}, "
             f"{row.get('kwh_per_cycle', 'N/A')} kWh/cycle, "
-            f"{row.get('Household Size', 'N/A')} occupants, "
-            f"{row.get('Housing Type', 'N/A')}, "
-            f"{row.get('Location', 'N/A')}"
+            f"{row.get('household_size', 'N/A')} occupants, "
+            f"{row.get('housing_type', 'N/A')}, "
+            f"{row.get('location', 'N/A')}"
         )
 
     elif decision_type == 'Shower':
@@ -130,7 +109,7 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
             f"water heater {row.get('water_heater_temp', 'N/A')}°F, "
             f"{row.get('tank_size', 'N/A')} gal tank, "
             f"{row.get('outdoor_temp', 'N/A')}°F outdoor, "
-            f"{row.get('Household Size', 'N/A')} occupants"
+            f"{row.get('household_size', 'N/A')} occupants"
         )
 
     else:
@@ -203,8 +182,8 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
             metadata = {
                 'decision_type': 'HVAC',
                 'scenario_id': f'hvac_{scenario_id}',
-                'question': first_row['Question'],
-                'location': first_row['Location'],
+                'question': first_row['question'],
+                'location': first_row['location'],
                 **alts_data
             }
 
@@ -250,8 +229,8 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
             metadata = {
                 'decision_type': 'Appliance',
                 'scenario_id': f'appliance_{scenario_id}',
-                'question': first_row['Question'],
-                'location': first_row['Location'],
+                'question': first_row['question'],
+                'location': first_row['location'],
                 **alts_data
             }
 
@@ -294,8 +273,8 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
             metadata = {
                 'decision_type': 'Shower',
                 'scenario_id': f'shower_{scenario_id}',
-                'question': first_row['Question'],
-                'location': first_row['Location'],
+                'question': first_row['question'],
+                'location': first_row['location'],
                 **alts_data
             }
 
