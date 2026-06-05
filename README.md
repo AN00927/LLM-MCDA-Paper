@@ -181,13 +181,10 @@ LLM-MCDA-Paper/
 ├── Output Files Qwen3.5 9B/
 ├── Output Files DeepSeek V4 Flash/
 ├── Output Files Gemini 3.5 Flash/
-├── Output Files Claude/
-├── Output Files Gemini/
 ├── chroma_rag_db/
 ├── tests/
 ├── model_config.py
 ├── sentinel_utils.py
-├── XLSX_Schema_Map.md
 ├── README.md
 └── requirements.txt
 ```
@@ -394,6 +391,7 @@ Two scripts independently validate the subjective MAVT weights against the groun
 | --- | --- |
 | [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes the ChromaDB vector index from RAG scenario files |
 | [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1 accuracy, Kendall's τ, MAE per architecture/model/decision-type |
+| [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs ground truth scores back into the RAG scenario workbooks |
 | [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics across the 10 weight perturbation scenarios |
 | [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Shannon entropy weight validation |
 | [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | MEREC objective weight validation |

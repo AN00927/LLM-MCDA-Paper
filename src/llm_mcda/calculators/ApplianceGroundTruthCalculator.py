@@ -132,7 +132,6 @@ class ApplianceGroundTruthCalculator:
         period = self.determine_rate_period(run_time_hour, location)
         rate = rates["peak_rate"] if period == "peak" else rates["offpeak_rate"]
         cost = kwh_cycle * rate
-        print(f" Energy cost: {kwh_cycle} kWh x ${rate:.4f}/kWh ({utility} {period}) = ${cost:.4f}")
         return cost
 
     def calculate_environmental_impact(self, kwh_cycle: float, run_time_hour: int) -> float:
@@ -140,8 +139,6 @@ class ApplianceGroundTruthCalculator:
         period = self.determine_emissions_period(run_time_hour)
         emissions_factor = self.EMISSIONS_FACTOR_PEAK if period == "peak" else self.EMISSIONS_FACTOR_OFFPEAK
         emissions = kwh_cycle * emissions_factor
-        print(f"  : Emissions: {kwh_cycle} kWh x {emissions_factor:.4f} lbs/kWh "
-              f"(PJM {period} marginal) = {emissions:.3f} lbs CO2")
         return emissions
 
     def calculate_comfort_score(self, delay_hours: float, run_time_hour: int,
@@ -158,8 +155,6 @@ class ApplianceGroundTruthCalculator:
             base_comfort = 6.0 - ((delay_hours - 7.0) / 5.0) * 2.0  # 6→4 over 5hr
         else:
             base_comfort = 2.0   # Beyond acceptable (>12hr)
-
-        print(f"  : Base comfort (delay={delay_hours:.1f}hr): {base_comfort:.2f}/10")
 
         # Component 2: Noise disruption penalty
         # Depends on: time of day + housing type + appliance noise level
@@ -186,8 +181,6 @@ class ApplianceGroundTruthCalculator:
                 else:  # Single-family
                     noise_penalty *= 0.8   # Isolated structure, lower concern
 
-                print(f"  : Noise penalty (late night, {housing_type}): -{noise_penalty:.1f}")
-
         # Component 3: Household size impact — larger households feel delay more acutely
         # (dishes/laundry pile up faster; scale penalty by appliance-specific max delay)
         max_delay = self._max_acceptable_delay(appliance_type)
@@ -199,7 +192,6 @@ class ApplianceGroundTruthCalculator:
             size_penalty = 0.0
 
         size_penalty *= min(delay_hours / max_delay, 1.0)  # Cap scaling at 1.0
-        print(f"  : Household size penalty ({occupants} occupants, max_delay={max_delay:.0f}hr): -{size_penalty:.2f}")
 
         final_comfort = base_comfort - noise_penalty - size_penalty
         return max(0.0, min(10.0, final_comfort))
@@ -221,8 +213,6 @@ class ApplianceGroundTruthCalculator:
         else:
             base_practicality = 1.5   # Beyond typical adoption range
 
-        print(f"  : Base practicality (delay={delay_hours:.1f}hr): {base_practicality:.2f}/10")
-
         # Component 2: Timing complexity (remembering to run at specific hour)
         # Paetz et al.: "If low-price zones applied on brink of day, perceived as too early or too late"
         timing_penalty = 0.0
@@ -230,8 +220,6 @@ class ApplianceGroundTruthCalculator:
             timing_penalty = 2.0
         elif 22 <= run_time_hour < 24: # Late night (10pm–midnight)
             timing_penalty = 1.0
-
-        print(f"  : Timing complexity penalty: -{timing_penalty:.1f}")
 
         # Component 3: Household coordination difficulty
         # Appliance-specific max delay used for proportional scaling
@@ -244,7 +232,6 @@ class ApplianceGroundTruthCalculator:
             coordination_penalty = 0.0
 
         coordination_penalty *= min(delay_hours / max_delay, 1.0)
-        print(f"  : Coordination penalty ({occupants} occupants, max_delay={max_delay:.0f}hr): -{coordination_penalty:.2f}")
 
         final_practicality = base_practicality - timing_penalty - coordination_penalty
 
@@ -292,10 +279,6 @@ class ApplianceGroundTruthCalculator:
         delay_forward = float((run_time_hour - baseline_hour) % 24)
         delay_backward = float((baseline_hour - run_time_hour) % 24)
         delay_hours = min(delay_forward, delay_backward)
-
-        print(f"  Parsed: '{alt}' -> run at {run_time_hour:02d}:00, "
-              f"delay={delay_hours:.1f}hr from baseline {baseline_str} "
-              f"(fwd={delay_forward:.0f}hr, bwd={delay_backward:.0f}hr)")
 
         return run_time_hour, delay_hours
     def _parse_time_to_hour(self, time_str: str) -> int:
@@ -517,14 +500,11 @@ class ApplianceGroundTruthCalculator:
         final_scores = {}
 
         for alt, raw in raw_results.items():
-            print(f"\nApplying value functions for: {alt}")
-
             energy_vf = self.apply_value_function(
                 raw['energy_cost_dollars'],
                 self.VF_ENERGY_COST,
                 'energy_cost'
             )
-            print(f"  After VF linear: Energy = {energy_vf:.2f}/10")
 
             if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
                 # Convert per-cycle cost to monthly estimate (assume 30 cycles/month)
@@ -540,12 +520,6 @@ class ApplianceGroundTruthCalculator:
 
                 # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
-
-                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['utility_budget']:.2f} budget")
-                print(
-                    f"  Utilization: {monthly_cost / scenario['utility_budget'] * 100:.1f}% : penalty: {budget_penalty:.3f}")
-                print(f"  Energy score: {energy_vf:.2f} : {energy_vf_penalized:.2f} (after penalty)")
-
                 energy_vf = energy_vf_penalized
 
             env_vf = self.apply_value_function(
@@ -553,21 +527,18 @@ class ApplianceGroundTruthCalculator:
                 self.VF_ENVIRONMENTAL,
                 'environmental'
             )
-            print(f"  After VF Linear: Environmental = {env_vf:.2f}/10")
 
             comfort_vf = self.apply_value_function(
                 raw['comfort_raw'],
                 self.VF_COMFORT,
                 'comfort'
             )
-            print(f"  After VF logarithmic (a=1.5): Comfort = {comfort_vf:.2f}/10")
 
             practicality_vf = self.apply_value_function(
                 raw['practicality_raw'],
                 self.VF_PRACTICALITY,
                 'practicality'
             )
-            print(f"  After VF logarithmic (a=1.2): Practicality = {practicality_vf:.2f}/10")
 
             final_scores[alt] = {
                 'energy_cost_score': round(energy_vf, 2),
@@ -577,10 +548,6 @@ class ApplianceGroundTruthCalculator:
                 'raw_cost': round(raw['energy_cost_dollars'], 4),
                 'raw_emissions': round(raw['emissions_lbs'], 3)
             }
-
-            print(f"  : FINAL SCORES:")
-            print(f"     Energy: {energy_vf:.2f}, Environmental: {env_vf:.2f}, "
-                  f"Comfort: {comfort_vf:.2f}, Practicality: {practicality_vf:.2f}\n")
 
         return final_scores
 

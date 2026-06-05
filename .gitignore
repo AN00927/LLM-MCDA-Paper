@@ -76,7 +76,9 @@ paper/Charts_Significance_Notes.txt
 paper/Bibtex
 paper/test_write.txt
 
-Scenario Files\backup.xlsx
+Scenario Files/backup.xlsx
+Scenario Files/*BACKUP*.xlsx
+tmp_*.py
 XLSX_Schema_Map.md
 Miscellaneous Scripts/RoundScenarioCounts.py
 NORMALIZATION_REPORT.md

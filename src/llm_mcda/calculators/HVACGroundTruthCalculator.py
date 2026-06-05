@@ -93,8 +93,6 @@ class HVACGroundTruthCalculator:
         ventilation_load = 1.08 * ventilation_cfm * delta_t
 
         total_load = conductive_load + internal_gains + solar_gains + ventilation_load
-        print(f"  to Load calculated: {total_load:,.0f} BTU/hr (internal_gains={internal_gains:,.0f}, "
-              f"ventilation={ventilation_load:,.0f}, envelope_mult={envelope_multiplier})")
         return max(0, total_load)
 
     def calculate_heating_load(self, outdoor_temp: float, indoor_temp: float,
@@ -133,8 +131,6 @@ class HVACGroundTruthCalculator:
         infiltration_loss = 1.08 * infiltration_cfm * delta_t
 
         total_load = conductive_loss + infiltration_loss - internal_gains
-        print(f"  to Load calculated: {total_load:,.0f} BTU/hr (internal_gains={internal_gains:,.0f}, "
-              f"infiltration={infiltration_loss:,.0f}, envelope_mult={envelope_multiplier})")
         return max(0, total_load)
 
     def calculate_energy_consumption(self, load_btu_hr: float, seer: int,
@@ -168,11 +164,8 @@ class HVACGroundTruthCalculator:
         # Calculate effective SEER after degradation
         effective_seer = seer * (1 - total_degradation)
 
-        print(f"  to SEER degradation: {seer} to {effective_seer:.1f} "
-              f"(age={hvac_age}yr, {maintenance_level}, {total_degradation * 100:.1f}% loss)")
-
-          # Formula: EER = -0.02 × SEER² + 1.12 × SEER
-       # Source: AHRI Standard 210/240 (Air Conditioning, Heating, and Refrigeration Institute)
+        # Formula: EER = -0.02 × SEER² + 1.12 × SEER
+        # Source: AHRI Standard 210/240 (Air Conditioning, Heating, and Refrigeration Institute)
         eer_estimated = (-0.02 * effective_seer ** 2) + (1.12 * effective_seer)
 
         # Calculate power draw
@@ -193,8 +186,6 @@ class HVACGroundTruthCalculator:
         else:
             runtime_multiplier = 1.0
         total_kwh = kw * hours * runtime_multiplier
-
-        print(f"  to Energy consumption: {total_kwh:.2f} kWh over {hours} hours")
         return total_kwh
 
     def calculate_comfort_score(self, indoor_temp: float, outdoor_temp: float,
@@ -209,17 +200,9 @@ class HVACGroundTruthCalculator:
         # follows the PPD response in Fanger (1970, Thermal Comfort, Danish
         # Technical Press): roughly 5-10 percentage-point increase in PPD per F
         # outside the comfort band, which on a 0-10 scale maps to a comparable
-        # score decrement. A prior -2.0/F out-of-band slope was over-aggressive
-        # (producing 0/10 at indoor 83F when outdoor 88F, which is not consistent
-        # with the PPD literature on hot-weather indoor tolerance).
-        # An earlier revision used the ASHRAE 55 adaptive method (T_comf = 0.31 *
-        # T_rm + 17.8) to slide the optimal with outdoor temperature, but the
-        # adaptive method is formally applicable only to occupant-controlled,
-        # naturally conditioned (non-mechanically-cooled) spaces (de Dear & Brager
-        # 2002; Nicol & Humphreys 2002), which is not the regime our scenarios
-        # describe. The fixed-setpoint tent is therefore the standards-compliant
-        # choice for mechanical HVAC; the adaptive citations are retained as
-        # context for why a sliding-target alternative was considered and rejected.
+        # score decrement. Fixed setpoints (76F cooling, 70F heating) follow
+        # ASHRAE 55-2020 Sec 5.2; the adaptive method (de Dear & Brager 2002)
+        # applies only to naturally conditioned spaces and is not used here.
         # Sources: ashrae55-2020 Sec 5.2; fanger1970; dedear2002; nicol2002.
         optimal = 76 if outdoor_temp > 75 else 70
         deviation = abs(indoor_temp - optimal)
@@ -562,8 +545,6 @@ class HVACGroundTruthCalculator:
                 kwh = 0.0
                 energy_cost = 0.0
                 emissions = 0.0
-                print(f"  OFF alternative detected: Setting kwh=0, cost=0, emissions=0 "
-                      f"(system inactive). Using drift temp ({effective_temp}F) for comfort/practicality.")
 
             comfort = self.calculate_comfort_score(
                 effective_temp,
@@ -628,12 +609,6 @@ class HVACGroundTruthCalculator:
 
                 # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
-
-                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${utility_budget:.2f} budget")
-                print(
-                    f"  Utilization: {monthly_cost / utility_budget * 100:.1f}% to penalty: {budget_penalty:.3f}")
-                print(f"  Energy score: {energy_vf:.2f} to {energy_vf_penalized:.2f} (after penalty)")
-
                 energy_vf = energy_vf_penalized
 
             final_scores[alt] = {
@@ -645,10 +620,6 @@ class HVACGroundTruthCalculator:
                 'raw_cost': round(raw['energy_cost_dollars'], 2),
                 'raw_emissions': round(raw['emissions_lbs'], 2)
             }
-
-            print(f"  to FINAL SCORES:")
-            print(
-                f"     Energy: {energy_vf:.2f}, Environmental: {env_vf:.2f}, Comfort: {comfort_vf:.2f}, Practicality: {practicality_vf:.2f}\n")
 
         return final_scores
 

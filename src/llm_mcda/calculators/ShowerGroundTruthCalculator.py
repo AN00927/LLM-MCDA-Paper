@@ -359,17 +359,12 @@ class ShowerGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
     def calculate_scenario_scores(self, scenario: dict) -> dict:
         """Calculate scenario scores."""
-        location = scenario.get('location', 'Unknown')
         occupants = int(scenario.get('household_size', 2))
         tank_size = float(scenario.get('tank_size', 40))
         gpm = float(scenario.get('gpm', 2.5))
         outdoor_temp = float(scenario.get('outdoor_temp', 50))
         water_heater_temp = float(scenario.get('water_heater_temp', 120))
 
-        print(f"SHOWER SCENARIO: {scenario.get('question', 'N/A')}")
-        print(f"Location: {location}")
-        print(f"Occupants: {occupants} | Tank: {tank_size} gal | Flow: {gpm} GPM")
-        print(f"Outdoor: {outdoor_temp} degrees F | Heater: {water_heater_temp} degrees F")
         alternatives = []
         for i in range(1, 4):
             alt_key = f'alternative_{i}'
@@ -403,12 +398,6 @@ class ShowerGroundTruthCalculator:
                 duration, occupants, tank_size, gpm, water_heater_temp, outdoor_temp
             )
 
-            print(f"\n{alt['name']} ({duration} min):")
-            print(f"  Energy: {kwh:.4f} kWh -> ${cost:.3f}")
-            print(f"  Water: {water_gallons:.2f} gal ({gpm} GPM x {duration} min)")
-            print(f"  Comfort: {comfort:.2f}/10")
-            print(f"  Practicality: {practicality:.2f}/10")
-
             results.append({
                 'alternative': alt['name'],
                 'duration': duration,
@@ -425,35 +414,23 @@ class ShowerGroundTruthCalculator:
             alt = result['alternative']
             raw = result['raw_values']
 
-            print(f"\nApplying value functions for: {alt}")
-
-            vf_specs = scenario.get('vf_specs', {
-                'energy_cost': self.VF_ENERGY_COST,
-                'environmental': self.VF_ENVIRONMENTAL,
-                'comfort': self.VF_COMFORT,
-                'practicality': self.VF_PRACTICALITY
-            })
-
             energy_vf = self.apply_value_function(
                 raw['energy_cost'],
                 self.VF_ENERGY_COST,
                 'energy_cost'
             )
-            print(f"  After VF ({vf_specs['energy_cost']}): Energy = {energy_vf:.2f}/10")
 
             env_vf = self.apply_value_function(
                 raw['environmental'],
                 self.VF_ENVIRONMENTAL,
                 'environmental'
             )
-            print(f"  After VF ({vf_specs['environmental']}): Environmental = {env_vf:.2f}/10")
 
             comfort_vf = self.apply_value_function(
                 raw['comfort'],
                 self.VF_COMFORT,
                 'comfort'
             )
-            print(f"  After VF ({vf_specs['comfort']}): Comfort = {comfort_vf:.2f}/10")
 
             practicality_vf = self.apply_value_function(
                 raw['practicality'],
@@ -480,13 +457,6 @@ class ShowerGroundTruthCalculator:
 
                 # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
-
-                print(f"  Budget check: ${monthly_cost:.2f}/month vs ${scenario['utility_budget']:.2f} budget")
-                print(f"  ({occupants} people × 0.9 showers/day × 30 days = {occupants * 0.9 * 30:.0f} showers/month)")
-                print(
-                    f"  Utilization: {monthly_cost / scenario['utility_budget'] * 100:.1f}% -> penalty: {budget_penalty:.3f}")
-                print(f"  Energy score: {energy_vf:.2f} -> {energy_vf_penalized:.2f} (after penalty)")
-
                 energy_vf = energy_vf_penalized
 
             # Store final scores
@@ -496,11 +466,6 @@ class ShowerGroundTruthCalculator:
                 'comfort': round(comfort_vf, 2),
                 'practicality': round(practicality_vf, 2)
             }
-
-            print(f" fINAL SCORES:")
-            print(f"     Energy: {energy_vf:.2f}, Environmental: {env_vf:.2f}, "
-                  f"Comfort: {comfort_vf:.2f}, Practicality: {practicality_vf:.2f}\n")
-
 
         return {
             'scenario': scenario.get('question', 'N/A'),
