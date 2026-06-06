@@ -1,5 +1,5 @@
-MODEL_KEY = "gptoss_smallest"
-N_RUNS = 10
+MODEL_KEY = "gptoss_weakest"
+N_RUNS = 1
 
 
 CRITERION_WEIGHTS = {
@@ -10,34 +10,30 @@ CRITERION_WEIGHTS = {
 }
 
 
-# Secondary criterion priority used to break ties when weighted MAVT scores are
-# equal (each applied descending, in order). Shared by the ground-truth
-# calculators and CalculateMetrics so that ground-truth and architecture
-# rankings break ties identically and deterministically.
 TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
 
 
 MODEL_SPECS = {
-    "gptoss_smallest": {
-        "label": "Smallest - GPT-OSS-20B",
+    "gptoss_weakest": {
+        "label": "input Price: $0.029/M, Output Price: $0.14/M",
         "openrouter_id": "openai/gpt-oss-20b:exacto",
         "output_folder": "Output Files GPT-OSS 20B",
         "reasoning_effort": "low",
     },
-    "qwen_small": {
-        "label": "Small - Qwen 3.5 9B",
+    "qwen_weak": {
+        "label": "0.04/M, 0.15M",
         "openrouter_id": "qwen/qwen3.5-9b:exacto",
         "output_folder": "Output Files Qwen3.5 9B",
-        "reasoning_effort": "low",
+        "reasoning_effort": "non-reasoning",
     },
     "deepseek_medium": {
-        "label": "Medium - DeepSeek V4 Flash",
+        "label": "Input Price: $0.0983/M, Output Price: $0.1966/M",
         "openrouter_id": "deepseek/deepseek-v4-flash:exacto",
         "output_folder": "Output Files DeepSeek V4 Flash",
-        "reasoning_effort": "minimal",
+        "reasoning_effort": "non-reasoning",
     },
-    "gemini_large": {
-        "label": "Large - Gemini 3.5 Flash",
+    "gemini_strong": {
+        "label": "Input Price: $1.50/M, Output Price: $9/M",
         "openrouter_id": "google/gemini-3.5-flash:exacto",
         "output_folder": "Output Files Gemini 3.5 Flash",
         "reasoning_effort": "minimal",
@@ -45,6 +41,9 @@ MODEL_SPECS = {
 }
 
 
+def get_model_id(model_key: str = MODEL_KEY) -> str:
+    resolved_key = _resolve_model_key(model_key)
+    return MODEL_SPECS[resolved_key]["openrouter_id"]
 
 def _resolve_model_key(model_key: str) -> str:
     if model_key not in MODEL_SPECS:
@@ -57,10 +56,6 @@ def get_output_folder(model_key: str = MODEL_KEY) -> str:
     resolved_key = _resolve_model_key(model_key)
     return MODEL_SPECS[resolved_key]["output_folder"]
 
-
-def get_model_id(model_key: str = MODEL_KEY) -> str:
-    resolved_key = _resolve_model_key(model_key)
-    return MODEL_SPECS[resolved_key]["openrouter_id"]
 
 
 def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:

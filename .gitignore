@@ -31,14 +31,7 @@ handoff.md
 # any large scale plannig prompts for while I am waiting for claude to reset
 .github/prompts
 
-# Personal drafting files
 
-/validation/
-/validation/**
-/validation_runs/
-
-# Output/data artifacts
-Output Files*/
 chroma_rag_db/
 *.sqlite3
 
