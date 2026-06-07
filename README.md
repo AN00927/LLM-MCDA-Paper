@@ -15,7 +15,7 @@ Which LLM integration architecture most accurately replicates physics-based MAVT
 
 ## Project Overview
 
-This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **185 test scenarios** (69 HVAC, 62 Appliance, 54 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **240-scenario RAG corpus** (105 HVAC, 90 Appliance, 45 Shower) seeds the retrieval index used by the RAG-Enhanced architecture and never appears in evaluation.
+This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) ground truth calculator across **195 test scenarios** (70 HVAC, 65 Appliance, 60 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **90-scenario RAG corpus** (35 HVAC, 35 Appliance, 20 Shower) seeds the retrieval index used by the RAG-Enhanced architecture and never appears in evaluation.
 
 The three decision types were selected for their high behavioral plasticity and contribution to residential energy/water use: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
 
@@ -44,10 +44,10 @@ Model selection and output routing are controlled in [model_config.py](model_con
 
 | Key | Label | OpenRouter string | Reasoning effort | Output folder |
 | --- | --- | --- | --- | --- |
-| `gptoss_smallest` | Smallest — GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
-| `qwen_small` | Small — Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | low | `Output Files Qwen3.5 9B` |
-| `deepseek_medium` | Medium — DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | minimal | `Output Files DeepSeek V4 Flash` |
-| `gemini_large` | Large — Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
+| `gptoss_weakest` | Smallest — GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
+| `qwen_weak` | Small — Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | non-reasoning | `Output Files Qwen3.5 9B` |
+| `deepseek_medium` | Medium — DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | non-reasoning | `Output Files DeepSeek V4 Flash` |
+| `gemini_strong` | Large — Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
 
 ### DeepSeek V4 Flash (Non-reasoning) — Representative Benchmarks
 
@@ -199,17 +199,17 @@ LLM-MCDA-Paper/
 - **Input:** Natural language scenario description + structured context fields
 - **Output:** Four 0–10 scores per alternative → MAVT ranking
 - **API calls per scenario:** 3 (one per alternative)
-- **API calls per run (185 scenarios):** 555
-- **API calls per 10-run benchmark:** 5,550
+- **API calls per run (195 scenarios):** 585
+- **API calls per 10-run benchmark:** 5,850
 
 ### 2. RAG-Enhanced
 
-- **Approach:** Semantic retrieval from a ChromaDB vector index (240 pre-scored RAG scenarios) provides calibration examples before the LLM scores each alternative
+- **Approach:** Semantic retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios) provides calibration examples before the LLM scores each alternative
 - **Input:** Scenario description → sentence-transformer embedding → top-k retrieval → LLM scores with retrieved context
 - **Output:** Four 0–10 scores per alternative → MAVT ranking
 - **API calls per scenario:** 3 (one per alternative)
-- **API calls per run (185 scenarios):** 555
-- **API calls per 10-run benchmark:** 5,550
+- **API calls per run (195 scenarios):** 585
+- **API calls per 10-run benchmark:** 5,850
 - **Vector DB:** ChromaDB with sentence-transformers embeddings
 
 ### 3. Hybrid (AI Extraction + Deterministic Calculator)
@@ -218,17 +218,17 @@ LLM-MCDA-Paper/
 - **Input:** Scenario description → LLM parameter extraction → ground-truth-style calculator
 - **Output:** Four 0–10 scores from physics formulas → MAVT ranking
 - **API calls per scenario:** 1 (all three alternatives processed in one call)
-- **API calls per run (185 scenarios):** 185
-- **API calls per 10-run benchmark:** 1,850
+- **API calls per run (195 scenarios):** 195
+- **API calls per 10-run benchmark:** 1,950
 
 ### Estimated API Call Totals (10-run benchmark, 4 models)
 
 | Architecture | Calls/model | × 4 models |
 | --- | --- | --- |
-| Pure | 5,550 | 22,200 |
-| RAG | 5,550 | 22,200 |
-| Hybrid | 1,850 | 7,400 |
-| **Total** | **12,950** | **51,800** |
+| Pure | 5,850 | 23,400 |
+| RAG | 5,850 | 23,400 |
+| Hybrid | 1,950 | 7,800 |
+| **Total** | **13,650** | **54,600** |
 
 ---
 
@@ -236,12 +236,12 @@ LLM-MCDA-Paper/
 
 ### Test vs. RAG Pools
 
-The 185 test scenarios and 240 RAG scenarios are **disjoint**. Test scenarios are evaluated by all three architectures and the ground-truth calculator. RAG scenarios seed only the ChromaDB retrieval index.
+The 195 test scenarios and 90 RAG scenarios are **disjoint**. Test scenarios are evaluated by all three architectures and the ground-truth calculator. RAG scenarios seed only the ChromaDB retrieval index.
 
 | Pool | HVAC | Appliance | Shower | Total |
 | --- | --- | --- | --- | --- |
-| Test set | 69 | 62 | 54 | **185** |
-| RAG corpus | 105 | 90 | 45 | **240** |
+| Test set | 70 | 65 | 60 | **195** |
+| RAG corpus | 35 | 35 | 20 | **90** |
 
 ### Parameter Generalization
 
@@ -252,8 +252,9 @@ The ground-truth calculators receive exact engineering values; architectures rec
 | **HVAC — Insulation** | Poor | R-11 | CEC JA4.3; ENERGY STAR |
 | | Medium | R-13 | |
 | | Good | R-19 | |
-| **Shower — Flow Rate** | `low_flow` | 1.5 GPM | EPA WaterSense |
-| | `standard` | 2.5 GPM | Energy Policy Act 1992 |
+| **Shower — Flow Rate** | `low_flow` (≤ 2.0 GPM) | actual GPM from scenario | EPA WaterSense |
+| | `standard` (2.5–3.0 GPM) | actual GPM from scenario | Energy Policy Act 1992 |
+| | `high_flow` (> 3.0 GPM) | actual GPM from scenario | |
 | **Appliance — Age** | 1–15 yr | Dishwasher: 0.72–1.70 kWh/cycle | ENERGY STAR certified datasets |
 | | | Washer: 0.15–0.45 kWh/cycle | |
 | | | Dryer: 1.15–3.50 kWh/cycle | |

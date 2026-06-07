@@ -75,19 +75,23 @@ def load_shower_data(csv_dir: str) -> pd.DataFrame:
     return df
 
 
+def _gpm_to_flow_rate_label(gpm) -> str:
+    try:
+        val = float(gpm)
+    except (TypeError, ValueError):
+        return str(gpm)
+    if val <= 2.0:
+        return "low_flow"
+    if val <= 3.0:
+        return "standard"
+    return "high_flow"
+
+
 def format_scenario_text(row: pd.Series, decision_type: str) -> str:
-    """
-    Convert scenario to natural language text for embedding.
-    Decision-type-specific formatting.
-    Args:
-        row: Pandas Series with scenario fields
-        decision_type: 'HVAC', 'Appliance', or 'Shower'\
-    Returns:
-        Formatted text string
-    """
+    """Convert scenario to natural language text for embedding."""
     if decision_type == 'HVAC':
         return (
-            f"{row.get('outdoor_temp', 'N/A')}°F outdoor, "
+            f"{row.get('outdoor_temp', 'N/A')} deg F outdoor, "
             f"{row.get('insulation', 'N/A')} insulation, "
             f"{row.get('square_footage', 'N/A')} sqft, "
             f"{row.get('household_size', 'N/A')} occupants, "
@@ -96,20 +100,20 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
 
     elif decision_type == 'Appliance':
         return (
-            f"{row.get('appliance', 'N/A')}, "
-            f"{row.get('kwh_per_cycle', 'N/A')} kWh/cycle, "
+            f"{row.get('question', 'N/A')}, "
             f"{row.get('household_size', 'N/A')} occupants, "
             f"{row.get('housing_type', 'N/A')}, "
-            f"{row.get('location', 'N/A')}"
+            f"appliance age: {row.get('appliance_age', 'N/A')} yr, "
+            f"budget ${row.get('utility_budget', 'N/A')}/month"
         )
 
     elif decision_type == 'Shower':
         return (
-            f"{row.get('gpm', 'N/A')} GPM, "
-            f"water heater {row.get('water_heater_temp', 'N/A')}°F, "
-            f"{row.get('tank_size', 'N/A')} gal tank, "
-            f"{row.get('outdoor_temp', 'N/A')}°F outdoor, "
-            f"{row.get('household_size', 'N/A')} occupants"
+            f"{_gpm_to_flow_rate_label(row.get('gpm', 0))} showerhead, "
+            f"{row.get('outdoor_temp', 'N/A')} deg F outdoor, "
+            f"{row.get('household_size', 'N/A')} occupants, "
+            f"{row.get('housing_type', 'N/A')}, "
+            f"budget ${row.get('utility_budget', 'N/A')}/month"
         )
 
     else:

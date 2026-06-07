@@ -266,12 +266,12 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
             f"{scenario.get('question', 'N/A')}, "
             f"{scenario.get('household_size', 'N/A')} occupants, "
             f"{scenario.get('housing_type', 'N/A')}, "
-            f"appliance age range: {scenario.get('appliance_age', 'N/A')}, "
+            f"appliance age: {scenario.get('appliance_age', 'N/A')} yr, "
             f"budget ${scenario.get('utility_budget', 'N/A')}/month"
         )
     elif decision_type == 'Shower':
         scenario_text = (
-            f"{scenario.get('flow_rate', 'N/A')} showerhead, "
+            f"{_flow_rate_to_label(scenario.get('flow_rate', 'N/A'))} showerhead, "
             f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
             f"{scenario.get('household_size', 'N/A')} occupants, "
             f"{scenario.get('housing_type', 'N/A')}, "
@@ -392,6 +392,36 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
 
     return context
 
+def _flow_rate_to_label(gpm) -> str:
+    try:
+        val = float(gpm)
+    except (TypeError, ValueError):
+        return str(gpm)
+    if val <= 2.0:
+        return "low_flow"
+    if val <= 3.0:
+        return "standard"
+    return "high_flow"
+
+
+def _hvac_age_to_label(age) -> str:
+    try:
+        val = float(age)
+    except (TypeError, ValueError):
+        return str(age)
+    if val <= 5:
+        return "1–5 years"
+    if val <= 10:
+        return "6–10 years"
+    if val <= 15:
+        return "11–15 years"
+    if val <= 20:
+        return "16–20 years"
+    if val <= 30:
+        return "21–30 years"
+    return "30+ years"
+
+
 def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: str) -> str:
     prompt = rag_context
     prompt += f'Score this alternative: "{alternative}"\n\n'
@@ -408,7 +438,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
             f"- Insulation: {scenario.get('insulation', 'N/A')}\n"
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
-            f"- House Age: {scenario.get('hvac_age', 'N/A')}\n"
+            f"- House Age: {_hvac_age_to_label(scenario.get('hvac_age', 'N/A'))}\n"
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 
@@ -425,7 +455,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
             f"- Outdoor Temp: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
-            f"- Flow Rate: {scenario.get('flow_rate', 'N/A')}\n"
+            f"- Flow Rate: {_flow_rate_to_label(scenario.get('flow_rate', 'N/A'))}\n"
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 
@@ -437,7 +467,6 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
     """Parse llm scores."""
     try:
-        # Claude sometimes wraps JSON in code fences, so let's peel that off
         text = response_text.strip()
         if text.startswith("```"):
             text = text.split("```", 2)[1]
