@@ -108,11 +108,8 @@ def format_scenario_text(row: pd.Series, decision_type: str) -> str:
         )
 
     elif decision_type == 'Shower':
-        flow_rate = row.get('flow_rate')
-        if flow_rate is None or str(flow_rate).strip() in ('', 'nan', 'N/A'):
-            flow_rate = _gpm_to_flow_rate_label(row.get('gpm', 0))
         return (
-            f"{flow_rate} showerhead, "
+            f"{_gpm_to_flow_rate_label(row.get('gpm', 0))} showerhead, "
             f"{row.get('outdoor_temp', 'N/A')} deg F outdoor, "
             f"{row.get('household_size', 'N/A')} occupants, "
             f"{row.get('housing_type', 'N/A')}, "
