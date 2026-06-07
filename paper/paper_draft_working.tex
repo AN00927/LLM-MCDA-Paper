@@ -96,15 +96,11 @@ Modern LLMs also carry general knowledge about the energy use and carbon intensi
 
 \subsection{Decision Types and Scenario Corpus}
 
-Three specific decision types were chosen due to their high plasticity and RAER, as well as being timely, everyday decisions that may change constantly. These were HVAC-related decisions, which are about temperature control, Appliance-related decisions, which are about the time of day (TOD) to use appliances, and Shower-related decisions, which are about how long to shower for. Each of the 3 architectures were tested on a 265-scenario corpus that was divided into 130 HVAC, 80 Appliance, and 55 Shower decisions. They were compared to a calculated, decision-type specific dataset from a calculator. This calculator also ran on an additional 80 RAG scenarios, split into 35 HVAC, 30 Appliance, and 15 Shower for a retrieval augmented generation (RAG) database.
+Three decision types were selected for their high behavioral plasticity and RAER: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
 
-[TO UPDATE NUMBERS]
-The scenario corpus has two disjoint pools. The first is the test set: 181 scenarios drawn from the larger domain corpora (128 HVAC, 80 Appliance, 55 Shower) and stratified into 91 HVAC, 50 Appliance, and 40 Shower test cases. The second is the RAG corpus: 231 additional scenarios (111 HVAC, 90 Appliance, 30 Shower) that populate the retrieval index used by the RAG-Enhanced architecture. Each scenario presents three alternatives. Test-set scenarios are scored independently by each of the three architectures and by the ground-truth calculator; RAG-set scenarios are only used to seed the retrieval index and never appear in evaluation \cite{lewis2020}.
+The scenario corpus has two disjoint pools. The \textit{test set} contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the ground-truth calculator. The \textit{RAG corpus} contains an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the RAG-Enhanced architecture; RAG scenarios are never used for evaluation \cite{lewis2020}.
 
-
-Three specific decision types were chosen due to their high plasticity and RAER, as well as being timely, everyday decisions that may change constantly. These were HVAC-related decisions, which are about temperature control, Appliance-related decisions, which are about the time of day (TOD) to use appliances, and Shower-related decisions, which are about how long to shower for. Each of the 3 architectures were tested on a 263-scenario corpus that was divided into 128 HVAC, 80 Appliance, and 55 Shower decisions. They were compared to a calculated, decision-type specific dataset from a calculator. This calculator also ran on an additional 77 RAG scenarios, split into 37 HVAC, 30 Appliance, and 10 Shower for a retrieval augmented generation (RAG) database.
-
-The HVAC decision type was the most complex. The tables below detail the parameters given to architectures vs. calculators. 
+The tables below detail the parameters given to architectures vs.\ calculators per decision type. 
 
 \begin{table}[htbp]
 \centering
@@ -136,7 +132,8 @@ Indoor Temp (from alternative) & --- & \checkmark \\
 \begin{table}[h]
 \centering
 \small
-\caption{Appliance parameters: Architectures vs.\ calculator.}
+\caption{Appliance parameters: Architectures vs.\ calculator. \textit{[PLACEHOLDER: Verify that each \checkmark{} in the LLMs column accurately reflects parameters explicitly present in prompts, not merely inferable from question text (e.g.\ Cycle Duration, Efficiency Rating, TOU Period, Utility Rate).]}
+}
 \label{table:appliance_parameters}
 \begin{tabular}{@{} l c c @{}}
 \toprule
@@ -170,8 +167,8 @@ Location                 & \checkmark & ---        \\
 Outdoor Temp             & \checkmark & \checkmark \\
 Inlet Water Temp         & ---        & \checkmark \\
 Heater Setpoint          & \checkmark & \checkmark \\
-Flow Rate (standard/low\_flow) & \checkmark & ---   \\ 
-GPM                      & ---        & \checkmark \\ 
+Flow Rate (low\_flow/standard/high\_flow) & \checkmark & ---   \\
+GPM                      & ---        & \checkmark \\
 Duration (min)           & \checkmark & \checkmark \\
 Household Size           & \checkmark & \checkmark \\
 Water Heater Type        & \checkmark & \checkmark \\
@@ -186,7 +183,7 @@ The calculator receives specific values that must be professionally graded for h
 
  
 
-To generalize parameters, we identified acceptable ranges for each qualitative level from published standards and mapped each scenario to a representative value within that range. Insulation tiers map to standard U.S.\ residential wall R-values: Poor to R-11 (minimal 2$\times$4 cavity fill, below current code), Medium to R-13 (standard 2$\times$4 batt), and Good to R-19 (2$\times$6 framing), consistent with code tables for wood-frame assemblies and ENERGY STAR guidance \cite{cec_ja43_2013,energystar_insulation2023}. For the Flow Rate parameter, if the scenario specified \texttt{standard}, the corresponding GPM assigned to the calculator was 2.5\,GPM (the federal maximum under the Energy Policy Act of 1992) \cite{epawatersense}; if \texttt{low\_flow}, the value was 1.5\,GPM (EPA WaterSense certified) \cite{epawatersense}. Table~\ref{table:param_generalization} summarizes the generalized parameters across all three 
+To generalize parameters, we identified acceptable ranges for each qualitative level from published standards and mapped each scenario to a representative value within that range. Insulation tiers map to standard U.S.\ residential wall R-values: Poor to R-11 (minimal 2$\times$4 cavity fill, below current code), Medium to R-13 (standard 2$\times$4 batt), and Good to R-19 (2$\times$6 framing), consistent with code tables for wood-frame assemblies and ENERGY STAR guidance \cite{cec_ja43_2013,energystar_insulation2023}. For the Flow Rate parameter, the scenario's numeric GPM is bucketed into three qualitative labels: \texttt{low\_flow} ($\le$2.0\,GPM, including EPA WaterSense certified 1.5\,GPM showerheads \cite{epawatersense}), \texttt{standard} (2.5--3.0\,GPM, at or near the Energy Policy Act of 1992 federal maximum of 2.5\,GPM \cite{epawatersense}), and \texttt{high\_flow} ($>$3.0\,GPM). The label is shown to the LLM; the calculator always receives the exact numeric GPM from the scenario. Table~\ref{table:param_generalization} summarizes the generalized parameters across all three 
 decision types. 
 
 The two sets overlap on environmental conditions, however so that both pipelines are reasoning about the same physical scenario. The LLM never sees the engineering parameters directly. For the Hybrid architecture, which needs to use those parameters within its calculations, it infers structured estimates of them from the description before the calculator is invoked. Further detail on choosing these specific parameters and their effects is available in section 2.2.
@@ -210,8 +207,9 @@ Insulation & Poor    & R-11 & \cite{cec_ja43_2013,energystar_insulation2023} \\
            & Medium  & R-13 & \\
            & Good    & R-19 & \\[6pt]
 \multicolumn{4}{@{}l}{\textit{Shower}} \\[2pt]
-Flow Rate  & \texttt{low\_flow} & 1.5\,GPM & \cite{epawatersense} \\
-           & \texttt{standard}  & 2.5\,GPM & \\[6pt]
+Flow Rate  & \texttt{low\_flow} ($\le$2.0\,GPM) & scenario GPM & \cite{epawatersense} \\
+           & \texttt{standard}  (2.5--3.0\,GPM) & scenario GPM & \cite{epawatersense} \\
+           & \texttt{high\_flow} ($>$3.0\,GPM)  & scenario GPM & \\[6pt]
 \multicolumn{4}{@{}l}{\textit{Appliance}} \\[2pt]
 Appliance Age & 1--15\,yr & Dishwasher: 0.72--1.70\,kWh/cyc & \cite{energystar_dishwasher_criteria2023,energystar_clothes_washers_dataset2023,energystar_dryers_scoping2023} \\
               &           & Washer:\phantom{xx} 0.15--0.45\,kWh/cyc & \\
@@ -601,21 +599,23 @@ per-shower cost using an average showers-per-person-per-day rate:
 \subsection{Architecture Implementations}
 \label{sec:architectures}
 
-All three architectures call the same underlying model via OpenRouter: Mistral Small 3.2 24B Instruct at temperature 0.3. Temperature is fixed so the comparison isolates architecture from sampling variance. Each architecture is described below; pipeline schematics appear in Figure~\ref{fig:pipeline}.
+All three architectures call the same underlying model via OpenRouter at temperature 0.3, with model held constant within each benchmark run so that architecture differences rather than model differences drive the comparison. The study evaluates four models: GPT-OSS-20B (reasoning, low effort), Qwen~3.5~9B (non-reasoning), DeepSeek~V4~Flash (non-reasoning), and Gemini~3.5~Flash (reasoning, minimal effort). \textit{[BLOCKED: update model descriptions and results after final multi-model runs.]} Each architecture is described below; pipeline schematics appear in Figure~\ref{fig:pipeline}.
 
 \subsubsection{Pure Prompting}
 The Pure Prompting architecture issues one API call per alternative (three calls per scenario) using a calibrated system prompt that combines role-prompting \cite{shanahan2023}, structured-output constraints \cite{wei2022cot}, and explicit bias-mitigation language drawn from Galaz et al.\ on AI sustainability priors \cite{galaz2021}. The model is asked to return JSON with all four criterion scores on a 0--10 scale; no external context is supplied beyond the scenario description.
 
 \subsubsection{RAG-Enhanced}
-The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the 231 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
+The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the 90 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
 
 \subsubsection{Hybrid}
-The Hybrid architecture issues a single API call per scenario to extract structured parameters (decision type, calculator inputs such as SEER tier, kWh/cycle, GPM, baseline time, occupancy context, and the indoor temperatures or run times or durations that define the alternatives). The extracted JSON is validated, passed to the corresponding ground-truth calculator, and the four MAVT scores are returned. Hybrid uses 1 API call per scenario versus 3 for Pure and RAG and exploits the principle of decomposed prompting \cite{khot2023}, separating the natural-language understanding step (the LLM's strength) from the quantitative scoring step (the calculator's strength).
+The Hybrid architecture issues a single API call per scenario for structured parameter extraction. Known scenario fields (outdoor temperature, square footage, insulation tier, household size, housing type, utility budget, location, and for shower the numeric GPM) are passed directly to the calculator without LLM involvement. The LLM is asked only to infer the genuinely withheld engineering parameters that are absent from the homeowner-visible scenario description: for HVAC, the SEER rating and occupancy context; for Appliance, appliance type and kWh/cycle; for Shower, tank size and water heater setpoint. The LLM also parses the numeric values embedded in each alternative string (e.g., setpoint temperature, run time, shower duration). The extracted JSON is validated and merged with the known fields, then passed to the corresponding ground-truth calculator. Hybrid uses 1 API call per scenario versus 3 for Pure and RAG, exploiting decomposed prompting \cite{khot2023} to separate natural-language understanding from quantitative computation.
+
+\textit{[PLACEHOLDER: Verify that the revised parameter-passing design is correctly described above and matches the final implementation. Confirm withheld-parameter list per decision type after finalizing Hybrid.py redesign.]}
 
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
 
-Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--10 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ and Spearman's $\rho$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). Efficiency is evaluated using total tokens (input plus output) and total latency, both summed across the 181-scenario test set. Failure rate is reported as the fraction of scenarios with malformed output, missing scores, out-of-bounds scores, or invalid score types. Scenario matching between architectures and ground truth uses (question, location) content keys to handle the case where scenario IDs drift across runs.
+Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--10 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ and Spearman's $\rho$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). Efficiency is evaluated using total tokens (input plus output) and total latency, both summed across the 195-scenario test set. Failure rate is reported as the fraction of scenarios with malformed output, missing scores, out-of-bounds scores, or invalid score types. Scenario matching between architectures and ground truth uses (question, location) content keys to handle the case where scenario IDs drift across runs.
 
 \subsection{Architectures}
 
@@ -797,11 +797,11 @@ Practicality & 15 & Logarithmic & 1.2 & Higher raw = better \\
 \toprule
 Decision Type & Test Set ($n$) & RAG Set ($n$) & Total ($n$) \\
 \midrule
-HVAC & 60 & 25 & 85 \\
-Appliance & 25 & 20 & 45 \\
-Shower & 15 & 5 & 20 \\
+HVAC & 70 & 35 & 105 \\
+Appliance & 65 & 35 & 100 \\
+Shower & 60 & 20 & 80 \\
 \midrule
-Total & 100 & 50 & 150 \\
+Total & 195 & 90 & 285 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
