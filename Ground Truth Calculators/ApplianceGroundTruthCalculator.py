@@ -13,7 +13,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, parse_utility_budget
+from sentinel_utils import read_table_clean, parse_utility_budget, SENTINEL_VALUE, has_sentinel_scores
 
 class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
@@ -253,10 +253,10 @@ class ApplianceGroundTruthCalculator:
         # Extract run time from alternative (e.g., "7pm", "10pm", "2am")
         time_match = re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', alt, re.IGNORECASE)
         if not time_match:
-            print(f"  : Could not parse run time from: {alt}")
-            # Return baseline with no delay
-            baseline_hour = self._parse_time_to_hour(scenario.get('baseline_time', '7pm'))
-            return baseline_hour, 0.0
+            # Don't silently fall back to baseline+0 delay — that fabricates a
+            # zero-delay (perfect-comfort) result. Raise so the caller emits the
+            # sentinel for this alternative.
+            raise ValueError(f"Could not parse run time from alternative: {alt!r}")
 
         hour = int(time_match.group(1))
         am_pm = time_match.group(2).lower()
@@ -438,45 +438,33 @@ class ApplianceGroundTruthCalculator:
         for alt in alternatives:
             print(f"\nProcessing alternative: {alt}")
 
-            # Parse alternative to extract run time and delay
+            # Parse + compute every raw criterion for this alternative. Any
+            # failure (unparseable time, missing key, math error) must surface as
+            # the sentinel (1928), NOT a neutral default: energy_cost=0.0 is a
+            # *perfect* score and comfort/practicality=5.0 are real middling
+            # scores, so a crashed calc would masquerade as a valid (good)
+            # result. raw_results[alt]=None flags the alt for sentinel emission
+            # below, where has_sentinel_scores() catches it downstream.
             try:
                 run_time_hour, delay_hours = self.parse_alternative(alt, scenario)
+                energy_cost = self.calculate_energy_cost(
+                    scenario['kwh_per_cycle'], run_time_hour, scenario['location']
+                )
+                emissions = self.calculate_environmental_impact(
+                    scenario['kwh_per_cycle'], run_time_hour
+                )
+                comfort = self.calculate_comfort_score(
+                    delay_hours, run_time_hour, scenario['housing_type'],
+                    scenario['household_size'], scenario['appliance']
+                )
+                practicality = self.calculate_practicality_score(
+                    delay_hours, run_time_hour, scenario['housing_type'],
+                    scenario['household_size'], scenario['appliance']
+                )
             except Exception as e:
-                print(f"  ✗ Parsing ERROR: {e}")
+                print(f"  scoring failed for {alt}: {e}; emitting sentinel {SENTINEL_VALUE}")
+                raw_results[alt] = None
                 continue
-
-            # Calculate raw criterion values. A sub-calc failure must NOT be
-            # swallowed with a neutral default — energy_cost=0.0 is a *perfect*
-            # score and comfort/practicality=5.0 are real middling scores, so a
-            # crashed calc would masquerade as a valid (and good) result. Let the
-            # exception propagate so the caller marks the whole scenario failed
-            # (sentinel 1928), which is detectable downstream.
-            energy_cost = self.calculate_energy_cost(
-                scenario['kwh_per_cycle'],
-                run_time_hour,
-                scenario['location']
-            )
-
-            emissions = self.calculate_environmental_impact(
-                scenario['kwh_per_cycle'],
-                run_time_hour
-            )
-
-            comfort = self.calculate_comfort_score(
-                delay_hours,
-                run_time_hour,
-                scenario['housing_type'],
-                scenario['household_size'],
-                scenario['appliance']
-            )
-
-            practicality = self.calculate_practicality_score(
-                delay_hours,
-                run_time_hour,
-                scenario['housing_type'],
-                scenario['household_size'],
-                scenario['appliance']
-            )
 
             raw_results[alt] = {
                 'energy_cost_dollars': energy_cost,
@@ -489,6 +477,17 @@ class ApplianceGroundTruthCalculator:
         final_scores = {}
 
         for alt, raw in raw_results.items():
+            if raw is None:
+                final_scores[alt] = {
+                    'energy_cost_score': SENTINEL_VALUE,
+                    'environmental_score': SENTINEL_VALUE,
+                    'comfort_score': SENTINEL_VALUE,
+                    'practicality_score': SENTINEL_VALUE,
+                    'raw_cost': SENTINEL_VALUE,
+                    'raw_emissions': SENTINEL_VALUE,
+                }
+                continue
+
             energy_vf = self.apply_value_function(
                 raw['energy_cost_dollars'],
                 self.VF_ENERGY_COST,
@@ -676,31 +675,36 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 
-        # Calculate weighted sum for each alternative
-        weighted_scores = []
-        for alt_scores in alternatives_scores:
-            weighted_sum = (
-                    CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
-                    CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
-                    CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
-                    CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
-            )
-            weighted_scores.append(weighted_sum)
+        # Exclude any alternative carrying the failure sentinel (1928) from
+        # ranking — it receives rank/weighted = SENTINEL_VALUE instead of a
+        # fabricated rank, mirroring the architecture-side rankers.
+        valid_idx = [i for i, a in enumerate(alternatives_scores) if not has_sentinel_scores(a)]
 
-        # Rank alternatives: higher weighted sum = better (rank 1). Ties are
-        # broken deterministically by TIE_BREAK_PRIORITY criteria (each desc) so
-        # tied alternatives get a stable order instead of np.argsort's arbitrary
-        # one, and identically to how CalculateMetrics breaks ties.
+        weighted_scores = [SENTINEL_VALUE] * len(alternatives)
+        for i in valid_idx:
+            a = alternatives_scores[i]
+            weighted_scores[i] = (
+                    CRITERION_WEIGHTS["energy_cost"] * a["energy_cost"] +
+                    CRITERION_WEIGHTS["environmental"] * a["environmental"] +
+                    CRITERION_WEIGHTS["comfort"] * a["comfort"] +
+                    CRITERION_WEIGHTS["practicality"] * a["practicality"]
+            )
+
+        # Rank valid alternatives: higher weighted sum = better (rank 1). Ties
+        # are broken deterministically by TIE_BREAK_PRIORITY criteria (each desc)
+        # so tied alternatives get a stable order instead of np.argsort's
+        # arbitrary one, identically to how CalculateMetrics breaks ties.
         order = sorted(
-            range(len(alternatives)),
+            valid_idx,
             key=lambda i: (weighted_scores[i],
                            *[alternatives_scores[i][c] for c in TIE_BREAK_PRIORITY]),
             reverse=True,
         )
         ranked_alternatives = [alternatives[i] for i in order]
 
-        # Create rank numbers (1 = best, 2 = second, 3 = third)
-        ranks = [0] * len(alternatives)
+        # Create rank numbers (1 = best, 2 = second, ...); sentinel alts keep
+        # SENTINEL_VALUE.
+        ranks = [SENTINEL_VALUE] * len(alternatives)
         for rank_position, alt_index in enumerate(order):
             ranks[alt_index] = rank_position + 1
 
