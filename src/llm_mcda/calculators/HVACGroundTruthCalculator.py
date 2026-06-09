@@ -14,7 +14,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, parse_utility_budget
+from sentinel_utils import read_table_clean
 
 
 class HVACGroundTruthCalculator:
@@ -39,9 +39,6 @@ class HVACGroundTruthCalculator:
     VF_ENERGY_COST = "linear"
 
     # Linear VF for environmental impact - physical units have linear marginal value
-    # While some environmental psychology literature supports linear preferences for physical
-    # impact metrics (e.g., CO2 levels), the specific claim in Kotchen & Moore (2007) does not
-    # explicitly endorse this for utility function specification.
     # For MAVT framework justification, see:
     # - Keeney, R. L., & Raiffa, H. (1976). Decisions with Multiple Objectives: Preferences 
     #   and Value Trade-offs. Wiley. (Foundation for Multi-Attribute Value Theory axioms)
@@ -53,20 +50,20 @@ class HVACGroundTruthCalculator:
     VF_PRACTICALITY = "logarithmic, a=1.2"
     def calculate_cooling_load(self, outdoor_temp: float, indoor_temp: float,
                                square_footage: int, r_value: int, household_size: int = 3,
-                               ceiling_height: float = 8.0, ach: float = 0.35,
+                               ceiling_height: float = 8.0,
                                housing_type: str = "Single-family") -> float:
-        """Calculate cooling load."""
+      
         delta_t = outdoor_temp - indoor_temp
 
         # Adjust by housing type. Typical multipliers from ACCA Manual J:
         # - Single-family (2-story typical): 1.7 (includes roof, walls, floor exposures)
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
-         # Twin semi-detached (PA regional term). One shared party wall reduces exposed envelope vs. Single-family (1.7).
+        # twin semi-detached (PA regional term). One shared party wall reduces exposed envelope vs. Single-family (1.7).
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
-            "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
+            "Condo": 1.2,
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
             "Twin": 1.6,  
@@ -79,7 +76,7 @@ class HVACGroundTruthCalculator:
         conductive_load = u_factor * envelope_area * delta_t
 
         # Formula: occupants (400 BTU/hr each) + lighting & equipment (1.0 BTU/hr/sqft) + baseline (800)
-        # For 3-person, 1500 sqft home: (3 × 400) + (1500 × 1.0) + 800 = 3,500 BTU/hr (more realistic)
+        # Example: for 3-person, 1500 sqft home: (3 × 400) + (1500 × 1.0) + 800 = 3,500 BTU/hr 
         # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1
         internal_gains = (household_size * 400) + (square_footage * 1.0) + 800
 
@@ -89,7 +86,7 @@ class HVACGroundTruthCalculator:
         # Use the ASHRAE-style ventilation formula instead of a rough multiplier
         # ventilation_load = 1.08 × (square_footage × ceiling_height × ACH / 60) × ΔT
         # ACH is about 0.35 for modern construction, and 1.08 is the air factor
-        ventilation_cfm = (square_footage * ceiling_height * ach) / 60.0
+        ventilation_cfm = (square_footage * ceiling_height * 0.35) / 60.0
         ventilation_load = 1.08 * ventilation_cfm * delta_t
 
         total_load = conductive_load + internal_gains + solar_gains + ventilation_load
@@ -97,19 +94,14 @@ class HVACGroundTruthCalculator:
 
     def calculate_heating_load(self, outdoor_temp: float, indoor_temp: float,
                                square_footage: int, r_value: int, household_size: int = 3,
-                               ceiling_height: float = 8.0, ach: float = 0.35,
+                               ceiling_height: float = 8.0,
                                housing_type: str = "Single-family") -> float:
-        """Calculate heating load."""
         delta_t = indoor_temp - outdoor_temp
 
-        # Adjust by housing type. Typical multipliers from ACCA Manual J:
-        # - Single-family (2-story typical): 1.7
-        # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
-        # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
-            "Condo": 1.2,      # Shared walls/floor/ceiling; same exposure profile as Apartment
+            "Condo": 1.2,     
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
             "Twin": 1.6,
@@ -127,7 +119,7 @@ class HVACGroundTruthCalculator:
 
         # Use the same ASHRAE-style ventilation formula here too
         # infiltration_loss = 1.08 × (square_footage × ceiling_height × ACH / 60) × ΔT
-        infiltration_cfm = (square_footage * ceiling_height * ach) / 60.0
+        infiltration_cfm = (square_footage * ceiling_height * 0.35) / 60.0
         infiltration_loss = 1.08 * infiltration_cfm * delta_t
 
         total_load = conductive_loss + infiltration_loss - internal_gains
@@ -136,7 +128,6 @@ class HVACGroundTruthCalculator:
     def calculate_energy_consumption(self, load_btu_hr: float, seer: int,
                                      hvac_age: int, occupancy_context: str, hours: float = 8,
                                      maintenance_level: str = 'moderate') -> float:
-        """Calculate energy consumption."""
         maintenance_rates = {
             'good': 0.005,  # 0.5%/year with annual/biannual maintenance
             'moderate': 0.010,  # 1.0%/year with occasional maintenance
@@ -190,7 +181,6 @@ class HVACGroundTruthCalculator:
 
     def calculate_comfort_score(self, indoor_temp: float, outdoor_temp: float,
                                 household_size: int) -> float:
-        """Calculate comfort score."""
         # Tent comfort function around PMV-aligned indoor setpoints for mechanical
         # HVAC. Optimal indoor 76F in cooling mode (outdoor > 75F) and 70F in
         # heating mode, consistent with ASHRAE 55-2020 Section 5.2 (PMV/PPD method)
@@ -205,18 +195,17 @@ class HVACGroundTruthCalculator:
         # applies only to naturally conditioned spaces and is not used here.
         # Sources: ashrae55-2020 Sec 5.2; fanger1970; dedear2002; nicol2002.
         optimal = 76 if outdoor_temp > 75 else 70
-        deviation = abs(indoor_temp - optimal)
-        comfort_score = 10.0 - deviation
+        comfort_score = 10 - abs(indoor_temp - optimal)
 
         if household_size > 3:
             size_penalty = (household_size - 3) * 0.3
-            comfort_score -= size_penalty * (deviation / 3.0)
+            comfort_score -= size_penalty * (abs(indoor_temp - optimal) / 3.0)
 
         return max(0.0, min(10.0, comfort_score))
 
     def calculate_practicality_score(self, outdoor_temp: float, indoor_temp: float,) -> float:
         """Calculate practicality score."""
-        if outdoor_temp > 75:  # Cooling mode
+        if outdoor_temp > indoor_temp:  # Cooling mode
             if indoor_temp >= 82:
                 extremity_penalty = (indoor_temp - 82) * 1.5
             elif indoor_temp <= 71:
@@ -232,7 +221,6 @@ class HVACGroundTruthCalculator:
                 extremity_penalty = 0
 
         base_score = 10 - extremity_penalty
-
         base_score = max(0.5, base_score)
 
         # Component 2: change in T operational feasibility
@@ -256,10 +244,7 @@ class HVACGroundTruthCalculator:
         return per_period_cost * periods_per_month
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
-        """Calculate budget penalty."""
-        if monthly_budget <= 0:
-            return 1.0  # No budget constraint
-
+  
         utilization = monthly_cost / monthly_budget
 
         if utilization < 0.80:
@@ -393,7 +378,6 @@ class HVACGroundTruthCalculator:
 
         vf_type = vf_spec.split(',')[0].strip().lower()
 
-        # Normalize (now can go outside [0,1] range)
         if ref['decreasing']:
             x_normalized = (x_max - x) / (x_max - x_min)
         else:
@@ -437,7 +421,6 @@ class HVACGroundTruthCalculator:
         else:
             u_x = x_normalized
 
-        # NOW clamp the final score to [0, 10]
         return max(0.0, min(10.0, u_x * 10.0))
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
@@ -521,12 +504,13 @@ class HVACGroundTruthCalculator:
             )
             emissions = kwh * emission_factor
 
-            # When alternative is "off", set energy-related values to 0 (physically correct).
-            # Still use drift temp for comfort/practicality scoring.
+      
             if 'off' in alt.lower():
                 kwh = 0.0
                 energy_cost = 0.0
                 emissions = 0.0
+
+              # Still use drift temp for comfort/practicality scoring.
 
             comfort = self.calculate_comfort_score(
                 effective_temp,

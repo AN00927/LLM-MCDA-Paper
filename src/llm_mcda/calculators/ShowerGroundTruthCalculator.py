@@ -61,9 +61,6 @@ class ShowerGroundTruthCalculator:
     #     sustainable use of shower water," Sustainable Water Resources
     #     Management 2023 (https://doi.org/10.1007/s40899-023-00905-3). We cap
     #     the shift at this empirically observed winter/summer ratio.
-    # NOTE: COMFORT_TEMP_REFERENCE_F (the outdoor temp at/above which no shift is
-    # applied) is anchored to this calculator's own summer inlet-temp breakpoint
-    # (75 F), not taken from a paper — it is the one engineering choice here.
     COMFORT_TEMP_REFERENCE_F = 75.0
     COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (= 6 C) drop
     COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer envelope
@@ -138,8 +135,7 @@ class ShowerGroundTruthCalculator:
             'decreasing': False
         },
         'practicality': {
-            # Match calculation floor (0.5) so VF mapping doesn't collapse
-            # the raw floor to a utility of exactly zero.
+            # Match calculation floor (0.5) because nothing is absolutely not practical at all [FIND SOURCE]
             'min': 0.5,
             'max': 10.0,
             'decreasing': False
@@ -202,7 +198,7 @@ class ShowerGroundTruthCalculator:
         return gpm * duration_min
 
     @staticmethod
-    def calculate_comfort_score(duration: float, water_heater_temp: float,
+    def calculate_comfort_score(self, duration: float, water_heater_temp: float,
                                 occupants: int, outdoor_temp: float = COMFORT_TEMP_REFERENCE_F) -> float:
         """Calculate comfort score.
 
@@ -212,13 +208,13 @@ class ShowerGroundTruthCalculator:
         temps raise it (capped at the observed winter envelope). Warm-weather
         scoring is unchanged (multiplier == 1.0 at/above the reference temp).
         """
-        cls = ShowerGroundTruthCalculator
-        drop_f = max(0.0, cls.COMFORT_TEMP_REFERENCE_F - outdoor_temp)
+
+        drop_f = max(0.0, self.COMFORT_TEMP_REFERENCE_F - outdoor_temp)
         temp_multiplier = min(
-            1.0 + cls.COMFORT_TEMP_ELASTICITY_PER_F * drop_f,
-            cls.COMFORT_TEMP_MAX_MULTIPLIER,
+            1.0 + self.COMFORT_TEMP_ELASTICITY_PER_F * drop_f,
+            self.COMFORT_TEMP_MAX_MULTIPLIER,
         )
-        optimal_duration = cls.COMFORT_DURATION_OPTIMAL * temp_multiplier  # <= ~10.3 min
+        optimal_duration = self.COMFORT_DURATION_OPTIMAL * temp_multiplier  # <= ~10.3 min
 
         if duration <= 3.0:
             # Below dermatologist minimum — severely rushed.
@@ -238,14 +234,12 @@ class ShowerGroundTruthCalculator:
             # Continue linear decline: 0.5 per minute beyond 15 min
             base_comfort = max(1.0, 8.0 - (duration - 15.0) * 0.5)
 
-        # Component 2: Temperature adequacy
         temp_penalty = 0.0
         if water_heater_temp < ShowerGroundTruthCalculator.HEATER_TEMP_MINIMUM:
             temp_penalty = 2.0  # Lukewarm, within Legionella growth range
         elif water_heater_temp > ShowerGroundTruthCalculator.HEATER_TEMP_SCALD_RISK:
             temp_penalty = 1.0  # Scald risk, no extra comfort benefit
 
-        # Component 3: Household contention
         # Larger households experience pressure to keep showers short
         contention_penalty = 0.0
         if occupants >= 4:
@@ -278,7 +272,6 @@ class ShowerGroundTruthCalculator:
             # actual rate much lower, so conservative modeling
             base_practicality = max(1.5, 7.5 - (duration - 15.0) * 0.35)
 
-        # Component 2: Hot water capacity constraint
         inlet_temp = ShowerGroundTruthCalculator.determine_inlet_temp(outdoor_temp)
         hot_fraction = ShowerGroundTruthCalculator.calculate_hot_water_fraction(
             water_heater_temp,
@@ -331,10 +324,8 @@ class ShowerGroundTruthCalculator:
         x_min = ref['min']
         x_max = ref['max']
 
-        # Use raw_value directly; don't clamp to [min, max] before transformation.
         x = raw_value
 
-        # Parse value function type and parameters
         vf_type = vf_spec.split(',')[0].strip().lower()
 
         # Normalize to create x_normalized (can go outside [0,1] range for extrapolation)
@@ -386,8 +377,8 @@ class ShowerGroundTruthCalculator:
         else:
             u_x = x_normalized
 
-        # This is the only point where we prevent extrapolation
         return max(0.0, min(10.0, u_x * 10.0))
+    
     def calculate_scenario_scores(self, scenario: dict) -> dict:
         """Calculate scenario scores."""
         occupants = int(scenario.get('household_size', 2))
@@ -505,13 +496,13 @@ class ShowerGroundTruthCalculator:
 
 
 def process_shower_scenarios(
-    csv_filename: str = str(SCENARIO_DIR / "ShowerScenarios.xlsx"),
+    xlsx_filename: str = str(SCENARIO_DIR / "ShowerScenarios.xlsx"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")):
     """Process shower scenarios."""
     import pandas as pd
     from sentinel_utils import read_table_clean, parse_utility_budget
 
-    csv_path = Path(csv_filename)
+    csv_path = Path(xlsx_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df = read_table_clean(
@@ -556,7 +547,6 @@ def process_shower_scenarios(
                 for alt_data in result['alternatives']
             ]
             ranking_result = apply_mavt_ranking(alts_for_ranking)
-            # Extract scores from result and flatten to rows
             for alt_data in result['alternatives']:
                 alt_idx = result['alternatives'].index(alt_data)
                 result_row = {
@@ -629,7 +619,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         )
         ranked_alternatives = [alternatives[i] for i in order]
 
-        # Create rank numbers (1 = best, 2 = second, 3 = third)
         ranks = [0] * len(alternatives)
         for rank_position, alt_index in enumerate(order):
             ranks[alt_index] = rank_position + 1
@@ -668,7 +657,5 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             "error": str(e)
         }
 
-
-# Main execution block
 if __name__ == "__main__":
     process_shower_scenarios()
