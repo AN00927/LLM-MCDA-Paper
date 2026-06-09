@@ -1,88 +1,61 @@
-﻿scenario_id,question,location,household_size,gpm,utility_budget,housing_type,outdoor_temp,alternative,duration_min,energy_cost_score,environmental_score,comfort_score,practicality_score,mavt_score,rank,raw_kwh,raw_cost,raw_water_gallons
-1,How long should I shower?,"Philadelphia, PA",3,1.5,220,Townhouse,85,4,4,10.0,10.0,6.34,2.86,8.197,3,0.636882613792752,0.121007696620623,6.0
-1,How long should I shower?,"Philadelphia, PA",3,1.5,220,Townhouse,85,7,7,9.54,9.56,9.32,6.37,9.0275,1,1.11454457413732,0.21176346908609,10.5
-1,How long should I shower?,"Philadelphia, PA",3,1.5,220,Townhouse,85,10,10,8.87,8.89,9.59,8.45,8.958,2,1.59220653448188,0.302519241551557,15.0
-2,How long should I shower?,"Lancaster, PA",1,1.5,180,Apartment,18,5,5,9.32,9.63,7.43,3.48,8.1745,3,1.27129669032274,0.241546371161321,10.0
-2,How long should I shower?,"Lancaster, PA",1,1.5,180,Apartment,18,8,8,8.25,8.74,9.96,7.6,8.666,1,2.03407470451639,0.386474193858113,16.0
-2,How long should I shower?,"Lancaster, PA",1,1.5,180,Apartment,18,12,12,7.08,8.44,9.21,9.25,8.3075,2,2.86597176206738,0.544534634792803,18.0
-3,How long should I shower?,"West Chester, PA",6,3.5,360,Single-family,82,10,10,5.88,5.93,8.06,5.71,6.308,1,3.71514858045772,0.705878230286967,35.0
-3,How long should I shower?,"West Chester, PA",6,3.5,360,Single-family,82,15,15,3.27,3.33,4.5,5.19,3.825,2,5.57272287068658,1.05881734543045,52.5
-3,How long should I shower?,"West Chester, PA",6,3.5,360,Single-family,82,18,18,1.7,1.78,0.64,4.02,1.864,3,6.6872674448239,1.27058081451654,63.0
-4,How long should I shower?,"Media, PA",4,3.5,280,Townhouse,25,6,6,6.41,8.0,8.42,1.51,6.6335,1,3.34363372241195,0.63529040725827,21.0
-4,How long should I shower?,"Media, PA",4,3.5,280,Townhouse,25,10,10,3.27,5.93,8.82,5.71,5.677,2,5.57272287068658,1.05881734543045,35.0
-4,How long should I shower?,"Media, PA",4,3.5,280,Townhouse,25,15,15,0.0,3.33,5.53,5.19,3.05,3,8.35908430602987,1.58822601814568,52.5
-5,How long should I shower?,"Norristown, PA",3,3.5,300,Apartment,90,7,7,7.45,7.48,9.32,3.07,7.1775,1,2.6006040063204,0.494114761200877,24.5
-5,How long should I shower?,"Norristown, PA",3,3.5,300,Apartment,90,12,12,4.84,4.89,9.21,6.69,6.009,2,4.45817829654926,0.84705387634436,42.0
-5,How long should I shower?,"Norristown, PA",3,3.5,300,Apartment,90,16,16,2.75,2.81,8.23,4.81,4.176,3,5.94423772873235,1.12940516845915,56.0
-6,How long should I shower?,"Wilkes-Barre, PA",5,2.5,260,Townhouse,80,3,3,10.0,10.0,5.13,2.2,7.856,3,0.673910672734191,0.128043027819496,6.0
-6,How long should I shower?,"Wilkes-Barre, PA",5,2.5,260,Townhouse,80,5,5,9.53,9.63,7.43,3.48,8.2375,1,1.12318445455698,0.213405046365827,10.0
-6,How long should I shower?,"Wilkes-Barre, PA",5,2.5,260,Townhouse,80,8,8,8.12,8.15,9.9,4.64,7.9645,2,2.12294204597584,0.40335898873541,20.0
-7,How long should I shower?,"Phoenixville, PA",7,3.0,430,Single-family,12,8,8,8.12,8.15,9.96,4.64,7.9765,1,2.12294204597584,0.403358988735409,20.0
-7,How long should I shower?,"Phoenixville, PA",7,3.0,430,Single-family,12,12,12,6.63,6.67,9.21,6.69,7.169,2,3.18441306896376,0.605038483103114,30.0
-7,How long should I shower?,"Phoenixville, PA",7,3.0,430,Single-family,12,15,15,1.03,4.44,5.53,5.19,3.7475,3,7.16492940516846,1.36133658698201,45.0
-8,How long should I shower?,"Greensburg, PA",2,2.0,300,Single-family,92,5,5,9.62,9.63,7.43,3.48,8.2645,2,1.06147102298792,0.201679494367705,10.0
-8,How long should I shower?,"Greensburg, PA",2,2.0,300,Single-family,92,8,8,8.72,8.74,9.96,7.6,8.807,1,1.69835363678067,0.322687190988328,16.0
-8,How long should I shower?,"Greensburg, PA",2,2.0,300,Single-family,92,12,12,7.53,7.56,9.21,9.25,8.1345,3,2.54753045517101,0.484030786482491,24.0
-9,How long should I shower?,"Altoona, PA",2,3.5,210,Apartment,70,4,4,8.9,9.04,6.34,2.86,7.531,1,1.57245823637978,0.298767064912158,14.0
-9,How long should I shower?,"Altoona, PA",2,3.5,210,Apartment,70,7,7,7.24,7.48,9.32,3.07,7.1145,2,2.75180191366461,0.522842363596276,24.5
-9,How long should I shower?,"Altoona, PA",2,3.5,210,Apartment,70,10,10,5.58,5.93,9.59,5.71,6.524,3,3.93114559094945,0.746917662280395,35.0
-10,How long should I shower?,"Stroudsburg, PA",2,2.5,185,Apartment,40,2,2,10.0,10.0,1.79,1.51,7.0845,2,0.746732521985688,0.141879179177281,5.0
-10,How long should I shower?,"Stroudsburg, PA",2,2.5,185,Apartment,40,7,7,7.43,8.52,9.32,6.37,8.0305,1,2.61356382694991,0.496577127120483,17.5
-10,How long should I shower?,"Stroudsburg, PA",2,2.5,185,Apartment,40,14,14,3.75,5.93,8.81,5.71,5.819,3,5.22712765389981,0.993154254240965,35.0
-11,How long should I shower?,"Gettysburg, PA",2,2.0,205,Townhouse,60,5,5,9.36,9.63,7.43,3.48,8.1865,2,1.24661131769512,0.236856150362072,10.0
-11,How long should I shower?,"Gettysburg, PA",2,2.0,205,Townhouse,60,8,8,8.3,8.74,9.96,7.6,8.681,1,1.99457810831218,0.378969840579315,16.0
-11,How long should I shower?,"Gettysburg, PA",2,2.0,205,Townhouse,60,12,12,6.69,7.56,9.21,6.69,7.4985,3,3.13997939823403,0.596596085664466,24.0
-12,How long should I shower?,"Easton, PA",4,2.5,290,Single-family,48,5,5,8.66,9.26,6.57,3.48,7.675,1,1.74340444182609,0.331246843946957,12.5
-12,How long should I shower?,"Easton, PA",4,2.5,290,Single-family,48,8,8,7.19,8.15,9.22,4.64,7.5495,2,2.78944710692174,0.529994950315131,20.0
-12,How long should I shower?,"Easton, PA",4,2.5,290,Single-family,48,12,12,5.22,6.67,6.77,6.69,6.258,3,4.18417066038261,0.794992425472697,30.0
-13,How long should I shower?,"Meadville, PA",4,3.0,280,Single-family,50,8,8,6.48,7.56,9.9,4.64,7.266,2,3.28809163399979,0.62473741045996,24.0
-13,How long should I shower?,"Meadville, PA",4,3.0,280,Single-family,50,10,10,7.91,8.89,8.14,8.45,8.38,1,2.2772256248985,0.432672868730716,15.0
-13,How long should I shower?,"Meadville, PA",4,3.0,280,Single-family,50,12,12,4.17,5.78,7.62,6.69,5.8015,3,4.93213745099968,0.93710611568994,36.0
-14,How long should I shower?,"Oil City, PA",5,2.0,310,Single-family,55,8,8,8.16,8.74,9.9,4.64,8.183,1,2.09331959882269,0.397730723776311,16.0
-14,How long should I shower?,"Oil City, PA",5,2.0,310,Single-family,55,10,10,7.43,8.15,8.82,5.71,7.702,2,2.61664949852836,0.497163404720389,20.0
-14,How long should I shower?,"Oil City, PA",5,2.0,310,Single-family,55,12,12,6.69,7.56,7.62,6.69,7.1805,3,3.13997939823403,0.596596085664466,24.0
-15,How long should I shower?,"Uniontown, PA",7,2.5,430,Single-family,58,8,8,8.08,8.74,9.96,7.6,8.615,1,2.15256449312899,0.408987253694508,16.0
-15,How long should I shower?,"Uniontown, PA",7,2.5,430,Single-family,58,10,10,6.64,7.41,8.82,5.71,7.206,2,3.17824172580685,0.603865927903302,25.0
-15,How long should I shower?,"Uniontown, PA",7,2.5,430,Single-family,58,12,12,5.74,6.67,7.62,6.69,6.584,3,3.81389007096822,0.724639113483962,30.0
-16,How long should I shower?,"Erie, PA",3,2.5,265,Apartment,10,5,5,8.31,9.26,7.43,3.48,7.742,1,1.99025816810235,0.378149051939446,12.5
-16,How long should I shower?,"Erie, PA",3,2.5,265,Apartment,10,8,8,6.63,8.15,9.96,4.64,7.5295,2,3.18441306896376,0.605038483103114,20.0
-16,How long should I shower?,"Erie, PA",3,2.5,265,Apartment,10,12,12,4.39,6.67,9.21,6.69,6.497,3,4.77661960344564,0.907557724654672,30.0
-17,How long should I shower?,"Scranton, PA",2,2.0,200,Single-family,20,5,5,8.87,9.63,7.43,3.48,8.0395,2,1.59220653448188,0.302519241551557,10.0
-17,How long should I shower?,"Scranton, PA",2,2.0,200,Single-family,20,8,8,7.53,8.74,9.96,7.6,8.45,1,2.54753045517101,0.484030786482491,16.0
-17,How long should I shower?,"Scranton, PA",2,2.0,200,Single-family,20,12,12,5.73,7.56,9.21,6.69,7.2105,3,3.82129568275651,0.726046179723737,24.0
-18,How long should I shower?,"Stroudsburg, PA",3,2.5,250,Single-family,32,5,5,8.31,9.26,7.43,3.48,7.742,1,1.99025816810235,0.378149051939446,12.5
-18,How long should I shower?,"Stroudsburg, PA",3,2.5,250,Single-family,32,8,8,6.63,8.15,9.96,4.64,7.5295,2,3.18441306896376,0.605038483103114,20.0
-18,How long should I shower?,"Stroudsburg, PA",3,2.5,250,Single-family,32,12,12,4.39,6.67,9.21,6.69,6.497,3,4.77661960344564,0.907557724654672,30.0
-19,How long should I shower?,"Blue Bell, PA",2,2.0,195,Townhouse,75,5,5,9.24,9.26,7.43,3.48,8.021,1,1.3268387787349,0.252099367959631,12.5
-19,How long should I shower?,"Blue Bell, PA",2,2.0,195,Townhouse,75,8,8,8.12,8.15,9.96,4.64,7.9765,2,2.12294204597584,0.403358988735409,20.0
-19,How long should I shower?,"Blue Bell, PA",2,2.0,195,Townhouse,75,12,12,7.53,7.56,9.21,6.69,7.7505,3,2.54753045517101,0.484030786482491,24.0
-20,How long should I shower?,"Media, PA",3,2.5,255,Townhouse,85,5,5,9.24,9.26,7.43,3.48,8.021,1,1.3268387787349,0.252099367959631,12.5
-20,How long should I shower?,"Media, PA",3,2.5,255,Townhouse,85,8,8,8.12,8.15,9.96,4.64,7.9765,2,2.12294204597584,0.403358988735409,20.0
-20,How long should I shower?,"Media, PA",3,2.5,255,Townhouse,85,12,12,6.63,6.67,9.21,6.69,7.169,3,3.18441306896376,0.605038483103114,30.0
-21,How long should I shower?,"King of Prussia, PA",2,2.0,195,Condo,65,3,3,10.0,10.0,5.13,2.2,7.856,3,0.71093873167563,0.13507835901837,6.0
-21,How long should I shower?,"King of Prussia, PA",2,2.0,195,Condo,65,5,5,9.44,9.63,7.43,3.48,8.2105,2,1.18489788612605,0.225130598363949,10.0
-21,How long should I shower?,"King of Prussia, PA",2,2.0,195,Condo,65,8,8,8.44,8.74,9.96,7.6,8.723,1,1.89583661780168,0.360208957382319,16.0
-22,How long should I shower?,"Blue Bell, PA",3,2.5,245,Condo,78,3,3,9.99,10.0,5.13,2.2,7.853,3,0.79610326724094,0.151259620775779,7.5
-22,How long should I shower?,"Blue Bell, PA",3,2.5,245,Condo,78,5,5,9.24,9.26,7.43,3.48,8.021,1,1.3268387787349,0.252099367959631,12.5
-22,How long should I shower?,"Blue Bell, PA",3,2.5,245,Condo,78,8,8,8.12,8.15,9.96,4.64,7.9765,2,2.12294204597584,0.403358988735409,20.0
-23,How long should I shower?,"Philadelphia, PA",3,2.5,250,Rowhouse,72,3,3,9.95,10.0,5.13,2.2,7.841,3,0.823874311447019,0.156536119174934,7.5
-23,How long should I shower?,"Philadelphia, PA",3,2.5,250,Rowhouse,72,5,5,9.18,9.26,7.43,3.48,8.003,1,1.3731238524117,0.260893531958223,12.5
-23,How long should I shower?,"Philadelphia, PA",3,2.5,250,Rowhouse,72,8,8,8.02,8.15,9.96,4.64,7.9465,2,2.19699816385872,0.417429651133156,20.0
-24,How long should I shower?,"Lancaster, PA",2,2.0,195,Rowhouse,58,3,3,10.0,10.0,5.13,2.2,7.856,3,0.762778014193645,0.144927822696792,6.0
-24,How long should I shower?,"Lancaster, PA",2,2.0,195,Rowhouse,58,5,5,9.32,9.63,7.43,3.48,8.1745,2,1.27129669032274,0.241546371161321,10.0
-24,How long should I shower?,"Lancaster, PA",2,2.0,195,Rowhouse,58,8,8,8.25,8.74,9.96,7.6,8.666,1,2.03407470451639,0.386474193858113,16.0
-25,How long should I shower?,"State College, PA",1,1.5,145,Apartment,35,4,4,9.8,10.0,4.33,2.86,7.735,3,0.933107085324265,0.17729034621161,6.0
-25,How long should I shower?,"State College, PA",1,1.5,145,Apartment,35,6,6,9.14,9.78,6.79,5.01,8.2745,2,1.3996606279864,0.265935519317415,9.0
-25,How long should I shower?,"State College, PA",1,1.5,145,Apartment,35,10,10,7.83,8.89,8.14,8.45,8.356,1,2.33276771331066,0.443225865529026,15.0
-26,How long should I shower?,"Indiana, PA",1,2.0,155,Apartment,48,4,4,9.54,9.93,6.34,2.86,8.0345,3,1.1157788427687,0.211997980126053,8.0
-26,How long should I shower?,"Indiana, PA",1,2.0,155,Apartment,48,6,6,8.76,9.33,8.42,5.01,8.329,1,1.67366826415305,0.317996970189079,12.0
-26,How long should I shower?,"Indiana, PA",1,2.0,155,Apartment,48,10,10,7.19,8.15,9.59,8.45,8.195,2,2.78944710692174,0.529994950315131,20.0
-27,How long should I shower?,"Pittsburgh, PA",3,2.5,245,Townhouse,62,3,3,9.77,10.0,5.13,2.2,7.787,3,0.955323920689128,0.181511544930934,6.0
-27,How long should I shower?,"Pittsburgh, PA",3,2.5,245,Townhouse,62,5,5,8.87,9.63,7.43,3.48,8.0395,2,1.59220653448188,0.302519241551557,10.0
-27,How long should I shower?,"Pittsburgh, PA",3,2.5,245,Townhouse,62,8,8,7.53,8.74,9.96,7.6,8.45,1,2.54753045517101,0.484030786482491,16.0
-28,How long should I shower?,"West Mifflin, PA",4,3.0,295,Single-family,70,3,3,9.8,10.0,5.13,2.2,7.796,1,0.934958488271336,0.177642112771554,7.5
-28,How long should I shower?,"West Mifflin, PA",4,3.0,295,Single-family,70,4,4,9.21,9.33,6.34,2.86,7.7255,2,1.34782134546838,0.256086055638993,12.0
-28,How long should I shower?,"West Mifflin, PA",4,3.0,295,Single-family,70,6,6,8.27,8.44,8.42,1.51,7.3455,3,2.02173201820257,0.384129083458489,18.0
-29,How long should I shower?,"Pittsburgh, PA",2,2.0,185,Single-family,28,3,3,9.77,10.0,5.13,2.2,7.787,3,0.955323920689128,0.181511544930934,6.0
-29,How long should I shower?,"Pittsburgh, PA",2,2.0,185,Single-family,28,5,5,8.87,9.63,7.43,3.48,8.0395,2,1.59220653448188,0.302519241551557,10.0
-29,How long should I shower?,"Pittsburgh, PA",2,2.0,185,Single-family,28,8,8,7.53,8.74,9.96,7.6,8.45,1,2.54753045517101,0.484030786482491,16.0
+﻿scenario_id,question,location,household_size,gpm,flow_rate,tank_size,water_heater_temp,utility_budget,housing_type,outdoor_temp,alternative,duration_min,energy_cost_score,environmental_score,comfort_score,practicality_score,mavt_score,rank,raw_kwh,raw_cost,raw_water_gallons
+1,How long should I shower?,"Blue Bell, PA",2,2.0,low_flow,40,120,195,Townhouse,75,5,5,9.62,9.63,7.43,3.48,8.2645,2,1.06147102298792,0.2016794943677048,10.0
+1,How long should I shower?,"Blue Bell, PA",2,2.0,low_flow,40,120,195,Townhouse,75,8,8,8.72,8.74,9.96,7.6,8.807,1,1.698353636780672,0.3226871909883277,16.0
+1,How long should I shower?,"Blue Bell, PA",2,2.0,low_flow,40,120,195,Townhouse,75,12,12,7.53,7.56,9.21,6.69,7.7505,3,2.547530455171008,0.4840307864824915,24.0
+2,How long should I shower?,"Media, PA",3,2.5,standard,50,120,255,Townhouse,85,5,5,9.24,9.26,7.43,3.48,8.020999999999999,1,1.3268387787349,0.2520993679596309,12.5
+2,How long should I shower?,"Media, PA",3,2.5,standard,50,120,255,Townhouse,85,8,8,8.12,8.15,9.96,4.64,7.976499999999999,2,2.12294204597584,0.4033589887354095,20.0
+2,How long should I shower?,"Media, PA",3,2.5,standard,50,120,255,Townhouse,85,12,12,6.63,6.67,9.21,6.69,7.169,3,3.18441306896376,0.6050384831031144,30.0
+3,How long should I shower?,"Indiana, PA",1,2.0,low_flow,30,110,155,Apartment,48,4,4,9.54,9.93,6.0,2.86,7.9665,3,1.115778842768697,0.2119979801260525,8.0
+3,How long should I shower?,"Indiana, PA",1,2.0,low_flow,30,110,155,Apartment,48,6,6,8.76,9.33,7.56,5.01,8.157,2,1.673668264153046,0.3179969701890787,12.0
+3,How long should I shower?,"Indiana, PA",1,2.0,low_flow,30,110,155,Apartment,48,10,10,7.19,8.15,9.94,8.45,8.265,1,2.789447106921743,0.5299949503151312,20.0
+4,How long should I shower?,"Pittsburgh, PA",3,2.5,standard,50,120,245,Townhouse,62,3,3,9.82,10.0,5.13,2.2,7.802,2,0.916444458800617,0.1741244471721172,7.5
+4,How long should I shower?,"Pittsburgh, PA",3,2.5,standard,50,120,245,Townhouse,62,5,5,8.96,9.26,7.08,3.48,7.867000000000001,1,1.527407431334362,0.2902074119535287,12.5
+4,How long should I shower?,"Pittsburgh, PA",3,2.5,standard,50,120,245,Townhouse,62,8,8,7.67,8.15,9.48,4.64,7.745499999999999,3,2.443851890134979,0.464331859125646,20.0
+5,How long should I shower?,"West Mifflin, PA",4,3.0,standard,60,125,295,Single-family,70,3,3,9.69,9.78,5.13,2.2,7.685999999999999,2,1.010866009101286,0.1920645417292444,9.0
+5,How long should I shower?,"West Mifflin, PA",4,3.0,standard,60,125,295,Single-family,70,4,4,9.21,9.33,6.26,2.86,7.7095,1,1.347821345468382,0.2560860556389926,12.0
+5,How long should I shower?,"West Mifflin, PA",4,3.0,standard,60,125,295,Single-family,70,6,6,8.27,8.44,8.22,1.51,7.305499999999999,3,2.021732018202572,0.3841290834584888,18.0
+6,How long should I shower?,"Pittsburgh, PA",2,2.0,low_flow,40,120,185,Single-family,28,3,3,9.77,10.0,5.13,2.2,7.786999999999999,3,0.955323920689128,0.1815115449309343,6.0
+6,How long should I shower?,"Pittsburgh, PA",2,2.0,low_flow,40,120,185,Single-family,28,5,5,8.87,9.63,6.7,3.48,7.8935,2,1.59220653448188,0.3025192415515572,10.0
+6,How long should I shower?,"Pittsburgh, PA",2,2.0,low_flow,40,120,185,Single-family,28,8,8,7.53,8.74,8.69,7.6,8.196,1,2.547530455171008,0.4840307864824915,16.0
+7,How long should I shower?,"Exton, PA",3,2.5,standard,50,120,260,Condo,62,3,3,9.82,10.0,5.13,2.2,7.802,2,0.916444458800617,0.1741244471721172,7.5
+7,How long should I shower?,"Exton, PA",3,2.5,standard,50,120,260,Condo,62,5,5,8.96,9.26,7.08,3.48,7.867000000000001,1,1.527407431334362,0.2902074119535287,12.5
+7,How long should I shower?,"Exton, PA",3,2.5,standard,50,120,260,Condo,62,8,8,7.67,8.15,9.48,4.64,7.745499999999999,3,2.443851890134979,0.464331859125646,20.0
+8,How long should I shower?,"Pottstown, PA",2,2.0,low_flow,40,115,195,Condo,75,3,3,10.0,10.0,5.13,2.2,7.856,3,0.636882613792752,0.1210076966206229,6.0
+8,How long should I shower?,"Pottstown, PA",2,2.0,low_flow,40,115,195,Condo,75,5,5,9.62,9.63,7.43,3.48,8.2645,2,1.06147102298792,0.2016794943677048,10.0
+8,How long should I shower?,"Pottstown, PA",2,2.0,low_flow,40,115,195,Condo,75,8,8,8.72,8.74,9.96,7.6,8.807,1,1.698353636780672,0.3226871909883277,16.0
+9,How long should I shower?,"Phoenixville, PA",4,2.5,standard,60,120,310,Condo,55,3,3,9.73,10.0,5.13,2.2,7.775,2,0.9812435619481353,0.1864362767701457,7.5
+9,How long should I shower?,"Phoenixville, PA",4,2.5,standard,60,120,310,Condo,55,5,5,8.81,9.26,6.94,3.48,7.794,1,1.635405936580226,0.3107271279502429,12.5
+9,How long should I shower?,"Phoenixville, PA",4,2.5,standard,60,120,310,Condo,55,7,7,7.89,8.52,8.49,3.07,7.5075,3,2.289568311212316,0.43501797913034,17.5
+10,How long should I shower?,"Bethlehem, PA",2,2.0,low_flow,40,115,200,Rowhouse,62,3,3,10.0,10.0,5.13,2.2,7.856,3,0.7331555670404936,0.1392995577376938,6.0
+10,How long should I shower?,"Bethlehem, PA",2,2.0,low_flow,40,115,200,Rowhouse,62,5,5,9.39,9.63,7.08,3.48,8.1255,2,1.221925945067489,0.232165929562823,10.0
+10,How long should I shower?,"Bethlehem, PA",2,2.0,low_flow,40,115,200,Rowhouse,62,8,8,8.36,8.74,9.48,7.6,8.603,1,1.955081512107983,0.3714654873005167,16.0
+11,How long should I shower?,"Hazleton, PA",3,2.5,standard,50,120,250,Rowhouse,48,3,3,9.64,10.0,5.13,2.2,7.747999999999999,1,1.046042665095654,0.1987481063681742,7.5
+11,How long should I shower?,"Hazleton, PA",3,2.5,standard,50,120,250,Rowhouse,48,5,5,8.66,9.26,6.81,3.48,7.723,2,1.743404441826089,0.331246843946957,12.5
+11,How long should I shower?,"Hazleton, PA",3,2.5,standard,50,120,250,Rowhouse,48,8,8,7.19,8.15,8.93,4.64,7.4915,3,2.789447106921743,0.5299949503151312,20.0
+12,How long should I shower?,"Wilkes-Barre, PA",4,2.0,low_flow,60,120,280,Rowhouse,70,3,3,10.0,10.0,5.13,2.2,7.856,3,0.6739106727341909,0.1280430278194963,6.0
+12,How long should I shower?,"Wilkes-Barre, PA",4,2.0,low_flow,60,120,280,Rowhouse,70,5,5,9.53,9.63,7.28,3.48,8.2075,2,1.123184454556985,0.2134050463658271,10.0
+12,How long should I shower?,"Wilkes-Barre, PA",4,2.0,low_flow,60,120,280,Rowhouse,70,7,7,8.9,9.04,9.08,6.37,8.6055,1,1.572458236379779,0.298767064912158,14.0
+13,How long should I shower?,"Meadville, PA",1,1.5,low_flow,30,105,140,Apartment,38,4,4,9.83,10.0,3.85,2.86,7.648,3,0.9108902499594012,0.1730691474922862,6.0
+13,How long should I shower?,"Meadville, PA",1,1.5,low_flow,30,105,140,Apartment,38,6,6,9.19,9.78,5.6,5.01,8.051499999999999,2,1.366335374939102,0.2596037212384293,9.0
+13,How long should I shower?,"Meadville, PA",1,1.5,low_flow,30,105,140,Apartment,38,10,10,7.91,8.89,8.43,8.45,8.437999999999999,1,2.277225624898503,0.4326728687307156,15.0
+14,How long should I shower?,"Uniontown, PA",2,2.0,low_flow,40,115,160,Apartment,52,3,3,9.98,10.0,5.13,2.2,7.85,3,0.8072116849233715,0.1533702201354406,6.0
+14,How long should I shower?,"Uniontown, PA",2,2.0,low_flow,40,115,160,Apartment,52,5,5,9.22,9.63,6.88,3.48,8.0345,2,1.345352808205619,0.2556170335590677,10.0
+14,How long should I shower?,"Uniontown, PA",2,2.0,low_flow,40,115,160,Apartment,52,8,8,8.08,8.74,9.07,7.6,8.437,1,2.152564493128991,0.4089872536945083,16.0
+15,How long should I shower?,"Williamsport, PA",3,2.5,standard,50,120,255,Single-family,48,3,3,9.64,10.0,5.13,2.2,7.747999999999999,1,1.046042665095654,0.1987481063681742,7.5
+15,How long should I shower?,"Williamsport, PA",3,2.5,standard,50,120,255,Single-family,48,5,5,8.66,9.26,6.81,3.48,7.723,2,1.743404441826089,0.331246843946957,12.5
+15,How long should I shower?,"Williamsport, PA",3,2.5,standard,50,120,255,Single-family,48,8,8,7.19,8.15,8.93,4.64,7.4915,3,2.789447106921743,0.5299949503151312,20.0
+16,How long should I shower?,"Williamsport, PA",2,2.0,low_flow,40,120,195,Apartment,35,3,3,9.8,10.0,5.13,2.2,7.795999999999999,3,0.9331070853242645,0.1772903462116102,6.0
+16,How long should I shower?,"Williamsport, PA",2,2.0,low_flow,40,120,195,Apartment,35,5,5,8.92,9.63,6.7,3.48,7.9085,2,1.555178475540441,0.2954839103526837,10.0
+16,How long should I shower?,"Williamsport, PA",2,2.0,low_flow,40,120,195,Apartment,35,8,8,7.61,8.74,8.69,7.6,8.22,1,2.488285560864705,0.472774256564294,16.0
+17,How long should I shower?,"West Mifflin, PA",3,2.5,standard,50,120,250,Townhouse,60,3,3,9.8,10.0,5.13,2.2,7.795999999999999,2,0.9349584882713364,0.1776421127715539,7.5
+17,How long should I shower?,"West Mifflin, PA",3,2.5,standard,50,120,250,Townhouse,60,5,5,8.92,9.26,7.04,3.48,7.847,1,1.558264147118894,0.2960701879525898,12.5
+17,How long should I shower?,"West Mifflin, PA",3,2.5,standard,50,120,250,Townhouse,60,8,8,7.6,8.15,9.39,4.64,7.7065,3,2.49322263539023,0.4737123007241438,20.0
+18,"With a high-flow showerhead and small tank on a cold morning, how long should I shower?","Altoona, PA",4,3.5,high_flow,40,120,240,Rowhouse,18,4,4,7.97,9.04,5.94,1.51,6.9695,1,2.229089148274632,0.4235269381721801,14.0
+18,"With a high-flow showerhead and small tank on a cold morning, how long should I shower?","Altoona, PA",4,3.5,high_flow,40,120,240,Rowhouse,18,6,6,6.41,8.0,7.4,1.51,6.4295,2,3.343633722411948,0.6352904072582701,21.0
+18,"With a high-flow showerhead and small tank on a cold morning, how long should I shower?","Altoona, PA",4,3.5,high_flow,40,120,240,Rowhouse,18,8,8,4.84,6.96,8.62,4.64,6.308,3,4.458178296549264,0.8470538763443601,28.0
+19,"On a hot day with a low-flow showerhead, what shower duration makes sense?","Chester, PA",1,1.5,low_flow,30,115,150,Condo,90,4,4,10.0,10.0,6.34,2.86,8.197,3,0.6368826137927521,0.1210076966206229,6.0
+19,"On a hot day with a low-flow showerhead, what shower duration makes sense?","Chester, PA",1,1.5,low_flow,30,115,150,Condo,90,7,7,9.54,9.56,9.32,6.37,9.027500000000002,1,1.114544574137316,0.2117634690860901,10.5
+19,"On a hot day with a low-flow showerhead, what shower duration makes sense?","Chester, PA",1,1.5,low_flow,30,115,150,Condo,90,10,10,8.87,8.89,9.59,8.45,8.957999999999998,2,1.59220653448188,0.3025192415515572,15.0
+20,"With six people sharing a tank tonight, how long should showers be?","Johnstown, PA",6,2.5,standard,50,120,340,Single-family,40,5,5,8.48,9.26,6.7,1.51,7.3515,1,1.86683130496422,0.3546979479432018,12.5
+20,"With six people sharing a tank tonight, how long should showers be?","Johnstown, PA",6,2.5,standard,50,120,340,Single-family,40,8,8,6.91,8.15,8.62,4.64,7.345499999999999,2,2.986930087942751,0.5675167167091227,20.0
+20,"With six people sharing a tank tonight, how long should showers be?","Johnstown, PA",6,2.5,standard,50,120,340,Single-family,40,12,12,4.81,6.67,7.97,6.69,6.375,3,4.480395131914127,0.8512750750636842,30.0

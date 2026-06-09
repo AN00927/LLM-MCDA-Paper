@@ -77,3 +77,4 @@ Miscellaneous Scripts/RoundScenarioCounts.py
 NORMALIZATION_REPORT.md
 MANUAL_FOLLOWUP.md
 Scenario Files/rebuild_consolidated.py
+Scenario Files\migrate_consolidated_to_current_split.py

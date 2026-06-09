@@ -47,6 +47,11 @@ from model_config import (
     get_output_folder,
     get_reasoning_payload,
     N_RUNS,
+    TEMPERATURE,
+    MAX_RETRIES,
+    REQUEST_TIMEOUT,
+    RETRY_BASE_DELAY,
+    MAX_RETRY_BACKOFF,
 )
 from sentinel_utils import (
     _atomic_write_json,
@@ -79,7 +84,7 @@ MODEL_ID = get_model_id()
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "model": MODEL_ID,
-    "temperature": 0.3,  # Keep it consistent so results are reliable
+    "temperature": TEMPERATURE,  # shared across all three architectures (model_config)
     "reasoning": get_reasoning_payload(),
 }
 
@@ -99,17 +104,24 @@ def _init_failure_counters() -> Dict[str, int]:
     return {key: 0 for key in PURE_FAILURE_COUNTER_KEYS}
 
 
-def _increment_failure_counters(counters: Dict[str, int], failure_types: List[str], increment: int = 1) -> None:
+def _increment_failure_counters(counters: Dict[str, int], failure_types: List[str]) -> None:
     for failure_type in set(failure_types):
         if failure_type in counters:
-            counters[failure_type] += increment
+            counters[failure_type] += 1
 
 
 def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
-def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, Dict]:
-    """Query openrouter."""
+def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tuple[str, Dict]:
+    """Query openrouter.
+
+    Shared request policy across all three architectures (model_config):
+    MAX_RETRIES attempts, REQUEST_TIMEOUT-second socket timeout, exponential
+    backoff capped at MAX_RETRY_BACKOFF. latency_ms is the wall-clock round trip
+    of the *successful* HTTP request only (measured around requests.post),
+    excluding retry sleeps and local JSON parsing.
+    """
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         raise ValueError("OPENROUTER_API_KEY not found in environment variables")
@@ -148,7 +160,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
                 API_CONFIG["endpoint"],
                 headers=headers,
                 json=payload,
-                timeout=60
+                timeout=REQUEST_TIMEOUT
             )
             latency = (time.time() - start_time) * 1000
 
@@ -175,7 +187,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
                 if not retry_forever and attempt >= max_retries:
                     break
 
-                time.sleep(min(2 ** min(attempt - 1, 6), 60))
+                time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
                 continue
 
         except requests.exceptions.RequestException as e:
@@ -183,7 +195,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
             diagnostics["retries"] = attempt
             if not retry_forever and attempt >= max_retries:
                 break
-            time.sleep(min(2 ** min(attempt - 1, 6), 60))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
         except ValueError as e:
@@ -191,20 +203,19 @@ def query_openrouter(messages: List[Dict], max_retries: int = 5) -> Tuple[str, D
             diagnostics["retries"] = attempt
             if not retry_forever and attempt >= max_retries:
                 break
-            time.sleep(min(2 ** min(attempt - 1, 6), 60))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
-    # Retries exhausted — mark API exhaustion explicitly so callers can
-    # distinguish a transient infrastructure failure from a parse error.
+    # Retries exhausted — mark API exhaustion explicitly
     diagnostics["failure_types"] = ["failed_api_exhausted"]
     return None, diagnostics
 
 
 
 def build_user_prompt(scenario: Dict, alternative: str) -> str:
-    decision_type = scenario.get('decision_type', 'HVAC')
+    decision_type = scenario.get('decision_type', 'N/A')
     prompt = f'Score this alternative: "{alternative}"\n\n'
-    prompt += f'For the decision: "{scenario.get("question", "N/A")}"\n\n'
+    prompt += f'For the decision: "{scenario.get("question", "N/A")}"\n'
     prompt += "SCENARIO CONTEXT:\n"
     prompt += f"- Location: {scenario.get('location', 'N/A')}\n"
 
@@ -230,7 +241,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
         prompt += f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
 
-    prompt += "\nProvide scores (0-10) for all 4 criteria using the calibrations in the system prompt.\n"
+    prompt += "\nProvide scores (0-10) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
 
     return prompt
@@ -238,47 +249,42 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
 
-    system_prompt = """You are an expert household energy decision analyst. Score alternatives on
-four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
-- energy_cost: lower cost = higher score
-- environmental: lower emissions/resource use = higher score
-- comfort: higher comfort = higher score
-- practicality: easier adoption = higher score
+    system_prompt = """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
+    You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
 
 HVAC:
 - energy_cost: good when the setpoint demands little from the system given outdoor
   conditions; moderate when the system must work harder; poor when the
-  setpoint requires extreme effort
+  setpoint requires extreme effort.
 - environmental: good when the system runs efficiently; moderate when
-  runtime and load are average; poor when high load drives sustained high emissions
+  runtime and load are average; poor when high load drives sustained high emissions.
 - comfort: good when the setpoint feels comfortable for the outdoor temperature;
   moderate when slightly outside typical preference; poor when noticeably too
-  hot or cold
+  hot or cold.
 - practicality: good when the setpoint is easy for the user and system to maintain without
   strain; moderate when borderline; poor when extreme enough to risk override or
-  system stress
+  system stress.
 
 Appliance (scheduling):
 - energy_cost: good during off-peak rate hours; moderate in shoulder periods;
-  poor when scheduled during peak pricing windows
+  poor when scheduled during peak pricing windows.
 - environmental: good when grid emissions are low (typically overnight);
-  moderate during shoulder hours; poor when peak-period generation is dirtiest
+  moderate during shoulder hours; poor when peak-period generation is dirtiest.
 - comfort: good when the appliance is available with little or no delay; moderate
   when availability is pushed later into the evening; poor when results are not
-  ready until the following morning
+  ready until the following morning.
 - practicality: good when scheduling is easy to remember and socially unobtrusive;
   moderate when timing requires some planning; poor when running in the middle of
-  the night creates noise or coordination difficulty
+  the night creates noise or coordination difficulty.
 
 Shower (duration):
-- energy_cost: good when short; worsens continuously as duration increases —
-  shorter is always cheaper
+- energy_cost: good when short; worsens continuously as duration increases.
 - environmental: good when water volume used is low; worsens continuously as
-  duration increases — shorter always uses less water
+  duration increases.
 - comfort: good near a typical shower length; poor when too short to feel adequate
-  or long enough to feel wasteful
+  or long enough to feel wasteful.
 - practicality: good when the duration is sustainable as a daily habit; poor when
-  too short to realistically maintain or long enough to cause hot water contention
+  too short to realistically maintain or long enough to cause hot water contention.
 
 Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
 """
@@ -291,7 +297,6 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     ]
 
     response, diagnostics = query_openrouter(messages)
-    # Preserve any failure_types set by query_openrouter (e.g. failed_api_exhausted).
     diagnostics.setdefault("failure_types", [])
 
     api_fallback_scores = {
@@ -373,9 +378,8 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """Apply mavt ranking."""
     alternatives = [alt["alternative"] for alt in alternatives_scores]
-    n = len(alternatives)
+
 
     valid_pairs = []  # (input_idx, weighted_sum)
     for idx, alt_scores in enumerate(alternatives_scores):
@@ -392,16 +396,16 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     if not valid_pairs:
         return {
             "ranked_alternatives": [],
-            "ranks": [1928] * n,
-            "weighted_scores": [1928] * n
+            "ranks": [1928] * len(alternatives),
+            "weighted_scores": [1928] * len(alternatives)
         }
 
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the indices lined up with the original order
-    ranks = [1928] * n
-    weighted_scores = [1928] * n
+    ranks = [1928] * len(alternatives)
+    weighted_scores = [1928] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
         ranks[input_idx] = rank_position + 1
         weighted_scores[input_idx] = ws
@@ -413,7 +417,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     }
 
 def run_scenario(scenario: Dict) -> Dict:
-    """Run scenario."""
     alternatives = [
         scenario.get("alternative_1", ""),
         scenario.get("alternative_2", ""),
@@ -463,7 +466,6 @@ def run_scenario(scenario: Dict) -> Dict:
     return {
         "decision_type": scenario.get("decision_type", "N/A"),
         "scenario_id": scenario.get("scenario_id", "N/A"),
-
         "question": scenario.get("question", "N/A"),
         "location": scenario.get("location", "N/A"),
         "outdoor_temp": scenario.get("outdoor_temp", "N/A"),
@@ -787,7 +789,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
 
 def main():
-    """Main."""
     if not os.getenv("OPENROUTER_API_KEY"):
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return

@@ -445,49 +445,38 @@ class ApplianceGroundTruthCalculator:
                 print(f"  ✗ Parsing ERROR: {e}")
                 continue
 
-            # Calculate raw criterion values
-            try:
-                energy_cost = self.calculate_energy_cost(
-                    scenario['kwh_per_cycle'],
-                    run_time_hour,
-                    scenario['location']
-                )
-            except Exception as e:
-                print(f"  ✗ Energy cost ERROR: {e}")
-                energy_cost = 0.0
+            # Calculate raw criterion values. A sub-calc failure must NOT be
+            # swallowed with a neutral default — energy_cost=0.0 is a *perfect*
+            # score and comfort/practicality=5.0 are real middling scores, so a
+            # crashed calc would masquerade as a valid (and good) result. Let the
+            # exception propagate so the caller marks the whole scenario failed
+            # (sentinel 1928), which is detectable downstream.
+            energy_cost = self.calculate_energy_cost(
+                scenario['kwh_per_cycle'],
+                run_time_hour,
+                scenario['location']
+            )
 
-            try:
-                emissions = self.calculate_environmental_impact(
-                    scenario['kwh_per_cycle'],
-                    run_time_hour
-                )
-            except Exception as e:
-                print(f"  ✗ Emissions ERROR: {e}")
-                emissions = 0.0
+            emissions = self.calculate_environmental_impact(
+                scenario['kwh_per_cycle'],
+                run_time_hour
+            )
 
-            try:
-                comfort = self.calculate_comfort_score(
-                    delay_hours,
-                    run_time_hour,
-                    scenario['housing_type'],
-                    scenario['household_size'],
-                    scenario['appliance']
-                )
-            except Exception as e:
-                print(f"  ✗ Comfort ERROR: {e}")
-                comfort = 5.0
+            comfort = self.calculate_comfort_score(
+                delay_hours,
+                run_time_hour,
+                scenario['housing_type'],
+                scenario['household_size'],
+                scenario['appliance']
+            )
 
-            try:
-                practicality = self.calculate_practicality_score(
-                    delay_hours,
-                    run_time_hour,
-                    scenario['housing_type'],
-                    scenario['household_size'],
-                    scenario['appliance']
-                )
-            except Exception as e:
-                print(f"  ✗ Practicality ERROR: {e}")
-                practicality = 5.0
+            practicality = self.calculate_practicality_score(
+                delay_hours,
+                run_time_hour,
+                scenario['housing_type'],
+                scenario['household_size'],
+                scenario['appliance']
+            )
 
             raw_results[alt] = {
                 'energy_cost_dollars': energy_cost,

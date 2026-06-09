@@ -321,55 +321,66 @@ def sync_domain(
 
     descriptor_cols = cfg["descriptor_cols"]
 
-    # ---- Full pre-write validation ------------------------------------------
-    errors = _validate_domain(dtype, rag_df, gt_df, descriptor_cols, rag_path, gt_path)
-    if errors:
+    # ---- Column-presence check ----------------------------------------------
+    missing = [c for c in descriptor_cols if c not in rag_df.columns or c not in gt_df.columns]
+    if missing:
         raise ValueError(
-            f"\n{'='*60}\n"
-            f"Validation FAILED for {dtype} — no files were written.\n"
-            f"{'='*60}\n"
-            + "\n".join(errors)
+            f"\n{'='*60}\nValidation FAILED for {dtype} — no files were written.\n"
+            f"{'='*60}\n{dtype}: descriptor column(s) missing from RAG or GT: {missing}"
         )
 
-    # ---- Build the refreshed dataframe from GT rows -------------------------
-    rag_df_typed = rag_df.copy()
-    gt_df_typed = gt_df.copy()
-    rag_df_typed["scenario_id"] = pd.to_numeric(rag_df_typed["scenario_id"], errors="raise").astype(int)
-    gt_df_typed["scenario_id"] = pd.to_numeric(gt_df_typed["scenario_id"], errors="raise").astype(int)
+    # ---- Match RAG rows to GT rows by DESCRIPTOR SIGNATURE, not scenario_id --
+    # The RAG sheets carry their own sequential scenario_id (1..N per type) which
+    # no longer corresponds to the master-row index used in the GT files, so a
+    # scenario_id join is impossible. The descriptor columns (params + per-alt
+    # alternative/duration) uniquely identify a scenario-alternative and MUST
+    # already agree between the two files, so they are the correct join key.
+    # Only the SCORE_COLS are copied across; every other RAG column is preserved
+    # (writing the GT frame wholesale would drop RAG-only "show everything"
+    # columns such as flow_rate / tank_size / water_heater_temp).
+    def _signature(row) -> tuple:
+        return tuple(_col_norm(c, row.get(c, "")) for c in descriptor_cols)
 
-    rag_ids = set(rag_df_typed["scenario_id"].unique())
-    refreshed_df = (
-        gt_df_typed[gt_df_typed["scenario_id"].isin(rag_ids)]
-        .copy()
-        .sort_values(["scenario_id"])
-        .reset_index(drop=True)
-    )
+    gt_lookup: dict[tuple, dict] = {}
+    for _, row in gt_df.iterrows():
+        sig = _signature(row)
+        if sig in gt_lookup:
+            raise RuntimeError(
+                f"{dtype}: GT has duplicate descriptor signature {sig} — "
+                "cannot match unambiguously. Aborting before write."
+            )
+        gt_lookup[sig] = row.to_dict()
 
-    # ---- Final sanity: row count must be exactly scenario_count × 3 ---------
-    expected_rows = len(rag_ids) * 3
-    if len(refreshed_df) != expected_rows:
-        raise RuntimeError(
-            f"{dtype}: refreshed dataframe has {len(refreshed_df)} rows "
-            f"but expected {expected_rows} ({len(rag_ids)} scenarios × 3 alternatives). "
-            "Aborting before write."
-        )
+    score_cols = [c for c in SCORE_COLS if c in gt_df.columns and c in rag_df.columns]
 
-    # ---- scenario_id set must be unchanged ----------------------------------
-    refreshed_ids = set(refreshed_df["scenario_id"].unique())
-    if refreshed_ids != rag_ids:
-        added = refreshed_ids - rag_ids
-        dropped = rag_ids - refreshed_ids
-        raise RuntimeError(
-            f"{dtype}: scenario_id set changed after filtering GT. "
-            f"Added: {sorted(added)}, Dropped: {sorted(dropped)}"
+    updated = rag_df.copy()
+    unmatched: list[str] = []
+    for idx, rag_row in updated.iterrows():
+        gt_row = gt_lookup.get(_signature(rag_row))
+        if gt_row is None:
+            unmatched.append(
+                f"  scenario_id={rag_row.get('scenario_id')!r}, "
+                f"alternative={rag_row.get('alternative')!r}: no GT row with matching descriptors"
+            )
+            continue
+        for col in score_cols:
+            updated.at[idx, col] = gt_row[col]
+
+    if unmatched:
+        raise ValueError(
+            f"\n{'='*60}\nValidation FAILED for {dtype} — no files were written.\n"
+            f"{'='*60}\n{dtype}: {len(unmatched)} RAG row(s) had no descriptor match in GT:\n"
+            + "\n".join(unmatched[:30])
+            + ("\n  ... (truncated)" if len(unmatched) > 30 else "")
         )
 
     if not dry_run:
-        write_xlsx(refreshed_df, rag_path)
+        write_xlsx(updated, rag_path)
 
     return {
-        "scenarios_synced": len(rag_ids),
-        "rows_written": len(refreshed_df),
+        "scenarios_synced": rag_df["scenario_id"].nunique(),
+        "rows_written": len(updated),
+        "score_cols_refreshed": score_cols,
         "dry_run": dry_run,
     }
 
