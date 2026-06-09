@@ -161,141 +161,26 @@ def _col_norm(col_name: str, value: object) -> str:
     }
     if col_name in numeric_indicators:
         return _norm_numeric(value)
-    # alternative is a numeric setpoint for HVAC (e.g. '75') but a time string
-    # for Appliance (e.g. '2:00 AM') — safe to try numeric first, fall back.
+    # alternative is a numeric setpoint for HVAC (e.g. '75') but a clock time for
+    # Appliance. Appliance times can appear in shorthand ('6pm') or canonical
+    # ('6:00 PM') form across RAG vs GT, so normalise any am/pm time to 24h HH:MM
+    # before comparing — otherwise '6pm' != '6:00 pm' would spuriously mismatch.
     if col_name == "alternative":
+        s = str(value).strip()
         try:
-            f = float(str(value).strip())
+            f = float(s)
             return str(int(f)) if f == int(f) else f"{f:.10g}"
         except ValueError:
-            return _norm_str(value)
+            pass
+        m = re.search(r'(\d{1,2})(?::(\d{2}))?\s*([ap])m', s, re.IGNORECASE)
+        if m:
+            hh = int(m.group(1)) % 12
+            if m.group(3).lower() == 'p':
+                hh += 12
+            return f"{hh:02d}:{int(m.group(2) or 0):02d}"
+        return _norm_str(value)
     return _norm_str(value)
 
-
-# ---------------------------------------------------------------------------
-# Core validation
-# ---------------------------------------------------------------------------
-
-def _validate_domain(
-    dtype: str,
-    rag_df: pd.DataFrame,
-    gt_df: pd.DataFrame,
-    descriptor_cols: list[str],
-    rag_path: Path,
-    gt_path: Path,
-) -> list[str]:
-    """Return a list of error strings (empty = all good).
-
-    Checks performed (all before any write):
-      1. scenario_id column present in both files
-      2. Every RAG scenario_id exists in GT
-      3. Every RAG scenario_id has exactly 3 rows in GT
-      4. No GT scenario_id appears MORE than 3 times (sanity)
-      5. For each (scenario_id, alternative) pair: all descriptor columns
-         match between the RAG row and the GT row (normalised comparison)
-    """
-    errors: list[str] = []
-
-    # -- 1. Column presence ---------------------------------------------------
-    for col in ["scenario_id"] + descriptor_cols:
-        if col not in rag_df.columns:
-            errors.append(f"{dtype}: RAG file missing expected column '{col}' ({rag_path.name})")
-        if col not in gt_df.columns:
-            errors.append(f"{dtype}: GT file missing expected column '{col}' ({gt_path.name})")
-    if errors:
-        return errors  # Can't proceed without the key columns
-
-    # -- Coerce scenario_id to int in both -----------------------------------
-    try:
-        rag_df = rag_df.copy()
-        gt_df = gt_df.copy()
-        rag_df["scenario_id"] = pd.to_numeric(rag_df["scenario_id"], errors="raise").astype(int)
-        gt_df["scenario_id"] = pd.to_numeric(gt_df["scenario_id"], errors="raise").astype(int)
-    except Exception as exc:
-        errors.append(f"{dtype}: scenario_id is not numeric — {exc}")
-        return errors
-
-    rag_ids = sorted(rag_df["scenario_id"].unique())
-    gt_ids_set = set(gt_df["scenario_id"].unique())
-
-    # -- 2. All RAG scenario_ids present in GT --------------------------------
-    missing_in_gt = [sid for sid in rag_ids if sid not in gt_ids_set]
-    if missing_in_gt:
-        errors.append(
-            f"{dtype}: {len(missing_in_gt)} RAG scenario_id(s) not found in GT: {missing_in_gt}"
-        )
-
-    # -- 3 & 4. Row counts per scenario_id in GT ------------------------------
-    gt_counts = gt_df["scenario_id"].value_counts()
-    wrong_count = {
-        sid: int(gt_counts[sid])
-        for sid in rag_ids
-        if sid in gt_counts.index and gt_counts[sid] != 3
-    }
-    if wrong_count:
-        errors.append(
-            f"{dtype}: GT has wrong row count (expected 3 per scenario_id) for: {wrong_count}"
-        )
-    gt_excess = {
-        sid: int(cnt)
-        for sid, cnt in gt_counts.items()
-        if sid not in set(rag_ids) and cnt != 3
-    }
-    # (We only flag excess outside RAG if they have the wrong count — the GT
-    # may legitimately contain test scenarios too, so just check count==3.)
-
-    if errors:
-        return errors  # Don't run descriptor check if structural issues exist
-
-    # -- 5. Descriptor column match per (scenario_id, alternative) pair ------
-    # Build a GT lookup: (scenario_id, norm_alternative) -> row dict
-    gt_lookup: dict[tuple[int, str], dict] = {}
-    for _, row in gt_df.iterrows():
-        sid = int(row["scenario_id"])
-        alt_key = _col_norm("alternative", row.get("alternative", ""))
-        pair = (sid, alt_key)
-        if pair in gt_lookup:
-            errors.append(
-                f"{dtype}: GT has duplicate (scenario_id={sid}, alternative={row.get('alternative')!r}) — "
-                "cannot match unambiguously"
-            )
-        else:
-            gt_lookup[pair] = row.to_dict()
-
-    if errors:
-        return errors
-
-    mismatches: list[str] = []
-    for _, rag_row in rag_df.iterrows():
-        sid = int(rag_row["scenario_id"])
-        alt_key = _col_norm("alternative", rag_row.get("alternative", ""))
-        pair = (sid, alt_key)
-
-        if pair not in gt_lookup:
-            mismatches.append(
-                f"  scenario_id={sid}, alternative={rag_row.get('alternative')!r}: "
-                "no matching (scenario_id, alternative) pair in GT"
-            )
-            continue
-
-        gt_row = gt_lookup[pair]
-        for col in descriptor_cols:
-            rag_val = _col_norm(col, rag_row.get(col, ""))
-            gt_val = _col_norm(col, gt_row.get(col, ""))
-            if rag_val != gt_val:
-                mismatches.append(
-                    f"  scenario_id={sid}, alternative={rag_row.get('alternative')!r}, "
-                    f"col='{col}': RAG={rag_row.get(col)!r} vs GT={gt_row.get(col)!r}"
-                )
-
-    if mismatches:
-        errors.append(
-            f"{dtype}: descriptor mismatch(es) between RAG and GT "
-            f"({len(mismatches)} row(s)):\n" + "\n".join(mismatches[:30])
-            + ("\n  ... (truncated)" if len(mismatches) > 30 else "")
-        )
-
-    return errors
 
 
 # ---------------------------------------------------------------------------

@@ -279,24 +279,6 @@ class HVACGroundTruthCalculator:
             # Infeasible option eliminated (Gathergood 2012)
             return 0.0
 
-    @staticmethod
-    def parse_utility_budget(budget_value) -> float:
-        """Parse utility budget values that may include currency symbols or spacing."""
-        if budget_value is None or pd.isna(budget_value):
-            return 0.0
-
-        if isinstance(budget_value, (int, float, np.integer, np.floating)):
-            return max(0.0, float(budget_value))
-
-        cleaned = re.sub(r"[^0-9.\-]", "", str(budget_value))
-        if not cleaned:
-            return 0.0
-
-        try:
-            return max(0.0, float(cleaned))
-        except ValueError:
-            return 0.0
-
     @classmethod
     def emissions_factor_for_occupancy(cls, occupancy_context: str) -> float:
         """Return the PJM marginal CO2 factor (lbs/kWh) implied by an HVAC occupancy
@@ -565,7 +547,7 @@ class HVACGroundTruthCalculator:
             }
 
         final_scores = {}
-        utility_budget = self.parse_utility_budget(scenario.get('utility_budget', 0.0))
+        utility_budget = parse_utility_budget(scenario.get('utility_budget', 0.0))
 
         for alt, raw in raw_results.items():
 
