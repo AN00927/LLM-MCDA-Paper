@@ -239,7 +239,7 @@ def build_system_prompt() -> str:
     Calibration anchors are intentionally omitted because RAG already
     supplies scored in-context examples.
     """
-    return """"You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
+    return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
     You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
 1. Energy Cost: Lower energy costs = higher score
 2. Environmental Impact: Lower emissions = higher score
@@ -273,15 +273,19 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
     # Make the embedding
     query_embedding = embedding_model.encode(scenario_text).tolist()
 
-    # Pull matches from the database, filtered by decision type
+    # Pull matches from the database, filtered by decision type. Narrow the
+    # catch to the failure modes Chroma's query can realistically raise (bad
+    # embedding dim / malformed filter -> ValueError; backend/sqlite issues ->
+    # RuntimeError; missing keys in the result envelope -> KeyError) rather than
+    # masking unrelated bugs behind a bare Exception.
     try:
         results = chroma_collection.query(
             query_embeddings=[query_embedding],
             n_results=k,
             where={"decision_type": decision_type}
         )
-    except Exception as e:
-        logger.info(f"   Retrieval error: {e}")
+    except (ValueError, RuntimeError, KeyError) as e:
+        logger.warning(f"   Retrieval query failed ({type(e).__name__}): {e}")
         return []
 
     retrieved = []
@@ -424,18 +428,18 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
     elif decision_type == 'Appliance':
         prompt += (
+            f"- Appliance Age Range: {scenario.get('appliance_age', 'N/A')}\n"
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
-            f"- Appliance Age Range: {scenario.get('appliance_age', 'N/A')}\n"
         )
 
     elif decision_type == 'Shower':
         prompt += (
             f"- Outdoor Temp: {scenario.get('outdoor_temp', 'N/A')} deg F\n"
+            f"- Flow Rate: {scenario.get('flow_rate', 'N/A')}\n"
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
-            f"- Flow Rate: {scenario.get('flow_rate', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 

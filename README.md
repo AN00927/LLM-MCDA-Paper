@@ -152,9 +152,9 @@ LLM-MCDA-Paper/
 │   ├── PurePrompting.py
 │   └── RAGDatabaseOptimized.py
 ├── Ground Truth/
-│   ├── ground_truth_appliance.xlsx     # 288 rows (96 scenarios × 3 alternatives)
-│   ├── ground_truth_hvac.xlsx          # 309 rows (103 scenarios × 3 alternatives)
-│   └── ground_truth_shower.xlsx        # 231 rows (77 scenarios × 3 alternatives)
+│   ├── ground_truth_appliance.xlsx     # 300 rows (100 scenarios × 3 alternatives)
+│   ├── ground_truth_hvac.xlsx          # 315 rows (105 scenarios × 3 alternatives)
+│   └── ground_truth_shower.xlsx        # 240 rows (80 scenarios × 3 alternatives)
 ├── Ground Truth Calculators/
 │   ├── ApplianceGroundTruthCalculator.py
 │   ├── HVACGroundTruthCalculator.py
@@ -165,15 +165,18 @@ LLM-MCDA-Paper/
 │   ├── EntropyWeights.py
 │   ├── ImpliedWeights.py
 │   ├── MERCECWeights.py
-│   └── SensitivityAnalysis.py
+│   ├── SensitivityAnalysis.py
+│   └── SyncRAGGroundTruth.py
 ├── Scenario Files/
-│   ├── ApplianceRAGScenarios.xlsx      # 90 RAG-only scenarios
-│   ├── ApplianceScenarios.xlsx         # 98 total appliance scenarios
-│   ├── HVACRagScenarios.xlsx           # 105 RAG-only scenarios
-│   ├── HVACScenarios.xlsx              # 103 total HVAC scenarios
-│   ├── ShowerRAGScenarios.xlsx         # 45 RAG-only scenarios
-│   ├── ShowerScenarios.xlsx            # 77 total shower scenarios
-│   └── TestScenarios.xlsx              # 185 test scenarios (69 HVAC, 62 Appliance, 54 Shower)
+│   ├── ConsolidatedforSimaltaneousediting.xlsx  # master workbook (source of truth for all derivations)
+│   ├── HVACScenarios.xlsx              # 105 total HVAC scenarios (70 test + 35 RAG)
+│   ├── ApplianceScenarios.xlsx         # 100 total appliance scenarios (65 test + 35 RAG)
+│   ├── ShowerScenarios.xlsx            # 80 total shower scenarios (60 test + 20 RAG)
+│   ├── HVACRagScenarios.xlsx           # 35 RAG scenarios (derived — do not edit directly)
+│   ├── ApplianceRAGScenarios.xlsx      # 35 RAG scenarios (derived)
+│   ├── ShowerRAGScenarios.xlsx         # 20 RAG scenarios (derived)
+│   ├── TestScenarios.xlsx              # 195 test scenarios (70 HVAC, 65 Appliance, 60 Shower) (derived)
+│   └── rebuild_consolidated.py         # re-derives TestScenarios + RAGScenarios from master workbook
 ├── Scoring Logic and Documentation/
 │   ├── method/
 │   └── paper/
