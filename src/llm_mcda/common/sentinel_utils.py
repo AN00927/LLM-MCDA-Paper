@@ -1,7 +1,7 @@
 """Shared sentinel-filtering utilities for all MCDA architectures.
 
 The sentinel value 1928 marks a failed/invalid score.  All three of these
-are treated as sentinel regardless of how they arrive from CSV/JSON:
+are treated as sentinel regardless of how they arrive from xlsx/JSON:
     - numeric int   1928
     - numeric float 1928.0
     - string        "1928"
@@ -185,6 +185,125 @@ def _is_complete_run_file(path) -> bool:
     except Exception:
         return False
     return len(df) > 0
+
+
+def house_age_to_band_label(years) -> str:
+    """Canonical building-age range label for a numeric age in years.
+
+    5-year bands up to 20 years (1-5/6-10/11-15/16-20), then 10-year bands
+    (21-30, 31-40, ... 101-110, ...). Single source of truth shared by the
+    scenario rebuild, BuildRAG embedding, and RAG retrieval embedding so the
+    label can never drift between index and query sides.
+
+    Returns the input unchanged (as str) if it is non-numeric.
+    """
+    try:
+        y = int(round(float(years)))
+    except (TypeError, ValueError):
+        return str(years)
+    if y <= 5:
+        return "1-5 years"
+    if y <= 10:
+        return "6-10 years"
+    if y <= 15:
+        return "11-15 years"
+    if y <= 20:
+        return "16-20 years"
+    lo = ((y - 1) // 10) * 10 + 1
+    return f"{lo}-{lo + 9} years"
+
+
+def appliance_age_to_band_label(years) -> str:
+    """Canonical appliance-age range label for a numeric age in years.
+
+    Finer 3-year bands through the first 12 years (1-3 / 4-6 / 7-9 / 10-12),
+    where appliance efficiency degrades fastest, then 5-year bands beyond that
+    (13-17, 18-22, 23-27, ...). Single source of truth shared by the
+    TestScenarios rebuild, BuildRAG embedding/metadata, and RAG retrieval
+    embedding so the label can never drift between index and query sides
+    (mirrors house_age_to_band_label). Returns the input unchanged (as str)
+    if it is non-numeric.
+    """
+    try:
+        y = int(round(float(years)))
+    except (TypeError, ValueError):
+        return str(years)
+    if y < 1:
+        y = 1
+    if y <= 12:
+        lo = ((y - 1) // 3) * 3 + 1
+        return f"{lo}-{lo + 2} years"
+    lo = ((y - 13) // 5) * 5 + 13
+    return f"{lo}-{lo + 4} years"
+
+
+def gpm_to_flow_rate_label(gpm) -> str:
+    """Canonical showerhead flow-rate label for a numeric GPM value.
+
+    low_flow (<= 2.0) / standard (<= 3.0) / high_flow (> 3.0). Single source
+    of truth shared by the scenario rebuild, BuildRAG embedding, and RAG
+    retrieval embedding. Returns the input unchanged (as str) if non-numeric.
+    """
+    try:
+        val = float(gpm)
+    except (TypeError, ValueError):
+        return str(gpm)
+    if val <= 2.0:
+        return "low_flow"
+    if val <= 3.0:
+        return "standard"
+    return "high_flow"
+
+
+def format_embedding_text(decision_type: str, fields) -> str:
+    """Build the similarity-embedding document for a scenario.
+
+    Single source of truth shared by BuildRAG (index side, reads RAG sheets) and
+    RAGDatabaseOptimized (query side, reads TestScenarios) so the embedded string
+    is byte-identical field-for-field on both sides — retrieval quality depends on
+    the query and index strings being produced by the *same* function.
+
+    Encodes only the score-driving homeowner-facing parameters (no free-text
+    location; Appliance keeps its question because it carries the baseline time).
+    *fields* may be a dict or a pandas Series (anything with .get).
+      - house_age is normalised to a band label (idempotent if already a label)
+      - flow_rate uses the stored label, falling back to a gpm-derived label
+    """
+    def g(key, default="N/A"):
+        v = fields.get(key, default)
+        return default if v is None else v
+
+    if decision_type == "HVAC":
+        house_age = house_age_to_band_label(fields.get("house_age"))
+        return (
+            f"{g('outdoor_temp')} deg F outdoor, {g('insulation')} insulation, "
+            f"{g('square_footage')} sqft, {g('household_size')} occupants, "
+            f"{g('housing_type')}, house age {house_age}, budget ${g('utility_budget')}/month"
+        )
+    if decision_type == "Appliance":
+        # No separate appliance-type token: TestScenarios (query side) has no
+        # 'appliance' column, and the question text already names the appliance
+        # ("run the dryer"). Adding it would be 'N/A' on the query side and break
+        # query/index parity.
+        # appliance_age is banded here so the query side (TestScenarios stores
+        # the band label) and the index side (ApplianceRAGScenarios stores raw
+        # years) converge to the same token — idempotent on an existing label.
+        appliance_age = appliance_age_to_band_label(fields.get("appliance_age"))
+        return (
+            f"{g('question')}, appliance age {appliance_age}, "
+            f"{g('household_size')} occupants, {g('housing_type')}, "
+            f"budget ${g('utility_budget')}/month"
+        )
+    if decision_type == "Shower":
+        fr = fields.get("flow_rate")
+        if fr is None or str(fr).strip() in ("", "nan", "N/A", "<NA>"):
+            fr = gpm_to_flow_rate_label(fields.get("gpm", 0))
+        return (
+            f"{fr} showerhead, {g('outdoor_temp')} deg F outdoor, "
+            f"{g('household_size')} occupants, {g('housing_type')}, "
+            f"budget ${g('utility_budget')}/month"
+        )
+    raise ValueError(f"Unknown decision type: {decision_type}")
 
 
 def parse_utility_budget(budget_value) -> float:

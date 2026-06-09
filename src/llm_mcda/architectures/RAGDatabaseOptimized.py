@@ -22,11 +22,17 @@ from model_config import (
     get_output_folder,
     get_reasoning_payload,
     N_RUNS,
+    TEMPERATURE,
+    MAX_RETRIES,
+    REQUEST_TIMEOUT,
+    RETRY_BASE_DELAY,
+    MAX_RETRY_BACKOFF,
 )
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     _is_complete_run_file,
+    format_embedding_text,
     has_sentinel_scores,
     read_table_clean,
 )
@@ -51,7 +57,6 @@ if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
 
 MODEL_ID = get_model_id()
-TEMPERATURE = 0.3
 REASONING_PAYLOAD = get_reasoning_payload()
 
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
@@ -59,8 +64,7 @@ COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 RETRIEVE_K = 3
 
-# Must match BuildRAG.RAG_SCHEMA_VERSION. Bump in lockstep when metadata fields change.
-EXPECTED_RAG_SCHEMA_VERSION = 2
+EXPECTED_RAG_SCHEMA_VERSION = 4
 RAG_SOURCE_FILES = [
     ("HVAC", "HVACRagScenarios.xlsx"),
     ("Appliance", "ApplianceRAGScenarios.xlsx"),
@@ -82,8 +86,6 @@ def _compute_expected_source_hash() -> str:
         h.update(b'|')
     return h.hexdigest()
 
-MAX_RETRIES = 5
-RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 OUTPUT_CSV = OUTPUT_DIR / "rag_results.xlsx"
@@ -149,7 +151,13 @@ def init_rag_resources() -> None:
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                      temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
-    """Query openrouter."""
+    """Query openrouter.
+
+    Shared request policy across all three architectures (model_config):
+    MAX_RETRIES attempts, REQUEST_TIMEOUT-second socket timeout, exponential
+    backoff capped at MAX_RETRY_BACKOFF. latency_ms is the wall-clock round trip
+    of the successful HTTP request only (measured around requests.post).
+    """
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -176,8 +184,8 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         attempt += 1
         try:
             start_time = time.time()
-            response = requests.post(url, headers=headers, json=payload, timeout=60)
-            latency = time.time() - start_time
+            response = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
+            latency_ms = (time.time() - start_time) * 1000
 
             if response.status_code == 200:
                 data = response.json()
@@ -188,7 +196,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                     'prompt_tokens': usage.get('prompt_tokens', 0),
                     'completion_tokens': usage.get('completion_tokens', 0),
                     'total_tokens': usage.get('total_tokens', 0),
-                    'latency_ms': latency *1000,
+                    'latency_ms': latency_ms,
                     'model': model
                 }
 
@@ -203,7 +211,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                 if not retry_forever and attempt >= MAX_RETRIES:
                     break
 
-                time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+                time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
                 continue
 
         except requests.exceptions.RequestException as e:
@@ -211,7 +219,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             logger.info(f"  Request failed (attempt {attempt}): {e}")
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
-            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
         except ValueError as e:
@@ -219,7 +227,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             logger.info(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
-            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
     # Retries exhausted — raise so caller can map to failed_api_exhausted.
@@ -228,59 +236,29 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
 def build_system_prompt() -> str:
     """Build system prompt.
 
-    Numeric calibration anchors are intentionally omitted because RAG already
+    Calibration anchors are intentionally omitted because RAG already
     supplies scored in-context examples.
     """
-    return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
-    You consistently utilize all information given in the scenario context. You must take into account all factors and how they may affect all 4 criteria.
-Your task is to score alternatives on four criteria:
-1. Energy Cost (0-10): Lower energy costs = higher score
-2. Environmental Impact (0-10): Lower emissions = higher score
-3. Comfort (0-10): Higher user comfort = higher score
-4. Practicality (0-10): Easier to implement/maintain = higher score
+    return """"You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
+    You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
+1. Energy Cost: Lower energy costs = higher score
+2. Environmental Impact: Lower emissions = higher score
+3. Comfort: Higher user comfort = higher score
+4. Practicality: Easier to implement/maintain = higher score
 
-Scoring guidelines:
-- Use the inclusive 0-10 scale (0.0 <= score <= 10.0; do not exceed 10.0 or go below 0.0)
-- Consider tradeoffs between criteria
-- Base scores on engineering principles, behavioral research, and practical constraints
-- Be consistent across similar scenarios
 
-Return ONLY a JSON object with four numeric scores (0-10). There should be no other text in your response, even for reasoning:
-{"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}"""
+Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}"""
 
 
 def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
-    """Format scenario text for retrieval."""
+    """Build the query-side embedding string (mirrors the index side field-for-field
+    via the shared sentinel_utils.format_embedding_text)."""
     decision_type = scenario.get('decision_type', 'HVAC')
-
-    if decision_type == 'HVAC':
-        scenario_text = (
-            f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
-            f"{scenario.get('insulation', 'N/A')} insulation, "
-            f"{scenario.get('square_footage', 'N/A')} sqft, "
-            f"{scenario.get('household_size', 'N/A')} occupants, "
-            f"{scenario.get('housing_type', 'N/A')}"
-        )
-    elif decision_type == 'Appliance':
-        scenario_text = (
-            f"{scenario.get('question', 'N/A')}, "
-            f"{scenario.get('household_size', 'N/A')} occupants, "
-            f"{scenario.get('housing_type', 'N/A')}, "
-            f"appliance age: {scenario.get('appliance_age', 'N/A')} yr, "
-            f"budget ${scenario.get('utility_budget', 'N/A')}/month"
-        )
-    elif decision_type == 'Shower':
-        scenario_text = (
-            f"{scenario.get('flow_rate', 'N/A')} showerhead, "
-            f"{scenario.get('outdoor_temp', 'N/A')} deg F outdoor, "
-            f"{scenario.get('household_size', 'N/A')} occupants, "
-            f"{scenario.get('housing_type', 'N/A')}, "
-            f"budget ${scenario.get('utility_budget', 'N/A')}/month"
-        )
-    else:
+    try:
+        scenario_text = format_embedding_text(decision_type, scenario)
+    except ValueError:
         scenario_text = scenario.get('question', f'Unknown decision type: {decision_type}')
         logger.info(f"   Warning: Unknown decision type '{decision_type}'")
-
     return scenario_text, decision_type
 
 def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict]:
@@ -313,73 +291,107 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
                 results['documents'][0],
                 results['metadatas'][0]
         ):
-            # B4 fix: default to None (not 0.0) so missing metadata is visible
-            # rather than silently anchoring the LLM at zero.
+            # Carry the full "show everything" metadata through; format_rag_context
+            # renders the homeowner+engineering block and per-alt scores from it.
             retrieved.append({
                 'id': doc_id,
                 'text': doc_text,
                 'decision_type': metadata.get('decision_type', 'Unknown'),
-                'question': metadata.get('question', 'N/A'),
-                'alternatives': [
-                    {
-                        'name': metadata.get('alt1', 'N/A'),
-                        'scores': {
-                            'energy_cost': metadata.get('alt1_energy_cost'),
-                            'environmental': metadata.get('alt1_environmental'),
-                            'comfort': metadata.get('alt1_comfort'),
-                            'practicality': metadata.get('alt1_practicality')
-                        }
-                    },
-                    {
-                        'name': metadata.get('alt2', 'N/A'),
-                        'scores': {
-                            'energy_cost': metadata.get('alt2_energy_cost'),
-                            'environmental': metadata.get('alt2_environmental'),
-                            'comfort': metadata.get('alt2_comfort'),
-                            'practicality': metadata.get('alt2_practicality')
-                        }
-                    },
-                    {
-                        'name': metadata.get('alt3', 'N/A'),
-                        'scores': {
-                            'energy_cost': metadata.get('alt3_energy_cost'),
-                            'environmental': metadata.get('alt3_environmental'),
-                            'comfort': metadata.get('alt3_comfort'),
-                            'practicality': metadata.get('alt3_practicality')
-                        }
-                    }
-                ]
+                'metadata': metadata,
             })
 
     return retrieved
 
 
+def _fmt_num(v, nd=1):
+    """Format a metadata value as a fixed-decimal number, or pass text through."""
+    try:
+        return f"{float(v):.{nd}f}"
+    except (TypeError, ValueError):
+        return str(v)
+
+
+def _exemplar_param_lines(decision_type: str, md: Dict) -> List[str]:
+    """Render the homeowner + engineering parameter block for one exemplar,
+    mirroring the target-scenario block in build_user_prompt_with_rag and adding
+    the engineering values withheld from the homeowner-facing input."""
+    g = lambda k: md.get(k, 'N/A')
+    if decision_type == 'HVAC':
+        return [
+            f"- Location: {g('location')}",
+            f"- Outdoor Temp: {g('outdoor_temp')} deg F",
+            f"- Square Footage: {g('square_footage')} sqft",
+            f"- Insulation: {g('insulation')}",
+            f"- Household Size: {g('household_size')} occupants",
+            f"- Housing Type: {g('housing_type')}",
+            f"- House Age: {g('house_age')}",
+            f"- R-Value: {g('r_value')}",
+            f"- SEER: {g('seer')}",
+            f"- HVAC Age: {g('hvac_age')} years",
+            f"- Utility Budget: ${g('utility_budget')}/month",
+        ]
+    if decision_type == 'Appliance':
+        return [
+            f"- Location: {g('location')}",
+            f"- Household Size: {g('household_size')} occupants",
+            f"- Housing Type: {g('housing_type')}",
+            f"- Appliance: {g('appliance')}",
+            f"- Appliance Age Range: {g('appliance_age')}",
+            f"- kWh per Cycle: {g('kwh_per_cycle')}",
+            f"- Utility Budget: ${g('utility_budget')}/month",
+        ]
+    if decision_type == 'Shower':
+        return [
+            f"- Location: {g('location')}",
+            f"- Outdoor Temp: {g('outdoor_temp')} deg F",
+            f"- Household Size: {g('household_size')} occupants",
+            f"- Housing Type: {g('housing_type')}",
+            f"- Flow Rate: {g('flow_rate')}",
+            f"- GPM: {g('gpm')}",
+            f"- Tank Size: {g('tank_size')} gal",
+            f"- Water Heater Temp: {g('water_heater_temp')} deg F",
+            f"- Utility Budget: ${g('utility_budget')}/month",
+        ]
+    return [f"- Location: {g('location')}"]
+
+
 def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
-    """Format rag context."""
+    """Render each retrieved exemplar as a full worked example: the complete
+    homeowner + engineering parameter block, then every alternative with its 4
+    criterion scores plus the MAVT aggregate and rank."""
     if not retrieved_scenarios:
         return ""
 
     context = "RELEVANT SIMILAR SCENARIOS WITH EXPERT SCORES:\n\n"
     skipped_alts = 0
+    criteria = ('energy_cost', 'environmental', 'comfort', 'practicality')
 
     for i, scenario in enumerate(retrieved_scenarios, 1):
-        context += f"Example {i}: {scenario['text']}\n"
-        context += f"  Question: {scenario['question']}\n"
+        md = scenario.get('metadata', {})
+        decision_type = scenario.get('decision_type', md.get('decision_type', 'HVAC'))
+        context += f"Example {i}:\n"
+        context += f"  Question: {md.get('question', 'N/A')}\n"
+        for line in _exemplar_param_lines(decision_type, md):
+            context += f"  {line}\n"
+        context += "  Expert scores:\n"
 
-        for alt in scenario['alternatives']:
-            scores = alt['scores']
-            # B4 fix: skip alternatives where any criterion score is missing
-            # (None) — formatting them would either crash on :.1f or silently
-            # anchor the LLM at 0.0. Indicates RAG schema drift.
-            if any(scores.get(c) is None for c in ('energy_cost', 'environmental', 'comfort', 'practicality')):
+        for j in range(1, 4):
+            name = md.get(f'alt{j}')
+            if name in (None, '', 'N/A'):
+                continue
+            scores = {c: md.get(f'alt{j}_{c}') for c in criteria}
+            if any(scores[c] is None or scores[c] == '' for c in criteria):
                 skipped_alts += 1
                 continue
+            mavt = md.get(f'alt{j}_mavt')
+            rank = md.get(f'alt{j}_rank')
             context += (
-                f"  * {alt['name']}: "
-                f"Energy Cost: {scores['energy_cost']:.1f}/10, "
-                f"Environmental: {scores['environmental']:.1f}/10, "
-                f"Comfort: {scores['comfort']:.1f}/10, "
-                f"Practicality: {scores['practicality']:.1f}/10\n"
+                f"  * {name}: "
+                f"Energy Cost: {_fmt_num(scores['energy_cost'])}/10, "
+                f"Environmental: {_fmt_num(scores['environmental'])}/10, "
+                f"Comfort: {_fmt_num(scores['comfort'])}/10, "
+                f"Practicality: {_fmt_num(scores['practicality'])}/10 "
+                f"| MAVT: {_fmt_num(mavt, 2)}, Rank: {_fmt_num(rank, 0)}\n"
             )
         context += "\n"
 
@@ -387,11 +399,8 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         logger.info(f"   WARNING: skipped {skipped_alts} retrieved alternative(s) with missing scores. "
               f"Likely RAG metadata schema drift — re-run BuildRAG.")
 
-    context += "Use these examples as reference, but score based on the specific scenario below.\n"
-    context += "Just because a reference scenario has an extreme value does not mean that the scenario you are analyzing has the same characteristics.\n"
-
+    context += "Use these examples as reference, but score based on the specific scenario below.\n"    
     return context
-
 
 def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: str) -> str:
     prompt = rag_context
@@ -418,7 +427,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
             f"- Household Size: {scenario.get('household_size', 'N/A')} occupants\n"
             f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
-            f"- Appliance Age Range: {scenario.get('appliance_age', 'N/A')} years\n"
+            f"- Appliance Age Range: {scenario.get('appliance_age', 'N/A')}\n"
         )
 
     elif decision_type == 'Shower':
@@ -430,71 +439,21 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 
-    prompt += "\nProvide scores (0-10) for all 4 criteria using the calibrations in the system prompt.\n"
+    prompt += "\nProvide scores (0-10) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
 
     return prompt
 
-def parse_llm_scores(response_text: str) -> Tuple[Dict[str, float], List[str]]:
-    """Parse llm scores."""
-    try:
-        text = response_text.strip()
-        if text.startswith("```"):
-            text = text.split("```", 2)[1]
-            if text.lower().startswith("json"):
-                text = text[4:]
-            text = text.strip()
-        scores = json.loads(text)
-
-        validated_scores = {}
-        validation_failed = False
-        validation_failure_types = set()
-        for criterion in ['energy_cost', 'environmental', 'comfort', 'practicality']:
-            if criterion not in scores:
-                logger.info(f"   Missing score for {criterion}; using sentinel 1928")
-                validated_scores[criterion] = 1928
-                validation_failed = True
-                validation_failure_types.add('failed_missing_score')
-                continue
-
-            raw_score = scores[criterion]
-
-            if isinstance(raw_score, (int, float)):
-                raw_value = float(raw_score)
-                if 0.0 <= raw_value <= 10.0:
-                    validated_scores[criterion] = raw_value
-                else:
-                    logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
-                    validated_scores[criterion] = 1928
-                    validation_failed = True
-                    validation_failure_types.add('failed_out_of_bounds')
-            else:
-                logger.info(f"   Invalid score type for {criterion}: {raw_score}; using sentinel 1928")
-                validated_scores[criterion] = 1928
-                validation_failed = True
-                validation_failure_types.add('failed_invalid_score_type')
-
-        if validation_failed:
-            validated_scores['_failed'] = True
-            return validated_scores, sorted(validation_failure_types) if validation_failure_types else ['failed_unknown']
-
-        return validated_scores, []
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.info("   Could not parse scores; failed")
-        failed_scores = {
-            'energy_cost': 1928,
-            'environmental': 1928,
-            'comfort': 1928,
-            'practicality': 1928,
-            '_failed': True
-        }
-        return failed_scores, ['failed_malformed_json']
-
-
 def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    """Score alternative with rag."""
-    retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K)
+    """Retrieve exemplars, build the RAG prompt, query the model, and parse +
+    validate the returned scores — all in one function (mirrors PurePrompting's
+    score_alternative).
 
+    retrieved/rag_context are locals here so the RAG diagnostics at the end
+    always reference real values (previously they were inlined into the prompt
+    call and the diagnostics referenced undefined names, crashing every call).
+    """
+    retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K)
     rag_context = format_rag_context(retrieved)
 
     system_prompt = build_system_prompt()
@@ -505,26 +464,18 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         {"role": "user", "content": user_prompt}
     ]
 
+    sentinel_scores = {
+        'energy_cost': 1928, 'environmental': 1928,
+        'comfort': 1928, 'practicality': 1928, '_failed': True,
+    }
+
     try:
         response_text, diagnostics = query_openrouter(messages)
-
-        scores, failure_types = parse_llm_scores(response_text)
-        diagnostics['success'] = not scores.get('_failed', False)
-        diagnostics['failure_types'] = failure_types if scores.get('_failed', False) else []
     except Exception as e:
         logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
-        scores = {
-            'energy_cost': 1928,
-            'environmental': 1928,
-            'comfort': 1928,
-            'practicality': 1928
-        }
         # Distinguish API/network exhaustion from genuine code/parse errors.
         error_text = str(e).lower()
-        if 'failed_api_exhausted' in error_text:
-            failure_type = 'failed_api_exhausted'
-        else:
-            failure_type = 'failed_unknown'
+        failure_type = 'failed_api_exhausted' if 'failed_api_exhausted' in error_text else 'failed_unknown'
         diagnostics = {
             'prompt_tokens': 0,
             'completion_tokens': 0,
@@ -533,20 +484,72 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'model': MODEL_ID,
             'success': False,
             'error': str(e),
-            'failure_types': [failure_type]
+            'failure_types': [failure_type],
+            'rag_retrieved_count': len(retrieved),
+            'rag_context_length': len(rag_context),
         }
+        return dict(sentinel_scores), diagnostics
 
-    # Add the RAG bits to diagnostics
+    # Parse + validate the model's JSON in-line (single source of truth).
+    validation_failed = False
+    validation_failure_types = set()
+    scores: Dict[str, float] = {}
+    try:
+        text = response_text.strip()
+        if text.startswith("```"):
+            text = text.split("```", 2)[1]
+            if text.lower().startswith("json"):
+                text = text[4:]
+            text = text.strip()
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        logger.info("   Could not parse scores; failed")
+        diagnostics['success'] = False
+        diagnostics['failure_types'] = ['failed_malformed_json']
+        diagnostics['rag_retrieved_count'] = len(retrieved)
+        diagnostics['rag_context_length'] = len(rag_context)
+        return dict(sentinel_scores), diagnostics
+
+    for criterion in ['energy_cost', 'environmental', 'comfort', 'practicality']:
+        if criterion not in parsed:
+            logger.info(f"   Missing score for {criterion}; using sentinel 1928")
+            scores[criterion] = 1928
+            validation_failed = True
+            validation_failure_types.add('failed_missing_score')
+            continue
+
+        raw_score = parsed[criterion]
+        if isinstance(raw_score, (int, float)):
+            raw_value = float(raw_score)
+            if 0.0 <= raw_value <= 10.0:
+                scores[criterion] = raw_value
+            else:
+                logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
+                scores[criterion] = 1928
+                validation_failed = True
+                validation_failure_types.add('failed_out_of_bounds')
+        else:
+            logger.info(f"   Invalid score type for {criterion}: {raw_score}; using sentinel 1928")
+            scores[criterion] = 1928
+            validation_failed = True
+            validation_failure_types.add('failed_invalid_score_type')
+
+    if validation_failed:
+        scores['_failed'] = True
+        diagnostics['success'] = False
+        diagnostics['failure_types'] = sorted(validation_failure_types) if validation_failure_types else ['failed_unknown']
+    else:
+        diagnostics['success'] = True
+        diagnostics['failure_types'] = []
+
     diagnostics['rag_retrieved_count'] = len(retrieved)
     diagnostics['rag_context_length'] = len(rag_context)
-
     return scores, diagnostics
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """Apply mavt ranking."""
     alternatives = [ad['alternative'] for ad in alternatives_scores]
-    n = len(alternatives)
 
     valid_pairs = []  # (input_idx, weighted_sum)
     for idx, alt_data in enumerate(alternatives_scores):
@@ -566,16 +569,16 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     if not valid_pairs:
         return {
             'ranked_alternatives': [],
-            'ranks': [1928] * n,
-            'weighted_scores': [1928] * n
+            'ranks': [1928] * len(alternatives),
+            'weighted_scores': [1928] * len(alternatives)
         }
 
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the indices lined up with the original alternatives
-    ranks = [1928] * n
-    weighted_scores = [1928] * n
+    ranks = [1928] * len(alternatives)
+    weighted_scores = [1928] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
         ranks[input_idx] = rank_position + 1
         weighted_scores[input_idx] = ws
@@ -588,7 +591,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
 
 
 def run_scenario(scenario: Dict) -> Dict:
-    """Run scenario."""
     logger.info(f"SCENARIO: {scenario.get('question', 'N/A')}")
 
     alternatives_scores = []
@@ -668,12 +670,6 @@ RAG_RESULT_FIELDNAMES = [
     'energy_cost', 'environmental', 'comfort', 'practicality',
     'rank', 'weighted_score',
 ]
-
-
-def _ensure_rag_initialized() -> None:
-    """Init RAG resources once for the multi-run pass; reload if a prior init was lost."""
-    if chroma_collection is None or embedding_model is None:
-        init_rag_resources()
 
 
 def run_test_set(test_path: str, output_path: str,
@@ -882,7 +878,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     run_paths = []
     skipped_runs = []
 
-    _ensure_rag_initialized()
+    if chroma_collection is None or embedding_model is None:
+        init_rag_resources()
 
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
@@ -892,7 +889,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             run_paths.append(run_path)
             skipped_runs.append(run_idx)
             continue
-        _ensure_rag_initialized()
+        if chroma_collection is None or embedding_model is None:
+            init_rag_resources()
         logger.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
@@ -932,9 +930,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
-    SENTINEL = 1928.0
+    SENTINEL = 1928
 
-    # Use pd.to_numeric handles string "1928" and malformed values
     for c in CRITERIA_COLS:
         combined[c] = pd.to_numeric(combined[c], errors="coerce")
         # Treat exact sentinel float as a failed row
@@ -963,7 +960,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # When N=1, pandas std returns NaN — annotate clearly in the stats output
     if n_readable == 1:
         logger.info("WARNING: Only 1 run aggregated — std columns will be NaN (undefined for N=1).")
         for c in CRITERIA_COLS:
