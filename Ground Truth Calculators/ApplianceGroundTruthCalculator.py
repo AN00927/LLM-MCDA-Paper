@@ -18,10 +18,8 @@ from sentinel_utils import read_table_clean, parse_utility_budget, SENTINEL_VALU
 class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
     # Emissions Report (April 2023). Marginal rates reflect emissions of the last
-    # generator dispatched and are the correct measure for time-shifting decisions
-    # (vs. the prior eGRID average factor which represented all generation averaged).
-    # Peak window: 7am-11pm. Weekday/holiday distinction not modeled (scenarios
-    # have no date parameter; assumed weekday).
+    # generator dispatched
+    # Peak window: 7am-11pm. Weekday/holiday distinction not modeled.
     EMISSIONS_FACTOR_PEAK = 1.041      # lbs CO2/kWh; PJM peak (1041 lbs/MWh)
     EMISSIONS_FACTOR_OFFPEAK = 0.976   # lbs CO2/kWh; PJM off-peak (976 lbs/MWh)
     EMISSIONS_PEAK_HOURS = (7, 23)     # 7am-11pm system-wide PJM
@@ -30,7 +28,6 @@ class ApplianceGroundTruthCalculator:
     # Sources: PECO Rate R-TOU 2026; PPL TOU 2025; FirstEnergy PA TOU 2026
     # (West Penn, Penelec, Met-Ed); PA PUC press release 2025-04-10 (Duquesne pilot,
     # no standard residential TOU, so we use the flat PTC for both periods).
-    # PPL is simplified to 2-6pm weekdays only, since the scenarios don't give us seasons.
     # Weekends are treated as off-peak across the board because we don't have day-of-week.
     UTILITY_RATES = {
         "PECO":      {"peak_hours": (14, 18), "peak_rate": 0.320,  "offpeak_rate": 0.076},
@@ -69,9 +66,7 @@ class ApplianceGroundTruthCalculator:
     NOISE_LIMIT_EVENING = 45     # dBA threshold after 10pm (EPA/WHO indoor night limit is 35 dBA;
                                   # 45 dBA chosen so dishwashers (~45 dBA) are at-threshold and
                                   # washers/dryers (50-55 dBA) exceed it and receive the noise penalty)
-    # Linear VF for energy cost - equal marginal utility across range
-    # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
-    # linear utility is appropriate" (Management Science 26(8):810-822)
+    # Dyer & Sarin (1979) (Management Science 26(8):810-822)
     VF_ENERGY_COST = "linear"
 
     # Linear VF for environmental impact - physical units have linear marginal value
@@ -438,13 +433,6 @@ class ApplianceGroundTruthCalculator:
         for alt in alternatives:
             print(f"\nProcessing alternative: {alt}")
 
-            # Parse + compute every raw criterion for this alternative. Any
-            # failure (unparseable time, missing key, math error) must surface as
-            # the sentinel (1928), NOT a neutral default: energy_cost=0.0 is a
-            # *perfect* score and comfort/practicality=5.0 are real middling
-            # scores, so a crashed calc would masquerade as a valid (good)
-            # result. raw_results[alt]=None flags the alt for sentinel emission
-            # below, where has_sentinel_scores() catches it downstream.
             try:
                 run_time_hour, delay_hours = self.parse_alternative(alt, scenario)
                 energy_cost = self.calculate_energy_cost(
@@ -495,7 +483,6 @@ class ApplianceGroundTruthCalculator:
             )
 
             if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
-                # Convert per-cycle cost to monthly estimate (assume 30 cycles/month)
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost_dollars'],
                     cycles_per_month=30
@@ -541,10 +528,10 @@ class ApplianceGroundTruthCalculator:
 
 
 def process_appliance_scenarios(
-    csv_filename: str = str(SCENARIO_DIR / "ApplianceScenarios.xlsx"),
+    xlsx_filename: str = str(SCENARIO_DIR / "ApplianceScenarios.xlsx"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx")):
     """Process appliance scenarios."""
-    csv_path = Path(csv_filename)
+    csv_path = Path(xlsx_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -693,7 +680,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         # Rank valid alternatives: higher weighted sum = better (rank 1). Ties
         # are broken deterministically by TIE_BREAK_PRIORITY criteria (each desc)
         # so tied alternatives get a stable order instead of np.argsort's
-        # arbitrary one, identically to how CalculateMetrics breaks ties.
+        # arbitrary one
         order = sorted(
             valid_idx,
             key=lambda i: (weighted_scores[i],
@@ -702,8 +689,7 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
         )
         ranked_alternatives = [alternatives[i] for i in order]
 
-        # Create rank numbers (1 = best, 2 = second, ...); sentinel alts keep
-        # SENTINEL_VALUE.
+    
         ranks = [SENTINEL_VALUE] * len(alternatives)
         for rank_position, alt_index in enumerate(order):
             ranks[alt_index] = rank_position + 1
