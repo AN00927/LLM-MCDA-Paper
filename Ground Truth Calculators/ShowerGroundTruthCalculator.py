@@ -46,8 +46,27 @@ class ShowerGroundTruthCalculator:
     # Average 7.8 min from REU2016 (Water Research Foundation).
     # Long-duration prevalence (33% >15 min) from The Harris Poll (2024).
     COMFORT_DURATION_MIN = 5  # Rushed but viable
-    COMFORT_DURATION_OPTIMAL = 7.8  # REU2016 average of 7.8 min
+    COMFORT_DURATION_OPTIMAL = 7.8  # REU2016 average of 7.8 min (moderate-weather anchor)
     COMFORT_DURATION_MAX = 15  # Comfortable upper bound
+
+    # Cold-weather comfort shift. Comfortable/observed shower duration lengthens
+    # as outdoor temperature falls, so the comfort-optimal duration is shifted
+    # upward below a moderate reference outdoor temperature:
+    #   - elasticity: ~10% longer shower per 6 C (= 10.8 F) outdoor-temperature
+    #     drop, a field-measurement finding reported in Lai, Y.-W. et al.,
+    #     "Showering Thermal Sensation in Residential Bathrooms," Water 2022,
+    #     14(19):2940 (https://doi.org/10.3390/w14192940).
+    #   - envelope cap: seasonal field means of 8.8 min (summer) vs 11.6 min
+    #     (winter), i.e. a 1.32x increase, from Ibanez-Rueda et al., "Towards a
+    #     sustainable use of shower water," Sustainable Water Resources
+    #     Management 2023 (https://doi.org/10.1007/s40899-023-00905-3). We cap
+    #     the shift at this empirically observed winter/summer ratio.
+    # NOTE: COMFORT_TEMP_REFERENCE_F (the outdoor temp at/above which no shift is
+    # applied) is anchored to this calculator's own summer inlet-temp breakpoint
+    # (75 F), not taken from a paper — it is the one engineering choice here.
+    COMFORT_TEMP_REFERENCE_F = 75.0
+    COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (= 6 C) drop
+    COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer envelope
 
     # Temperature thresholds from CDC Legionella guidance (CDC, 2026):store at >=140F; deliver/recirculate at >=120F.
     HEATER_TEMP_MINIMUM = 110  # F, lukewarm boundary
@@ -184,24 +203,36 @@ class ShowerGroundTruthCalculator:
 
     @staticmethod
     def calculate_comfort_score(duration: float, water_heater_temp: float,
-                                occupants: int) -> float:
-        """Calculate comfort score."""
+                                occupants: int, outdoor_temp: float = COMFORT_TEMP_REFERENCE_F) -> float:
+        """Calculate comfort score.
+
+        The comfort-optimal duration (the peak of the curve) is shifted upward in
+        cold weather per the cold-weather elasticity documented on the class
+        constants: warmer outdoor temps keep the REU2016 7.8-min optimum, colder
+        temps raise it (capped at the observed winter envelope). Warm-weather
+        scoring is unchanged (multiplier == 1.0 at/above the reference temp).
+        """
+        cls = ShowerGroundTruthCalculator
+        drop_f = max(0.0, cls.COMFORT_TEMP_REFERENCE_F - outdoor_temp)
+        temp_multiplier = min(
+            1.0 + cls.COMFORT_TEMP_ELASTICITY_PER_F * drop_f,
+            cls.COMFORT_TEMP_MAX_MULTIPLIER,
+        )
+        optimal_duration = cls.COMFORT_DURATION_OPTIMAL * temp_multiplier  # <= ~10.3 min
+
         if duration <= 3.0:
             # Below dermatologist minimum — severely rushed.
             # Cubic ramp: 0.0 at 0 min → 4.0 at 3 min, with exponential penalization for
             # very short durations. At 2min: ~1.2 (vs ~3.0 with prior linear ramp).
             # Boundary at 3min = 4.0 is unchanged — no discontinuity with next segment.
             base_comfort = 4.0 * (duration / 3.0) ** 3
-        elif duration <= 7.8:
-            # Optimal range - REU2016 average at 7.8 min
-            # Linear interpolation: 4.0 at 3 min → 10.0 at 7.8 min
-            # Slope: (10.0 - 4.0) / (7.8 - 3.0) = 1.167
-            base_comfort = 4.0 + ((duration - 3.0) / (7.8 - 3.0)) * 6.0
+        elif duration <= optimal_duration:
+            # Ramp to the (temperature-adjusted) optimum: 4.0 at 3 min → 10.0 at optimal.
+            base_comfort = 4.0 + ((duration - 3.0) / (optimal_duration - 3.0)) * 6.0
         elif duration <= 15.0:
-            # Above optimal - diminishing returns, slight waste concern
-            # Linear decline: 10.0 at 7.8 min → 8.0 at 15 min
-            # Slope: (8.0 - 10.0) / (15.0 - 7.8) = -0.260
-            base_comfort = 10.0 + ((duration - 7.8) / (15.0 - 7.8)) * (8.0 - 10.0)
+            # Above optimal - diminishing returns, slight waste concern.
+            # Linear decline: 10.0 at optimal → 8.0 at 15 min.
+            base_comfort = 10.0 + ((duration - optimal_duration) / (15.0 - optimal_duration)) * (8.0 - 10.0)
         else:
             # Extreme duration - very wasteful
             # Continue linear decline: 0.5 per minute beyond 15 min
@@ -392,7 +423,7 @@ class ShowerGroundTruthCalculator:
             cost = ShowerGroundTruthCalculator.calculate_energy_cost(kwh)
             water_gallons = ShowerGroundTruthCalculator.calculate_environmental_impact(gpm, duration)
             comfort = ShowerGroundTruthCalculator.calculate_comfort_score(
-                duration, water_heater_temp, occupants
+                duration, water_heater_temp, occupants, outdoor_temp
             )
             practicality = ShowerGroundTruthCalculator.calculate_practicality_score(
                 duration, occupants, tank_size, gpm, water_heater_temp, outdoor_temp

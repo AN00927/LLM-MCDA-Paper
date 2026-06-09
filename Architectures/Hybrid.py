@@ -19,6 +19,11 @@ from model_config import (
     get_output_folder,
     get_reasoning_payload,
     N_RUNS,
+    TEMPERATURE,
+    MAX_RETRIES,
+    REQUEST_TIMEOUT,
+    RETRY_BASE_DELAY,
+    MAX_RETRY_BACKOFF,
 )
 from sentinel_utils import (
     _atomic_write_json,
@@ -74,11 +79,8 @@ OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.ap
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 
 MODEL_ID = get_model_id()
-TEMPERATURE = 0.3
 REASONING_PAYLOAD = get_reasoning_payload()
 
-MAX_RETRIES = 5
-RETRY_DELAY = 2
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.xlsx"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_results_diagnostics.json"
@@ -122,80 +124,55 @@ def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
 
-UNIFIED_EXTRACTION_PROMPT = """You are a household decision expert. Analyze this scenario and extract ALL required information in a single response.
+UNIFIED_EXTRACTION_PROMPT = """You are a household-systems engineer. 
+The scenario below already states the homeowner-facing facts (location, household size, housing type, budget, outdoor temperature, insulation level, ages, etc.) and the alternatives are taken directly from the dataset. 
+Your ONLY job is to estimate the technical ENGINEERING parameters a homeowner would not state but that are required to physically model the decision,
+then name the decision type and its calculator.
 
 SCENARIO:
 {scenario_text}
 
 QUESTION: {question}
 
-YOUR TASK:
-1. Read the Decision Type from the scenario (HVAC, Appliance, or Shower)
-2. Extract the specific parameters needed for that decision type
-3. No field should be left blank; if a value is not apparent, it is mandatory to reasonably estimate it based off of available information
-4. Select the appropriate ground truth calculator
-5. Format alternatives exactly as shown below
+INSTRUCTIONS:
+1. Identify the Decision Type: HVAC, Appliance, or Shower.
+2. Estimate ONLY the parameters listed for that type below. Do NOT restate values already present in the scenario, and do NOT output the alternatives.
+3. Every listed parameter is mandatory. If a value is not stated, it is mandatory to reasonably estimate it from the scenario context (insulation level, ages, housing type, location, the appliance named in the question, etc.). Never leave a field blank.
+4. Return ONLY valid JSON in the exact structure shown.
 
-Return ONLY valid JSON with this structure:
-
-For HVAC decisions:
+For HVAC decisions (estimate the building/system engineering values):
 {{
   "decision_type": "HVAC",
   "calculator": "HVACGroundTruthCalculator",
   "parameters": {{
-    "location": "<city, state>",
-    "square_footage": <number>,
-    "insulation": "<Poor/Medium/Good>",
-    "r_value": <number>,
-    "household_size": <number>,
-    "outdoor_temp": <number>,
-    "seer": <number>,
-    "hvac_age": <number>,
-    "housing_type": "<Apartment/Single-family/Townhouse>",
-    "utility_budget": <number>,
-    "occupancy_context": "occupied_all_day|unoccupied_<hours>|occupied_sleep",
-    "alternatives": ["<temp>", "<temp>", "<temp>"]
+    "r_value": <number; whole-wall R-value implied by the insulation level and house age>,
+    "seer": <number; AC SEER implied by the system's age/efficiency>,
+    "hvac_age": <number; age of the HVAC unit in years>,
+    "occupancy_context": "occupied_all_day | unoccupied_<hours> | occupied_sleep (infer from the question)"
   }}
 }}
 
-For Appliance decisions:
+For Appliance decisions (estimate the appliance engineering values):
 {{
   "decision_type": "Appliance",
   "calculator": "ApplianceGroundTruthCalculator",
   "parameters": {{
-    "location": "<city, state>",
-    "appliance": "Dishwasher|Washer|Dryer",
-    "kwh_per_cycle": <number>,
-    "appliance_age": <number>,
-    "baseline_time": "<time like 7pm, 8am, 9am>",
-    "household_size": <number>,
-    "housing_type": "<Apartment/Single-family/Townhouse>",
-    "utility_budget": <number>,
-    "alternatives": ["<time>", "<time>", "<time>"]
+    "appliance": "Dishwasher | Washer | Dryer (read from the question)",
+    "kwh_per_cycle": <number; energy used per cycle for that appliance>,
+    "baseline_time": "<the time the homeowner would otherwise run it, e.g. 7pm, 8am>"
   }}
 }}
 
-For Shower decisions:
+For Shower decisions (estimate the plumbing engineering values):
 {{
   "decision_type": "Shower",
   "calculator": "ShowerGroundTruthCalculator",
   "parameters": {{
-    "location": "<city, state>",
-    "gpm": <number>,
-    "tank_size": <number>,
-    "water_heater_temp": <number>,
-    "outdoor_temp": <number>,
-    "household_size": <number>,
-    "housing_type": "<Apartment/Single-family/Townhouse>",
-    "utility_budget": <number>,
-    "alternatives": ["<minutes>", "<minutes>", "<minutes>"]
+    "gpm": <number; showerhead flow rate in gallons per minute, consistent with the stated flow_rate label>,
+    "tank_size": <number; water-heater tank size in gallons>,
+    "water_heater_temp": <number; water-heater setpoint in deg F>
   }}
 }}
-
-CRITICAL: Alternative formats must match exactly:
-- HVAC: "72", "76", "80" (No suffix)
-- Appliance: "7pm", "10pm", "2am"
-- Shower: "5", "10", "15" (No suffix)
 
 Return ONLY the JSON, no explanation.
 """
@@ -226,8 +203,8 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         attempt += 1
         try:
             start_time = time.time()
-            response = requests.post(url, headers=headers, json=payload, timeout=60)
-            latency = time.time() - start_time
+            response = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
+            latency_ms = (time.time() - start_time) * 1000
 
             if response.status_code == 200:
                 data = response.json()
@@ -238,7 +215,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                     'prompt_tokens': usage.get('prompt_tokens', 0),
                     'completion_tokens': usage.get('completion_tokens', 0),
                     'total_tokens': usage.get('total_tokens', 0),
-                    'latency_seconds': latency,
+                    'latency_ms': latency_ms,
                     'model': model
                 }
 
@@ -252,59 +229,25 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                 if not retry_forever and attempt >= MAX_RETRIES:
                     break
 
-                time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+                time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
                 continue
 
         except requests.exceptions.RequestException as e:
             print(f"  Request failed (attempt {attempt}): {e}")
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
-            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
         except ValueError as e:
             print(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
-            time.sleep(min(RETRY_DELAY * (2 ** min(attempt - 1, 5)), 60))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
     # We're out of retries at this point.
-    raise Exception(f"Failed to get response after {MAX_RETRIES} attempts")
-
-def _normalize_scenario_fields(scenario: Dict) -> Dict:
-    """Normalize scenario input fields to handle common formatting quirks."""
-    normalized = scenario.copy()
-
-    # Clean up the obvious text fields first
-    for key in ['question', 'location', 'decision_type', 'housing_type', 'appliance', 'insulation']:
-        if key in normalized and isinstance(normalized[key], str):
-            normalized[key] = normalized[key].strip()
-
-    # Make housing type look consistent
-    if 'housing_type' in normalized:
-        ht = str(normalized['housing_type']).lower().strip()
-        if 'apartment' in ht:
-            normalized['housing_type'] = 'Apartment'
-        elif 'single' in ht:
-            normalized['housing_type'] = 'Single-family'
-        elif 'town' in ht:
-            normalized['housing_type'] = 'Townhouse'
-        elif 'twin' in ht:
-            normalized['housing_type'] = 'Twin'
-
-    # Tidy up insulation labels too
-    if 'insulation' in normalized:
-        ins = str(normalized['insulation']).lower().strip()
-        if 'poor' in ins:
-            normalized['insulation'] = 'Poor'
-        elif 'good' in ins:
-            normalized['insulation'] = 'Good'
-        elif 'medium' in ins or 'avg' in ins:
-            normalized['insulation'] = 'Medium'
-
-    return normalized
-
+    raise Exception(f"failed_api_exhausted: Failed to get response after {MAX_RETRIES} attempts")
 
 def format_scenario_for_extraction(scenario: Dict) -> str:
     """Format scenario for extraction.
@@ -330,11 +273,8 @@ def format_scenario_for_extraction(scenario: Dict) -> str:
 
 def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
     
-    # Give the scenario a quick cleanup before sending it to the AI
-    normalized_scenario = _normalize_scenario_fields(scenario)
-    
-    scenario_text = format_scenario_for_extraction(normalized_scenario)
-    question = normalized_scenario.get('question', '')
+    scenario_text = format_scenario_for_extraction(scenario)
+    question = str(scenario.get('question', '')).strip()
 
     prompt = UNIFIED_EXTRACTION_PROMPT.format(
         scenario_text=scenario_text,
@@ -355,7 +295,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         extraction_diagnostics.update({
             'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-            'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+            'latency_ms': api_diagnostics.get('latency_ms', 0)
         })
         stripped_response = response_text.strip()
         if stripped_response.startswith("```"):
@@ -380,7 +320,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             extraction_diagnostics.update({
                 'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                 'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                'latency_ms': api_diagnostics.get('latency_ms', 0)
             })
             return None, extraction_diagnostics
 
@@ -393,7 +333,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             extraction_diagnostics.update({
                 'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                 'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                'latency_ms': api_diagnostics.get('latency_ms', 0)
             })
             return None, extraction_diagnostics
 
@@ -417,25 +357,22 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             params = extracted['parameters']
             decision_type = extracted['decision_type']
 
+            # Only the extrapolated engineering parameters are required from the
+            # model; homeowner-facing fields and alternatives come from the
+            # scenario sheet and are merged in score_with_ground_truth.
             if decision_type == 'HVAC':
-                required_params = ['location', 'square_footage', 'insulation', 'r_value',
-                                   'household_size', 'seer', 'hvac_age', 'outdoor_temp',
-                                   'housing_type', 'utility_budget', 'alternatives']
+                required_params = ['r_value', 'seer', 'hvac_age', 'occupancy_context']
             elif decision_type == 'Appliance':
-                required_params = ['location', 'appliance', 'kwh_per_cycle', 'appliance_age',
-                                   'baseline_time', 'household_size', 'housing_type',
-                                   'utility_budget', 'alternatives']
+                required_params = ['appliance', 'kwh_per_cycle', 'baseline_time']
             elif decision_type == 'Shower':
-                required_params = ['location', 'gpm', 'tank_size', 'water_heater_temp',
-                                   'outdoor_temp', 'household_size', 'housing_type',
-                                   'utility_budget', 'alternatives']
+                required_params = ['gpm', 'tank_size', 'water_heater_temp']
             if all(k in params for k in required_params):
                 extraction_diagnostics['success'] = True
                 extraction_diagnostics['failure_types'] = []
                 extraction_diagnostics.update({
                     'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                     'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                    'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+                    'latency_ms': api_diagnostics.get('latency_ms', 0)
                 })
                 return extracted, extraction_diagnostics
 
@@ -450,7 +387,7 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         extraction_diagnostics.update({
             'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-            'latency_ms': api_diagnostics.get('latency_seconds', 0) * 1000
+            'latency_ms': api_diagnostics.get('latency_ms', 0)
         })
         return None, extraction_diagnostics
 
@@ -467,12 +404,24 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
         return None, extraction_diagnostics
 
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
-    gt_scenario = {**scenario, **extracted_result['parameters']}
+    # Alternatives are taken verbatim from the test scenario (the sheet already
+    # holds them in canonical form); the LLM only supplies engineering params.
+    scenario_alts = [scenario.get(f'alternative_{i}') for i in range(1, 4)]
+    scenario_alts = [
+        a for a in scenario_alts
+        if a not in (None, '') and str(a).strip().lower() != 'nan'
+    ]
 
-    alternatives = extracted_result['parameters'].get('alternatives', [])
-    for i, alt in enumerate(alternatives[:3], 1):
+    gt_scenario = {**scenario, **extracted_result['parameters']}
+    gt_scenario['alternatives'] = scenario_alts  # HVAC calc reads this list
+    for i, alt in enumerate(scenario_alts[:3], 1):
         gt_scenario[f'alternative_{i}'] = alt
-    for key in ['utility_budget', 'household_size', 'kwh_per_cycle']:
+
+    # Coerce every numeric field the calculators do arithmetic on — scenario
+    # passthroughs may arrive as strings/pandas scalars, extracted ones as JSON.
+    for key in ['utility_budget', 'household_size', 'kwh_per_cycle',
+                'square_footage', 'outdoor_temp', 'r_value', 'seer', 'hvac_age',
+                'gpm', 'tank_size', 'water_heater_temp']:
         if key in gt_scenario and isinstance(gt_scenario[key], str):
             try:
                 gt_scenario[key] = float(gt_scenario[key])
@@ -517,31 +466,21 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                 }
             })
 
-    # A2 fix: cross-architecture aggregation groups by (scenario_id, alternative).
-    # The LLM-extracted/calculator-emitted alternative strings (e.g. "72", "7pm")
-    # do not match the verbatim TestScenarios alternatives ("Run dishwasher at
-    # 2:00 AM", "Off (let drift to 85)"). Replace `alternative` with the verbatim
-    # scenario value by ordinal position and keep the LLM form in
-    # `extracted_alternative` for diagnostics.
-    verbatim_alts = [
-        scenario.get('alternative_1'),
-        scenario.get('alternative_2'),
-        scenario.get('alternative_3'),
-    ]
-    if len(alternatives_scores) != 3:
+
+    # Alternatives already came from the scenario verbatim, so the scored
+    # 'alternative' is the canonical one; mirror it into extracted_alternative
+    # for output-column continuity.
+    if len(alternatives_scores) != len(scenario_alts):
         print(f"  WARNING: scoring produced {len(alternatives_scores)} alternatives, "
-              f"expected 3. Verbatim alignment may be incorrect.")
-    for idx, alt_data in enumerate(alternatives_scores):
+              f"expected {len(scenario_alts)}.")
+    for alt_data in alternatives_scores:
         alt_data['extracted_alternative'] = alt_data.get('alternative', '')
-        if idx < len(verbatim_alts) and verbatim_alts[idx] not in (None, ''):
-            alt_data['alternative'] = str(verbatim_alts[idx])
     return alternatives_scores
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     """Apply mavt ranking."""
     alternatives = [ad['alternative'] for ad in alternatives_scores]
-    n = len(alternatives)
 
     valid_pairs = []  # (input_idx, weighted_sum)
     for idx, alt_data in enumerate(alternatives_scores):
@@ -559,16 +498,16 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     if not valid_pairs:
         return {
             'ranked_alternatives': [],
-            'ranks': [1928] * n,
-            'weighted_scores': [1928] * n
+            'ranks': [1928] * len(alternatives),
+            'weighted_scores': [1928] * len(alternatives)
         }
 
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the array positions lined up with the original alternatives
-    ranks = [1928] * n
-    weighted_scores = [1928] * n
+    ranks = [1928] * len(alternatives)
+    weighted_scores = [1928] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
         ranks[input_idx] = rank_position + 1
         weighted_scores[input_idx] = ws
@@ -589,9 +528,6 @@ def run_scenario(scenario: Dict) -> Dict:
 
     if extraction_result is None:
         extraction_failure_types = extraction_diag.get('failure_types', [])
-        # API/environment exhaustion is a transient infrastructure failure, not a
-        # scoring failure: don't count the scenario as failed for cross-architecture
-        # comparison. (Matches PurePrompting's API-vs-parse distinction.)
         if extraction_failure_types == ['failed_api_exhausted']:
             print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using fallback scores")
 
@@ -629,7 +565,6 @@ def run_scenario(scenario: Dict) -> Dict:
 
         print(f" EXTRACTION FAILED. Outputting sentinel scores")
 
-        # Build fallback alternatives with sentinel scores
         zero_alternatives = []
         for i in range(1, 4):
             zero_alternatives.append({
@@ -681,11 +616,6 @@ def run_scenario(scenario: Dict) -> Dict:
 
     except Exception as e:
         print(f" Ground truth calculation failed: {e}")
-
-        # Distinguish "calculator demanded a scenario key that was not present"
-        # (KeyError) from other exceptions (numeric errors, lookup failures, etc.).
-        # The KeyError path tells us exactly which scenario field is missing —
-        # that's a documentable, actionable failure mode.
         if isinstance(e, KeyError):
             missing_key = e.args[0] if e.args else 'unknown'
             failure_type = 'failed_ground_truth_missing_key'
@@ -698,9 +628,15 @@ def run_scenario(scenario: Dict) -> Dict:
             failure_types_out = [failure_type]
             extra_diag = {}
 
-        # If GT calc blows up, send back sentinel values
+        # If GT calc blows up, send back sentinel values for the scenario's
+        # own alternatives (extraction no longer carries them).
+        fallback_alts = [
+            scenario.get('alternative_1', 'Alt1'),
+            scenario.get('alternative_2', 'Alt2'),
+            scenario.get('alternative_3', 'Alt3'),
+        ]
         zero_alternatives = []
-        for i, alt in enumerate(parameters.get('alternatives', ['Alt1', 'Alt2', 'Alt3'])[:3], 1):
+        for alt in fallback_alts[:3]:
             zero_alternatives.append({
                 'alternative': str(alt),
                 'scores': {

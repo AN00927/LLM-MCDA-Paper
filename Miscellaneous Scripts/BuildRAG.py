@@ -24,8 +24,24 @@ CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 
-# Bump this any time the metadata field set written into Chroma changes.
-RAG_SCHEMA_VERSION = 2
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from sentinel_utils import (
+    read_table_clean,
+    format_embedding_text,
+    house_age_to_band_label,
+    gpm_to_flow_rate_label,
+    appliance_age_to_band_label,
+)
+
+# Bump this any time the metadata field set OR the embedding string changes —
+# the source-file hash only catches RAG sheet edits, not changes to how we
+# embed/render them, so a code-only change must bump this to force a rebuild.
+# v3: "show everything" — full homeowner + engineering params and per-alt
+#     mavt/rank in metadata; embedding expanded (budget + age/flow labels).
+# v4: appliance_age banded (3-yr early / 5-yr later) in both the embedding and
+#     the display metadata, mirroring house_age.
+RAG_SCHEMA_VERSION = 4
 
 
 def compute_source_table_hash(csv_dir: Path = SCENARIO_DIR) -> str:
@@ -75,52 +91,93 @@ def load_shower_data(csv_dir: str) -> pd.DataFrame:
     return df
 
 
-def _gpm_to_flow_rate_label(gpm) -> str:
+def format_scenario_text(row, decision_type: str) -> str:
+    """Embedding document for a scenario (delegates to the shared builder so the
+    index side stays byte-identical to RAGDatabaseOptimized's query side)."""
+    return format_embedding_text(decision_type, row)
+
+
+def _meta_val(v):
+    """Coerce a cell to a Chroma-legal metadata scalar (str/int/float/bool).
+
+    None / NaN / pandas-NA become '' so a missing field is visibly blank rather
+    than crashing collection.add (which rejects None)."""
+    if v is None:
+        return ''
     try:
-        val = float(gpm)
+        if pd.isna(v):
+            return ''
     except (TypeError, ValueError):
-        return str(gpm)
-    if val <= 2.0:
-        return "low_flow"
-    if val <= 3.0:
-        return "standard"
-    return "high_flow"
+        pass
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return v.item() if hasattr(v, 'item') else v
+    return str(v)
 
 
-def format_scenario_text(row: pd.Series, decision_type: str) -> str:
-    """Convert scenario to natural language text for embedding."""
+def build_scenario_metadata(decision_type: str, first_row, group) -> dict:
+    """Full "show everything" metadata for one scenario.
+
+    Stores every homeowner + engineering parameter the LLM may see (excluding the
+    literal raw_* physical quantities) plus, per alternative, the 4 criterion
+    scores AND the mavt aggregate + rank. house_age is stored as a band label so
+    the rendered exemplar mirrors the target-scenario block. Used only for display
+    at query time; embedding/similarity comes from format_scenario_text.
+    """
+    md = {
+        'decision_type': decision_type,
+        'scenario_id': f"{decision_type.lower()}_{first_row['scenario_id']}",
+        'question': _meta_val(first_row.get('question')),
+        'location': _meta_val(first_row.get('location')),
+        'household_size': _meta_val(first_row.get('household_size')),
+        'housing_type': _meta_val(first_row.get('housing_type')),
+        'utility_budget': _meta_val(first_row.get('utility_budget')),
+    }
+
     if decision_type == 'HVAC':
-        return (
-            f"{row.get('outdoor_temp', 'N/A')} deg F outdoor, "
-            f"{row.get('insulation', 'N/A')} insulation, "
-            f"{row.get('square_footage', 'N/A')} sqft, "
-            f"{row.get('household_size', 'N/A')} occupants, "
-            f"{row.get('housing_type', 'N/A')}"
-        )
-
+        md.update({
+            'square_footage': _meta_val(first_row.get('square_footage')),
+            'insulation': _meta_val(first_row.get('insulation')),
+            'outdoor_temp': _meta_val(first_row.get('outdoor_temp')),
+            'house_age': house_age_to_band_label(first_row.get('house_age')),
+            'r_value': _meta_val(first_row.get('r_value')),
+            'seer': _meta_val(first_row.get('seer')),
+            'hvac_age': _meta_val(first_row.get('hvac_age')),
+        })
     elif decision_type == 'Appliance':
-        return (
-            f"{row.get('question', 'N/A')}, "
-            f"{row.get('household_size', 'N/A')} occupants, "
-            f"{row.get('housing_type', 'N/A')}, "
-            f"appliance age: {row.get('appliance_age', 'N/A')} yr, "
-            f"budget ${row.get('utility_budget', 'N/A')}/month"
-        )
-
+        md.update({
+            'appliance': _meta_val(first_row.get('appliance')),
+            # Banded for display so the exemplar mirrors the (banded) target
+            # block; mirrors how house_age is stored as a label.
+            'appliance_age': appliance_age_to_band_label(first_row.get('appliance_age')),
+            'kwh_per_cycle': _meta_val(first_row.get('kwh_per_cycle')),
+        })
     elif decision_type == 'Shower':
-        flow_rate = row.get('flow_rate')
-        if flow_rate is None or str(flow_rate).strip() in ('', 'nan', 'N/A'):
-            flow_rate = _gpm_to_flow_rate_label(row.get('gpm', 0))
-        return (
-            f"{flow_rate} showerhead, "
-            f"{row.get('outdoor_temp', 'N/A')} deg F outdoor, "
-            f"{row.get('household_size', 'N/A')} occupants, "
-            f"{row.get('housing_type', 'N/A')}, "
-            f"budget ${row.get('utility_budget', 'N/A')}/month"
-        )
+        fr = first_row.get('flow_rate')
+        if fr is None or str(fr).strip() in ('', 'nan', 'N/A', '<NA>'):
+            fr = gpm_to_flow_rate_label(first_row.get('gpm', 0))
+        md.update({
+            'outdoor_temp': _meta_val(first_row.get('outdoor_temp')),
+            'gpm': _meta_val(first_row.get('gpm')),
+            'flow_rate': fr,
+            'tank_size': _meta_val(first_row.get('tank_size')),
+            'water_heater_temp': _meta_val(first_row.get('water_heater_temp')),
+        })
 
-    else:
-        raise ValueError(f"Unknown decision type: {decision_type}")
+    for i, (_, r) in enumerate(group.iterrows(), 1):
+        if decision_type == 'Shower':
+            name = f"{int(round(float(r['duration_min'])))} min"
+        else:
+            name = str(r['alternative'])
+        md[f'alt{i}'] = name
+        md[f'alt{i}_energy_cost'] = float(r['energy_cost_score'])
+        md[f'alt{i}_environmental'] = float(r['environmental_score'])
+        md[f'alt{i}_comfort'] = float(r['comfort_score'])
+        md[f'alt{i}_practicality'] = float(r['practicality_score'])
+        md[f'alt{i}_mavt'] = float(r['mavt_score'])
+        md[f'alt{i}_rank'] = int(round(float(r['rank'])))
+    return md
 
 
 def build_rag_database(csv_dir=SCENARIO_DIR):
@@ -168,35 +225,13 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
 
         # Group by scenario_id to get unique scenarios
         for scenario_id, group in hvac_df.groupby('scenario_id'):
-            # Get scenario info from first row
             first_row = group.iloc[0]
             scenario_text = format_scenario_text(first_row, 'HVAC')
-
-            # Get all three alternatives
-            alts_data = {}
-            for _, row in group.iterrows():
-                alt_num = int(row['alternative_num'])
-                alts_data[f'alt{alt_num}'] = row['alternative']
-                alts_data[f'alt{alt_num}_energy_cost'] = float(row['energy_cost_score'])
-                alts_data[f'alt{alt_num}_environmental'] = float(row['environmental_score'])
-                alts_data[f'alt{alt_num}_comfort'] = float(row['comfort_score'])
-                alts_data[f'alt{alt_num}_practicality'] = float(row['practicality_score'])
-
-            # Generate embedding
             embedding = embedding_model.encode(scenario_text).tolist()
+            metadata = build_scenario_metadata('HVAC', first_row, group)
 
-            #prepare data
-            metadata = {
-                'decision_type': 'HVAC',
-                'scenario_id': f'hvac_{scenario_id}',
-                'question': first_row['question'],
-                'location': first_row['location'],
-                **alts_data
-            }
-
-            # Add to ChromaDB
             collection.add(
-                ids=[f'hvac_{scenario_id}'],
+                ids=[metadata['scenario_id']],
                 embeddings=[embedding],
                 documents=[scenario_text],
                 metadatas=[metadata]
@@ -221,28 +256,11 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
         for scenario_id, group in appliance_df.groupby('scenario_id'):
             first_row = group.iloc[0]
             scenario_text = format_scenario_text(first_row, 'Appliance')
-
-            # Get all alternatives
-            alts_data = {}
-            for idx, (_, row) in enumerate(group.iterrows(), 1):
-                alts_data[f'alt{idx}'] = row['alternative']
-                alts_data[f'alt{idx}_energy_cost'] = float(row['energy_cost_score'])
-                alts_data[f'alt{idx}_environmental'] = float(row['environmental_score'])
-                alts_data[f'alt{idx}_comfort'] = float(row['comfort_score'])
-                alts_data[f'alt{idx}_practicality'] = float(row['practicality_score'])
-
             embedding = embedding_model.encode(scenario_text).tolist()
-
-            metadata = {
-                'decision_type': 'Appliance',
-                'scenario_id': f'appliance_{scenario_id}',
-                'question': first_row['question'],
-                'location': first_row['location'],
-                **alts_data
-            }
+            metadata = build_scenario_metadata('Appliance', first_row, group)
 
             collection.add(
-                ids=[f'appliance_{scenario_id}'],
+                ids=[metadata['scenario_id']],
                 embeddings=[embedding],
                 documents=[scenario_text],
                 metadatas=[metadata]
@@ -265,28 +283,11 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
         for scenario_id, group in shower_df.groupby('scenario_id'):
             first_row = group.iloc[0]
             scenario_text = format_scenario_text(first_row, 'Shower')
-
-            # Get all alternatives
-            alts_data = {}
-            for idx, (_, row) in enumerate(group.iterrows(), 1):
-                alts_data[f'alt{idx}'] = f"{row['duration_min']} min"
-                alts_data[f'alt{idx}_energy_cost'] = float(row['energy_cost_score'])
-                alts_data[f'alt{idx}_environmental'] = float(row['environmental_score'])
-                alts_data[f'alt{idx}_comfort'] = float(row['comfort_score'])
-                alts_data[f'alt{idx}_practicality'] = float(row['practicality_score'])
-
             embedding = embedding_model.encode(scenario_text).tolist()
-
-            metadata = {
-                'decision_type': 'Shower',
-                'scenario_id': f'shower_{scenario_id}',
-                'question': first_row['question'],
-                'location': first_row['location'],
-                **alts_data
-            }
+            metadata = build_scenario_metadata('Shower', first_row, group)
 
             collection.add(
-                ids=[f'shower_{scenario_id}'],
+                ids=[metadata['scenario_id']],
                 embeddings=[embedding],
                 documents=[scenario_text],
                 metadatas=[metadata]
