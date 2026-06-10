@@ -262,7 +262,6 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
     return scenario_text, decision_type
 
 def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict]:
-    """Retrieve similar scenarios."""
     if chroma_collection is None or embedding_model is None:
         logger.info("   RAG database not available, skipping retrieval")
         return []
@@ -552,7 +551,6 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """Apply mavt ranking."""
     alternatives = [ad['alternative'] for ad in alternatives_scores]
 
     valid_pairs = []  # (input_idx, weighted_sum)

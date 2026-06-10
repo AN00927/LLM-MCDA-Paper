@@ -178,7 +178,6 @@ Return ONLY the JSON, no explanation.
 
 def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
                      temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
-    """Query openrouter."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -478,7 +477,6 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
 
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """Apply mavt ranking."""
     alternatives = [ad['alternative'] for ad in alternatives_scores]
 
     valid_pairs = []  # (input_idx, weighted_sum)
@@ -518,7 +516,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     }
 
 def run_scenario(scenario: Dict) -> Dict:
-    """Run scenario."""
     print(f"SCENARIO: {scenario.get('question', 'N/A')}")
    
     print(f"Extracting decision type, parameters, and calculator...")
@@ -690,7 +687,6 @@ def run_scenario(scenario: Dict) -> Dict:
 
 def run_test_set(test_path: str, output_path: str,
                  output_diagnostics_path: str) -> Dict:
-    """Run test set."""
     test_csv_path = Path(test_path)
     output_csv_path = Path(output_path)
     output_diagnostics_path = Path(output_diagnostics_path)
