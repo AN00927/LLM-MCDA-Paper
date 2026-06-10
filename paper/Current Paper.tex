@@ -608,7 +608,11 @@ Energy cost per cycle is $C = E_{\mathrm{cyc}} \cdot r(t,\ell)$, where $E_{\math
 is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of
 six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021};
 here $C$ is per-cycle energy cost (dollars/cycle), $t$ is the appliance run time (time-of-day),
-and $\ell$ is the household location used to resolve the serving utility.
+and $\ell$ is the household location used to resolve the serving utility. The per-cycle energy
+$E_{\mathrm{cyc}}$ already reflects appliance age: within each appliance type, the dataset assigns
+higher per-cycle energy to older units (consistent with measured aging of household appliances
+\cite{paul2022}), so the age parameter's efficiency effect enters energy cost and emissions
+through $E_{\mathrm{cyc}}$ directly rather than via a separate term.
 The PJM emissions window (7am--11pm) applies to environmental impact regardless of the
 utility's billing window, because emissions follow the regional grid.
 The run-time rate period is selected by mapping location $\ell$ to a utility $U(\ell)$ and
@@ -767,6 +771,21 @@ penalty $\Delta_{\mathrm{cont}}(\tau,n)$, and clips to $[0,10]$:
 \end{equation}
 \noindent where $\tau$ is shower duration (min), $n$ is occupants, $C_{\mathrm{base}}(\tau)$ is the base comfort curve,
 $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ is a temperature-adequacy penalty, and $\Delta_{\mathrm{cont}}(\tau,n)$ is a household-contention penalty.
+The comfort-optimal duration---the peak of $C_{\mathrm{base}}(\tau)$---is not fixed: observed and
+comfortable shower durations lengthen in cold weather \cite{wong2022,ibanezrueda2023}. We therefore
+shift the optimum upward as outdoor temperature falls below a reference, using the field-measured
+elasticity of $\sim$10\% longer duration per 6\,\textdegree{}C ($=10.8$\,\textdegree{}F) outdoor drop
+\cite{wong2022}, capped at the observed seasonal envelope (8.8\,min summer to 11.6\,min winter, a
+$1.32\times$ increase) of Ib\'a\~nez-Rueda et al.\ \cite{ibanezrueda2023}:
+\begin{equation}
+  \tau^{*}(T_{\mathrm{out}}) = 7.8\,\min\!\Bigl(1 + 0.0093\,\max(0,\,T_{\mathrm{ref}} - T_{\mathrm{out}}),\;\; 1.32\Bigr)
+  \label{eq:shower_optimal_duration}
+\end{equation}
+\noindent where $\tau^{*}$ is the comfort-optimal duration (min), $T_{\mathrm{out}}$ is outdoor temperature
+(\textdegree{}F), $T_{\mathrm{ref}} = 77$\,\textdegree{}F ($=25$\,\textdegree{}C) is the ASHRAE\,55
+cooling-mode comfort reference \cite{ashrae55}, and $0.0093 = 0.10/10.8$ is the per-\textdegree{}F
+elasticity. Warm-weather scoring ($T_{\mathrm{out}}\ge T_{\mathrm{ref}}$) is unchanged; colder
+conditions raise the optimum (up to $\sim$10.3\,min), so longer showers score as more comfortable when it is cold.
 Practicality additionally penalizes alternatives that exceed available tank
 capacity. The practicality model uses a duration-based base practicality $P_{\mathrm{base}}(\tau)$ and
 a capacity constraint computed from hot-water demand. Hot-water per shower is

@@ -53,15 +53,20 @@ class ShowerGroundTruthCalculator:
     # as outdoor temperature falls, so the comfort-optimal duration is shifted
     # upward below a moderate reference outdoor temperature:
     #   - elasticity: ~10% longer shower per 6 C (= 10.8 F) outdoor-temperature
-    #     drop, a field-measurement finding reported in Lai, Y.-W. et al.,
-    #     "Showering Thermal Sensation in Residential Bathrooms," Water 2022,
-    #     14(19):2940 (https://doi.org/10.3390/w14192940).
+    #     drop, a field-measurement finding reported in Wong, L.-T., Mui, K.-W. &
+    #     Chan, Y.-W., "Showering Thermal Sensation in Residential Bathrooms,"
+    #     Water 2022, 14(19):2940 (https://doi.org/10.3390/w14192940).
     #   - envelope cap: seasonal field means of 8.8 min (summer) vs 11.6 min
     #     (winter), i.e. a 1.32x increase, from Ibanez-Rueda et al., "Towards a
     #     sustainable use of shower water," Sustainable Water Resources
     #     Management 2023 (https://doi.org/10.1007/s40899-023-00905-3). We cap
     #     the shift at this empirically observed winter/summer ratio.
-    COMFORT_TEMP_REFERENCE_F = 75.0
+    # Reference outdoor temperature at/above which no cold shift applies: 77 F
+    # (= 25 C), the ASHRAE 55-2020 cooling-mode comfort reference (acceptable
+    # band 23.5-25.5 C / 74.3-77.9 F). Anchored to a human-comfort standard
+    # rather than the mains-inlet breakpoint (which is a water-temperature model,
+    # not a comfort reference).
+    COMFORT_TEMP_REFERENCE_F = 77.0
     COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (= 6 C) drop
     COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer envelope
 
@@ -198,7 +203,7 @@ class ShowerGroundTruthCalculator:
         return gpm * duration_min
 
     @staticmethod
-    def calculate_comfort_score(self, duration: float, water_heater_temp: float,
+    def calculate_comfort_score(duration: float, water_heater_temp: float,
                                 occupants: int, outdoor_temp: float = COMFORT_TEMP_REFERENCE_F) -> float:
         """Calculate comfort score.
 
@@ -208,13 +213,13 @@ class ShowerGroundTruthCalculator:
         temps raise it (capped at the observed winter envelope). Warm-weather
         scoring is unchanged (multiplier == 1.0 at/above the reference temp).
         """
-
-        drop_f = max(0.0, self.COMFORT_TEMP_REFERENCE_F - outdoor_temp)
+        cls = ShowerGroundTruthCalculator
+        drop_f = max(0.0, cls.COMFORT_TEMP_REFERENCE_F - outdoor_temp)
         temp_multiplier = min(
-            1.0 + self.COMFORT_TEMP_ELASTICITY_PER_F * drop_f,
-            self.COMFORT_TEMP_MAX_MULTIPLIER,
+            1.0 + cls.COMFORT_TEMP_ELASTICITY_PER_F * drop_f,
+            cls.COMFORT_TEMP_MAX_MULTIPLIER,
         )
-        optimal_duration = self.COMFORT_DURATION_OPTIMAL * temp_multiplier  # <= ~10.3 min
+        optimal_duration = cls.COMFORT_DURATION_OPTIMAL * temp_multiplier  # <= ~10.3 min
 
         if duration <= 3.0:
             # Below dermatologist minimum — severely rushed.

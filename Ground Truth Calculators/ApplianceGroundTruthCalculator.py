@@ -435,6 +435,10 @@ class ApplianceGroundTruthCalculator:
 
             try:
                 run_time_hour, delay_hours = self.parse_alternative(alt, scenario)
+                # kwh_per_cycle already reflects the appliance's age: within each
+                # appliance type the dataset's per-cycle energy is strongly
+                # correlated with appliance_age (older units assigned higher
+                # kWh), so age's efficiency effect flows through here directly.
                 energy_cost = self.calculate_energy_cost(
                     scenario['kwh_per_cycle'], run_time_hour, scenario['location']
                 )
