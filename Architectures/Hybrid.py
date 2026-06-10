@@ -125,7 +125,6 @@ def _is_transient_http_status(status_code: int) -> bool:
 
 
 UNIFIED_EXTRACTION_PROMPT = """You are a household-systems engineer. 
-The scenario below already states the homeowner-facing facts (location, household size, housing type, budget, outdoor temperature, insulation level, ages, etc.) and the alternatives are taken directly from the dataset. 
 Your ONLY job is to estimate the technical ENGINEERING parameters a homeowner would not state but that are required to physically model the decision,
 then name the decision type and its calculator.
 
@@ -136,41 +135,41 @@ QUESTION: {question}
 
 INSTRUCTIONS:
 1. Identify the Decision Type: HVAC, Appliance, or Shower.
-2. Estimate ONLY the parameters listed for that type below. Do NOT restate values already present in the scenario, and do NOT output the alternatives.
-3. Every listed parameter is mandatory. If a value is not stated, it is mandatory to reasonably estimate it from the scenario context (insulation level, ages, housing type, location, the appliance named in the question, etc.). Never leave a field blank.
+2. Estimate ONLY the parameters listed for that type below. 
+3. Every listed parameter is mandatory. If a value is not stated, it is mandatory to reasonably estimate it from the scenario context.
 4. Return ONLY valid JSON in the exact structure shown.
 
-For HVAC decisions (estimate the building/system engineering values):
+For HVAC decisions:
 {{
   "decision_type": "HVAC",
   "calculator": "HVACGroundTruthCalculator",
   "parameters": {{
     "r_value": <number; whole-wall R-value implied by the insulation level and house age>,
     "seer": <number; AC SEER implied by the system's age/efficiency>,
-    "hvac_age": <number; age of the HVAC unit in years>,
-    "occupancy_context": "occupied_all_day | unoccupied_<hours> | occupied_sleep (infer from the question)"
+    "hvac_age": <number; age of the HVAC unit in years based on house age>,
+    "occupancy_context": "occupied_all_day | unoccupied_<hours> | occupied_sleep"
   }}
 }}
 
-For Appliance decisions (estimate the appliance engineering values):
+For Appliance decisions:
 {{
   "decision_type": "Appliance",
   "calculator": "ApplianceGroundTruthCalculator",
   "parameters": {{
-    "appliance": "Dishwasher | Washer | Dryer (read from the question)",
-    "kwh_per_cycle": <number; energy used per cycle for that appliance>,
-    "baseline_time": "<the time the homeowner would otherwise run it, e.g. 7pm, 8am>"
+    "appliance": "Dishwasher | Washer | Dryer",
+    "kwh_per_cycle": <number; energy per cycle for that appliance, reflecting its age — older units use more energy per cycle than new ones of the same type>,
+    "baseline_time": "<the time it currently is, e.g. 7pm, 8am>"
   }}
 }}
 
-For Shower decisions (estimate the plumbing engineering values):
+For Shower decisions:
 {{
   "decision_type": "Shower",
   "calculator": "ShowerGroundTruthCalculator",
   "parameters": {{
-    "gpm": <number; showerhead flow rate in gallons per minute, consistent with the stated flow_rate label>,
-    "tank_size": <number; water-heater tank size in gallons>,
-    "water_heater_temp": <number; water-heater setpoint in deg F>
+    "gpm": <number; showerhead flow rate in gallons per minute, consistent with the stated flow_rate label (low_flow <=2.0, standard 2.5-3.0, high_flow >3.0)>,
+    "tank_size": <number; water-heater tank size in gallons, estimated from household size and housing type — ~30-40 for 1-2 occupants or a small apartment, ~50 for a typical family, up to ~80 for a large single-family home>,
+    "water_heater_temp": <number; water-heater setpoint in deg F; default to the standard 120 unless the scenario clearly implies otherwise>
   }}
 }}
 
@@ -977,12 +976,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     # Stable cols: just take the first one since these should match across runs
     avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[STABLE_META_COLS].first()
-
-    # Optional diagnostic cols — only merge if present in the run files
-    present_optional = [c for c in OPTIONAL_META_COLS if c in combined.columns]
-    if present_optional:
-        opt_first = combined.groupby(GROUP_KEYS, as_index=False)[present_optional].first()
-        avg_meta = avg_meta.merge(opt_first, on=GROUP_KEYS)
 
     # decision_type: use the most common non-UNKNOWN value, or UNKNOWN if everything failed
     def _mode_decision_type(series):
