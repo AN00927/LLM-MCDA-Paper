@@ -12,7 +12,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, parse_utility_budget
+from sentinel_utils import read_table_clean
 
 class ShowerGroundTruthCalculator:
     """"Key sources:
@@ -26,8 +26,10 @@ class ShowerGroundTruthCalculator:
 - Zhang, D., Mui, K.-W., & Wong, L.-T. (2023). Buildings, 13(5), 1300.
 """
 
-    # PA residential electricity price from EIA (2024)
-    ELECTRICITY_RATE_PA = 0.19  # $/kWh; flat-rate default (see modeling choice above)
+    # PA residential flat electricity rate, $/kWh. Source: eia_epa_2024 (EIA Electric
+    # Power Annual 2024 Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to
+    # ~19-21 c/kWh through 2025 -- 0.19 is a defensible flat-rate proxy).
+    ELECTRICITY_RATE_PA = 0.19
 
     # PA seasonal mains water temperatures.
     # Sources: Hendron & Burch (2008), NREL/TP-550-40874; Maguire et al. (2013), NREL/TP-5500-58756.
@@ -510,7 +512,7 @@ def process_shower_scenarios(
             'household_size': int(row['household_size']),
             'tank_size': float(row['tank_size']),
             'gpm': float(row['gpm']),
-            'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+            'utility_budget': float(row.get('utility_budget', 0)),
             'housing_type': row['housing_type'],
             'outdoor_temp': float(row['outdoor_temp']),
             'water_heater_temp': float(row['water_heater_temp']),

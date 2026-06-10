@@ -13,7 +13,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, parse_utility_budget, SENTINEL_VALUE, has_sentinel_scores
+from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores
 
 class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
@@ -581,7 +581,7 @@ def process_appliance_scenarios(
         scenario = {
             'question': row['question'],
             'location': row['location'],
-            'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+            'utility_budget': float(row.get('utility_budget', 0)),
             'appliance': row['appliance'],
             'housing_type': row['housing_type'],
             'household_size': int(row['household_size']),
@@ -611,7 +611,7 @@ def process_appliance_scenarios(
                     'scenario_id': idx,
                     'question': row['question'],
                     'location': row['location'],
-                    'utility_budget': parse_utility_budget(row.get('utility_budget', 0)),
+                    'utility_budget': float(row.get('utility_budget', 0)),
                     'appliance': row['appliance'],
                     'appliance_age': row['appliance_age'],
                     'housing_type': row['housing_type'],
