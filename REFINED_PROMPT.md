@@ -46,7 +46,8 @@ No behavior changes in this phase — pure organization. Do the 3 GT calculators
 group, then the 3 architectures as a **separate** group.
 
 **1a. Plan the refactor first.**
-→ DISPATCH (`Plan`, sonnet, high):
+
+*ANYWHERE THAT THERE IS A HIGH LEVEL PLANNING, USE YOUR OWN REASONING, NOT SONNET HIGH UNLESS IT IS NOT A SUPER HIGH LEVEL PLANNING. HOWEVER THIS IS VERY HIGH LEVEL.*
 "Read every file in `Ground Truth Calculators/` and `Architectures/`. Produce a
 standardization plan covering, for each group separately (calculators vs architectures):
 (1) canonical function order — most shared/common methods live in the lower half of each

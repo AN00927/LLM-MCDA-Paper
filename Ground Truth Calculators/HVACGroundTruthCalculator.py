@@ -14,7 +14,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean
+from sentinel_utils import read_table_clean, parse_utility_budget
 
 
 class HVACGroundTruthCalculator:
@@ -204,7 +204,6 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(10.0, comfort_score))
 
     def calculate_practicality_score(self, outdoor_temp: float, indoor_temp: float,) -> float:
-        """Calculate practicality score."""
         if outdoor_temp > indoor_temp:  # Cooling mode
             if indoor_temp >= 82:
                 extremity_penalty = (indoor_temp - 82) * 1.5
@@ -240,7 +239,6 @@ class HVACGroundTruthCalculator:
         return max(1.5, min(10.0, base_score))
 
     def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 90) -> float:
-        """Calculate monthly cost."""
         return per_period_cost * periods_per_month
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
@@ -323,7 +321,6 @@ class HVACGroundTruthCalculator:
         return "occupied_all_day"
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
-        """Apply value function."""
         reference_ranges = {
                 'energy_cost': {
         # 5th-95th percentile of the actual scenario-set cost distribution (8h
@@ -424,7 +421,6 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
-        """Calculate scenario scores."""
         is_cooling = scenario['outdoor_temp'] > 75
 
         raw_results = {}
@@ -593,7 +589,6 @@ class HVACGroundTruthCalculator:
 def process_hvac_scenarios(
     csv_filename: str = str(SCENARIO_DIR / "HVACScenarios.xlsx"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx")):
-    """Process hvac scenarios."""
     csv_path = Path(csv_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -699,7 +694,6 @@ def process_hvac_scenarios(
     return results_df
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """Apply mavt ranking."""
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 
