@@ -67,13 +67,11 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_XLSX = OUTPUT_DIR / "pure_prompting_results.xlsx"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "pure_prompting_results_diagnostics.json"
 
-# Pull in the env vars
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 
-# Set up the logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'

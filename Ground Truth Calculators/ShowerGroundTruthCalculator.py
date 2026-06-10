@@ -12,6 +12,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+from sentinel_utils import read_table_clean, parse_utility_budget
 
 class ShowerGroundTruthCalculator:
     """"Key sources:
@@ -147,9 +148,7 @@ class ShowerGroundTruthCalculator:
         }
     }
 
-    @staticmethod
-    def determine_inlet_temp(outdoor_temp: float) -> float:
-        """Determine inlet temp."""
+    def determine_inlet_temp(self, outdoor_temp: float) -> float:
         if outdoor_temp <= 32:
             return 45.0  # Winter minimum
         elif outdoor_temp >= 75:
@@ -158,15 +157,13 @@ class ShowerGroundTruthCalculator:
             # Linear interpolation: slope = 20/43 ≈ 0.465
             return 45.0 + (outdoor_temp - 32.0) * (20.0 / 43.0)
 
-    @staticmethod
-    def calculate_shower_energy(duration_min: float, gpm: float,
+    def calculate_shower_energy(self, duration_min: float, gpm: float,
                                 water_heater_temp: float, outdoor_temp: float) -> float:
-        """Calculate shower energy."""
-        inlet_temp = ShowerGroundTruthCalculator.determine_inlet_temp(outdoor_temp)
+        inlet_temp = self.determine_inlet_temp(outdoor_temp)
         delta_t = water_heater_temp - inlet_temp
 
         # Only heat the hot water fraction (rest is cold water mixed in)
-        hot_fraction = ShowerGroundTruthCalculator.calculate_hot_water_fraction(
+        hot_fraction = self.calculate_hot_water_fraction(
             water_heater_temp,
             inlet_temp,
             ShowerGroundTruthCalculator.TARGET_SHOWER_TEMP
@@ -180,8 +177,7 @@ class ShowerGroundTruthCalculator:
 
         return energy_kwh
 
-    @staticmethod
-    def calculate_hot_water_fraction(water_heater_temp: float, inlet_temp: float,
+    def calculate_hot_water_fraction(self, water_heater_temp: float, inlet_temp: float,
                                      target_temp: float) -> float:
         """Calculate hot-water mixing fraction for a target delivery temperature."""
         # Mixing-energy balance for hot/cold streams.
@@ -191,19 +187,15 @@ class ShowerGroundTruthCalculator:
         fraction = (target_temp - inlet_temp) / (water_heater_temp - inlet_temp)
         return max(0.0, min(1.0, fraction))
 
-    @staticmethod
-    def calculate_energy_cost(kwh: float) -> float:
-        """Calculate energy cost."""
-        rate =ShowerGroundTruthCalculator.ELECTRICITY_RATE_PA
+    def calculate_energy_cost(self, kwh: float) -> float:
+        rate = ShowerGroundTruthCalculator.ELECTRICITY_RATE_PA
         return kwh * rate
 
-    @staticmethod
-    def calculate_environmental_impact(gpm: float, duration_min: float) -> float:
+    def calculate_environmental_impact(self, gpm: float, duration_min: float) -> float:
         """Calculate environmental impact as water volume consumed (gallons)."""
         return gpm * duration_min
 
-    @staticmethod
-    def calculate_comfort_score(duration: float, water_heater_temp: float,
+    def calculate_comfort_score(self, duration: float, water_heater_temp: float,
                                 occupants: int, outdoor_temp: float = COMFORT_TEMP_REFERENCE_F) -> float:
         """Calculate comfort score.
 
@@ -254,11 +246,9 @@ class ShowerGroundTruthCalculator:
         total_comfort = base_comfort - temp_penalty - contention_penalty
         return max(0.0, min(10.0, total_comfort))
 
-    @staticmethod
-    def calculate_practicality_score(duration: float, occupants: int,
+    def calculate_practicality_score(self, duration: float, occupants: int,
                                      tank_size: float, gpm: float,
                                      water_heater_temp: float, outdoor_temp: float) -> float:
-        """Calculate practicality score."""
         if duration <= 5:
             # Below dermatologist minimum - very low adoption
             # REUS 2016: well below average, requires significant behavior change
@@ -277,8 +267,8 @@ class ShowerGroundTruthCalculator:
             # actual rate much lower, so conservative modeling
             base_practicality = max(1.5, 7.5 - (duration - 15.0) * 0.35)
 
-        inlet_temp = ShowerGroundTruthCalculator.determine_inlet_temp(outdoor_temp)
-        hot_fraction = ShowerGroundTruthCalculator.calculate_hot_water_fraction(
+        inlet_temp = self.determine_inlet_temp(outdoor_temp)
+        hot_fraction = self.calculate_hot_water_fraction(
             water_heater_temp,
             inlet_temp,
             ShowerGroundTruthCalculator.TARGET_SHOWER_TEMP
@@ -295,16 +285,12 @@ class ShowerGroundTruthCalculator:
 
         return max(1.5, min(10.0, total_practicality))
 
-    @staticmethod
-    def calculate_monthly_cost(per_shower_cost: float, occupants: int,
+    def calculate_monthly_cost(self, per_shower_cost: float, occupants: int,
                                showers_per_person_per_day: float = 0.9) -> float:
-        """Calculate monthly cost."""
         showers_per_month = occupants * showers_per_person_per_day * 30
         return per_shower_cost * showers_per_month
 
-    @staticmethod
-    def calculate_budget_penalty(monthly_cost: float, monthly_budget: float) -> float:
-        """Calculate budget penalty."""
+    def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
         if monthly_budget <= 0:
             return 1.0
 
@@ -322,7 +308,6 @@ class ShowerGroundTruthCalculator:
 
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
-        """Apply value function."""
         reference_ranges = self.REFERENCE_RANGES
 
         ref = reference_ranges[value_type]
@@ -385,7 +370,6 @@ class ShowerGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
     
     def calculate_scenario_scores(self, scenario: dict) -> dict:
-        """Calculate scenario scores."""
         occupants = int(scenario.get('household_size', 2))
         tank_size = float(scenario.get('tank_size', 40))
         gpm = float(scenario.get('gpm', 2.5))
@@ -413,15 +397,15 @@ class ShowerGroundTruthCalculator:
             duration = alt['duration']
 
             # Calculate raw values
-            kwh = ShowerGroundTruthCalculator.calculate_shower_energy(
+            kwh = self.calculate_shower_energy(
                 duration, gpm, water_heater_temp, outdoor_temp
             )
-            cost = ShowerGroundTruthCalculator.calculate_energy_cost(kwh)
-            water_gallons = ShowerGroundTruthCalculator.calculate_environmental_impact(gpm, duration)
-            comfort = ShowerGroundTruthCalculator.calculate_comfort_score(
+            cost = self.calculate_energy_cost(kwh)
+            water_gallons = self.calculate_environmental_impact(gpm, duration)
+            comfort = self.calculate_comfort_score(
                 duration, water_heater_temp, occupants, outdoor_temp
             )
-            practicality = ShowerGroundTruthCalculator.calculate_practicality_score(
+            practicality = self.calculate_practicality_score(
                 duration, occupants, tank_size, gpm, water_heater_temp, outdoor_temp
             )
 
@@ -503,10 +487,6 @@ class ShowerGroundTruthCalculator:
 def process_shower_scenarios(
     xlsx_filename: str = str(SCENARIO_DIR / "ShowerScenarios.xlsx"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")):
-    """Process shower scenarios."""
-    import pandas as pd
-    from sentinel_utils import read_table_clean, parse_utility_budget
-
     csv_path = Path(xlsx_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -599,7 +579,6 @@ def process_shower_scenarios(
     return results_df
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """Apply mavt ranking."""
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 

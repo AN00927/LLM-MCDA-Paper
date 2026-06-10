@@ -80,7 +80,6 @@ class ApplianceGroundTruthCalculator:
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
     def _max_acceptable_delay(self, appliance_type: str) -> float:
-        """ max acceptable delay."""
         delays = {
             'dishwasher': 12.0,
             'washer': 8.0,
@@ -89,8 +88,7 @@ class ApplianceGroundTruthCalculator:
         }
         return delays.get(appliance_type.lower().strip(), 12.0)
 
-    @staticmethod
-    def _normalize_city(location: str) -> str:
+    def _normalize_city(self, location: str) -> str:
         """Strip ', PA' / state suffix and whitespace from a Location string."""
         return location.split(",")[0].strip()
 
@@ -139,7 +137,6 @@ class ApplianceGroundTruthCalculator:
     def calculate_comfort_score(self, delay_hours: float, run_time_hour: int,
                                housing_type: str, occupants: int,
                                appliance_type: str) -> float:
-        """Calculate comfort score."""
         if delay_hours == 0:
             base_comfort = 10.0
         elif delay_hours <= 3:
@@ -194,7 +191,6 @@ class ApplianceGroundTruthCalculator:
     def calculate_practicality_score(self, delay_hours: float, run_time_hour: int,
                                     housing_type: str, occupants: int,
                                     appliance_type: str) -> float:
-        """Calculate practicality score."""
         if delay_hours == 0:
             base_practicality = 10.0
         elif delay_hours <= 2:
@@ -242,7 +238,6 @@ class ApplianceGroundTruthCalculator:
 
 
     def parse_alternative(self, alt: str, scenario: Dict) -> Tuple[int, float]:
-        """Parse alternative."""
         import re
 
         # Extract run time from alternative (e.g., "7pm", "10pm", "2am")
@@ -277,7 +272,6 @@ class ApplianceGroundTruthCalculator:
 
         return run_time_hour, delay_hours
     def _parse_time_to_hour(self, time_str: str) -> int:
-        """ parse time to hour."""
         import re
 
         match =re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', time_str, re.IGNORECASE)
@@ -297,7 +291,6 @@ class ApplianceGroundTruthCalculator:
             return hour
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
-        """Apply value function."""
         reference_ranges = {
             'energy_cost': {
                 # Bounds: 5th-pctile kWh/cycle x lowest off-peak rate, and 95th-pctile
@@ -397,7 +390,6 @@ class ApplianceGroundTruthCalculator:
         return max(0.0, min(10.0, u_x * 10.0))
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
-        """Calculate budget penalty."""
         utilization = monthly_cost / monthly_budget
 
         if utilization < 0.80:
@@ -418,11 +410,9 @@ class ApplianceGroundTruthCalculator:
             return 0.0
 
     def calculate_monthly_cost(self, per_cycle_cost: float, cycles_per_month: int = 30) -> float:
-        """Calculate monthly cost."""
         return per_cycle_cost * cycles_per_month
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
-        """Calculate scenario scores."""
         alternatives = []
         for alt_key in ['alternative_1', 'alternative_2', 'alternative_3']:
             if alt_key in scenario and scenario[alt_key]:
@@ -534,7 +524,6 @@ class ApplianceGroundTruthCalculator:
 def process_appliance_scenarios(
     xlsx_filename: str = str(SCENARIO_DIR / "ApplianceScenarios.xlsx"),
     output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx")):
-    """Process appliance scenarios."""
     csv_path = Path(xlsx_filename)
     output_path = Path(output_filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -662,7 +651,6 @@ def process_appliance_scenarios(
     return results_df
 
 def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    """Apply mavt ranking."""
     try:
         alternatives = [alt["alternative"] for alt in alternatives_scores]
 
