@@ -305,35 +305,3 @@ def format_embedding_text(decision_type: str, fields) -> str:
         )
     raise ValueError(f"Unknown decision type: {decision_type}")
 
-
-def parse_utility_budget(budget_value) -> float:
-    """Parse utility budget values that may include currency symbols/commas.
-
-    Returns a non-negative float (0.0 on missing/unparseable).
-    """
-    import pandas as pd
-    import re
-
-    if budget_value is None:
-        return 0.0
-
-    # Handle already-numeric values
-    try:
-        if isinstance(budget_value, (int, float)):
-            return max(0.0, float(budget_value))
-    except Exception:
-        pass
-
-    if pd.isna(budget_value):
-        return 0.0
-
-    s = str(budget_value).strip()
-    # Remove currency symbols, spaces, and thousands separators
-    cleaned = re.sub(r"[^0-9.\-]", "", s)
-    if cleaned == "":
-        return 0.0
-    try:
-        return max(0.0, float(cleaned))
-    except ValueError:
-        return 0.0
-
