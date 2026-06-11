@@ -102,12 +102,61 @@ HYBRID_FAILURE_COUNTER_KEYS = [
     "failed_extraction_invalid_decision_type",
     "failed_extraction_invalid_calculator",
     "failed_extraction_missing_parameters",
+    "failed_extraction_invalid_parameters",
+    "failed_extraction_decision_type_mismatch",
     "failed_extraction_exception",
     "failed_ground_truth_calculation_exception",
     "failed_ground_truth_missing_key",
     "failed_api_exhausted",
     "failed_unknown"
 ]
+
+
+# Numeric engineering parameters the calculators do arithmetic on, with the
+# physically admissible range each must fall in. A value outside the range (or
+# one that does not parse as a finite number) is an extraction failure that must
+# surface as the sentinel -- NEVER silently coerced to 0.0, which would fabricate
+# a perfect (zero-cost / zero-emission) score and corrupt the benchmark. The
+# string fields ('occupancy_context', 'appliance', 'baseline_time') are validated
+# separately by the calculators themselves and are not range-checked here.
+HYBRID_NUMERIC_PARAM_BOUNDS = {
+    "HVAC": {
+        "r_value": (1.0, 60.0),      # whole-wall R; R-1..R-60 spans all residential assemblies
+        "seer": (6.0, 30.0),         # rated SEER of any fielded residential AC
+        "hvac_age": (0.0, 60.0),     # equipment age in years
+    },
+    "Appliance": {
+        "kwh_per_cycle": (0.05, 10.0),  # per-cycle energy for dishwasher/washer/dryer
+    },
+    "Shower": {
+        "gpm": (0.5, 8.0),               # showerhead flow rate
+        "tank_size": (10.0, 120.0),      # nominal water-heater tank gallons
+        "water_heater_temp": (80.0, 160.0),  # setpoint deg F
+    },
+}
+
+
+def _validate_numeric_params(decision_type: str, params: Dict) -> List[str]:
+    """Return the list of numeric parameters that fail to parse as a finite
+    number inside their physical range. An empty list means all are valid.
+
+    This is the guard that stops a non-numeric extraction (e.g. gpm="low_flow"
+    or water_heater_temp="120 F") from being silently turned into 0.0 in
+    score_with_ground_truth -- which would produce a fabricated perfect score.
+    """
+    import math
+    bad = []
+    for key, (lo, hi) in HYBRID_NUMERIC_PARAM_BOUNDS.get(decision_type, {}).items():
+        if key not in params:
+            continue  # presence is handled by the required_params check
+        try:
+            v = float(params[key])
+        except (TypeError, ValueError):
+            bad.append(key)
+            continue
+        if not math.isfinite(v) or not (lo <= v <= hi):
+            bad.append(key)
+    return bad
 
 
 def _init_failure_counters() -> Dict[str, int]:
@@ -269,8 +318,9 @@ def format_scenario_for_extraction(scenario: Dict) -> str:
     return '\n'.join(lines)
 
 
-def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
-    
+def extract_all_with_ai(scenario: Dict,
+                        expected_decision_type: Optional[str] = None) -> Tuple[Optional[Dict], Dict]:
+
     scenario_text = format_scenario_for_extraction(scenario)
     question = str(scenario.get('question', '')).strip()
 
@@ -355,6 +405,19 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             params = extracted['parameters']
             decision_type = extracted['decision_type']
 
+            # The extracted decision type MUST agree with the scenario's known
+            # decision type. A mismatch means the wrong calculator would score
+            # the scenario (e.g. HVAC setpoints scored as shower durations),
+            # producing plausible-but-wrong numbers instead of a clean failure.
+            if expected_decision_type is not None and decision_type != expected_decision_type:
+                print(f" decision_type mismatch: extracted {decision_type!r}, "
+                      f"expected {expected_decision_type!r}")
+                extraction_diagnostics['extraction_error'] = (
+                    f"decision_type mismatch: {decision_type} != {expected_decision_type}"
+                )
+                extraction_diagnostics['failure_types'] = ["failed_extraction_decision_type_mismatch"]
+                return None, extraction_diagnostics
+
             # Only the extrapolated engineering parameters are required from the
             # model; homeowner-facing fields and alternatives come from the
             # scenario sheet and are merged in score_with_ground_truth.
@@ -365,6 +428,18 @@ def extract_all_with_ai(scenario: Dict) -> Tuple[Optional[Dict], Dict]:
             elif decision_type == 'Shower':
                 required_params = ['gpm', 'tank_size', 'water_heater_temp']
             if all(k in params for k in required_params):
+                # Numeric params must parse as finite numbers in physical range.
+                # Without this, score_with_ground_truth would coerce a bad value
+                # to 0.0 and fabricate a perfect score (see T1-1).
+                bad_numeric = _validate_numeric_params(decision_type, params)
+                if bad_numeric:
+                    print(f"Invalid numeric parameters for {decision_type}: {bad_numeric}")
+                    extraction_diagnostics['extraction_error'] = (
+                        f"Invalid numeric parameters: {bad_numeric}"
+                    )
+                    extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_parameters"]
+                    return None, extraction_diagnostics
+
                 extraction_diagnostics['success'] = True
                 extraction_diagnostics['failure_types'] = []
                 extraction_diagnostics.update({
@@ -520,7 +595,15 @@ def run_scenario(scenario: Dict) -> Dict:
    
     print(f"Extracting decision type, parameters, and calculator...")
 
-    extraction_result, extraction_diag = extract_all_with_ai(scenario)
+    # The scenario sheet already knows the decision type; pass it so a
+    # mismatched extraction is rejected (wrong-calculator guard, T1-2) rather
+    # than silently scored by the wrong calculator.
+    expected_decision_type = scenario.get('decision_type')
+    if isinstance(expected_decision_type, str):
+        expected_decision_type = expected_decision_type.strip() or None
+    extraction_result, extraction_diag = extract_all_with_ai(
+        scenario, expected_decision_type=expected_decision_type
+    )
 
     if extraction_result is None:
         extraction_failure_types = extraction_diag.get('failure_types', [])

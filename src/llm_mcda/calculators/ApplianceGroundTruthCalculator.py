@@ -313,30 +313,26 @@ class ApplianceGroundTruthCalculator:
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         reference_ranges = {
             'energy_cost': {
-                # Bounds: 5th-pctile kWh/cycle x lowest off-peak rate, and 95th-pctile
-                # kWh/cycle x highest peak rate, across the 6 PA utilities.
-                #   min = 0.25 kWh x $0.070/kWh (PPL off-peak, lowest) = $0.0175
-                #   max = 3.5  kWh x $0.320/kWh (PECO peak)            = $1.12
-                # kWh/cycle 5th pctile = 0.25 (efficient HE washer; ENERGY STAR
-                # certified-products distribution, catalog.data.gov).
-                # kWh/cycle 95th pctile entropy-adjusted from ENERGY STAR's 2.82
-                # (most-inefficient certified electric resistance dryer) up to 3.5
-                # to cover older non-certified resistance dryers
-                'min': 0.0175,
-                'max': 1.12,
+                # 5th-95th percentile of the actual scenario-set per-cycle cost
+                # distribution (kWh/cycle x the resolved TOU rate across the 6 PA
+                # utilities): p5 = $0.025, p95 = $0.71. Dataset-percentile bounds
+                # concentrate score sensitivity in the range households actually
+                # encounter. Underlying kWh/cycle endpoints remain consistent with the
+                # ENERGY STAR certified-products distribution (efficient HE washer
+                # ~0.25 kWh) through older non-certified resistance dryers.
+                'min': 0.025,
+                'max': 0.71,
                 'decreasing': True
             },
             'environmental': {
-                # Bounds: same 5th/95th-pctile kWh envelope as energy_cost, applied
-                # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak).
-                #   min = 0.25 kWh x 0.976 lbs/kWh = 0.244 lbs CO2
-                #   max = 3.5  kWh x 1.041 lbs/kWh = 3.644 lbs CO2
-                # Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023).
-                # Marginal (not average) factors are the correct measure for
-                # behavioral time-shifting decisions because they reflect the
+                # 5th-95th percentile of the actual scenario-set per-cycle emissions
+                # distribution (kWh/cycle x PJM marginal factor at run time): p5 = 0.288,
+                # p95 = 3.643 lbs CO2. Source: PJM 2022 CO2/SO2/NOx Emissions Report
+                # (April 2023). Marginal (not average) factors are the correct measure
+                # for behavioral time-shifting decisions because they reflect the
                 # generator actually displaced or added at the margin.
-                'min': 0.244,
-                'max': 3.644,
+                'min': 0.288,
+                'max': 3.643,
                 'decreasing': True
             },
             'comfort': {
