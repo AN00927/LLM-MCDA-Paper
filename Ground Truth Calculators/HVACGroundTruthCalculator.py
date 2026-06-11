@@ -335,31 +335,32 @@ class HVACGroundTruthCalculator:
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         reference_ranges = {
             'energy_cost': {
-                # 5th-95th percentile of the actual scenario-set cost distribution (8h
-                # window at $0.19/kWh). Dataset-percentile bounds are chosen over a wider
-                # physics envelope so that scores spread meaningfully across the [0,10]
-                # scale for typical PA residential alternatives; this is a deliberate
-                # entropy-driven normalization choice (Roszkowska (2026)). Cost endpoints
-                # are still anchored in real residential studies:
-                #   Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
-                #     Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015), EB 96:210.
-                #   Max (degraded):  Alves et al. (2016), EB 130:408;
-                #     Krarti & Howarth (2020), JBE 31:101457.
-                'min': 0.47,
-                'max': 3.31,
+                # 5th-95th percentile of the actual scenario-set HVAC cost distribution
+                # (8h window at $0.19/kWh), computed over the ACTIVE-conditioning
+                # alternatives only. Zero-load alternatives (a setpoint at/near the
+                # outdoor temp, and the bare "Off" option) collapse to $0 and are
+                # excluded from the percentile so the normalization floor is not
+                # degenerate; an Off/zero-load alternative still scores at the top of the
+                # [0,10] cost scale via the (x_max - x) normalization. p5 over the
+                # nonzero active set = $0.38, p95 = $3.29. Endpoints remain consistent
+                # with residential HVAC studies (efficient: Huyen & Cetin (2019),
+                # Energies 12(1):188; degraded: Alves et al. (2016), EB 130:408).
+                'min': 0.38,
+                'max': 3.29,
                 'decreasing': True
             },
             'environmental': {
-                # Bounds derived from the same 5th-95th percentile cost envelope as
-                # energy_cost ($0.47-$3.31 at $0.19/kWh flat = 2.474-17.421 kWh) but
-                # applied against PJM marginal emissions factors (0.976 off-peak, 1.041 peak):
-                #   min = 2.474 kWh x 0.976 lbs/kWh = 2.42 lbs CO2  (best case: fully off-peak)
-                #   max = 17.421 kWh x 1.041 lbs/kWh = 18.14 lbs CO2 (worst case: fully peak)
+                # Derived from the same active-set 5th-95th percentile cost envelope as
+                # energy_cost ($0.38-$3.29 at $0.19/kWh flat = 2.011-17.326 kWh), applied
+                # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak) to
+                # keep cost and emissions physically consistent:
+                #   min = 2.011 kWh x 0.976 lbs/kWh = 1.96 lbs CO2  (best case: fully off-peak)
+                #   max = 17.326 kWh x 1.041 lbs/kWh = 18.04 lbs CO2 (worst case: fully peak)
                 # Source: PJM 2022 Emissions Report (April 2023).
                 # For HVAC, alternatives within one scenario share the same emission
                 # factor because they are evaluated at the same moment and differ by load.
-                'min': 2.42,
-                'max': 18.14,
+                'min': 1.96,
+                'max': 18.04,
                 'decreasing': True
             },
             'comfort': {

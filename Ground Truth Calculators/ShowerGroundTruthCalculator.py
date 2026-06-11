@@ -256,26 +256,28 @@ class ShowerGroundTruthCalculator:
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         reference_ranges = {
             'energy_cost': {
-                # Dynamic mixing-fraction physics (target=105F) reduces shower energy to
+                # 5th-95th percentile of the actual scenario-set per-shower cost
+                # distribution: p5 = $0.14, p95 = $1.14. Shower energy follows the
+                # dynamic mixing-fraction physics (target=105F),
                 #   kWh = gpm * 8.33 lb/gal * (TARGET_SHOWER_TEMP - inlet) * duration
                 #         / (3412 BTU/kWh * 0.92 UEF),
-                # independent of heater setpoint. 5th-95th percentile envelope:
-                #   min: 1.5 GPM x 5 min x summer inlet 65F -> 0.80 kWh -> $0.15 at $0.19/kWh
-                #   max: 3.5 GPM x 15 min x winter inlet 45F -> 8.36 kWh -> $1.59 (capped 1.50)
-                # Sources: DeOreo et al. (2016) (short-duration benchmark); Harris Poll (2024)
-                # (long-duration prevalence); Hendron & Burch (2008) (PA seasonal inlet temps);
-                # EPA WaterSense (2018) (GPM benchmarks); EIA Electric Power Annual (2025)
-                # (PA residential rate).
-                'min': 0.15,
-                'max': 1.50,
+                # priced at the PA residential rate ($0.19/kWh). Dataset-percentile
+                # bounds (vs. a theoretical physics envelope) concentrate score
+                # sensitivity over the durations/flows households actually encounter.
+                # Sources: DeOreo et al. (2016); Hendron & Burch (2008) (PA seasonal
+                # inlet temps); EIA Electric Power Annual (2025) (PA residential rate).
+                'min': 0.14,
+                'max': 1.14,
                 'decreasing': True
             },
             'environmental': {
                 # Environmental criterion = water volume consumed (gallons) per shower.
-                # 5th-95th percentile GPM (1.5-5.0) x duration (5-15 min) (epawatersense):
-                #   min: 1.5 GPM x 5 min = 7.5 gal;  max: 5.0 GPM x 15 min = 75 gal.
-                'min': 7.5,
-                'max': 75,
+                # 5th-95th percentile of the actual scenario-set water-volume
+                # distribution (gpm x duration): p5 = 6.0 gal, p95 = 45.0 gal. Dataset
+                # percentiles rather than the theoretical WaterSense extremes, so the
+                # score spreads across the volumes households actually use.
+                'min': 6.0,
+                'max': 45.0,
                 'decreasing': True
             },
             'comfort': {

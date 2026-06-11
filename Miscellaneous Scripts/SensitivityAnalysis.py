@@ -13,11 +13,12 @@ for p in (str(PROJECT_ROOT), str(MISC_DIR)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from model_config import CRITERION_WEIGHTS, MODEL_KEY, get_output_folder
+from model_config import CRITERION_WEIGHTS, MODEL_KEY, TIE_BREAK_PRIORITY, get_output_folder
 from sentinel_utils import _atomic_write_xlsx
 from CalculateMetrics import (
     CONFIG,
     CRITERIA,
+    aggregate_run_files,
     build_gt_lookup,
     build_gt_id_lookup,
     filter_failed_scenarios,
@@ -25,7 +26,9 @@ from CalculateMetrics import (
     load_ground_truth,
     match_scenarios,
     compute_ranking_metrics,
+    _rank_with_deterministic_tiebreak,
 )
+from pathlib import Path
 
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder(MODEL_KEY)
 
@@ -65,7 +68,13 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dic
 
 
 def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> pd.DataFrame:
-    """Recompute GT and architecture ranks per scenario using the provided weights."""
+    """Recompute GT and architecture ranks per scenario using the provided weights.
+
+    Ranking uses the SAME deterministic tie-break (TIE_BREAK_PRIORITY, each desc)
+    as CalculateMetrics and the ground-truth calculators, so the baseline-weight
+    row of this analysis reproduces the headline metrics exactly instead of
+    diverging through average-rank tie handling.
+    """
     df = merged_df.copy()
 
     df["_gt_weighted"] = sum(
@@ -75,14 +84,19 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights: dict[str, float]) -> p
         weights[c] * df[f"arch_{c}"].astype(float) for c in CRITERIA
     )
 
-    df["gt_rank"] = (
-        df.groupby("arch_scenario_id")["_gt_weighted"]
-        .rank(method="average", ascending=False)
-    )
-    df["arch_rank"] = (
-        df.groupby("arch_scenario_id")["_arch_weighted"]
-        .rank(method="average", ascending=False)
-    )
+    gt_tiebreak = [f"gt_{c}" for c in TIE_BREAK_PRIORITY]
+    arch_tiebreak = [f"arch_{c}" for c in TIE_BREAK_PRIORITY]
+
+    df["gt_rank"] = np.nan
+    df["arch_rank"] = np.nan
+    for sid, idx in df.groupby("arch_scenario_id").groups.items():
+        sub = df.loc[idx]
+        df.loc[idx, "gt_rank"] = _rank_with_deterministic_tiebreak(
+            sub.rename(columns={"_gt_weighted": "_w"}), "_w", gt_tiebreak
+        )
+        df.loc[idx, "arch_rank"] = _rank_with_deterministic_tiebreak(
+            sub.rename(columns={"_arch_weighted": "_w"}), "_w", arch_tiebreak
+        )
 
     df = df.drop(columns=["_gt_weighted", "_arch_weighted"])
     return df
@@ -102,7 +116,15 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     arch_names = ["Pure", "RAG", "Hybrid"]
     clean_merged: dict[str, pd.DataFrame] = {}
     for name, path in CONFIG["architectures"].items():
-        arch_df = load_architecture(path, name)
+        # Aggregate the per-run files the same way CalculateMetrics does, so the
+        # sensitivity baseline operates on identical inputs to the headline run
+        # (previously this read the single aggregated xlsx, which could differ).
+        base_path = Path(path)
+        run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.xlsx"))
+        if run_paths:
+            arch_df = load_architecture(aggregate_run_files(run_paths), name)
+        else:
+            arch_df = load_architecture(path, name)
         merged, _counts = match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
         if len(merged) == 0:
             print(f"  WARNING: No matched data for {name} — skipping.")

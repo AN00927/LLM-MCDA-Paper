@@ -282,8 +282,8 @@ All four criterion scores are on a 0–10 scale before weighting.
 
 | Criterion | HVAC | Appliance | Shower |
 | --- | --- | --- | --- |
-| Energy Cost ($) | $0.47 – $3.31 | $0.017 – $1.12 | $0.15 – $1.50 |
-| Environmental Impact | 2.42 – 18.14 lbs CO₂ | 0.244 – 3.644 lbs CO₂ | 7.5 – 75.0 gal water |
+| Energy Cost ($) | $0.38 – $3.29 | $0.025 – $0.71 | $0.14 – $1.14 |
+| Environmental Impact | 1.96 – 18.04 lbs CO₂ | 0.288 – 3.643 lbs CO₂ | 6.0 – 45.0 gal water |
 | Comfort | 0.0 – 10.0 | 0.0 – 10.0 | 0.0 – 10.0 |
 | Practicality | 0.5 – 10.0 | 0.5 – 10.0 | 0.5 – 10.0 |
 
@@ -327,7 +327,7 @@ Thermal load uses four ASHRAE-style components (conductive + internal + solar + 
 E_kWh = (Q_load / (EER_eff × 1000)) · 8 hr · m_occ
 ```
 
-where `EER_eff` is derived from age-degraded SEER via the AHRI 210/240 quadratic (`EER_eff = −0.02·SEER²_eff + 1.12·SEER_eff`), and `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 − 0.5·(h_away/24)`).
+where `EER` is derived from the unit's rated SEER via the AHRI 210/240 quadratic (`EER = −0.02·SEER² + 1.12·SEER`), and `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 − 0.5·(h_away/24)`). Age/maintenance efficiency degradation is **not** applied to the energy path — it is modeled as a reliability factor in the practicality score — so the energy score reflects the setpoint choice rather than the system's condition.
 
 Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 °F cooling, 70 °F heating).
 
