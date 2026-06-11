@@ -271,7 +271,7 @@ def sync_domain(
 
 
 def main(dry_run: bool = False) -> None:
-    print(f"{'DRY RUN — ' if dry_run else ''}Syncing RAG scenario files from ground truth...\n")
+    print(f"{'DRY RUN - ' if dry_run else ''}Syncing RAG scenario files from ground truth...\n")
 
     all_passed = True
     results = {}
@@ -294,7 +294,7 @@ def main(dry_run: bool = False) -> None:
         print("One or more domains failed. No partial writes were made for failed domains.")
         sys.exit(1)
     elif dry_run:
-        print("Dry run complete — all validations passed. Run without --dry-run to write.")
+        print("Dry run complete - all validations passed. Run without --dry-run to write.")
     else:
         print("Sync complete. Run BuildRAG.py next to rebuild the ChromaDB vector store.")
 
