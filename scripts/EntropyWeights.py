@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from tabulate import tabulate
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -204,10 +205,16 @@ def main() -> None:
     comparison_table = build_comparison_table(ground_truth, column_map)
     output_path = export_results(comparison_table, project_root)
 
-    print("Entropy Weights Comparison")
-    print(comparison_table.round(6).to_string())
-    print()
-    print(f"Saved results to: {output_path}")
+    print("\n" + "=" * 140)
+    print("ENTROPY WEIGHTS COMPARISON".center(140))
+    print("=" * 140 + "\n")
+
+    display_table = comparison_table.round(6).reset_index()
+    headers = [col.replace("_", " ").title() for col in display_table.columns]
+    print(tabulate(display_table, headers=headers, tablefmt="grid", floatfmt=".6f", stralign="left", numalign="center"))
+    print("\n" + "=" * 140)
+    print(f"Results saved to: {output_path}")
+    print("=" * 140 + "\n")
 
 
 if __name__ == "__main__":
