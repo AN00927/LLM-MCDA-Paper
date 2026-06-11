@@ -26,13 +26,13 @@ class HVACGroundTruthCalculator:
     EMISSIONS_PEAK_HOURS_PER_DAY = 16
     EMISSIONS_OFFPEAK_HOURS_PER_DAY = 8
 
-    # PA residential flat electricity rate, $/kWh. Source: eia_epa_2024 (EIA Electric
-    # Power Annual 2024 Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to
+    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Annual (2025)
+    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to
     # ~19-21 c/kWh through 2025 -- 0.19 is a defensible flat-rate proxy).
     ELECTRICITY_RATE_PA = 0.19
 
     # Residential infiltration rate (air changes/hour) for the air-change load method.
-    # Source: accamanualj (ACCA Manual J 8th ed., 2016) -- 0.35 ACH is the standard
+    # Source: ACCA Manual J (2016) -- 0.35 ACH is the standard
     # modern/average-construction default (also the ASHRAE 62.1-1989 whole-house baseline).
     AIR_CHANGES_PER_HOUR = 0.35
     SUMMER_COMFORT_RANGE = (73, 79)
@@ -42,15 +42,13 @@ class HVACGroundTruthCalculator:
 
     # Linear VF for energy cost - equal marginal utility across range
     # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
-    # linear utility is appropriate" (Management Science 26(8):810-822)
+    # linear utility is appropriate" (Oper. Res. 27(4):810-822)
     VF_ENERGY_COST = "linear"
 
-    # Linear VF for environmental impact - physical units have linear marginal value
-    # For MAVT framework justification, see:
-    # - Keeney, R. L., & Raiffa, H. (1976). Decisions with Multiple Objectives: Preferences 
-    #   and Value Trade-offs. Wiley. (Foundation for Multi-Attribute Value Theory axioms)
-    # Linear VF justification in this context: When environmental impacts are framed in 
-    # absolute physical units (lbs CO₂), a linear preference is a conservative modeling choice
+    # Linear VF for environmental impact:
+    # - Keeney & Raiffa (1976): Foundation for Multi-Attribute Value Theory axioms.
+    # Linear VF justification in this context: When environmental impacts are framed in
+    # absolute physical units (lbs CO2), a linear preference is a conservative modeling choice
     # that treats equal changes in emissions as equally valuable reductions.
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
@@ -90,9 +88,10 @@ class HVACGroundTruthCalculator:
         window_area = square_footage * 0.15
         solar_gains = window_area * 20
 
-        # Infiltration sensible load via the air-change method (accamanualj, ACCA Manual J 8th ed.):
+        # Infiltration sensible load via the air-change method (ACCA Manual J (2016)):
         #   cfm = volume_ft3 * ACH / 60;  Q_sensible = 1.08 * cfm * deltaT
-        #   1.08 = rho*cp*60 = 0.075 lbm/ft3 * 0.24 BTU/(lbm F) * 60 min/hr (ashrae_hof2017 Ch.16)
+        #   1.08 = rho*cp*60 = 0.075 lbm/ft3 * 0.24 BTU/(lbm F) * 60 min/hr
+        #   (ASHRAE Handbook of Fundamentals (2017) Ch.16)
         infiltration_cfm = (square_footage * ceiling_height * self.AIR_CHANGES_PER_HOUR) / 60.0
         infiltration_load = 1.08 * infiltration_cfm * delta_t
 
@@ -124,7 +123,7 @@ class HVACGroundTruthCalculator:
         # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1
         internal_gains = (household_size * 400) + (square_footage * 1.0) + 800
 
-        # Infiltration sensible loss via the air-change method (accamanualj; ashrae_hof2017 Ch.16):
+        # Infiltration sensible loss via the air-change method (ACCA Manual J (2016); ASHRAE Handbook of Fundamentals (2017) Ch.16):
         #   cfm = volume_ft3 * ACH / 60;  Q_sensible = 1.08 * cfm * deltaT
         infiltration_cfm = (square_footage * ceiling_height * self.AIR_CHANGES_PER_HOUR) / 60.0
         infiltration_loss = 1.08 * infiltration_cfm * delta_t
@@ -169,9 +168,9 @@ class HVACGroundTruthCalculator:
         # within the winter band (68-74F, 1.0 clo), ~1F below its 71F midpoint -- both for
         # sedentary occupants. Score = 10 - |indoor - optimal|, clipped to [0,10]; the
         # -1.0/F slope mirrors the rising PPD per F outside neutral in Fanger's PMV/PPD
-        # model. The adaptive method (dedear2002) applies only to naturally conditioned
-        # spaces and is not used here.
-        # Sources: ashrae55_2020 (Sec 5.3.1 graphic zone); fanger1970; vanhoof2008.
+        # model. The adaptive method (de Dear & Brager (2002)) applies only to naturally
+        # conditioned spaces and is not used here.
+        # Sources: ASHRAE 55-2020 (Sec 5.3.1 graphic zone); Fanger (1970); van Hoof (2008).
         optimal = 76 if outdoor_temp > 75 else 70
         comfort_score = 10 - abs(indoor_temp - optimal)
 
@@ -340,7 +339,7 @@ class HVACGroundTruthCalculator:
                 # window at $0.19/kWh). Dataset-percentile bounds are chosen over a wider
                 # physics envelope so that scores spread meaningfully across the [0,10]
                 # scale for typical PA residential alternatives; this is a deliberate
-                # entropy-driven normalization choice (Roszkowska 2026). Cost endpoints
+                # entropy-driven normalization choice (Roszkowska (2026)). Cost endpoints
                 # are still anchored in real residential studies:
                 #   Min (efficient): Huyen & Cetin (2019), Energies 12(1):188;
                 #     Kim et al. (2024), Building Simulation; Cetin & Novoselac (2015), EB 96:210.
@@ -369,8 +368,11 @@ class HVACGroundTruthCalculator:
                 'decreasing': False
             },
             'practicality': {
-                # Match calculation floor (0.5) so VF mapping doesn't collapse
-                # the raw floor to a utility of exactly zero.
+                # VF floor 0.5 sits below the raw practicality floor of 1.5 so the least
+                # practical-but-feasible option keeps a small positive utility instead of
+                # collapsing to exactly zero. Internal normalization choice (not a literature
+                # value): no feasible option is treated as absolutely infeasible
+                # (Keeney & Raiffa (1976) value-measurability convention).
                 'min': 0.5,
                 'max': 10.0,
                 'decreasing': False
@@ -430,6 +432,18 @@ class HVACGroundTruthCalculator:
 
         return max(0.0, min(10.0, u_x * 10.0))
 
+    def _free_float_temp(self, outdoor_temp: float, cooling_season: bool) -> float:
+        # Indoor air a bare "Off" system drifts to when no explicit target is given. With
+        # the system off, solar + internal gains drive indoor ABOVE outdoor in cooling
+        # season (a closed, occupied house runs ~5F over outdoor on a daily mean), while in
+        # heating season internal gains hold indoor ~10F above outdoor (HDD-65 balance-point
+        # floor). Sources: de Dear & Brager (2002) / ASHRAE 55-2020 (free-running adaptive
+        # model: indoor >= outdoor under heat); ACCA Manual J (2016) (solar + internal gains
+        # are additive); ASHRAE Handbook of Fundamentals (2017) (balance-point /
+        # internal-gain offset). Replaces an earlier unsourced +/-5F placeholder whose
+        # cooling-season sign was physically backwards.
+        return outdoor_temp + 5 if cooling_season else outdoor_temp + 10
+
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
         # Drift direction for bare "Off" alternatives that give no explicit target:
         # warmer than the neutral comfort point -> an off system drifts warm (cooling
@@ -454,12 +468,9 @@ class HVACGroundTruthCalculator:
                         if to_match:
                             effective_temp = float(to_match.group(1))
                         else:
-                            # FLAG (3j): bare-off 5F drift offset is a placeholder, not a
-                            # derived thermal-decay value -- pending a defensible source.
-                            effective_temp = scenario['outdoor_temp'] - 5 if cooling_season else scenario['outdoor_temp'] + 5
+                            effective_temp = self._free_float_temp(scenario['outdoor_temp'], cooling_season)
                     else:
-                        # FLAG (3j): see above -- 5F drift offset is an unsourced placeholder.
-                        effective_temp = scenario['outdoor_temp'] - 5 if cooling_season else scenario['outdoor_temp'] + 5
+                        effective_temp = self._free_float_temp(scenario['outdoor_temp'], cooling_season)
                 else:
                     # Not an "off" alternative - extract first number found
                     numbers = re.findall(r'\d+', alt)

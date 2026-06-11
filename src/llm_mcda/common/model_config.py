@@ -84,6 +84,8 @@ def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:
 def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
     resolved_key = _resolve_model_key(model_key)
     reasoning_effort = MODEL_SPECS[resolved_key].get("reasoning_effort")
+    # "non-reasoning" is an INTERNAL sentinel (not an OpenRouter value): it omits the
+    # reasoning field entirely. Real OpenRouter efforts are xhigh/high/medium/low/minimal/none.
     if not reasoning_effort or reasoning_effort == "non-reasoning":
         return {}
     return {"enabled": True, "effort": reasoning_effort}

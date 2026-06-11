@@ -631,10 +631,10 @@ def run_scenario(scenario: Dict) -> Dict:
             })
             continue
 
-        logger.info(f"  Scores: Energy={scores['energy_cost']:.1f}, "
-              f"Env={scores['environmental']:.1f}, "
-              f"Comfort={scores['comfort']:.1f}, "
-              f"Pract={scores['practicality']:.1f}")
+        logger.info(f"  Scores: Energy={scores['energy_cost']:.2f}, "
+              f"Env={scores['environmental']:.2f}, "
+              f"Comfort={scores['comfort']:.2f}, "
+              f"Pract={scores['practicality']:.2f}")
         logger.info(f"  Retrieved {diagnostics.get('rag_retrieved_count', 0)} similar scenarios")
 
         alternatives_scores.append({
