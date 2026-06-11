@@ -100,6 +100,8 @@ Three decision types were selected for their high behavioral plasticity and RAER
 
 The scenario corpus has two disjoint pools. The \textit{test set} contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the ground-truth calculator. The \textit{RAG corpus} contains an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the RAG-Enhanced architecture; RAG scenarios are never used for evaluation \cite{lewis2020}.
 
+\textit{[PLACEHOLDER NOTE] Justify the scenario counts and splits: 195 test (70 HVAC / 65 Appliance / 60 Shower) and 90 RAG (35 HVAC / 35 Appliance / 20 Shower). State the rationale for the per-decision-type allocation and the disjoint test/RAG partition.}
+
 The tables below detail the parameters given to architectures vs.\ calculators per decision type. 
 
 \begin{table}[htbp]
@@ -281,7 +283,7 @@ Practicality is weighted at 0.15. A persistent finding in the heuristics literat
 \toprule
 \textbf{Criterion} & \textbf{HVAC} & \textbf{Appliance} & \textbf{Shower} \\
 \midrule
-Energy Cost (\$) & 0.47--3.31 & 0.017--1.12 & 0.15--1.50 \\
+Energy Cost (\$) & 0.47--3.31 & 0.0175--1.12 & 0.15--1.50 \\
 Environmental Impact & 2.42--18.14 & 0.244--3.644 & 7.5--75.0 \\
 Comfort & 0.0--10.0 & 0.0--10.0 & 0.0--10.0 \\
 Practicality & 0.5--10.0 & 0.5--10.0 & 0.5--10.0 \\
@@ -293,7 +295,7 @@ The reference ranges in Table~\ref{table:reference_ranges} are anchored to the g
 
 For HVAC energy cost, the percentile envelope is evaluated at a standardized 8-hour window with Pennsylvania's residential electricity rate (\$0.19/kWh) \cite{eia2022,eia_epa_2024} and anchored to residential HVAC efficiency and degradation studies (efficient systems: \cite{synapse2013}; degraded systems: \cite{parker2018}). The HVAC environmental bounds are derived from the same kWh envelope mapped through PJM marginal emissions factors (0.976 off-peak, 1.041 peak lbs CO\textsubscript{2}/kWh) \cite{pjm2022emissions}, maintaining a physically consistent link between cost and emissions.
 
-For appliances, the minimum cost bound combines a 5th-percentile per-cycle energy use of 0.25\,kWh for efficient HE washers (ENERGY STAR certified-products distribution) \cite{energystar_products} with the lowest off-peak utility rate (\$0.067/kWh, West Penn off-peak) \cite{peco2021}, giving \$0.017; the maximum bound expands ENERGY STAR's upper kWh/cycle benchmark from 2.82 to 3.5\,kWh/cycle to cover older non-certified resistance dryers paired with the highest peak rate (\$0.320/kWh, PECO peak) \cite{peco2021}, giving \$1.12 \cite{chenyu2018,hustvedt2013,winfield2016,neep2015,porras2020}. The 3.5\,kWh/cycle ceiling extends the ENERGY STAR maximum by 0.68\,kWh/cycle to account for pre-certification electric resistance dryers still in service in older PA housing stock; measured consumption for such units reported in northeast field studies \cite{neep2015} and heat-pump dryer performance comparisons \cite{winfield2016} supports a distribution tail above the certified ceiling. The environmental range applies the same kWh envelope to PJM marginal factors, giving 0.244--3.644 lbs CO\textsubscript{2}.
+For appliances, the minimum cost bound combines a 5th-percentile per-cycle energy use of 0.25\,kWh for efficient HE washers (ENERGY STAR certified-products distribution) \cite{energystar_products} with the lowest off-peak utility rate (\$0.070/kWh, PPL off-peak) \cite{ppl_rts_dec2025}, giving \$0.0175; the maximum bound expands ENERGY STAR's upper kWh/cycle benchmark from 2.82 to 3.5\,kWh/cycle to cover older non-certified resistance dryers paired with the highest peak rate (\$0.320/kWh, PECO peak) \cite{peco_tou_2026}, giving \$1.12 \cite{chenyu2018,hustvedt2013,winfield2016,neep2015,porras2020}. The 3.5\,kWh/cycle ceiling extends the ENERGY STAR maximum by 0.68\,kWh/cycle to account for pre-certification electric resistance dryers still in service in older PA housing stock; measured consumption for such units reported in northeast field studies \cite{neep2015} and heat-pump dryer performance comparisons \cite{winfield2016} supports a distribution tail above the certified ceiling. The environmental range applies the same kWh envelope to PJM marginal factors, giving 0.244--3.644 lbs CO\textsubscript{2}.
 
 For showers, energy cost bounds (\$0.15--\$1.50) come from a low-flow short-duration summer case (1.5 GPM, 5 min, inlet 65\,\textdegree{}F) and a higher-flow long-duration winter case (3.5 GPM, 15 min, inlet 45\,\textdegree{}F), with seasonal inlet temperatures from NREL hot-water modeling \cite{hendron2008}, duration distributions from REU2016 \cite{reu2016} and The Harris Poll \cite{harrispoll2024}, and GPM benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}. Because the mixing-fraction physics targets a fixed delivery temperature of 105\,\textdegree{}F, shower energy depends only on the rise from the mains inlet to that target and is independent of heater setpoint; for the stated 3.5\,GPM, 15\,min winter case the physics-derived maximum is \$1.59, and the reference ceiling is set conservatively at \$1.50 consistent with the dataset-percentile framing. Shower environmental impact is defined as water volume (gallons) using WaterSense 5th--95th percentile flow rates and 5--15 minute durations, giving the 7.5--75 gallon envelope. The 95th-percentile GPM bound of 5.0\,GPM is taken from EPA WaterSense conservation benchmarks \cite{epawatersense} and extends above the dataset maximum of 4.0\,GPM, using the published reference upper bound rather than the sample ceiling.
 \subsection{Ground Truth Calculators}
@@ -348,7 +350,7 @@ Thermal load decomposes into four ASHRAE-style components. For cooling:
     \underbrace{\frac{m \cdot A}{R}\,\Delta T}_{\text{conductive}}
     +\underbrace{400n + A + 800}_{\text{internal}}
     +\underbrace{0.15\,A \times 20}_{\text{solar}}
-    +\underbrace{1.08\,\frac{A\, h_c\, \alpha}{60}\,\Delta T}_{\text{ventilation}}
+    +\underbrace{1.08\,\frac{A\, h_c\, \alpha}{60}\,\Delta T}_{\text{infiltration}}
   \label{eq:hvac_cooling_load}
 \end{equation}
 \noindent where $A$ is floor area (sq\,ft); $m$ is a housing-type envelope multiplier
@@ -360,21 +362,21 @@ always-on standby loads per ACCA Manual~J \cite{polly2011}. The heating load use
 same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and
 internal gains subtracted rather than added.
 
-SEER degrades with age via a front-loaded schedule (1.5$\times$ base rate for the first
-ten years, 0.5$\times$ thereafter, capped at 30\%) \cite{domanski2014,davis2010,fenaughty2018}.
-Effective EER is estimated from the age-adjusted SEER via the AHRI\,210/240 quadratic
+Effective EER is estimated from the unit's rated SEER via the AHRI\,210/240 quadratic
 \cite{ahri2008}:
 \begin{equation}
-  \mathrm{EER}_{\mathrm{eff}} =
-    -0.02\,\mathrm{SEER}_{\mathrm{eff}}^{2} + 1.12\,\mathrm{SEER}_{\mathrm{eff}}
+  \mathrm{EER} = -0.02\,\mathrm{SEER}^{2} + 1.12\,\mathrm{SEER}
   \label{eq:eer_quadratic}
 \end{equation}
-\noindent where $\mathrm{SEER}_{\mathrm{eff}}$ is the age-adjusted seasonal energy efficiency ratio
-and $\mathrm{EER}_{\mathrm{eff}}$ is the resulting effective energy efficiency ratio used for the decision period.
-Energy consumption over the 8-hour decision window is then:
+\noindent where $\mathrm{SEER}$ is the unit's rated seasonal energy efficiency ratio and
+$\mathrm{EER}$ is the resulting effective energy efficiency ratio used for the decision period.
+Age- and maintenance-driven efficiency degradation is deliberately \emph{not} applied to the
+energy path; it is instead modeled as a reliability factor in the practicality score
+(Eq.~\ref{eq:hvac_degradation}), so the energy score reflects the setpoint choice rather than
+the system's condition. Energy consumption over the 8-hour decision window is then:
 \begin{equation}
   E_{\mathrm{kWh}} =
-    \frac{Q_{\mathrm{load}}}{\mathrm{EER}_{\mathrm{eff}} \times 1000}
+    \frac{Q_{\mathrm{load}}}{\mathrm{EER} \times 1000}
     \cdot h \cdot m_{\mathrm{occ}}
   \label{eq:hvac_energy}
 \end{equation}
@@ -383,6 +385,27 @@ $h$ is the decision-window duration (8\,hr), and $m_{\mathrm{occ}}$ is an occupa
 \noindent where $h = 8$\,hr and $m_{\mathrm{occ}}$ scales for occupancy context: 1.0 for
 fully occupied, 0.75 for overnight, and $1 - 0.5(h_{\mathrm{away}}/24)$ for daytime
 unoccupied periods \cite{houde2021}, where $h_{\mathrm{away}}$ is hours-away per 24-hour day.
+
+Because HVAC alternatives carry no explicit run-time, the marginal emissions factor in
+Eq.~\ref{eq:emissions} is resolved from the occupancy context by mapping each pattern onto the
+PJM peak (7am--11pm, 16\,h) and off-peak (8\,h) windows, with away-hours assumed to fill the
+daytime peak window first:
+\begin{equation}
+  \varepsilon_{\mathrm{occ}} =
+  \begin{cases}
+    \varepsilon_{\mathrm{off}} & \text{occupied-sleep (night-only runtime)} \\[4pt]
+    \dfrac{16\,\varepsilon_{\mathrm{pk}} + 8\,\varepsilon_{\mathrm{off}}}{24}
+      & \text{occupied all day} \\[8pt]
+    \varepsilon_{\mathrm{pk}} & \text{unoccupied } H\text{\,hr},\; H \le 16 \\[4pt]
+    \dfrac{16\,\varepsilon_{\mathrm{pk}} + (H-16)\,\varepsilon_{\mathrm{off}}}{H}
+      & \text{unoccupied } H\text{\,hr},\; H > 16
+  \end{cases}
+  \label{eq:hvac_occ_emissions}
+\end{equation}
+\noindent where $\varepsilon_{\mathrm{pk}} = 1.041$ and $\varepsilon_{\mathrm{off}} = 0.976$\,lbs/kWh
+are the PJM peak and off-peak marginal factors and $H$ is hours-away per day
+\cite{pjm2022emissions}. Occupied-sleep returns the off-peak factor because the home's
+conditioning runtime falls entirely in the overnight off-peak window.
 
 Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints
 \cite{ashrae55_2020,vanhoof2008,fanger1970}:
@@ -395,8 +418,31 @@ and $T^{*}$ is the context-dependent optimal setpoint used as the peak of the te
 \noindent where $T^{*} = 76$\,\textdegree{}F in cooling mode ($T_{\mathrm{out}} > 75$\,\textdegree{}F)
 and $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedentary PMV bands
 \cite{ashrae55_2020}. A small penalty scales with household size beyond three occupants.
-Practicality penalizes extreme setpoints and large outdoor--indoor $\Delta T$
-(signaling operation near system limits) via multipliers calibrated to equipment-stress thresholds.
+Practicality starts at 10 and subtracts an asymmetric extremity penalty for setpoints beyond
+adoption-comfort bounds (in cooling, $\ge 82$\,\textdegree{}F or $\le 71$\,\textdegree{}F; in
+heating, $\le 63$\,\textdegree{}F or $\ge 76$\,\textdegree{}F), with the steepest per-\textdegree{}F
+slopes on the least-tolerable directions (1.5/1.0 for the high/low side in cooling; 1.8/0.8 for
+the low/high side in heating). The result is then multiplied by an outdoor--indoor $\Delta T$
+feasibility factor (1.0, 0.95, 0.85, 0.70 for $\Delta T < 10$, $< 20$, $< 35$, $\ge 35$\,\textdegree{}F),
+signaling operation near system limits. Finally, age- and maintenance-driven efficiency
+degradation enters here as a reliability factor (item relocated from the energy path): an older
+or poorly maintained unit is a less practical choice to rely on, so the score is scaled by
+$(1 - D)$ where
+\begin{equation}
+  D = \min\!\Bigl(0.30,\; \rho(\mathrm{maint})\bigl[\,1.5\min(a,10) + 0.5\max(a-10,0)\,\bigr]\Bigr)
+  \label{eq:hvac_degradation}
+\end{equation}
+\noindent is the fraction of efficiency lost (capped at 30\%), $a$ is HVAC age in years, and
+$\rho(\mathrm{maint})$ is the base annual loss rate (0.005, 0.010, 0.015 per year for good,
+moderate, and poor upkeep); the first ten years degrade at $1.5\rho$ and later years at $0.5\rho$
+\cite{domanski2014,davis2010,fenaughty2018}. The final practicality score is clipped to $[1.5, 10]$.
+
+An ``Off'' alternative (no active conditioning) is scored with zero decision-period energy,
+cost, and emissions; its comfort and practicality are instead evaluated against the free-float
+indoor temperature the building drifts to with the system off --- outdoor $+5$\,\textdegree{}F
+in cooling season and $+10$\,\textdegree{}F in heating season, reflecting solar and internal
+gains that hold a closed, occupied house above outdoor air temperature
+\cite{dedear2002,ashrae55_2020,accamanualj,ashrae_hof2017}.
 \subsubsection{Appliance Calculator}
 
 Energy cost per cycle is $C = E_{\mathrm{cyc}} \cdot r(t,\ell)$, where $E_{\mathrm{cyc}}$
@@ -422,6 +468,10 @@ are that utility's TOU peak-window start and end hours, $r^{U}_{\mathrm{pk}}$ an
 peak and off-peak energy prices (\$/kWh), and $h(t)$ maps time $t$ to an hour-of-day on a 24-hour clock.
 \noindent In the implementation, the six utilities use
 distinct peak windows (e.g., 2--6pm for PECO and PPL, 2--9pm for most FirstEnergy utilities).
+
+\textit{[PLACEHOLDER NOTE] Weekend and holiday peak-hour pricing not currently modeled; all days treated as weekdays for TOU rate assignment.}
+
+\textit{[PLACEHOLDER NOTE] Seasonal peak-window shifts not currently modeled: PPL's winter (Dec--May) peak window is 4--8pm versus the 2--6pm summer window applied here; the summer window is used year-round because scenarios carry no season or date field.}
 Comfort is a piecewise
 decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr
 (dishwashers), 8\,hr (washers), and 6\,hr (dryers) \cite{paetz2012,waseem2020}, plus an
@@ -516,10 +566,19 @@ with a daytime floor applied for $h(t)\in[7,22)$ and $d\le d_{\max}(\mathrm{type
 For budget utilization in \eqref{eq:budget_penalty}, the appliance calculator converts per-cycle
 cost to a monthly estimate as:
 \begin{equation}
-  C_{\mathrm{monthly}} = 30\,C_{\mathrm{cycle}}.
+  C_{\mathrm{monthly}} = c(\mathrm{type})\,C_{\mathrm{cycle}}, \qquad
+  c(\mathrm{type})=
+  \begin{cases}
+    18 & \text{dishwasher} \\[2pt]
+    25 & \text{washer} \\[2pt]
+    24 & \text{dryer}
+  \end{cases}
   \label{eq:appliance_monthly_cost}
 \end{equation}
-\noindent where $C_{\mathrm{cycle}}$ is per-cycle energy cost and the factor $30$ assumes 30 cycles per month.
+\noindent where $C_{\mathrm{cycle}}$ is per-cycle energy cost and $c(\mathrm{type})$ is the
+appliance-specific cycles-per-month estimate, from 215, 300, and 283 cycles/year for
+dishwashers, washers, and dryers respectively
+\cite{energystar_dishwasher_criteria2023,energystar_clotheswasher,doe_dryer_tp_2011}.
 \subsubsection{Shower Calculator.}
 
 Mains inlet temperature is interpolated from outdoor temperature between 45\,\textdegree{}F

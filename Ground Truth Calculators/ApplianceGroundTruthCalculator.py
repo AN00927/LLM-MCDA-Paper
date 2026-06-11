@@ -24,17 +24,24 @@ class ApplianceGroundTruthCalculator:
     EMISSIONS_FACTOR_OFFPEAK = 0.976   # lbs CO2/kWh; PJM off-peak (976 lbs/MWh)
     EMISSIONS_PEAK_HOURS = (7, 23)     # 7am-11pm system-wide PJM
 
-    # Utility-to-city mapping with TOU rate windows and rates ($/kWh).
-    # Sources: PECO Rate R-TOU 2026; PPL TOU 2025; FirstEnergy PA TOU 2026
-    # (West Penn, Penelec, Met-Ed); PA PUC press release 2025-04-10 (Duquesne pilot,
-    # no standard residential TOU, so we use the flat PTC for both periods).
-    # Weekends are treated as off-peak across the board because we don't have day-of-week.
+    # Utility-to-city mapping with TOU rate windows and rates ($/kWh); per-utility sources
+    # cited inline below. MODELING SCOPE: scenarios carry no day-of-week or date, so ALL
+    # days are treated as weekdays and the single (summer) weekday peak window applies to
+    # every scenario -- weekend off-peak pricing and seasonal summer/winter peak-window
+    # shifts are NOT modeled (see methodology placeholder note).
+    # FirstEnergy (WestPenn/Penelec/MetEd) TOU rate = PTC x multiplier; values below use
+    # Jun-2025 PTCs (FirstEnergy Corp. (2025)) x fixed multipliers (FirstEnergy Corp. (2026))
+    # and must be recomputed at each PTC reset (Jun 1 / Dec 1).
     UTILITY_RATES = {
-        "PECO":      {"peak_hours": (14, 18), "peak_rate": 0.320,  "offpeak_rate": 0.076},
-        "PPL":       {"peak_hours": (14, 18), "peak_rate": 0.140,  "offpeak_rate": 0.100},
-        "WestPenn":  {"peak_hours": (14, 21), "peak_rate": 0.165,  "offpeak_rate": 0.067},
-        "Penelec":   {"peak_hours": (14, 21), "peak_rate": 0.185,  "offpeak_rate": 0.072},
-        "MetEd":     {"peak_hours": (14, 21), "peak_rate": 0.220,  "offpeak_rate": 0.080},
+        "PECO":      {"peak_hours": (14, 18), "peak_rate": 0.320,  "offpeak_rate": 0.076},   # Rate R-TOU, 2-6pm wkdy (PECO Energy Company (2026))
+        # PPL Rate RTS: summer peak 2-6pm modeled; winter peak 4-8pm NOT modeled (no
+        # season/date field) -- summer window used year-round (PPL Electric Utilities (2025)).
+        "PPL":       {"peak_hours": (14, 18), "peak_rate": 0.160,  "offpeak_rate": 0.070},
+        "WestPenn":  {"peak_hours": (14, 21), "peak_rate": 0.172,  "offpeak_rate": 0.088},   # PTC 0.10317 x 1.6649/0.8542
+        "Penelec":   {"peak_hours": (14, 21), "peak_rate": 0.185,  "offpeak_rate": 0.093},   # PTC 0.11003 x 1.6792/0.8482
+        "MetEd":     {"peak_hours": (14, 21), "peak_rate": 0.203,  "offpeak_rate": 0.100},   # PTC 0.11903 x 1.7060/0.8397
+        # Duquesne Rate RS flat default (Duquesne Light Company (2026)); optional non-default
+        # TOU (peak 3-9pm, PUC-approved 2025-04-10, Duquesne Light Company TOU (2026)) exists but is not used.
         "Duquesne":  {"peak_hours": (14, 21), "peak_rate": 0.1375, "offpeak_rate": 0.1375},
     }
 
@@ -64,17 +71,18 @@ class ApplianceGroundTruthCalculator:
     }
 
     NOISE_LIMIT_EVENING = 45     # dBA threshold after 10pm (EPA/WHO indoor night limit is 35 dBA;
-                                  # 45 dBA chosen so dishwashers (~45 dBA) are at-threshold and
-                                  # washers/dryers (50-55 dBA) exceed it and receive the noise penalty)
-    # Dyer & Sarin (1979) (Management Science 26(8):810-822)
+                                  # 45 dBA chosen so dishwashers (~45 dBA, Bellingham Electric (2026))
+                                  # are at-threshold and washers/dryers (74/65 dBA,
+                                  # Precision Appliance Leasing (2024) / Coolblue (2026))
+                                  # exceed it and receive the noise penalty)
+    # Dyer & Sarin (1979) (Oper. Res. 27(4):810-822)
     VF_ENERGY_COST = "linear"
 
-    # Linear VF for environmental impact - physical units have linear marginal value
-    # For MAVT framework justification, see:
-    # - Keeney, R. L., & Raiffa, H. (1976). Decisions with Multiple Objectives: Preferences 
-    #   and Value Trade-offs. Wiley. (Foundation for Multi-Attribute Value Theory axioms)
-    # Linear VF justification in this context: When environmental impacts are framed in 
-    # absolute physical units (lbs CO₂), a linear preference is a conservative modeling choice
+    # Linear VF for environmental impact - physical units have linear marginal value.
+    # For MAVT framework justification, see Keeney & Raiffa (1976): Foundation for
+    # Multi-Attribute Value Theory axioms.
+    # Linear VF justification in this context: When environmental impacts are framed in
+    # absolute physical units (lbs CO2), a linear preference is a conservative modeling choice
     # that treats equal changes in emissions as equally valuable reductions.
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
@@ -87,6 +95,15 @@ class ApplianceGroundTruthCalculator:
             'dryer': 6.0,
         }
         return delays.get(appliance_type.lower().strip(), 12.0)
+
+    def _cycles_per_month(self, appliance_type: str) -> int:
+        cycles = {
+            'dishwasher': 18,         # 215 cycles/yr (U.S. EPA (2023) ENERGY STAR Dishwashers criteria)
+            'washer': 25,             # ~300 loads/yr (U.S. EPA (2026) ENERGY STAR Clothes Washers)
+            'washing_machine': 25,
+            'dryer': 24,              # 283 cycles/yr (U.S. DOE (2011) dryer test procedure)
+        }
+        return cycles.get(appliance_type.lower().strip(), 24)
 
     def _normalize_city(self, location: str) -> str:
         """Strip ', PA' / state suffix and whitespace from a Location string."""
@@ -149,13 +166,16 @@ class ApplianceGroundTruthCalculator:
             base_comfort = 2.0   # Beyond acceptable (>12hr)
 
         # Component 2: Noise disruption penalty
-        # Depends on: time of day + housing type + appliance noise level
+        # Depends on: time of day + housing type + appliance noise level. Representative dBA:
+        # dishwasher ~45 (Bellingham Electric (2026)), washer ~74 (spin-cycle peak,
+        # Precision Appliance Leasing (2024)), dryer ~65 (Coolblue (2026)). Only the >45 threshold test
+        # below reads these, so washer/dryer trigger the penalty regardless of the exact value.
         if appliance_type.lower() == "dishwasher":
             appliance_noise = 45
         elif appliance_type.lower() == "washer" or "washing" in appliance_type.lower():
-            appliance_noise = 50
+            appliance_noise = 74
         elif appliance_type.lower() == "dryer":
-            appliance_noise = 55
+            appliance_noise = 65
         else:
             appliance_noise = 50
 
@@ -295,14 +315,14 @@ class ApplianceGroundTruthCalculator:
             'energy_cost': {
                 # Bounds: 5th-pctile kWh/cycle x lowest off-peak rate, and 95th-pctile
                 # kWh/cycle x highest peak rate, across the 6 PA utilities.
-                #   min = 0.25 kWh x $0.067/kWh (West Penn off-peak) = $0.017
-                #   max = 3.5  kWh x $0.320/kWh (PECO peak)         = $1.12
+                #   min = 0.25 kWh x $0.070/kWh (PPL off-peak, lowest) = $0.0175
+                #   max = 3.5  kWh x $0.320/kWh (PECO peak)            = $1.12
                 # kWh/cycle 5th pctile = 0.25 (efficient HE washer; ENERGY STAR
                 # certified-products distribution, catalog.data.gov).
                 # kWh/cycle 95th pctile entropy-adjusted from ENERGY STAR's 2.82
                 # (most-inefficient certified electric resistance dryer) up to 3.5
                 # to cover older non-certified resistance dryers
-                'min': 0.017,
+                'min': 0.0175,
                 'max': 1.12,
                 'decreasing': True
             },
@@ -325,8 +345,11 @@ class ApplianceGroundTruthCalculator:
                 'decreasing': False
             },
             'practicality': {
-                # Match calculation floor (0.5) so VF mapping doesn't collapse
-                # the raw floor to a utility of exactly zero.
+                # VF floor 0.5 sits below the raw practicality floor of 1.5 so the least
+                # practical-but-feasible option keeps a small positive utility instead of
+                # collapsing to exactly zero. Internal normalization choice (not a literature
+                # value): no feasible option is treated as absolutely infeasible
+                # (Keeney & Raiffa (1976) value-measurability convention).
                 'min': 0.5,
                 'max': 10.0,
                 'decreasing': False
@@ -479,7 +502,7 @@ class ApplianceGroundTruthCalculator:
             if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost_dollars'],
-                    cycles_per_month=30
+                    cycles_per_month=self._cycles_per_month(scenario['appliance'])
                 )
 
                 budget_penalty = self.calculate_budget_penalty(

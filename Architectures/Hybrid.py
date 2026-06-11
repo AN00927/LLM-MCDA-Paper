@@ -605,10 +605,10 @@ def run_scenario(scenario: Dict) -> Dict:
         for alt_data in alternatives_scores:
             scores = alt_data['scores']
             print(f"  {alt_data['alternative']}: "
-                  f"Energy={scores['energy_cost']:.1f}, "
-                  f"Env={scores['environmental']:.1f}, "
-                  f"Comfort={scores['comfort']:.1f}, "
-                  f"Pract={scores['practicality']:.1f}")
+                  f"Energy={scores['energy_cost']:.2f}, "
+                  f"Env={scores['environmental']:.2f}, "
+                  f"Comfort={scores['comfort']:.2f}, "
+                  f"Pract={scores['practicality']:.2f}")
 
     except Exception as e:
         print(f" Ground truth calculation failed: {e}")
