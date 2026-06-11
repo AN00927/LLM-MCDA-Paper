@@ -41,11 +41,8 @@ Methodological grounding:
     formulation follows standard MAVT weight recovery approaches.
 
     References:
-    - Jacquet-Lagrèze, E., & Siskos, J. (1982). Assessing a set of
-      additive utility functions for multicriteria decision-making.
-      European Journal of Operational Research, 10(2), 151–164.
-    - Dyer, J.S., & Sarin, R.K. (1979). Measurable multiattribute value
-      functions. Operations Research, 27(4), 810–822.
+    - Jacquet-Lagreze & Siskos (1982). EJOR 10(2):151-164.
+    - Dyer & Sarin (1979). Oper. Res. 27(4):810-822.
 
 Inputs:  ground_truth_hvac.xlsx, ground_truth_appliance.xlsx, ground_truth_shower.xlsx
 Outputs: implied_weights_summary.xlsx
