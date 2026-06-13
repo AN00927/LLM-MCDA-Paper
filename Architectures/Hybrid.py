@@ -89,10 +89,23 @@ HYBRID_RESULT_FIELDNAMES = [
     'scenario_id', 'question', 'location',
     'input_decision_type', 'extracted_decision_type', 'decision_type',
     'outdoor_temp', 'appliance_age', 'flow_rate',
+    'extracted_r_value', 'extracted_seer', 'extracted_hvac_age',
+    'extracted_occupancy_context', 'extracted_appliance',
+    'extracted_kwh_per_cycle', 'extracted_baseline_time',
+    'extracted_gpm', 'extracted_tank_size', 'extracted_water_heater_temp',
     'calculator', 'extraction_failed', 'gt_calculation_failed',
     'alternative', 'extracted_alternative',
     'energy_cost', 'environmental', 'comfort', 'practicality',
     'rank', 'weighted_score',
+]
+
+HYBRID_NUMERIC_EXTRACTED_COLS = [
+    'extracted_r_value', 'extracted_seer', 'extracted_hvac_age',
+    'extracted_kwh_per_cycle', 'extracted_gpm',
+    'extracted_tank_size', 'extracted_water_heater_temp',
+]
+HYBRID_CATEGORICAL_EXTRACTED_COLS = [
+    'extracted_occupancy_context', 'extracted_appliance', 'extracted_baseline_time',
 ]
 
 
@@ -161,6 +174,24 @@ def _validate_numeric_params(decision_type: str, params: Dict) -> List[str]:
 
 def _init_failure_counters() -> Dict[str, int]:
     return {key: 0 for key in HYBRID_FAILURE_COUNTER_KEYS}
+
+
+def _extracted_parameter_cells(extracted_result: Optional[Dict]) -> Dict:
+    params = (extracted_result or {}).get('parameters', {})
+    cells = {col: '' for col in HYBRID_NUMERIC_EXTRACTED_COLS + HYBRID_CATEGORICAL_EXTRACTED_COLS}
+    for col in HYBRID_NUMERIC_EXTRACTED_COLS:
+        key = col.removeprefix('extracted_')
+        if key in params:
+            try:
+                cells[col] = float(params[key])
+            except (TypeError, ValueError):
+                cells[col] = ''
+    for col in HYBRID_CATEGORICAL_EXTRACTED_COLS:
+        key = col.removeprefix('extracted_')
+        if key in params:
+            value = params[key]
+            cells[col] = '' if value is None else str(value).strip()
+    return cells
 
 
 def _increment_failure_counters(counters: Dict[str, int], failure_types: List[str], increment: int = 1) -> None:
@@ -908,6 +939,7 @@ def run_test_set(test_path: str, output_path: str,
         input_decision_type = scenarios[scenario_id - 1].get('decision_type', 'UNKNOWN')
         extracted_decision_type = result.get('decision_type', 'UNKNOWN')
         decision_type = input_decision_type
+        extracted_param_cells = _extracted_parameter_cells(result.get('extracted_result'))
 
         ranks = result['ranking_result']['ranks']
         weighted_scores = result['ranking_result']['weighted_scores']
@@ -938,6 +970,7 @@ def run_test_set(test_path: str, output_path: str,
                 'outdoor_temp': outdoor_temp,
                 'appliance_age': appliance_age,
                 'flow_rate': flow_rate,
+                **extracted_param_cells,
                 'calculator': calculator,
                 'extraction_failed': extraction_failed,
                 'gt_calculation_failed': gt_calc_failed,
@@ -1041,9 +1074,23 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     STABLE_META_COLS = ["question", "location", "outdoor_temp", "appliance_age", "flow_rate", "calculator"]
+    PARAMETER_NUMERIC_COLS = HYBRID_NUMERIC_EXTRACTED_COLS
+    PARAMETER_CATEGORICAL_COLS = HYBRID_CATEGORICAL_EXTRACTED_COLS
     # extracted_alternative is per-run diagnostic — keep one example via .first()
     OPTIONAL_META_COLS = ["extracted_alternative"]
     BOOL_META_COLS = ["extraction_failed", "gt_calculation_failed"]
+
+    for col in PARAMETER_NUMERIC_COLS:
+        if col in combined.columns:
+            combined[col] = pd.to_numeric(combined[col], errors="coerce")
+
+    def _mode_or_blank(series):
+        cleaned = series.dropna()
+        cleaned = cleaned[cleaned.astype(str).str.strip().ne('')]
+        if cleaned.empty:
+            return ''
+        mode = cleaned.mode(dropna=True)
+        return mode.iloc[0] if not mode.empty else cleaned.iloc[0]
 
     # Count how many runs contributed a non-NaN value per (scenario, alternative)
     n_valid_runs = combined.groupby(GROUP_KEYS)[CRITERIA_COLS[0]].apply(
@@ -1055,6 +1102,12 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     # Stable cols: just take the first one since these should match across runs
     avg_meta = combined.groupby(GROUP_KEYS, as_index=False)[STABLE_META_COLS].first()
+    if PARAMETER_NUMERIC_COLS:
+        avg_param_numeric = combined.groupby(GROUP_KEYS, as_index=False)[PARAMETER_NUMERIC_COLS].mean()
+        avg_meta = avg_meta.merge(avg_param_numeric, on=GROUP_KEYS, how="left")
+    if PARAMETER_CATEGORICAL_COLS:
+        avg_param_categorical = combined.groupby(GROUP_KEYS)[PARAMETER_CATEGORICAL_COLS].agg(_mode_or_blank).reset_index()
+        avg_meta = avg_meta.merge(avg_param_categorical, on=GROUP_KEYS, how="left")
 
     # decision_type: use the most common non-UNKNOWN value, or UNKNOWN if everything failed
     def _mode_decision_type(series):
@@ -1124,6 +1177,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "scenario_id", "question", "location", "decision_type",
         "input_decision_type", "extracted_decision_type",
         "outdoor_temp", "appliance_age", "flow_rate",
+        *HYBRID_NUMERIC_EXTRACTED_COLS,
+        *HYBRID_CATEGORICAL_EXTRACTED_COLS,
         "calculator", "extraction_failed", "gt_calculation_failed", "alternative",
         "energy_cost", "environmental", "comfort", "practicality",
         "rank", "weighted_score",
