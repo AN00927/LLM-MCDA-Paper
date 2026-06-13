@@ -8,6 +8,8 @@ architectures (prompts, parameters, MAVT) and the scenario data
 code. Each section points to the exact file/function if you want to verify a
 claim against the implementation.
 
+> **River:** In general, I think the paper should present itself as a study aimed at identifying the most effective way to apply LLM to support MCDA. This could mitigate some of the disadvantages of the study, which involves a lot of assumptions, limited criteria, and a rather simple setting.
+
 ---
 
 ## 1. What the experiment measures
@@ -36,6 +38,10 @@ run, so the *integration strategy* is the only variable under test.
 with weaker models*, because the physics backbone compensates for model
 capability.
 
+> **River:**  For decision types => Maybe call it “Decision problems” or  Scnearios”
+>
+> Weight is one very weak point of the work as the weights are defined in an arbitrary way
+
 ---
 
 ## 2. The three architectures
@@ -46,6 +52,7 @@ OpenRouter at temperature 0.3, share one retry/timeout policy
 weighted sum. They differ only in **how each alternative is scored**.
 
 ### 2.1 Pure Prompting — [`PurePrompting.py`](Architectures/PurePrompting.py)
+
 - **3 API calls per scenario** (one per alternative).
 - The LLM is given the homeowner-facing scenario context and asked to return the
   four criterion scores directly as JSON.
@@ -57,6 +64,7 @@ weighted sum. They differ only in **how each alternative is scored**.
   SEER, GPM, kWh/cycle, tank size, or occupancy context.
 
 ### 2.2 RAG-Enhanced — [`RAGDatabaseOptimized.py`](Architectures/RAGDatabaseOptimized.py)
+
 - **3 API calls per scenario.** Before scoring each alternative, it retrieves the
   top *k* = 3 most similar **RAG** scenarios from a ChromaDB index
   (all-MiniLM-L6-v2 embeddings) and injects them as worked examples.
@@ -74,6 +82,7 @@ weighted sum. They differ only in **how each alternative is scored**.
   the run abort rather than silently use old data.
 
 ### 2.3 Hybrid — [`Hybrid.py`](Architectures/Hybrid.py)
+
 This is the architecture worth the closest read.
 
 - **1 API call per scenario.** The LLM does **not** score anything. It only
@@ -102,6 +111,7 @@ This is the architecture worth the closest read.
   quality. This is now stated explicitly in the paper's Limitations.
 
 ### 2.4 MAVT scoring (shared)
+
 - Additive weighted sum `s_j = Σ wᵢ · vᵢ(xᵢⱼ)`.
 - Value functions: Environmental and Energy Cost are **linear, decreasing**
   (lower raw = better); Comfort and Practicality are **logarithmic, increasing**
@@ -112,6 +122,8 @@ This is the architecture worth the closest read.
   to the true dataset percentiles during my latest review — see §5.)*
 - A four-tier **budget penalty** multiplies the energy-cost score when monthly
   cost approaches/exceeds the household budget.
+
+> **River:** Regarding MAVT calculation, I don't think you need to rescale the score to [0,10]. A score ranges in [0,1] is more natural.
 
 ---
 
@@ -139,6 +151,12 @@ regenerated all three from scratch during review and they reproduce the committe
 (insulation tier, flow-rate label, appliance-age band); the calculator gets the
 true engineering value. The LLM never sees the true value, and the calculator
 never scores the label directly.
+
+> **River:**  The term "physics" should be reconsidered. You also have indicators like confort, which is not "physics".
+>
+> And here you need to set different assumptions -> Why the indicator values will lead to the scores.
+>
+> For Shower case , you should explicitly explain why you use water volumn for enviromental indicator in the paper.
 
 ---
 
@@ -203,3 +221,161 @@ them explicitly so you know what changed since you last looked:
 
 If any of these concern you, the relevant code is cited inline above and in the
 paper, and I'm happy to walk through the reasoning.
+
+> **River:** Perhaps you could also report the accuracy of parameter extraction in the hybrid parameter, as well as the final score/rank agreement. This could be interesting. As mentioned, the work involves identifying the most effective use of LLMs, so if parameter extraction is highly accurate, it's not surprising that the final accuracy is high.
+>
+> Maybe the names for the three types of approaches can be improved for better recognization and easier understanding.
+
+> **River:** I also asked AI to give some suggestions for improvement. Maybe they can also be useful:
+
+
+## AI: Final critical improvement checklist
+
+The following items should be treated as the minimum critical improvements
+before presenting the study as a rigorous comparison of LLM-assisted MCDA
+architectures.
+
+### A. Correctly define and compare MAVT use
+
+- **Problem:** The architectures do not use MAVT in the same way. Ground Truth
+  and Hybrid explicitly calculate raw physical outcomes and transform them
+  through the reference value functions. Pure and RAG directly ask the LLM to
+  estimate criterion-level `0–10` value scores and only apply the final additive
+  weighting step.
+- **Required improvement:** Clearly separate:
+  1. raw criterion outcome calculation;
+  2. single-criterion value-function transformation; and
+  3. additive MAVT aggregation.
+- **Completion criterion:** The manuscript explicitly states that Pure and RAG
+  do not execute the reference value functions for target scenarios, while
+  Hybrid and Ground Truth do. Claims that all architectures use the “same MAVT
+  procedure” are removed or qualified.
+
+### B. Make the architecture comparison experimentally fair
+
+- **Problem:** Hybrid has direct access to the same calculators and value
+  functions used to generate the reference answers. Pure and RAG do not. Hybrid
+  also evaluates all three alternatives jointly through one calculator call,
+  whereas Pure and RAG score alternatives independently.
+- **Required improvement:** Run controlled ablations that independently vary:
+  calculator access, value-function access, retrieval access, visible
+  information, joint versus isolated alternative scoring, and LLM call budget.
+- **Completion criterion:** Any claimed Hybrid advantage remains significant
+  after comparison against architectures with equivalent information and
+  computational access.
+
+### C. Establish whether an LLM is needed
+
+- **Problem:** A simple no-LLM fixed-default-parameter calculator already
+  achieves approximately `90.3%` overall Top-1 accuracy and `0.863` mean
+  Kendall's tau. This suggests much of the ranking may be recoverable without
+  LLM reasoning or accurate hidden-parameter extraction.
+- **Required improvement:** Add, at minimum:
+  - random-choice baseline;
+  - always-first-alternative baseline;
+  - simple rule-based baseline;
+  - fixed-default-parameter calculator baseline;
+  - nearest-neighbor baseline;
+  - oracle-parameter calculator upper bound.
+- **Completion criterion:** The paper quantifies the incremental contribution of
+  the LLM over each non-LLM baseline.
+
+### D. Remove alternative-order leakage
+
+- **Problem:** The first listed alternative is the reference winner in
+  approximately `90.8%` of Appliance scenarios and `73.3%` of Shower scenarios.
+  An always-first rule reaches approximately `61.5%` overall Top-1 accuracy.
+- **Required improvement:** Randomize alternative order independently for every
+  run and map predictions back to canonical alternative IDs before evaluation.
+- **Completion criterion:** All headline results are reproduced using randomized
+  alternative order, and position-wise performance is reported.
+
+### E. Validate the reference model instead of calling it objective truth
+
+- **Problem:** The “Ground Truth” combines engineering calculations with
+  author-selected behavioral assumptions, thresholds, budget penalties, comfort
+  functions, and practicality rules.
+- **Required improvement:** Rename it a `formula-based reference model` unless
+  it is independently validated. Separate physical, literature-calibrated,
+  expert-selected, and synthetic-benchmark assumptions.
+- **Completion criterion:** The reference scores and rankings are validated
+  against independent simulations, experts, behavioral observations, or a
+  second independently specified model.
+
+### F. Evaluate Hybrid parameter extraction directly
+
+- **Problem:** Correct final ranking does not demonstrate correct extraction.
+  Parameter errors may affect all alternatives similarly and therefore leave the
+  ranking unchanged.
+- **Required improvement:** Report parameter-level MAE, categorical accuracy,
+  error distributions, and the probability that each parameter error changes
+  the selected alternative.
+- **Completion criterion:** Hybrid's contribution is demonstrated beyond simply
+  reproducing the output of the shared calculator.
+
+### G. Demonstrate that RAG retrieval adds value
+
+- **Problem:** RAG exemplars are Ground-Truth-scored historical scenarios
+  containing engineering parameters, criterion scores, MAVT totals, and ranks.
+  Current results cannot distinguish useful retrieval from answer-pattern
+  imitation or extra-information access.
+- **Required improvement:** Run RAG ablations using:
+  - random exemplars;
+  - no exemplars;
+  - descriptions without scores or ranks;
+  - exemplars without hidden engineering parameters;
+  - different retrieval values of `k`;
+  - different embedding models;
+  - nearest-neighbor prediction without an LLM.
+- **Completion criterion:** Retrieval quality, retrieval distance, and downstream
+  accuracy are linked empirically, and RAG significantly outperforms the
+  relevant controls.
+
+### H. Prevent data leakage and test generalization
+
+- **Problem:** Test and RAG scenarios are disjoint by scenario, but they come
+  from the same synthetic source and may share templates, parameter patterns,
+  and alternative structures.
+- **Required improvement:** Audit near-duplicates and template overlap. Add an
+  external or out-of-distribution test set with unseen wording, locations,
+  parameter combinations, and decision structures.
+- **Completion criterion:** Performance remains credible on data not generated
+  by the same scenario-construction process.
+
+### I. Strengthen uncertainty and statistical analysis
+
+- **Problem:** `N_RUNS = 1` does not measure LLM stochasticity. A small set of
+  hand-selected weight perturbations does not adequately characterize MCDA
+  preference uncertainty.
+- **Required improvement:** Use repeated model runs, paired bootstrap confidence
+  intervals, paired significance tests, and full weight-space sampling or SMAA.
+  Report score uncertainty, rank stability, failure rates, and decision regret.
+- **Completion criterion:** Architecture differences remain robust across model
+  randomness, preference weights, domains, and reasonable reference-model
+  uncertainty.
+
+### J. Address criterion dependence and cross-domain comparability
+
+- **Problem:** Cost and environmental scores are highly correlated
+  (`0.999` HVAC, `0.883` Appliance, `0.968` Shower), creating possible double
+  weighting. In addition, Shower environmental impact is water use, whereas the
+  other domains use emissions.
+- **Required improvement:** Test alternative criterion definitions, remove or
+  combine correlated criteria in sensitivity analyses, and avoid interpreting
+  pooled cross-domain metrics as measuring identical constructs.
+- **Completion criterion:** Conclusions remain stable under defensible
+  alternative criterion structures.
+
+### K. Freeze and publish a reproducible experiment
+
+- **Problem:** Changes to value-function ranges, prompts, calculators, data
+  derivation, or RAG contents invalidate previous results. The master workbook
+  is absent, some tests are skipped, and an audit script contains an absolute
+  machine-specific path.
+- **Required improvement:** Publish a frozen experiment version containing:
+  commit hash, source-data checksums, stable scenario UUIDs, model IDs, provider
+  settings, prompts, random seeds, complete outputs, environment lockfile, and a
+  one-command reproduction workflow.
+- **Completion criterion:** An independent researcher can rebuild the scenarios,
+  Ground Truth/reference scores, RAG database, architecture outputs, and all
+  tables without manual intervention.
