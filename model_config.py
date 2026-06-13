@@ -1,5 +1,5 @@
 MODEL_KEY = "gptoss_weakest"
-N_RUNS = 1
+N_RUNS = 10
 
 
 # Sampling temperature for every architecture. Kept here (not hard-coded per
