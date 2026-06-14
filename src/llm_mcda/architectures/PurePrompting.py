@@ -239,7 +239,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
         prompt += f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
 
-    prompt += "\nProvide scores (0-10) for all 4 criteria.\n"
+    prompt += "\nProvide scores (0-1) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
 
     return prompt
@@ -248,7 +248,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
 def score_alternative(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
 
     system_prompt = """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
-    You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
+    You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-1 scale (0.0 <= score <= 1.0):
 
 HVAC:
 - energy_cost: good when the setpoint demands little from the system given outdoor
@@ -284,7 +284,7 @@ Shower (duration):
 - practicality: good when the duration is sustainable as a daily habit; poor when
   too short to realistically maintain or long enough to cause hot water contention.
 
-Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}
+Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X} where each X is between 0.0 and 1.0.
 """
 
     user_prompt = build_user_prompt(scenario, alternative)
@@ -346,7 +346,7 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
 
             if isinstance(raw_score, (int, float)):
                 raw_value = float(raw_score)
-                if 0.0 <= raw_value <= 10.0:
+                if 0.0 <= raw_value <= 1.0:
                     validated_scores[criterion] = raw_value
                 else:
                     logging.warning(f"Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")

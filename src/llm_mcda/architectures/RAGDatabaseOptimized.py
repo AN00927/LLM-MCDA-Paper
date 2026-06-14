@@ -240,14 +240,14 @@ def build_system_prompt() -> str:
     supplies scored in-context examples.
     """
     return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
-    You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
+    You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-1 scale (0.0 <= score <= 1.0):
 1. Energy Cost: Lower energy costs = higher score
 2. Environmental Impact: Lower emissions = higher score
 3. Comfort: Higher user comfort = higher score
 4. Practicality: Easier to implement/maintain = higher score
 
 
-Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}"""
+Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X} where each X is between 0.0 and 1.0."""
 
 
 def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
@@ -390,10 +390,10 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
             rank = md.get(f'alt{j}_rank')
             context += (
                 f"  * {name}: "
-                f"Energy Cost: {_fmt_num(scores['energy_cost'])}/10, "
-                f"Environmental: {_fmt_num(scores['environmental'])}/10, "
-                f"Comfort: {_fmt_num(scores['comfort'])}/10, "
-                f"Practicality: {_fmt_num(scores['practicality'])}/10 "
+                f"Energy Cost: {_fmt_num(scores['energy_cost'])}/1, "
+                f"Environmental: {_fmt_num(scores['environmental'])}/1, "
+                f"Comfort: {_fmt_num(scores['comfort'])}/1, "
+                f"Practicality: {_fmt_num(scores['practicality'])}/1 "
                 f"| MAVT: {_fmt_num(mavt, 2)}, Rank: {_fmt_num(rank, 0)}\n"
             )
         context += "\n"
@@ -442,7 +442,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
             f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
         )
 
-    prompt += "\nProvide scores (0-10) for all 4 criteria.\n"
+    prompt += "\nProvide scores (0-1) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
 
     return prompt
@@ -524,7 +524,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         raw_score = parsed[criterion]
         if isinstance(raw_score, (int, float)):
             raw_value = float(raw_score)
-            if 0.0 <= raw_value <= 10.0:
+            if 0.0 <= raw_value <= 1.0:
                 scores[criterion] = raw_value
             else:
                 logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
