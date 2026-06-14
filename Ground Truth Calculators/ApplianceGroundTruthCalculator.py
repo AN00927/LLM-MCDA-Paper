@@ -206,7 +206,7 @@ class ApplianceGroundTruthCalculator:
         size_penalty *= min(delay_hours / max_delay, 1.0)  # Cap scaling at 1.0
 
         final_comfort = base_comfort - noise_penalty - size_penalty
-        return max(0.0, min(10.0, final_comfort))
+        return max(0.0, min(1.0, final_comfort / 10.0))
 
     def calculate_practicality_score(self, delay_hours: float, run_time_hour: int,
                                     housing_type: str, occupants: int,
@@ -247,14 +247,14 @@ class ApplianceGroundTruthCalculator:
         final_practicality = base_practicality - timing_penalty - coordination_penalty
 
         # Daytime floor: running appliances during business hours carries a minimum practicality
-        # of 4 (always a socially acceptable option). Only applies when delay is within the
+        # of 0.4 (always a socially acceptable option). Only applies when delay is within the
         # appliance-specific acceptable window — prevents large-delay wrap-bug rescues.
         DAYTIME_START = 7
         DAYTIME_END = 22
         if DAYTIME_START <= run_time_hour < DAYTIME_END and delay_hours <= max_delay:
-            final_practicality = max(final_practicality, 4)
+            final_practicality = max(final_practicality, 0.4)
 
-        return max(1.5, min(10.0, final_practicality))
+        return max(0.15, min(1.0, final_practicality / 10.0))
 
 
     def parse_alternative(self, alt: str, scenario: Dict) -> Tuple[int, float]:
@@ -337,17 +337,17 @@ class ApplianceGroundTruthCalculator:
             },
             'comfort': {
                 'min': 0.0,
-                'max': 10.0,
+                'max': 1.0,
                 'decreasing': False
             },
             'practicality': {
-                # VF floor 0.5 sits below the raw practicality floor of 1.5 so the least
+                # VF floor 0.05 sits below the raw practicality floor of 0.15 so the least
                 # practical-but-feasible option keeps a small positive utility instead of
                 # collapsing to exactly zero. Internal normalization choice (not a literature
                 # value): no feasible option is treated as absolutely infeasible
                 # (Keeney & Raiffa (1976) value-measurability convention).
-                'min': 0.5,
-                'max': 10.0,
+                'min': 0.05,
+                'max': 1.0,
                 'decreasing': False
             }
         }
@@ -405,8 +405,8 @@ class ApplianceGroundTruthCalculator:
         else:
             u_x = x_normalized
 
-        # Clamp final score to [0, 10]
-        return max(0.0, min(10.0, u_x * 10.0))
+        # Clamp final score to [0, 1]
+        return max(0.0, min(1.0, u_x))
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
         utilization = monthly_cost / monthly_budget

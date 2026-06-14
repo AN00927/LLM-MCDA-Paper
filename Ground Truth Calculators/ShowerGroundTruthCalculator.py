@@ -189,7 +189,7 @@ class ShowerGroundTruthCalculator:
             contention_penalty = excess_duration * 0.5
 
         total_comfort = base_comfort - temp_penalty - contention_penalty
-        return max(0.0, min(10.0, total_comfort))
+        return max(0.0, min(1.0, total_comfort / 10.0))
 
     def calculate_practicality_score(self, duration: float, occupants: int,
                                      tank_size: float, gpm: float,
@@ -229,7 +229,7 @@ class ShowerGroundTruthCalculator:
 
         total_practicality = base_practicality - capacity_penalty
 
-        return max(1.5, min(10.0, total_practicality))
+        return max(0.15, min(1.0, total_practicality / 10.0))
 
     def calculate_monthly_cost(self, per_shower_cost: float, occupants: int,
                                showers_per_person_per_day: float = 0.9) -> float:
@@ -282,17 +282,17 @@ class ShowerGroundTruthCalculator:
             },
             'comfort': {
                 'min': 0.0,
-                'max': 10.0,
+                'max': 1.0,
                 'decreasing': False
             },
             'practicality': {
-                # VF floor 0.5 sits below the raw practicality floor of 1.5 so the least
+                # VF floor 0.05 sits below the raw practicality floor of 0.15 so the least
                 # practical-but-feasible option keeps a small positive utility instead of
                 # collapsing to exactly zero. Internal normalization choice (not a literature
                 # value): no feasible option is treated as absolutely infeasible
                 # (Keeney & Raiffa (1976) value-measurability convention).
-                'min': 0.5,
-                'max': 10.0,
+                'min': 0.05,
+                'max': 1.0,
                 'decreasing': False
             }
         }
@@ -354,7 +354,7 @@ class ShowerGroundTruthCalculator:
         else:
             u_x = x_normalized
 
-        return max(0.0, min(10.0, u_x * 10.0))
+        return max(0.0, min(1.0, u_x))
     
     def calculate_scenario_scores(self, scenario: dict) -> dict:
         occupants = int(scenario.get('household_size', 2))
