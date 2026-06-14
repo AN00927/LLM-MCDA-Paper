@@ -474,20 +474,20 @@ def format_target_prompt(scenario: Dict, alternative: str) -> str:
     prompt += f'For the decision: "{scenario.get("question", "N/A")}"\n\n'
     prompt += "SCENARIO CONTEXT:\n"
     prompt += "\n".join(_base_param_lines(decision_type, scenario))
-    prompt += "\n\nProvide scores (0-10) for all 4 criteria.\n"
+    prompt += "\n\nProvide scores (0-1) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
     return prompt
 
 
 def build_system_prompt() -> str:
     return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
-You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-10 scale (0.0 <= score <= 10.0):
+You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-1 scale (0.0 <= score <= 1.0):
 1. Energy Cost: Lower energy costs = higher score
 2. Environmental Impact: Lower emissions = higher score
 3. Comfort: Higher user comfort = higher score
 4. Practicality: Easier to implement/maintain = higher score
 
-Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X}"""
+Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X} where each X is between 0.0 and 1.0."""
 
 
 def format_rag_context(retrieved: List[Dict], spec: Dict) -> str:
@@ -517,10 +517,10 @@ def format_rag_context(retrieved: List[Dict], spec: Dict) -> str:
                     continue
                 context += (
                     f"  * {alt}: "
-                    f"Energy Cost: {_fmt_num(scores['energy_cost'])}/10, "
-                    f"Environmental: {_fmt_num(scores['environmental'])}/10, "
-                    f"Comfort: {_fmt_num(scores['comfort'])}/10, "
-                    f"Practicality: {_fmt_num(scores['practicality'])}/10"
+                    f"Energy Cost: {_fmt_num(scores['energy_cost'])}/1, "
+                    f"Environmental: {_fmt_num(scores['environmental'])}/1, "
+                    f"Comfort: {_fmt_num(scores['comfort'])}/1, "
+                    f"Practicality: {_fmt_num(scores['practicality'])}/1"
                 )
                 if include_ranks:
                     context += f" | MAVT: {_fmt_num(md.get(f'alt{j}_mavt'), 2)}, Rank: {_fmt_num(md.get(f'alt{j}_rank'), 0)}"
@@ -679,7 +679,7 @@ def parse_scores(response_text: str) -> Tuple[Optional[Dict[str, float]], Option
         if not isinstance(raw, (int, float)):
             return None, "failed_invalid_score_type"
         value = float(raw)
-        if not (0.0 <= value <= 10.0):
+        if not (0.0 <= value <= 1.0):
             return None, "failed_out_of_bounds"
         scores[criterion] = value
     return scores, None

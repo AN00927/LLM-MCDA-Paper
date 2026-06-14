@@ -178,7 +178,7 @@ class HVACGroundTruthCalculator:
             size_penalty = (household_size - 3) * 0.3
             comfort_score -= size_penalty * (abs(indoor_temp - optimal) / 3.0)
 
-        return max(0.0, min(10.0, comfort_score))
+        return max(0.0, min(1.0, comfort_score / 10.0))
 
     def _efficiency_degradation(self, hvac_age: int, maintenance_level: str = 'moderate') -> float:
         """Fraction of HVAC efficiency lost to age + maintenance: front-loaded, capped
@@ -243,7 +243,7 @@ class HVACGroundTruthCalculator:
         degradation = self._efficiency_degradation(hvac_age, maintenance_level)
         base_score *= (1 - degradation)
 
-        return max(1.5, min(10.0, base_score))
+        return max(0.15, min(1.0, base_score / 10.0))
 
     def calculate_monthly_cost(self, per_period_cost: float, periods_per_month: int = 90) -> float:
         return per_period_cost * periods_per_month
@@ -365,17 +365,17 @@ class HVACGroundTruthCalculator:
             },
             'comfort': {
                 'min': 0.0,
-                'max': 10.0,
+                'max': 1.0,
                 'decreasing': False
             },
             'practicality': {
-                # VF floor 0.5 sits below the raw practicality floor of 1.5 so the least
+                # VF floor 0.05 sits below the raw practicality floor of 0.15 so the least
                 # practical-but-feasible option keeps a small positive utility instead of
                 # collapsing to exactly zero. Internal normalization choice (not a literature
                 # value): no feasible option is treated as absolutely infeasible
                 # (Keeney & Raiffa (1976) value-measurability convention).
-                'min': 0.5,
-                'max': 10.0,
+                'min': 0.05,
+                'max': 1.0,
                 'decreasing': False
             }
         }
@@ -431,7 +431,8 @@ class HVACGroundTruthCalculator:
         else:
             u_x = x_normalized
 
-        return max(0.0, min(10.0, u_x * 10.0))
+        # Clamp final score to [0, 1]
+        return max(0.0, min(1.0, u_x))
 
     def _free_float_temp(self, outdoor_temp: float, cooling_season: bool) -> float:
         # Indoor air a bare "Off" system drifts to when no explicit target is given. With

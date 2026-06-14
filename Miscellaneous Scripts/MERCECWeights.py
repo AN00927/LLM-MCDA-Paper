@@ -97,9 +97,9 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 OUTPUT_CSV = os.path.join(OUTPUT_DIR, OUTPUT_CSV)
 
 # Small constant added before log to avoid ln(0).
-# Scores are on [0, 10]; epsilon = 0.01 has negligible effect on scores > 0.1
+# Scores are on [0, 1]; epsilon = 0.01 has negligible effect on scores > 0.01
 # but prevents undefined log for zero-score alternatives.
-EPSILON = 0.01
+EPSILON = 0.001
 
 
 # ---------------------------------------------------------------------------
