@@ -8,6 +8,7 @@ physics-based ground truth using MAVT scoring across HVAC, Appliance,
 and Shower decision scenarios.
 """
 
+import argparse
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -796,7 +797,7 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     return result
 
 
-def evaluate_all(config):
+def evaluate_all(config, include_baselines=False):
     print("=" * 72)
     print("  MCDA ARCHITECTURE EVALUATION - METRICS REPORT")
     print("=" * 72)
@@ -822,8 +823,26 @@ def evaluate_all(config):
             dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
             print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
 
+    # Load baselines if requested
+    if include_baselines:
+        print("\n[2b] Loading baselines...")
+        from RunBaselines import run_all_baselines
+        test_path = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+        test_df = read_table_clean(test_path)
+        baseline_results = run_all_baselines(test_df)
+        for name, df in baseline_results.items():
+            if name == 'Random':
+                # For random, use the first seed for metrics computation
+                # (CalculateMetrics will average over seeds in verification)
+                seed_df = df[df['seed'] == 0].drop(columns=['seed']) if 'seed' in df.columns else df
+                arch_dfs[name] = load_architecture(seed_df, name)
+            else:
+                arch_dfs[name] = load_architecture(df, name)
+            dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
+            print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
+
     # Load architecture diagnostics JSONs for failure-mode breakdown
-    print("\n[2b] Loading architecture diagnostics...")
+    print("\n[2c] Loading architecture diagnostics...")
     arch_diagnostics = {}
     for name, path in config["architectures"].items():
         if Path(path).parent.exists():
@@ -849,7 +868,13 @@ def evaluate_all(config):
 
     all_metrics = []
 
-    for arch_name in ["Pure", "RAG", "Hybrid"]:
+    # Determine architecture list based on whether baselines are included
+    if include_baselines:
+        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "Hybrid"]
+    else:
+        arch_list = ["Pure", "RAG", "Hybrid"]
+
+    for arch_name in arch_list:
         merged = merged_dfs[arch_name]
         if len(merged) == 0:
             print(f"\n{arch_name}: No matched data")
@@ -996,7 +1021,10 @@ def evaluate_all(config):
             return f"{'N/A':>10}"
         return f"{int(val):>10}" if is_int else f"{val:>10.4f}"
 
-    archs = ["Pure", "RAG", "Hybrid"]
+    if include_baselines:
+        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "Hybrid"]
+    else:
+        archs = ["Pure", "RAG", "Hybrid"]
 
     # Overall table
     header = f"  {'Metric':<24}" + "".join(f"{a:>10}" for a in archs)
@@ -1045,10 +1073,16 @@ def evaluate_all(config):
     return metrics_df, merged_dfs
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Calculate MCDA architecture metrics")
+    parser.add_argument('--include-baselines', action='store_true',
+                        help='Include 5 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)')
+    parser.add_argument('-h', '--help', action='help', help='Show this help message and exit')
+    args = parser.parse_args()
+
     if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
-        print("Usage: python calculate_metrics.py")
+        print("Usage: python calculate_metrics.py [--include-baselines]")
         print("  Modify CONFIG dict at top of file to change paths.")
         sys.exit(0)
 
-    metrics_df, merged_dfs = evaluate_all(CONFIG)
+    metrics_df, merged_dfs = evaluate_all(CONFIG, include_baselines=args.include_baselines)
 
