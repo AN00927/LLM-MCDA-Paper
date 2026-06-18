@@ -561,9 +561,6 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for name, df in results.items():
         if name == 'Random':
-            for seed in df['seed'].unique():
-                seed_df = df[df['seed'] == seed].drop(columns=['seed'])
-                seed_df.to_excel(OUTPUT_DIR / f"baseline_random_seed_{seed}.xlsx", index=False, engine="openpyxl")
             df.to_excel(OUTPUT_DIR / "baseline_random_aggregated.xlsx", index=False, engine="openpyxl")
         else:
             df.to_excel(OUTPUT_DIR / f"baseline_{name.lower()}.xlsx", index=False, engine="openpyxl")
