@@ -94,19 +94,19 @@ Composite agentic capability score: **37.4** — Artificial Analysis Agentic Ind
 
 #### Reasoning (selected benchmarks)
 - GPQA Diamond (graduate-level scientific reasoning): **80.6%**
-- HLE (Humanity's Last Exam): **13.3%**
-- IFBench (instruction-following): **66.7%**
-- τ²-Bench Telecom (dual-control conversational agents): **86.8%**
-- AA-LCR (long-context reasoning): **59.0%**
-- GDPval-AA (economically valuable tasks): **10.7%**
-- CritPt (research-level physics reasoning): **0.3%**
+- HLE: **13.3%**
+- IFBench: **66.7%**
+- τ²-Bench Telecom: **86.8%**
+- AA-LCR: **59.0%**
+- GDPval-AA: **10.7%**
+- CritPt: **0.3%**
 
 #### Coding (selected benchmarks)
-- SciCode (Python scientific computing): **27.5%**
-- Terminal-Bench Hard (agentic coding & terminal use): **24.2%**
+- SciCode: **27.5%**
+- Terminal-Bench Hard: **24.2%**
 
 #### Knowledge
-- AA-Omniscience Accuracy (proportion correct): **15.9%**
+- AA-Omniscience Accuracy: **15.9%**
 - AA-Omniscience Non-Hallucination Rate: **18.6%**
 
 Metrics sourced from OpenRouter benchmark pages and Artificial Analysis model pages.
@@ -120,20 +120,20 @@ Composite coding capability score: **45.0** — Artificial Analysis Coding Index
 Composite agentic capability score: **70.3** — Artificial Analysis Agentic Index (Better than 98% of models compared) ([OpenRouter benchmarks](https://openrouter.ai/google/gemini-3.5-flash/benchmarks)).
 
 #### Reasoning (selected benchmarks)
-- GPQA Diamond (graduate-level scientific reasoning): **92.2%**
-- HLE (Humanity's Last Exam): **41.0%**
-- IFBench (instruction-following): **76.3%**
-- τ²-Bench Telecom (dual-control conversational agents): **95.3%**
-- AA-LCR (long-context reasoning): **69.3%**
-- GDPval-AA (economically valuable tasks): **57.8%**
-- CritPt (research-level physics reasoning): **13.1%**
+- GPQA Diamond: **92.2%**
+- HLE: **41.0%**
+- IFBench: **76.3%**
+- τ²-Bench Telecom: **95.3%**
+- AA-LCR: **69.3%**
+- GDPval-AA: **57.8%**
+- CritPt: **13.1%**
 
 #### Coding (selected benchmarks)
-- SciCode (Python scientific computing): **53.1%**
-- Terminal-Bench Hard (agentic coding & terminal use): **40.9%**
+- SciCode: **53.1%**
+- Terminal-Bench Hard: **40.9%**
 
 #### Knowledge
-- AA-Omniscience Accuracy (proportion correct): **51.9%**
+- AA-Omniscience Accuracy: **51.9%**
 - AA-Omniscience Non-Hallucination Rate: **39.3%**
 
 Metrics sourced from OpenRouter benchmark pages and Artificial Analysis model pages.
@@ -163,8 +163,12 @@ LLM-MCDA-Paper/
 │   ├── BuildRAG.py
 │   ├── CalculateMetrics.py
 │   ├── EntropyWeights.py
+│   ├── EvaluateHybridExtraction.py
+│   ├── GenerateBaselineTable.py
 │   ├── ImpliedWeights.py
 │   ├── MERCECWeights.py
+│   ├── RunBaselines.py
+│   ├── RunRAGAblations.py
 │   ├── SensitivityAnalysis.py
 │   └── SyncRAGGroundTruth.py
 ├── Scenario Files/
@@ -393,13 +397,17 @@ Two scripts independently validate the subjective MAVT weights against the groun
 
 | Script | Purpose |
 | --- | --- |
-| [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes the ChromaDB vector index from RAG scenario files |
-| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1 accuracy, Kendall's τ, MAE per architecture/model/decision-type |
-| [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs ground truth scores back into the RAG scenario workbooks |
-| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics across the 10 weight perturbation scenarios |
-| [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Shannon entropy weight validation |
-| [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | MEREC objective weight validation |
-| [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers implied criterion weights from architecture outputs |
+| [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes the ChromaDB vector index from RAG scenario files (35 HVAC, 35 Appliance, 20 Shower). Computes SHA-256 of source files and stores schema version in collection metadata to detect when rebuild is needed. |
+| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1 accuracy, Kendall's τ, Spearman ρ, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters failed scenarios (sentinel 1928), matches to ground truth via (question/location, re-ranks with deterministic tie-break. Outputs metrics_summary_{MODEL_KEY}.xlsx. |
+| [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs updated ground truth scores back into RAG scenario workbooks after re-running Ground Truth Calculators. Matches on descriptor columns (not scenario_id) and validates all descriptors match before overwriting score columns. Run this after calculator updates, then re-run BuildRAG.py. |
+| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics (Kendall's τ, Spearman ρ, Top-1/Top-2) across 10 weight perturbation scenarios (±0.05 per criterion + equal weights). Verifies architecture ordering (Hybrid > RAG > Pure) is preserved. Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
+| [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Computes Shannon entropy weights from ground-truth score distributions overall and by decision type. Validates subjective weight allocation independently. Outputs entropy_weights.xlsx to Scoring Logic and Documentation/method/. |
+| [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | Computes MEREC objective weights per-scenario then averaged (not pooled). Robust to nonlinear value functions (comfort/practicality use log transforms). Reports per-scenario weight std dev and zero-variance scenario counts. Outputs merec_weights_summary.xlsx to Scoring Logic and Documentation/method/. |
+| [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers "implied weights" from ground-truth ranking structure using pairwise constrained linear regression (w ≥ 0, Σw = 1). Reveals which criteria actually discriminate between alternatives in practice. Outputs implied_weights_summary.xlsx to Scoring Logic and Documentation/method/. |
+| [RunBaselines.py](Miscellaneous Scripts/RunBaselines.py) | Computes 5 non-LLM baselines + Oracle upper bound: **Random** (1000 seeds, uniform noise), **Uniform** (all scores = 0.5), **Fixed-Default** (GT calculators with fixed default params: R-15/SEER-13/HVAC-age-13, appliance-age-11, GPM-2.5/tank-50/temp-120), **Nearest-Neighbor** (k=3 retrieval from RAG corpus, mean exemplar scores), **Oracle** (true GT scores read directly). Outputs to Output Files/Baselines/. |
+| [RunRAGAblations.py](Miscellaneous Scripts/RunRAGAblations.py) | Runs 9 RAG retrieval/exemplar ablations on stratified sample (default 15 scenarios × 3 types): Control (k=3, scores+ranks+hidden params), Random exemplars, No exemplars, Descriptions without scores/ranks, Exemplars without hidden params, Retrieval k=1, Retrieval k=5, Alternate embedding (paraphrase-MiniLM-L3-v2), Nearest-neighbor (no LLM). Outputs rag_ablation_results.xlsx, summary tables, plots, and Markdown report. |
+| [EvaluateHybridExtraction.py](Miscellaneous Scripts/EvaluateHybridExtraction.py) | Evaluates Hybrid architecture's LLM parameter extraction against ground truth: numeric params (r_value, seer, hvac_age, kwh_per_cycle, gpm, tank_size, water_heater_temp) → MAE/RMSE/percentiles; categorical params (occupancy_context, appliance, baseline_time) → accuracy; counterfactual top-1 sensitivity (does extraction error flip the recommended alternative?). Outputs hybrid_parameter_evaluation.md. |
+| [GenerateBaselineTable.py](Miscellaneous Scripts/GenerateBaselineTable.py) | Reads metrics_summary_{MODEL_KEY}.xlsx (from CalculateMetrics.py --include-baselines) and generates incremental contribution table comparing all 8 systems (5 baselines + 3 LLM architectures). Outputs console table, LaTeX (paper-ready), and CSV. Default baseline for deltas: FixedDefault. |
 
 ---
 
