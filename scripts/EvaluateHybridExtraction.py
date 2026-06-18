@@ -512,7 +512,8 @@ def evaluate(args) -> Dict:
     sensitivity_summary = []
     if not cf_df.empty:
         for (decision_type, parameter), rows in cf_df.groupby(["decision_type", "parameter"]):
-            rows = rows[rows.get("error", "").map(lambda v: _clean_text(v) == "")]
+            if "error" in rows.columns:
+                rows = rows[rows["error"].map(lambda v: _clean_text(str(v)) == "")]
             n_evaluated = len(rows)
             n_changes = int(rows["changed"].sum()) if n_evaluated else 0
             denominator_all = int((pd.DataFrame(numeric_rows).assign(decision_type=lambda d: d["decision_type"], parameter=lambda d: d["parameter"]) if numeric_rows else pd.DataFrame()).shape[0])
