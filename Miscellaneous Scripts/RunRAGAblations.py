@@ -50,6 +50,9 @@ DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 ALTERNATE_EMBEDDING_MODEL = "sentence-transformers/paraphrase-MiniLM-L3-v2"
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
+
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")

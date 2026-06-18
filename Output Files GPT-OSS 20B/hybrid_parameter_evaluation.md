@@ -2,7 +2,7 @@
 
 ## Overview
 
-- Results file: `Output Files GPT-OSS 20B\hybrid_results.xlsx`
+- Results file: `C:\Users\Ahaan\LLM-MCDA Paper\Output Files GPT-OSS 20B\hybrid_results.xlsx`
 - Matched scenarios: 181/195
 - Unmatched scenarios: 14
 - Counterfactual rows evaluated: 0
