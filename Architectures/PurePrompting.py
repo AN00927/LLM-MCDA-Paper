@@ -59,6 +59,8 @@ from sentinel_utils import (
     _is_complete_run_file,
     has_sentinel_scores,
     read_table_clean,
+    SENTINEL_VALUE,
+    SENTINEL_FLOAT,
 )
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
@@ -298,17 +300,17 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     diagnostics.setdefault("failure_types", [])
 
     api_fallback_scores = {
-        "energy_cost": 1928,
-        "environmental": 1928,
-        "comfort": 1928,
-        "practicality": 1928,
+        "energy_cost": SENTINEL_VALUE,
+        "environmental": SENTINEL_VALUE,
+        "comfort": SENTINEL_VALUE,
+        "practicality": SENTINEL_VALUE,
     }
 
     parse_failure_scores = {
-        "energy_cost": 1928,
-        "environmental": 1928,
-        "comfort": 1928,
-        "practicality": 1928,
+        "energy_cost": SENTINEL_VALUE,
+        "environmental": SENTINEL_VALUE,
+        "comfort": SENTINEL_VALUE,
+        "practicality": SENTINEL_VALUE,
     }
 
     if not response:
@@ -336,8 +338,8 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
         validated_scores = {}
         for criterion in ["energy_cost", "environmental", "comfort", "practicality"]:
             if criterion not in scores:
-                logging.warning(f"Missing score for {criterion}; using sentinel 1928")
-                validated_scores[criterion] = 1928
+                logging.warning(f"Missing score for {criterion}; using sentinel {SENTINEL_VALUE}")
+                validated_scores[criterion] = SENTINEL_VALUE
                 validation_failed = True
                 validation_failure_types.add("failed_missing_score")
                 continue
@@ -349,13 +351,13 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
                 if 0.0 <= raw_value <= 1.0:
                     validated_scores[criterion] = raw_value
                 else:
-                    logging.warning(f"Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
-                    validated_scores[criterion] = 1928
+                    logging.warning(f"Out-of-range score for {criterion}: {raw_value}; using sentinel {SENTINEL_VALUE}")
+                    validated_scores[criterion] = SENTINEL_VALUE
                     validation_failed = True
                     validation_failure_types.add("failed_out_of_bounds")
             else:
                 logging.warning(f"Invalid score type for {criterion}: {raw_score}")
-                validated_scores[criterion] = 1928
+                validated_scores[criterion] = SENTINEL_VALUE
                 validation_failed = True
                 validation_failure_types.add("failed_invalid_score_type")
 
