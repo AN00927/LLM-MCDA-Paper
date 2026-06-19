@@ -31,6 +31,8 @@ from sentinel_utils import (
     _is_complete_run_file,
     has_sentinel_scores,
     read_table_clean,
+    SENTINEL_VALUE,
+    SENTINEL_FLOAT,
 )
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
@@ -601,8 +603,8 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     if not valid_pairs:
         return {
             'ranked_alternatives': [],
-            'ranks': [1928] * len(alternatives),
-            'weighted_scores': [1928] * len(alternatives)
+            'ranks': [SENTINEL_VALUE] * len(alternatives),
+            'weighted_scores': [SENTINEL_FLOAT] * len(alternatives)
         }
 
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
@@ -650,10 +652,10 @@ def run_scenario(scenario: Dict) -> Dict:
                 neutral_alternatives.append({
                     'alternative': str(alt),
                     'scores': {
-                        'energy_cost': 1928,
-                        'environmental': 1928,
-                        'comfort': 1928,
-                        'practicality': 1928
+                        'energy_cost': SENTINEL_VALUE,
+                        'environmental': SENTINEL_VALUE,
+                        'comfort': SENTINEL_VALUE,
+                        'practicality': SENTINEL_VALUE
                     }
                 })
 
@@ -680,10 +682,10 @@ def run_scenario(scenario: Dict) -> Dict:
             zero_alternatives.append({
                 'alternative': f'Alternative {i} (extraction failed)',
                 'scores': {
-                    'energy_cost': 1928,
-                    'environmental': 1928,
-                    'comfort': 1928,
-                    'practicality': 1928
+                    'energy_cost': SENTINEL_VALUE,
+                    'environmental': SENTINEL_VALUE,
+                    'comfort': SENTINEL_VALUE,
+                    'practicality': SENTINEL_VALUE
                 }
             })
 
@@ -750,10 +752,10 @@ def run_scenario(scenario: Dict) -> Dict:
             zero_alternatives.append({
                 'alternative': str(alt),
                 'scores': {
-                    'energy_cost': 1928,
-                    'environmental': 1928,
-                    'comfort': 1928,
-                    'practicality': 1928
+                    'energy_cost': SENTINEL_VALUE,
+                    'environmental': SENTINEL_VALUE,
+                    'comfort': SENTINEL_VALUE,
+                    'practicality': SENTINEL_VALUE
                 }
             })
 
@@ -865,18 +867,18 @@ def run_test_set(test_path: str, output_path: str,
                     {
                         'alternative': str(alt),
                         'scores': {
-                            'energy_cost': 1928,
-                            'environmental': 1928,
-                            'comfort': 1928,
-                            'practicality': 1928
+                            'energy_cost': SENTINEL_VALUE,
+                            'environmental': SENTINEL_VALUE,
+                            'comfort': SENTINEL_VALUE,
+                            'practicality': SENTINEL_VALUE
                         }
                     }
                     for alt in fallback_alternatives
                 ],
                 'ranking_result': {
                     'ranked_alternatives': [],
-                    'ranks': [1928, 1928, 1928],
-                    'weighted_scores': [1928, 1928, 1928]
+                    'ranks': [SENTINEL_VALUE, SENTINEL_VALUE, SENTINEL_VALUE],
+                    'weighted_scores': [SENTINEL_FLOAT, SENTINEL_FLOAT, SENTINEL_FLOAT]
                 },
                 'extraction_diagnostics': {
                     'attempts': 0,
