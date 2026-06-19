@@ -80,3 +80,5 @@ prompt
 extracontext.md
 run_benchmarks.py
 Output Files
+REFACTORING_PLAN.md
+REFACTORING_TODO.md

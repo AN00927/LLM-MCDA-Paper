@@ -35,6 +35,8 @@ from sentinel_utils import (
     format_embedding_text,
     has_sentinel_scores,
     read_table_clean,
+    SENTINEL_VALUE,
+    SENTINEL_FLOAT,
 )
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
@@ -468,8 +470,8 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     ]
 
     sentinel_scores = {
-        'energy_cost': 1928, 'environmental': 1928,
-        'comfort': 1928, 'practicality': 1928, '_failed': True,
+        'energy_cost': SENTINEL_VALUE, 'environmental': SENTINEL_VALUE,
+        'comfort': SENTINEL_VALUE, 'practicality': SENTINEL_VALUE, '_failed': True,
     }
 
     try:
@@ -515,8 +517,8 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
     for criterion in ['energy_cost', 'environmental', 'comfort', 'practicality']:
         if criterion not in parsed:
-            logger.info(f"   Missing score for {criterion}; using sentinel 1928")
-            scores[criterion] = 1928
+            logger.info(f"   Missing score for {criterion}; using sentinel {SENTINEL_VALUE}")
+            scores[criterion] = SENTINEL_VALUE
             validation_failed = True
             validation_failure_types.add('failed_missing_score')
             continue
@@ -527,13 +529,13 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             if 0.0 <= raw_value <= 1.0:
                 scores[criterion] = raw_value
             else:
-                logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel 1928")
-                scores[criterion] = 1928
+                logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel {SENTINEL_VALUE}")
+                scores[criterion] = SENTINEL_VALUE
                 validation_failed = True
                 validation_failure_types.add('failed_out_of_bounds')
         else:
-            logger.info(f"   Invalid score type for {criterion}: {raw_score}; using sentinel 1928")
-            scores[criterion] = 1928
+            logger.info(f"   Invalid score type for {criterion}: {raw_score}; using sentinel {SENTINEL_VALUE}")
+            scores[criterion] = SENTINEL_VALUE
             validation_failed = True
             validation_failure_types.add('failed_invalid_score_type')
 
@@ -571,16 +573,16 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     if not valid_pairs:
         return {
             'ranked_alternatives': [],
-            'ranks': [1928] * len(alternatives),
-            'weighted_scores': [1928] * len(alternatives)
+            'ranks': [SENTINEL_VALUE] * len(alternatives),
+            'weighted_scores': [SENTINEL_FLOAT] * len(alternatives)
         }
 
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the indices lined up with the original alternatives
-    ranks = [1928] * len(alternatives)
-    weighted_scores = [1928] * len(alternatives)
+    ranks = [SENTINEL_VALUE] * len(alternatives)
+    weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
         ranks[input_idx] = rank_position + 1
         weighted_scores[input_idx] = ws
@@ -750,8 +752,8 @@ def run_test_set(test_path: str, output_path: str,
                 ],
                 'ranking_result': {
                     'ranked_alternatives': [],
-                    'ranks': [1928, 1928, 1928],
-                    'weighted_scores': [1928, 1928, 1928]
+                    'ranks': [SENTINEL_VALUE, SENTINEL_VALUE, SENTINEL_VALUE],
+                    'weighted_scores': [SENTINEL_FLOAT, SENTINEL_FLOAT, SENTINEL_FLOAT]
                 },
                 'diagnostics': {
                     'api_calls': 0,
@@ -813,12 +815,12 @@ def run_test_set(test_path: str, output_path: str,
             scores = alt_data['scores']
 
             if scenario_failed:
-                energy_cost = 1928
-                environmental = 1928
-                comfort = 1928
-                practicality = 1928
-                rank = 1928
-                weighted_score = 1928
+                energy_cost = SENTINEL_VALUE
+                environmental = SENTINEL_VALUE
+                comfort = SENTINEL_VALUE
+                practicality = SENTINEL_VALUE
+                rank = SENTINEL_VALUE
+                weighted_score = SENTINEL_FLOAT
             else:
                 energy_cost = scores['energy_cost']
                 environmental = scores['environmental']
@@ -932,12 +934,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
-    SENTINEL = 1928
 
     for c in CRITERIA_COLS:
         combined[c] = pd.to_numeric(combined[c], errors="coerce")
         # Treat exact sentinel float as a failed row
-        combined.loc[combined[c] == SENTINEL, c] = np.nan
+        combined.loc[combined[c] == SENTINEL_FLOAT, c] = np.nan
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     META_COLS = [
@@ -971,16 +972,16 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
-        avg[c] = avg[c].fillna(SENTINEL)
+        avg[c] = avg[c].fillna(SENTINEL_FLOAT)
 
     # Re-rank each scenario using the averaged scores
-    avg["rank"] = int(SENTINEL)
-    avg["weighted_score"] = float(SENTINEL)
+    avg["rank"] = int(SENTINEL_VALUE)
+    avg["weighted_score"] = float(SENTINEL_FLOAT)
 
     for sid in avg["scenario_id"].unique():
         sc_mask = avg["scenario_id"] == sid
         sc = avg[sc_mask]
-        valid_idx = sc.index[~sc[CRITERIA_COLS].eq(SENTINEL).any(axis=1)]
+        valid_idx = sc.index[~sc[CRITERIA_COLS].eq(SENTINEL_FLOAT).any(axis=1)]
         if len(valid_idx) > 0:
             ws = (
                 avg.loc[valid_idx, "energy_cost"] * CRITERION_WEIGHTS["energy_cost"] +
