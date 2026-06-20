@@ -14,11 +14,11 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 ## Layout
 
-- `Architectures/` — `PurePrompting.py`, `RAGDatabaseOptimized.py`, `Hybrid.py`. Each
+- `Architectures/` — `Direct_LLM_Prompting.py`, `Example-Guided_LLM scoring.py.py`, `LLM-Parameterized_Reference_Scoring.py`. Each
   runs the benchmark via `run_multi_and_aggregate` and writes to the model's output
   folder.
 - `Ground Truth Calculators/` — `{HVAC,Appliance,Shower}GroundTruthCalculator.py`. The
-  deterministic physics. Hybrid imports these at runtime; run a file directly to
+  deterministic physics. LLM-Parameterized_Reference_Scoring imports these at runtime; run a file directly to
   regenerate its `Ground Truth/ground_truth_*.xlsx`.
 - `Scenario Files/` — masters live in `ConsolidatedforSimaltaneousediting.xlsx`;
   `rebuild_consolidated.py` derives `TestScenarios.xlsx` + the 3 `*RAGScenarios.xlsx`
@@ -32,7 +32,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 - Set `OPENROUTER_API_KEY` in `.env`. Pick the model with `MODEL_KEY` and runs with
   `N_RUNS` in [model_config.py](model_config.py); output routes to that model's folder.
-- Run an architecture: `python Architectures/PurePrompting.py` (resp. RAG / Hybrid).
+- Run an architecture: `python Architectures/Direct_LLM_Prompting.py` (resp. RAG / LLM-Parameterized_Reference_Scoring).
   Runs are resume-aware (a complete per-run xlsx is skipped).
 - RAG requires a current Chroma index — run `BuildRAG.py` first.
 
@@ -52,7 +52,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   - `insulation` (Poor/Medium/Good) ⟷ `r_value` (R-11/13/19)
   - `flow_rate` (low_flow/standard/high_flow) ⟷ `gpm`
   - `appliance_age` band ⟷ raw years (→ `kwh_per_cycle`)
-  - Hybrid's extraction prompt asks ONLY for the true/engineering params it must
+  - LLM-Parameterized_Reference_Scoring's extraction prompt asks ONLY for the true/engineering params it must
     estimate; homeowner facts + alternatives come from the scenario sheet.
 - **Banded labels** (`house_age`, `appliance_age`, `flow_rate`) are produced by the
   single-source helpers in `sentinel_utils` (`*_to_band_label`, `gpm_to_flow_rate_label`)
@@ -69,7 +69,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   VALIDATION only — they triangulate the 35/30/20/15 weights. No architecture or
   calculator may import them or change weights at runtime.
 - **RAG schema version** is in lockstep: `BuildRAG.RAG_SCHEMA_VERSION` ==
-  `RAGDatabaseOptimized.EXPECTED_RAG_SCHEMA_VERSION` (currently **4**). Bump BOTH on any
+  `Example-Guided_LLM scoring.py.EXPECTED_RAG_SCHEMA_VERSION` (currently **4**). Bump BOTH on any
   change to the embedding string or Chroma metadata; the source-file SHA only catches
   sheet edits, not embedding-code changes — so a code-only change needs a version bump.
 

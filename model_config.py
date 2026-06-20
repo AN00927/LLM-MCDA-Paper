@@ -101,7 +101,7 @@ FAILED_INVALID_SCORE_TYPE = "FAILED_INVALID_SCORE_TYPE"
 FAILED_API_EXHAUSTED = "FAILED_API_EXHAUSTED"
 FAILED_UNKNOWN = "FAILED_UNKNOWN"
 
-# Hybrid-specific
+# LLM-Parameterized_Reference_Scoring-specific
 FAILED_EXTRACTION_NON_JSON_WRAPPER = "FAILED_EXTRACTION_NON_JSON_WRAPPER"
 FAILED_EXTRACTION_INVALID_DECISION_TYPE = "FAILED_EXTRACTION_INVALID_DECISION_TYPE"
 FAILED_EXTRACTION_INVALID_CALCULATOR = "FAILED_EXTRACTION_INVALID_CALCULATOR"
@@ -119,19 +119,19 @@ FAILED_GROUND_TRUTH_MISSING_KEY = "FAILED_GROUND_TRUTH_MISSING_KEY"
 """
 This section documents the canonical variable name plan for future implementation:
 
-1. Hybrid.py internal variables:
+1. LLM-Parameterized_Reference_Scoring.py internal variables:
    - Canonical `extracted_result` instead of `extraction_result`.
    - Canonical `extraction_diagnostics` instead of `extraction_diag`.
    - Keep input `decision_type` separate from LLM-extracted `extracted_decision_type`.
    - Canonical `failure_types` instead of `extraction_failure_types` / `failure_types_out`.
 
-2. PurePrompting.py internal variables:
+2. Direct_LLM_Prompting.py internal variables:
    - Canonical `scenario_diagnostics` (per-scenario) instead of `diagnostics`.
    - Canonical `cumulative_diagnostics` (final/cumulative metrics) instead of `total_diagnostics`.
    - Canonical `alternatives_scores` instead of `alt_scores` / `alternatives_scores`.
    - Canonical `scenario_failed` boolean flag instead of reading `diag.get("scenario_failed")`.
 
-3. RAGDatabaseOptimized.py internal variables:
+3. Example-Guided_LLM scoring.py.py internal variables:
    - Canonical `alternatives_scores` instead of `alternative`.
    - Canonical `cumulative_diagnostics` instead of `total_diagnostics`.
    - Canonical `ranking_results` instead of `ranking_result`.
@@ -152,6 +152,6 @@ This section documents the canonical variable name plan for future implementatio
    - `rank` (int): Calculated alternative rank (1-3) or sentinel.
    - `weighted_score` (float): Calculated multi-attribute score or sentinel.
    - `calculator` (str): Ground truth calculator name used.
-   - `extraction_failed` (bool): (Hybrid only) True if LLM parameter extraction failed.
-   - `gt_calculation_failed` (bool): (Hybrid only) True if downstream calculator raised an exception.
+   - `extraction_failed` (bool): (LLM-Parameterized_Reference_Scoring only) True if LLM parameter extraction failed.
+   - `gt_calculation_failed` (bool): (LLM-Parameterized_Reference_Scoring only) True if downstream calculator raised an exception.
 """

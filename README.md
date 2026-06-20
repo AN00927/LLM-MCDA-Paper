@@ -148,9 +148,9 @@ Metrics from [Artificial Analysis](https://artificialanalysis.ai/models/deepseek
 ```
 LLM-MCDA-Paper/
 ├── Architectures/
-│   ├── Hybrid.py
-│   ├── PurePrompting.py
-│   └── RAGDatabaseOptimized.py
+│   ├── LLM-Parameterized_Reference_Scoring.py
+│   ├── Direct_LLM_Prompting.py
+│   └── Example-Guided_LLM scoring.py.py
 ├── Ground Truth/
 │   ├── ground_truth_appliance.xlsx     # 300 rows (100 scenarios × 3 alternatives)
 │   ├── ground_truth_hvac.xlsx          # 315 rows (105 scenarios × 3 alternatives)
@@ -163,7 +163,7 @@ LLM-MCDA-Paper/
 │   ├── BuildRAG.py
 │   ├── CalculateMetrics.py
 │   ├── EntropyWeights.py
-│   ├── EvaluateHybridExtraction.py
+│   ├── EvaluateLLM-Parameterized_Reference_ScoringExtraction.py
 │   ├── GenerateBaselineTable.py
 │   ├── ImpliedWeights.py
 │   ├── MERCECWeights.py
@@ -219,7 +219,7 @@ LLM-MCDA-Paper/
 - **API calls per 10-run benchmark:** 5,850
 - **Vector DB:** ChromaDB with sentence-transformers embeddings
 
-### 3. Hybrid (AI Extraction + Deterministic Calculator)
+### 3. LLM-Parameterized_Reference_Scoring (AI Extraction + Deterministic Calculator)
 
 - **Approach:** LLM extracts structured engineering parameters (SEER tier, appliance age kWh/cycle, GPM estimate, etc.) from the natural-language description; a deterministic MAVT calculator runs the physics
 - **Input:** Scenario description → LLM parameter extraction → ground-truth-style calculator
@@ -234,7 +234,7 @@ LLM-MCDA-Paper/
 | --- | --- | --- |
 | Pure | 5,850 | 23,400 |
 | RAG | 5,850 | 23,400 |
-| Hybrid | 1,950 | 7,800 |
+| LLM-Parameterized_Reference_Scoring | 1,950 | 7,800 |
 | **Total** | **13,650** | **54,600** |
 
 ---
@@ -266,7 +266,7 @@ The ground-truth calculators receive exact engineering values; architectures rec
 | | | Washer: 0.15–0.45 kWh/cycle | |
 | | | Dryer: 1.15–3.50 kWh/cycle | |
 
-The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. The Hybrid architecture infers structured estimates of these parameters before invoking the calculator.
+The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. The LLM-Parameterized_Reference_Scoring architecture infers structured estimates of these parameters before invoking the calculator.
 
 ---
 
@@ -400,13 +400,13 @@ Two scripts independently validate the subjective MAVT weights against the groun
 | [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes the ChromaDB vector index from RAG scenario files (35 HVAC, 35 Appliance, 20 Shower). Computes SHA-256 of source files and stores schema version in collection metadata to detect when rebuild is needed. |
 | [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1 accuracy, Kendall's τ, Spearman ρ, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters failed scenarios (sentinel 1928), matches to ground truth via (question/location, re-ranks with deterministic tie-break. Outputs metrics_summary_{MODEL_KEY}.xlsx. |
 | [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs updated ground truth scores back into RAG scenario workbooks after re-running Ground Truth Calculators. Matches on descriptor columns (not scenario_id) and validates all descriptors match before overwriting score columns. Run this after calculator updates, then re-run BuildRAG.py. |
-| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics (Kendall's τ, Spearman ρ, Top-1/Top-2) across 10 weight perturbation scenarios (±0.05 per criterion + equal weights). Verifies architecture ordering (Hybrid > RAG > Pure) is preserved. Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
+| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics (Kendall's τ, Spearman ρ, Top-1/Top-2) across 10 weight perturbation scenarios (±0.05 per criterion + equal weights). Verifies architecture ordering (LLM-Parameterized_Reference_Scoring > RAG > Pure) is preserved. Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
 | [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Computes Shannon entropy weights from ground-truth score distributions overall and by decision type. Validates subjective weight allocation independently. Outputs entropy_weights.xlsx to Scoring Logic and Documentation/method/. |
 | [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | Computes MEREC objective weights per-scenario then averaged (not pooled). Robust to nonlinear value functions (comfort/practicality use log transforms). Reports per-scenario weight std dev and zero-variance scenario counts. Outputs merec_weights_summary.xlsx to Scoring Logic and Documentation/method/. |
 | [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers "implied weights" from ground-truth ranking structure using pairwise constrained linear regression (w ≥ 0, Σw = 1). Reveals which criteria actually discriminate between alternatives in practice. Outputs implied_weights_summary.xlsx to Scoring Logic and Documentation/method/. |
 | [RunBaselines.py](Miscellaneous Scripts/RunBaselines.py) | Computes 5 non-LLM baselines + Oracle upper bound: **Random** (1000 seeds, uniform noise), **Uniform** (all scores = 0.5), **Fixed-Default** (GT calculators with fixed default params: R-15/SEER-13/HVAC-age-13, appliance-age-11, GPM-2.5/tank-50/temp-120), **Nearest-Neighbor** (k=3 retrieval from RAG corpus, mean exemplar scores), **Oracle** (true GT scores read directly). Outputs to Output Files/Baselines/. |
 | [RunRAGAblations.py](Miscellaneous Scripts/RunRAGAblations.py) | Runs 9 RAG retrieval/exemplar ablations on stratified sample (default 15 scenarios × 3 types): Control (k=3, scores+ranks+hidden params), Random exemplars, No exemplars, Descriptions without scores/ranks, Exemplars without hidden params, Retrieval k=1, Retrieval k=5, Alternate embedding (paraphrase-MiniLM-L3-v2), Nearest-neighbor (no LLM). Outputs rag_ablation_results.xlsx, summary tables, plots, and Markdown report. |
-| [EvaluateHybridExtraction.py](Miscellaneous Scripts/EvaluateHybridExtraction.py) | Evaluates Hybrid architecture's LLM parameter extraction against ground truth: numeric params (r_value, seer, hvac_age, kwh_per_cycle, gpm, tank_size, water_heater_temp) → MAE/RMSE/percentiles; categorical params (occupancy_context, appliance, baseline_time) → accuracy; counterfactual top-1 sensitivity (does extraction error flip the recommended alternative?). Outputs hybrid_parameter_evaluation.md. |
+| [EvaluateLLM-Parameterized_Reference_ScoringExtraction.py](Miscellaneous Scripts/EvaluateLLM-Parameterized_Reference_ScoringExtraction.py) | Evaluates LLM-Parameterized_Reference_Scoring architecture's LLM parameter extraction against ground truth: numeric params (r_value, seer, hvac_age, kwh_per_cycle, gpm, tank_size, water_heater_temp) → MAE/RMSE/percentiles; categorical params (occupancy_context, appliance, baseline_time) → accuracy; counterfactual top-1 sensitivity (does extraction error flip the recommended alternative?). Outputs LLM-Parameterized_Reference_Scoring_parameter_evaluation.md. |
 | [GenerateBaselineTable.py](Miscellaneous Scripts/GenerateBaselineTable.py) | Reads metrics_summary_{MODEL_KEY}.xlsx (from CalculateMetrics.py --include-baselines) and generates incremental contribution table comparing all 8 systems (5 baselines + 3 LLM architectures). Outputs console table, LaTeX (paper-ready), and CSV. Default baseline for deltas: FixedDefault. |
 
 ---

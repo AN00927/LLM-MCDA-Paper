@@ -250,12 +250,12 @@ def _build_ground_truth_scenario(decision_type: str, test_row: pd.Series, gt_row
     return base
 
 
-def _load_hybrid_results(path: Path) -> pd.DataFrame:
+def _load_LLM_Parameterized_Reference_Scoring_results(path: Path) -> pd.DataFrame:
     df = read_table_clean(path)
     required = ["scenario_id", "question", "location", "decision_type"]
     missing = [col for col in required if col not in df.columns]
     if missing:
-        raise ValueError(f"Hybrid results missing required columns: {missing}")
+        raise ValueError(f"LLM-Parameterized_Reference_Scoring results missing required columns: {missing}")
     if "input_decision_type" in df.columns:
         df["decision_type"] = df["decision_type"].replace("", np.nan).fillna(df["input_decision_type"])
     df = df.drop_duplicates(["scenario_id"], keep="first").copy()
@@ -299,16 +299,16 @@ def _match_ground_truth(test_row: pd.Series, gt_df: pd.DataFrame) -> Optional[pd
     return None
 
 
-def _extracted_value(hybrid_row: pd.Series, parameter: str) -> object:
+def _extracted_value(LLM_Parameterized_Reference_Scoring_row: pd.Series, parameter: str) -> object:
     col = f"extracted_{parameter}"
-    if col not in hybrid_row.index:
+    if col not in LLM_Parameterized_Reference_Scoring_row.index:
         return ""
-    return hybrid_row.get(col, "")
+    return LLM_Parameterized_Reference_Scoring_row.get(col, "")
 
 
-def _evaluate_numeric(decision_type: str, parameter: str, hybrid_row: pd.Series, gt_row: pd.Series) -> Dict:
+def _evaluate_numeric(decision_type: str, parameter: str, LLM_Parameterized_Reference_Scoring_row: pd.Series, gt_row: pd.Series) -> Dict:
     gt = _to_float(gt_row.get(parameter))
-    extracted = _to_float(_extracted_value(hybrid_row, parameter))
+    extracted = _to_float(_extracted_value(LLM_Parameterized_Reference_Scoring_row, parameter))
     if pd.isna(gt) or pd.isna(extracted):
         return {"parameter": parameter, "decision_type": decision_type, "valid": False, "missing_gt": pd.isna(gt), "missing_extracted": pd.isna(extracted)}
     signed_error = extracted - gt
@@ -323,9 +323,9 @@ def _evaluate_numeric(decision_type: str, parameter: str, hybrid_row: pd.Series,
     }
 
 
-def _evaluate_categorical(decision_type: str, parameter: str, hybrid_row: pd.Series, gt_row: pd.Series) -> Dict:
+def _evaluate_categorical(decision_type: str, parameter: str, LLM_Parameterized_Reference_Scoring_row: pd.Series, gt_row: pd.Series) -> Dict:
     gt = _normalize_categorical(gt_row.get(parameter, ""), parameter)
-    extracted = _normalize_categorical(_extracted_value(hybrid_row, parameter), parameter)
+    extracted = _normalize_categorical(_extracted_value(LLM_Parameterized_Reference_Scoring_row, parameter), parameter)
     if not gt or not extracted:
         return {
             "parameter": parameter,
@@ -430,7 +430,7 @@ def _format_md_table(df: pd.DataFrame, float_cols=None, max_rows: Optional[int] 
 def _write_report(path: Path, sections: Dict[str, str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        f.write("# Hybrid Parameter Extraction Evaluation\n\n")
+        f.write("# LLM-Parameterized_Reference_Scoring Parameter Extraction Evaluation\n\n")
         for title, body in sections.items():
             f.write(f"## {title}\n\n{body}\n\n")
 
@@ -440,7 +440,7 @@ def evaluate(args) -> Dict:
     output_path = Path(args.output)
     scenario_dir = Path(args.scenario_dir)
     test_df = _load_test_scenarios(scenario_dir / "TestScenarios.xlsx")
-    hybrid_df = _load_hybrid_results(results_path)
+    LLM_Parameterized_Reference_Scoring_df = _load_LLM_Parameterized_Reference_Scoring_results(results_path)
 
     numeric_rows = []
     categorical_rows = []
@@ -448,14 +448,14 @@ def evaluate(args) -> Dict:
     matched = 0
     unmatched = 0
 
-    for _, hybrid_row in hybrid_df.iterrows():
-        sid = hybrid_row.get("scenario_id")
+    for _, LLM_Parameterized_Reference_Scoring_row in LLM_Parameterized_Reference_Scoring_df.iterrows():
+        sid = LLM_Parameterized_Reference_Scoring_row.get("scenario_id")
         test_match = test_df[test_df["scenario_id"].astype(int) == int(sid)]
         if test_match.empty:
             unmatched += 1
             continue
         test_row = test_match.iloc[0]
-        decision_type = _clean_text(hybrid_row.get("decision_type")) or _clean_text(test_row.get("decision_type"))
+        decision_type = _clean_text(LLM_Parameterized_Reference_Scoring_row.get("decision_type")) or _clean_text(test_row.get("decision_type"))
         gt_df = _load_ground_truth(decision_type, scenario_dir)
         gt_row = _match_ground_truth(test_row, gt_df)
         if gt_row is None:
@@ -464,13 +464,13 @@ def evaluate(args) -> Dict:
         matched += 1
         params = PARAMETER_MAP.get(decision_type, {"numeric": [], "categorical": []})
         for parameter in params["numeric"]:
-            numeric_rows.append(_evaluate_numeric(decision_type, parameter, hybrid_row, gt_row))
+            numeric_rows.append(_evaluate_numeric(decision_type, parameter, LLM_Parameterized_Reference_Scoring_row, gt_row))
         for parameter in params["categorical"]:
-            categorical_rows.append(_evaluate_categorical(decision_type, parameter, hybrid_row, gt_row))
+            categorical_rows.append(_evaluate_categorical(decision_type, parameter, LLM_Parameterized_Reference_Scoring_row, gt_row))
 
         gt_scenario = _build_ground_truth_scenario(decision_type, test_row, gt_row)
         for parameter in params["numeric"] + params["categorical"]:
-            extracted = _extracted_value(hybrid_row, parameter)
+            extracted = _extracted_value(LLM_Parameterized_Reference_Scoring_row, parameter)
             if parameter in params["numeric"]:
                 extracted_value = _to_float(extracted)
                 gt_value = _to_float(gt_row.get(parameter))
@@ -534,8 +534,8 @@ def evaluate(args) -> Dict:
     categorical_df = pd.DataFrame(categorical_summary)
     sensitivity_df = pd.DataFrame(sensitivity_summary)
 
-    print("\nHYBRID PARAMETER EXTRACTION EVALUATION")
-    print(f"Matched scenarios: {matched}/{len(hybrid_df)}")
+    print("\nLLM-Parameterized_Reference_Scoring PARAMETER EXTRACTION EVALUATION")
+    print(f"Matched scenarios: {matched}/{len(LLM_Parameterized_Reference_Scoring_df)}")
     if unmatched:
         print(f"Unmatched scenarios: {unmatched}")
     if not numeric_df.empty:
@@ -551,7 +551,7 @@ def evaluate(args) -> Dict:
     sections = {
         "Overview": (
             f"- Results file: `{results_path}`\n"
-            f"- Matched scenarios: {matched}/{len(hybrid_df)}\n"
+            f"- Matched scenarios: {matched}/{len(LLM_Parameterized_Reference_Scoring_df)}\n"
             f"- Unmatched scenarios: {unmatched}\n"
             f"- Counterfactual rows evaluated: {len(cf_df)}"
         ),
@@ -591,15 +591,15 @@ def evaluate(args) -> Dict:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Evaluate Hybrid parameter extraction against source scenario ground truth.")
+    parser = argparse.ArgumentParser(description="Evaluate LLM-Parameterized_Reference_Scoring parameter extraction against source scenario ground truth.")
     parser.add_argument(
         "--results",
-        default=str(PROJECT_ROOT / get_output_folder() / "hybrid_results.xlsx"),
-        help="Path to aggregated hybrid_results.xlsx or a per-run hybrid_results_run_XX.xlsx.",
+        default=str(PROJECT_ROOT / get_output_folder() / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
+        help="Path to aggregated LLM-Parameterized_Reference_Scoring_results.xlsx or a per-run LLM-Parameterized_Reference_Scoring_results_run_XX.xlsx.",
     )
     parser.add_argument(
         "--output",
-        default=str(PROJECT_ROOT / get_output_folder() / "hybrid_parameter_evaluation.md"),
+        default=str(PROJECT_ROOT / get_output_folder() / "LLM-Parameterized_Reference_Scoring_parameter_evaluation.md"),
         help="Markdown report output path.",
     )
     parser.add_argument(

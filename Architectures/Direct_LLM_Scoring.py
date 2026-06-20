@@ -27,7 +27,7 @@ These sources were used to help build prompts:
  Lewis, P., et al. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks.
  NeurIPS 2020. https://proceedings.neurips.cc/paper/2020/file/6b493230205f780e1bc26945df7481e5-Paper.pdf
 
- 4. Hybrid parameter extraction ("extract parameters then compute")
+ 4. LLM-Parameterized_Reference_Scoring parameter extraction ("extract parameters then compute")
  Khot, T., et al. (2023). Decomposed prompting: A modular approach for solving complex tasks.
  ICLR 2023. https://arxiv.org/abs/2210.02406
 
