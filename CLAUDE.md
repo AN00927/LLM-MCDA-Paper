@@ -14,7 +14,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 ## Layout
 
-- `Architectures/` — `Direct_LLM_Prompting.py`, `Example-Guided_LLM scoring.py.py`, `LLM-Parameterized_Reference_Scoring.py`. Each
+- `Architectures/` — `Direct_LLM_Prompting.py`, `Eample-Guided_LLM_Scoring.py.py`, `LLM-Parameterized_Reference_Scoring.py`. Each
   runs the benchmark via `run_multi_and_aggregate` and writes to the model's output
   folder.
 - `Ground Truth Calculators/` — `{HVAC,Appliance,Shower}GroundTruthCalculator.py`. The
@@ -69,7 +69,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   VALIDATION only — they triangulate the 35/30/20/15 weights. No architecture or
   calculator may import them or change weights at runtime.
 - **RAG schema version** is in lockstep: `BuildRAG.RAG_SCHEMA_VERSION` ==
-  `Example-Guided_LLM scoring.py.EXPECTED_RAG_SCHEMA_VERSION` (currently **4**). Bump BOTH on any
+  `Eample-Guided_LLM_Scoring.py.EXPECTED_RAG_SCHEMA_VERSION` (currently **4**). Bump BOTH on any
   change to the embedding string or Chroma metadata; the source-file SHA only catches
   sheet edits, not embedding-code changes — so a code-only change needs a version bump.
 

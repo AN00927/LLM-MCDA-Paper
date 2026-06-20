@@ -32,7 +32,7 @@ DUMP_DIR = os.path.join(HERE, "rebuild_dumps")
 BACKUP_DIR = os.path.join(HERE, "Backups")  # timestamped backups of exported standalone files
 
 # Single source of truth for the two derived labels (also used by BuildRAG /
-# Example-Guided_LLM scoring.pycoring.py) so the band/flow buckets can never drift between the
+# Eample-Guided_LLM_Scoring.pycoring.py) so the band/flow buckets can never drift between the
 # scenario sheets and the RAG index. This is the only repo import rebuild makes.
 PROJECT_ROOT = os.path.dirname(HERE)
 if PROJECT_ROOT not in sys.path:

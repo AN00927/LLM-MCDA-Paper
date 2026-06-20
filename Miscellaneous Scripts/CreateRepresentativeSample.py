@@ -32,13 +32,6 @@ Option B — replace `stratified_sample` in RunRAGAblations.py:
 
     # Then in run():
     sample = stratified_sample(groups_by_type, sample_size, args.seed)
-
-Recommendation
---------------
-For published results: use --sample-size all (90 scenarios) — no sampling needed.
-For a cost-constrained smoke test: use --sample-size 33 with this function.
-    33 scenarios = 11 of each pool, and the feature-stratified draw will
-    hit all major parameter ranges and cover all 11 HVAC strata.
 """
 
 import argparse
