@@ -1,8 +1,8 @@
-# Hybrid Parameter Extraction Evaluation
+# LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring Parameter Extraction Evaluation
 
 ## Overview
 
-- Results file: `C:\Users\Ahaan\LLM-MCDA Paper\Output Files GPT-OSS 20B\hybrid_results.xlsx`
+- Results file: `C:\Users\Ahaan\LLM-MCDA Paper\Output Files GPT-OSS 20B\LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring_results.xlsx`
 - Matched scenarios: 181/195
 - Unmatched scenarios: 14
 - Counterfactual rows evaluated: 0

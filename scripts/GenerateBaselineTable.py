@@ -5,7 +5,7 @@ GenerateBaselineTable.py - Incremental Contribution Table Generator
 Reads metrics_summary_{MODEL_KEY}.xlsx (produced by CalculateMetrics.py with --include-baselines)
 and prints/saves the incremental contribution table comparing all 8 systems:
 - 5 baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)
-- 3 LLM architectures (Pure, RAG, Hybrid)
+- 3 LLM architectures (Pure, RAG, LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring)
 
 Output formats: Console (formatted), LaTeX (paper-ready), CSV (for further analysis)
 """
@@ -46,7 +46,7 @@ def extract_key_metrics(metrics_df):
     )
     
     # Ensure all architectures are present
-    expected_archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "Hybrid"]
+    expected_archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring"]
     for arch in expected_archs:
         if arch not in pivot.index:
             pivot.loc[arch] = np.nan

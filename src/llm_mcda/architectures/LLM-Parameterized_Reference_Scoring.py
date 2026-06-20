@@ -67,21 +67,21 @@ try:
         "HVACGroundTruthCalculator.py", "HVACGroundTruthCalculator"
     )
 except Exception as e:
-    raise RuntimeError(f"Cannot initialize Hybrid without HVAC calculator: {e}") from e
+    raise RuntimeError(f"Cannot initialize LLM-Parameterized_Reference_Scoring without HVAC calculator: {e}") from e
 
 try:
     ApplianceGroundTruthCalculator = _load_calculator_class(
         "ApplianceGroundTruthCalculator.py", "ApplianceGroundTruthCalculator"
     )
 except Exception as e:
-    raise RuntimeError(f"Cannot initialize Hybrid without Appliance calculator: {e}") from e
+    raise RuntimeError(f"Cannot initialize LLM-Parameterized_Reference_Scoring without Appliance calculator: {e}") from e
 
 try:
     ShowerGroundTruthCalculator = _load_calculator_class(
         "ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"
     )
 except Exception as e:
-    raise RuntimeError(f"Cannot initialize Hybrid without Shower calculator: {e}") from e
+    raise RuntimeError(f"Cannot initialize LLM-Parameterized_Reference_Scoring without Shower calculator: {e}") from e
 
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
@@ -96,10 +96,10 @@ MODEL_ID = get_model_id()
 REASONING_PAYLOAD = get_reasoning_payload()
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
-OUTPUT_CSV = OUTPUT_DIR / "hybrid_results.xlsx"
-OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "hybrid_results_diagnostics.json"
+OUTPUT_CSV = OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results.xlsx"
+OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results_diagnostics.json"
 
-HYBRID_RESULT_FIELDNAMES = [
+LLM-Parameterized_Reference_Scoring_RESULT_FIELDNAMES = [
     'scenario_id', 'question', 'location',
     'input_decision_type', 'extracted_decision_type', 'decision_type',
     'outdoor_temp', 'appliance_age', 'flow_rate',
@@ -113,17 +113,17 @@ HYBRID_RESULT_FIELDNAMES = [
     'rank', 'weighted_score',
 ]
 
-HYBRID_NUMERIC_EXTRACTED_COLS = [
+LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS = [
     'extracted_r_value', 'extracted_seer', 'extracted_hvac_age',
     'extracted_kwh_per_cycle', 'extracted_gpm',
     'extracted_tank_size', 'extracted_water_heater_temp',
 ]
-HYBRID_CATEGORICAL_EXTRACTED_COLS = [
+LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS = [
     'extracted_occupancy_context', 'extracted_appliance', 'extracted_baseline_time',
 ]
 
 
-HYBRID_FAILURE_COUNTER_KEYS = [
+LLM-Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS = [
     FAILED_EXTRACTION_NON_JSON_WRAPPER,
     EXTRACTION_INVALID_JSON,
     FAILED_EXTRACTION_INVALID_DECISION_TYPE,
@@ -146,7 +146,7 @@ HYBRID_FAILURE_COUNTER_KEYS = [
 # a perfect (zero-cost / zero-emission) score and corrupt the benchmark. The
 # string fields ('occupancy_context', 'appliance', 'baseline_time') are validated
 # separately by the calculators themselves and are not range-checked here.
-HYBRID_NUMERIC_PARAM_BOUNDS = {
+LLM-Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS = {
     "HVAC": {
         "r_value": (1.0, 60.0),      # whole-wall R; R-1..R-60 spans all residential assemblies
         "seer": (6.0, 30.0),         # rated SEER of any fielded residential AC
@@ -173,7 +173,7 @@ def _validate_numeric_params(decision_type: str, params: Dict) -> List[str]:
     """
     import math
     bad = []
-    for key, (lo, hi) in HYBRID_NUMERIC_PARAM_BOUNDS.get(decision_type, {}).items():
+    for key, (lo, hi) in LLM-Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS.get(decision_type, {}).items():
         if key not in params:
             continue  # presence is handled by the required_params check
         try:
@@ -187,20 +187,20 @@ def _validate_numeric_params(decision_type: str, params: Dict) -> List[str]:
 
 
 def _init_failure_counters() -> Dict[str, int]:
-    return {key: 0 for key in HYBRID_FAILURE_COUNTER_KEYS}
+    return {key: 0 for key in LLM-Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS}
 
 
 def _extracted_parameter_cells(extracted_result: Optional[Dict]) -> Dict:
     params = (extracted_result or {}).get('parameters', {})
-    cells = {col: '' for col in HYBRID_NUMERIC_EXTRACTED_COLS + HYBRID_CATEGORICAL_EXTRACTED_COLS}
-    for col in HYBRID_NUMERIC_EXTRACTED_COLS:
+    cells = {col: '' for col in LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS + LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS}
+    for col in LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS:
         key = col.removeprefix('extracted_')
         if key in params:
             try:
                 cells[col] = float(params[key])
             except (TypeError, ValueError):
                 cells[col] = ''
-    for col in HYBRID_CATEGORICAL_EXTRACTED_COLS:
+    for col in LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS:
         key = col.removeprefix('extracted_')
         if key in params:
             value = params[key]
@@ -998,14 +998,14 @@ def run_test_set(test_path: str, output_path: str,
                 'weighted_score': weighted_score,
             })
 
-    _atomic_write_xlsx(pd.DataFrame(rows, columns=HYBRID_RESULT_FIELDNAMES), output_csv_path)
+    _atomic_write_xlsx(pd.DataFrame(rows, columns=LLM-Parameterized_Reference_Scoring_RESULT_FIELDNAMES), output_csv_path)
     print(f" Results saved to: {output_csv_path}")
 
     _atomic_write_json(cumulative_diagnostics, output_diagnostics_path)
     print(f" Diagnostics saved to: {output_diagnostics_path}")
 
 
-    print(f"HYBRID TEST COMPLETE")
+    print(f"LLM-Parameterized_Reference_Scoring TEST COMPLETE")
     print(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
     print(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
     print(f"Successful calls: {cumulative_diagnostics['successful_calls']}")
@@ -1088,8 +1088,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     STABLE_META_COLS = ["question", "location", "outdoor_temp", "appliance_age", "flow_rate", "calculator"]
-    PARAMETER_NUMERIC_COLS = HYBRID_NUMERIC_EXTRACTED_COLS
-    PARAMETER_CATEGORICAL_COLS = HYBRID_CATEGORICAL_EXTRACTED_COLS
+    PARAMETER_NUMERIC_COLS = LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS
+    PARAMETER_CATEGORICAL_COLS = LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS
     # extracted_alternative is per-run diagnostic — keep one example via .first()
     OPTIONAL_META_COLS = ["extracted_alternative"]
     BOOL_META_COLS = ["extraction_failed", "gt_calculation_failed"]
@@ -1191,8 +1191,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "scenario_id", "question", "location", "decision_type",
         "input_decision_type", "extracted_decision_type",
         "outdoor_temp", "appliance_age", "flow_rate",
-        *HYBRID_NUMERIC_EXTRACTED_COLS,
-        *HYBRID_CATEGORICAL_EXTRACTED_COLS,
+        *LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS,
+        *LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS,
         "calculator", "extraction_failed", "gt_calculation_failed", "alternative",
         "energy_cost", "environmental", "comfort", "practicality",
         "rank", "weighted_score",
@@ -1213,7 +1213,7 @@ def main():
     if not TEST_SCENARIOS.exists():
         raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS}")
 
-    print("Starting Hybrid Architecture Test...")
+    print("Starting LLM-Parameterized_Reference_Scoring Architecture Test...")
     print(f"Model: {MODEL_ID}")
     print(f"Temperature: {TEMPERATURE}")
 
@@ -1222,7 +1222,7 @@ def main():
         base_output_csv=str(OUTPUT_CSV),
         base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
     )
-    print("HYBRID MULTI-RUN COMPLETE")
+    print("LLM-Parameterized_Reference_Scoring MULTI-RUN COMPLETE")
 
 
 if __name__ == "__main__":

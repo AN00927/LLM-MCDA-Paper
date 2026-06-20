@@ -3,7 +3,7 @@
 calculate_metrics.py - Metrics evaluation for MCDA architecture comparison
 Science Fair Project: LLM-assisted MCDA for Household Emissions Optimization
 
-Compares Pure Prompting, RAG-Enhanced, and Hybrid architectures against
+Compares Pure Prompting, RAG-Enhanced, and LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoring architectures against
 physics-based ground truth using MAVT scoring across HVAC, Appliance,
 and Shower decision scenarios.
 """
@@ -61,7 +61,7 @@ CONFIG = {
     "architectures": {
         "Pure": str(OUTPUT_DIR / "pure_prompting_results.xlsx"),
         "RAG": str(OUTPUT_DIR / "rag_results.xlsx"),
-        "Hybrid": str(OUTPUT_DIR / "hybrid_results.xlsx"),
+        "LLM-Parameterized_Reference_Scoring": str(OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
     },
     "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.xlsx"),
     "gt_score_cols": {
@@ -699,7 +699,7 @@ def compute_ranking_metrics(merged_df):
 
 def compute_failure_rate(arch_df):
     """Failure rate for any architecture. Detects failures via the 1928 sentinel
-    in score columns. For Hybrid, also reports extraction/calculation breakdown."""
+    in score columns. For LLM-Parameterized_Reference_Scoring, also reports extraction/calculation breakdown."""
     n_total = arch_df["scenario_id"].nunique()
     n_failed = 0
 
@@ -724,7 +724,7 @@ def compute_failure_rate(arch_df):
         "total_failure_rate": round(n_failed / n_total, 4) if n_total else 0,
     }
 
-    # Hybrid-specific breakdown
+    # LLM-Parameterized_Reference_Scoring-specific breakdown
     if "extraction_failed" in arch_df.columns:
         n_ef = n_cf = 0
         for sid in arch_df["scenario_id"].unique():
@@ -751,7 +751,7 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     The schema differs per architecture:
       Pure/RAG: failed_malformed_json, failed_missing_score, failed_out_of_bounds,
                 failed_invalid_score_type, failed_unknown
-      Hybrid:   failed_extraction_*, failed_ground_truth_calculation_exception,
+      LLM-Parameterized_Reference_Scoring:   failed_extraction_*, failed_ground_truth_calculation_exception,
                 failed_unknown
 
     Counters present in the JSON are summed; counters absent in a schema are
@@ -786,19 +786,19 @@ def _load_diagnostics_json(arch_path_str, arch_name):
 
     # Identify failure counters present in the data (schema-agnostic).
     # Keep aligned with PURE_FAILURE_COUNTER_KEYS / RAG_FAILURE_COUNTER_KEYS /
-    # HYBRID_FAILURE_COUNTER_KEYS in the architecture modules.
+    # LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring_FAILURE_COUNTER_KEYS in the architecture modules.
     PURE_RAG_COUNTERS = [
         EXTRACTION_INVALID_JSON, FAILED_MISSING_SCORE, FAILED_OUT_OF_BOUNDS,
         FAILED_INVALID_SCORE_TYPE, FAILED_API_EXHAUSTED, FAILED_UNKNOWN
     ]
-    HYBRID_COUNTERS = [
+    LLM_Parameterized_Reference_Scoring_COUNTERS = [
         FAILED_EXTRACTION_NON_JSON_WRAPPER, EXTRACTION_INVALID_JSON,
         FAILED_EXTRACTION_INVALID_DECISION_TYPE, FAILED_EXTRACTION_INVALID_CALCULATOR,
         FAILED_EXTRACTION_MISSING_PARAMETERS, FAILED_EXTRACTION_EXCEPTION,
         FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION, FAILED_GROUND_TRUTH_MISSING_KEY,
         FAILED_API_EXHAUSTED, FAILED_UNKNOWN
     ]
-    expected_counters = HYBRID_COUNTERS if arch_name == "Hybrid" else PURE_RAG_COUNTERS
+    expected_counters = LLM_Parameterized_Reference_Scoring_COUNTERS if arch_name == "LLM-Parameterized_Reference_Scoring" else PURE_RAG_COUNTERS
 
     result["diag_total_scenarios"] = summed.get("total_scenarios", np.nan)
     result["diag_failed_scenarios"] = summed.get("failed_scenarios", np.nan)
@@ -888,9 +888,9 @@ def evaluate_all(config, include_baselines=False):
 
     # Determine architecture list based on whether baselines are included
     if include_baselines:
-        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "Hybrid"]
+        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
     else:
-        arch_list = ["Pure", "RAG", "Hybrid"]
+        arch_list = ["Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
 
     for arch_name in arch_list:
         merged = merged_dfs[arch_name]
@@ -1040,9 +1040,9 @@ def evaluate_all(config, include_baselines=False):
         return f"{int(val):>10}" if is_int else f"{val:>10.4f}"
 
     if include_baselines:
-        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "Hybrid"]
+        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
     else:
-        archs = ["Pure", "RAG", "Hybrid"]
+        archs = ["Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
 
     # Overall table
     header = f"  {'Metric':<24}" + "".join(f"{a:>10}" for a in archs)
