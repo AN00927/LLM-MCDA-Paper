@@ -150,7 +150,7 @@ LLM-MCDA-Paper/
 ├── Architectures/
 │   ├── LLM-Parameterized_Reference_Scoring.py
 │   ├── Direct_LLM_Prompting.py
-│   └── Example-Guided_LLM scoring.py.py
+│   └── Eample-Guided_LLM_Scoring.py.py
 ├── Ground Truth/
 │   ├── ground_truth_appliance.xlsx     # 300 rows (100 scenarios × 3 alternatives)
 │   ├── ground_truth_hvac.xlsx          # 315 rows (105 scenarios × 3 alternatives)

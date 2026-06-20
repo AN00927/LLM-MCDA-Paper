@@ -93,7 +93,7 @@ def load_shower_data(csv_dir: str) -> pd.DataFrame:
 
 def format_scenario_text(row, decision_type: str) -> str:
     """Embedding document for a scenario (delegates to the shared builder so the
-    index side stays byte-identical to Example-Guided_LLM scoring.py's query side)."""
+    index side stays byte-identical to Eample-Guided_LLM_Scoring.py's query side)."""
     return format_embedding_text(decision_type, row)
 
 
@@ -306,7 +306,7 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     print(f"Total scenarios: {total_scenarios}")
     print(f"Database location: {CHROMA_DB_PATH}")
     print(f"Collection name: {COLLECTION_NAME}")
-    print(f"\nTo use in Example-Guided_LLM scoring.py.py:")
+    print(f"\nTo use in Eample-Guided_LLM_Scoring.py.py:")
     print(f"  client = chromadb.PersistentClient(path='{CHROMA_DB_PATH}')")
     print(f"  collection = client.get_collection('{COLLECTION_NAME}')")
 

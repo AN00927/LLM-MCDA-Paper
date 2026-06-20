@@ -63,7 +63,7 @@ weighted sum. They differ only in **how each alternative is scored**.
   size, housing type, *house-age band*, utility budget. It never sees R-value,
   SEER, GPM, kWh/cycle, tank size, or occupancy context.
 
-### 2.2 RAG-Enhanced — [`Example-Guided_LLM scoring.py.py`](Architectures/Example-Guided_LLM scoring.py.py)
+### 2.2 RAG-Enhanced — [`Eample-Guided_LLM_Scoring.py.py`](Architectures/Eample-Guided_LLM_Scoring.py.py)
 
 - **3 API calls per scenario.** Before scoring each alternative, it retrieves the
   top *k* = 3 most similar **RAG** scenarios from a ChromaDB index
