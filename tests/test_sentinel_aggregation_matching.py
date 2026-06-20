@@ -32,6 +32,21 @@ from sentinel_utils import (
     SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA,
     coerce_score, is_sentinel, has_sentinel_scores, coerce_score_series,
 )
+from model_config import (
+    EXTRACTION_INVALID_JSON,
+    FAILED_MISSING_SCORE,
+    FAILED_OUT_OF_BOUNDS,
+    FAILED_INVALID_SCORE_TYPE,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN,
+    FAILED_EXTRACTION_NON_JSON_WRAPPER,
+    FAILED_EXTRACTION_INVALID_DECISION_TYPE,
+    FAILED_EXTRACTION_INVALID_CALCULATOR,
+    FAILED_EXTRACTION_MISSING_PARAMETERS,
+    FAILED_EXTRACTION_EXCEPTION,
+    FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
+    FAILED_GROUND_TRUTH_MISSING_KEY,
+)
 
 # ---------------------------------------------------------------------------
 # Lazy import helpers — only pull in CalculateMetrics when needed
@@ -179,7 +194,7 @@ VALID_ROW_TEMPLATE = {
 
 FAILED_ROW_TEMPLATE = {
     **VALID_ROW_TEMPLATE,
-    "energy_cost": 1928, "environmental": 1928, "comfort": 1928, "practicality": 1928,
+    "energy_cost": SENTINEL_VALUE, "environmental": SENTINEL_VALUE, "comfort": SENTINEL_VALUE, "practicality": SENTINEL_VALUE,
 }
 
 
@@ -281,18 +296,18 @@ class TestLoadDiagnosticsJson:
             "successful_scenarios": 8,
             "failed_calls": 4,
             "successful_calls": 26,
-            "failed_malformed_json": 1,
-            "failed_missing_score": 1,
-            "failed_out_of_bounds": 0,
-            "failed_invalid_score_type": 0,
-            "failed_unknown": 2,
+            EXTRACTION_INVALID_JSON: 1,
+            FAILED_MISSING_SCORE: 1,
+            FAILED_OUT_OF_BOUNDS: 0,
+            FAILED_INVALID_SCORE_TYPE: 0,
+            FAILED_UNKNOWN: 2,
         })
         result = self._cm._load_diagnostics_json(str(results_path), "Pure")
         assert result["diag_failed_scenarios"] == 2
-        assert result["diag_failed_malformed_json"] == 1
-        assert result["diag_failed_missing_score"] == 1
+        assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 1
+        assert result[f"diag_{FAILED_MISSING_SCORE}"] == 1
         # Hybrid counter should NOT appear in Pure result
-        assert "diag_failed_extraction_invalid_json" not in result
+        assert f"diag_{FAILED_EXTRACTION_INVALID_DECISION_TYPE}" not in result
 
     def test_hybrid_counters_loaded(self, tmp_path):
         results_path = tmp_path / "hybrid_results.xlsx"
@@ -304,14 +319,14 @@ class TestLoadDiagnosticsJson:
             "successful_scenarios": 4,
             "failed_calls": 1,
             "successful_calls": 4,
-            "failed_extraction_invalid_json": 1,
-            "failed_ground_truth_calculation_exception": 0,
-            "failed_unknown": 0,
+            EXTRACTION_INVALID_JSON: 1,
+            FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION: 0,
+            FAILED_UNKNOWN: 0,
         })
         result = self._cm._load_diagnostics_json(str(results_path), "Hybrid")
-        assert result["diag_failed_extraction_invalid_json"] == 1
+        assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 1
         # Pure counter should NOT appear in Hybrid result
-        assert "diag_failed_malformed_json" not in result
+        assert f"diag_{FAILED_MISSING_SCORE}" not in result
 
     def test_no_diag_file_graceful(self, tmp_path):
         results_path = tmp_path / "pure_prompting_results.xlsx"
@@ -325,12 +340,12 @@ class TestLoadDiagnosticsJson:
         results_path.touch()
         for i in (1, 2):
             p = tmp_path / f"pure_prompting_results_diagnostics_run_{i:02d}.json"
-            self._write_diag(p, {"failed_scenarios": 1, "failed_malformed_json": 1,
+            self._write_diag(p, {"failed_scenarios": 1, EXTRACTION_INVALID_JSON: 1,
                                   "total_scenarios": 5})
         result = self._cm._load_diagnostics_json(str(results_path), "Pure")
         assert result["diag_files_loaded"] == 2
         assert result["diag_failed_scenarios"] == 2      # 1+1
-        assert result["diag_failed_malformed_json"] == 2  # 1+1
+        assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 2  # 1+1
 
 
 # ===========================================================================
