@@ -44,7 +44,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import (
     CRITERION_WEIGHTS,
     get_model_id,
-    get_output_folder,
+    get_output_folder_for_model_id,
     get_reasoning_payload,
     N_RUNS,
     TEMPERATURE,
@@ -70,10 +70,7 @@ from sentinel_utils import (
 )
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
-OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUT_XLSX = OUTPUT_DIR / "pure_prompting_results.xlsx"
-OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "pure_prompting_results_diagnostics.json"
+
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
@@ -827,7 +824,12 @@ def main():
         logging.error(f" Input validation error: {e}")
         return
 
-    run_multi_and_aggregate(str(TEST_SCENARIOS), str(OUTPUT_XLSX), str(OUTPUT_DIAGNOSTICS))
+    output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_xlsx = output_dir / "pure_prompting_results.xlsx"
+    output_diagnostics = output_dir / "pure_prompting_results_diagnostics.json"
+
+    run_multi_and_aggregate(str(TEST_SCENARIOS), str(output_xlsx), str(output_diagnostics))
     logging.info("PURE PROMPTING MULTI-RUN COMPLETE")
 
 

@@ -16,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import (
     CRITERION_WEIGHTS,
     get_model_id,
-    get_output_folder,
+    get_output_folder_for_model_id,
     get_reasoning_payload,
     N_RUNS,
     TEMPERATURE,
@@ -48,8 +48,6 @@ from sentinel_utils import (
 )
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
-OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"
 
 def _load_calculator_class(module_filename: str, class_name: str):
@@ -95,11 +93,16 @@ OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 MODEL_ID = get_model_id()
 REASONING_PAYLOAD = get_reasoning_payload()
 
-TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
-OUTPUT_CSV = OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results.xlsx"
-OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results_diagnostics.json"
+API_CONFIG = {
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "model": MODEL_ID,
+    "temperature": TEMPERATURE,
+    "reasoning": REASONING_PAYLOAD,
+}
 
-LLM-Parameterized_Reference_Scoring_RESULT_FIELDNAMES = [
+TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+
+LLM_Parameterized_Reference_Scoring_RESULT_FIELDNAMES = [
     'scenario_id', 'question', 'location',
     'input_decision_type', 'extracted_decision_type', 'decision_type',
     'outdoor_temp', 'appliance_age', 'flow_rate',
@@ -113,17 +116,17 @@ LLM-Parameterized_Reference_Scoring_RESULT_FIELDNAMES = [
     'rank', 'weighted_score',
 ]
 
-LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS = [
+LLM_Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS = [
     'extracted_r_value', 'extracted_seer', 'extracted_hvac_age',
     'extracted_kwh_per_cycle', 'extracted_gpm',
     'extracted_tank_size', 'extracted_water_heater_temp',
 ]
-LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS = [
+LLM_Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS = [
     'extracted_occupancy_context', 'extracted_appliance', 'extracted_baseline_time',
 ]
 
 
-LLM-Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS = [
+LLM_Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS = [
     FAILED_EXTRACTION_NON_JSON_WRAPPER,
     EXTRACTION_INVALID_JSON,
     FAILED_EXTRACTION_INVALID_DECISION_TYPE,
@@ -146,7 +149,7 @@ LLM-Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS = [
 # a perfect (zero-cost / zero-emission) score and corrupt the benchmark. The
 # string fields ('occupancy_context', 'appliance', 'baseline_time') are validated
 # separately by the calculators themselves and are not range-checked here.
-LLM-Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS = {
+LLM_Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS = {
     "HVAC": {
         "r_value": (1.0, 60.0),      # whole-wall R; R-1..R-60 spans all residential assemblies
         "seer": (6.0, 30.0),         # rated SEER of any fielded residential AC
@@ -173,7 +176,7 @@ def _validate_numeric_params(decision_type: str, params: Dict) -> List[str]:
     """
     import math
     bad = []
-    for key, (lo, hi) in LLM-Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS.get(decision_type, {}).items():
+    for key, (lo, hi) in LLM_Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS.get(decision_type, {}).items():
         if key not in params:
             continue  # presence is handled by the required_params check
         try:
@@ -187,20 +190,20 @@ def _validate_numeric_params(decision_type: str, params: Dict) -> List[str]:
 
 
 def _init_failure_counters() -> Dict[str, int]:
-    return {key: 0 for key in LLM-Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS}
+    return {key: 0 for key in LLM_Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS}
 
 
 def _extracted_parameter_cells(extracted_result: Optional[Dict]) -> Dict:
     params = (extracted_result or {}).get('parameters', {})
-    cells = {col: '' for col in LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS + LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS}
-    for col in LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS:
+    cells = {col: '' for col in LLM_Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS + LLM_Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS}
+    for col in LLM_Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS:
         key = col.removeprefix('extracted_')
         if key in params:
             try:
                 cells[col] = float(params[key])
             except (TypeError, ValueError):
                 cells[col] = ''
-    for col in LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS:
+    for col in LLM_Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS:
         key = col.removeprefix('extracted_')
         if key in params:
             value = params[key]
@@ -270,9 +273,13 @@ For Shower decisions:
 Return ONLY the JSON, no explanation.
 """
 
-def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
-                     temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
-    url = "https://openrouter.ai/api/v1/chat/completions"
+def query_openrouter(messages: List[Dict], model: str = None,
+                     temperature: float = None) -> Tuple[str, Dict]:
+    if model is None:
+        model = API_CONFIG["model"]
+    if temperature is None:
+        temperature = API_CONFIG["temperature"]
+    url = API_CONFIG["endpoint"]
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -285,8 +292,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         "messages": messages,
         "temperature": temperature,
     }
-    if REASONING_PAYLOAD:
-        payload["reasoning"] = REASONING_PAYLOAD
+    reasoning_payload = API_CONFIG["reasoning"]
+    if reasoning_payload:
+        payload["reasoning"] = reasoning_payload
 
     attempt = 0
     retry_forever = MAX_RETRIES <= 0
@@ -998,7 +1006,7 @@ def run_test_set(test_path: str, output_path: str,
                 'weighted_score': weighted_score,
             })
 
-    _atomic_write_xlsx(pd.DataFrame(rows, columns=LLM-Parameterized_Reference_Scoring_RESULT_FIELDNAMES), output_csv_path)
+    _atomic_write_xlsx(pd.DataFrame(rows, columns=LLM_Parameterized_Reference_Scoring_RESULT_FIELDNAMES), output_csv_path)
     print(f" Results saved to: {output_csv_path}")
 
     _atomic_write_json(cumulative_diagnostics, output_diagnostics_path)
@@ -1088,8 +1096,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
 
     GROUP_KEYS = ["scenario_id", "alternative"]
     STABLE_META_COLS = ["question", "location", "outdoor_temp", "appliance_age", "flow_rate", "calculator"]
-    PARAMETER_NUMERIC_COLS = LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS
-    PARAMETER_CATEGORICAL_COLS = LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS
+    PARAMETER_NUMERIC_COLS = LLM_Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS
+    PARAMETER_CATEGORICAL_COLS = LLM_Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS
     # extracted_alternative is per-run diagnostic — keep one example via .first()
     OPTIONAL_META_COLS = ["extracted_alternative"]
     BOOL_META_COLS = ["extraction_failed", "gt_calculation_failed"]
@@ -1191,8 +1199,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "scenario_id", "question", "location", "decision_type",
         "input_decision_type", "extracted_decision_type",
         "outdoor_temp", "appliance_age", "flow_rate",
-        *LLM-Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS,
-        *LLM-Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS,
+        *LLM_Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS,
+        *LLM_Parameterized_Reference_Scoring_CATEGORICAL_EXTRACTED_COLS,
         "calculator", "extraction_failed", "gt_calculation_failed", "alternative",
         "energy_cost", "environmental", "comfort", "practicality",
         "rank", "weighted_score",
@@ -1214,13 +1222,18 @@ def main():
         raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS}")
 
     print("Starting LLM-Parameterized_Reference_Scoring Architecture Test...")
-    print(f"Model: {MODEL_ID}")
-    print(f"Temperature: {TEMPERATURE}")
+    print(f"Model: {API_CONFIG['model']}")
+    print(f"Temperature: {API_CONFIG['temperature']}")
+
+    output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_csv = output_dir / "LLM-Parameterized_Reference_Scoring_results.xlsx"
+    output_diagnostics = output_dir / "LLM-Parameterized_Reference_Scoring_results_diagnostics.json"
 
     run_multi_and_aggregate(
         test_csv_path=str(TEST_SCENARIOS),
-        base_output_csv=str(OUTPUT_CSV),
-        base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
+        base_output_csv=str(output_csv),
+        base_diagnostics_path=str(output_diagnostics),
     )
     print("LLM-Parameterized_Reference_Scoring MULTI-RUN COMPLETE")
 
