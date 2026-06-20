@@ -28,6 +28,7 @@ from model_config import (
     get_model_id,
     get_output_folder,
     get_reasoning_payload,
+    MODEL_SPECS,
 )
 import importlib.util
 
@@ -79,16 +80,6 @@ ABLATION_SPECS = OrderedDict([
         "label": "Random exemplars k=3",
         "k": 3,
         "retrieval": "random",
-        "embedding_model": DEFAULT_EMBEDDING_MODEL,
-        "include_hidden_params": True,
-        "include_scores": True,
-        "include_ranks": True,
-        "llm": True,
-    }),
-    ("no_exemplars", {
-        "label": "No exemplars",
-        "k": 0,
-        "retrieval": "none",
         "embedding_model": DEFAULT_EMBEDDING_MODEL,
         "include_hidden_params": True,
         "include_scores": True,
@@ -548,7 +539,12 @@ def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
         "messages": messages,
         "temperature": TEMPERATURE,
     }
-    reasoning_payload = get_reasoning_payload()
+    model_key = None
+    for k, spec in MODEL_SPECS.items():
+        if spec["openrouter_id"] == model_id:
+            model_key = k
+            break
+    reasoning_payload = get_reasoning_payload(model_key) if model_key else get_reasoning_payload()
     if reasoning_payload:
         payload["reasoning"] = reasoning_payload
     last_error = None
@@ -847,7 +843,7 @@ def scenario_metrics(predictions: List[Dict], scenario: Dict) -> Dict:
 
 
 def scenario_level_df(rows_df: pd.DataFrame) -> pd.DataFrame:
-    return rows_df.drop_duplicates(["ablation_id", "ablation_label", "decision_type", "source_scenario_id"]).copy()
+    return rows_df.drop_duplicates(["model_key", "ablation_id", "ablation_label", "decision_type", "source_scenario_id"]).copy()
 
 
 def summarize_rows(rows: List[Dict]) -> pd.DataFrame:
@@ -859,8 +855,9 @@ def summarize_rows(rows: List[Dict]) -> pd.DataFrame:
         "success_rate",
     ]
     summaries = []
-    for (ablation_id, ablation_label), group in df.groupby(["ablation_id", "ablation_label"], dropna=False):
+    for (model_key, ablation_id, ablation_label), group in df.groupby(["model_key", "ablation_id", "ablation_label"], dropna=False):
         summary = {
+            "model_key": model_key,
             "ablation_id": ablation_id,
             "ablation_label": ablation_label,
             "n_scenarios": int(group["source_scenario_id"].nunique()),
@@ -883,8 +880,9 @@ def summarize_by_decision_type(rows: List[Dict]) -> pd.DataFrame:
     df = scenario_level_df(pd.DataFrame(rows))
     metric_cols = ["score_mae", "score_rmse", "kendall_tau", "spearman_rho", "top1_accuracy", "top2_accuracy"]
     summaries = []
-    for (ablation_id, ablation_label, decision_type), group in df.groupby(["ablation_id", "ablation_label", "decision_type"], dropna=False):
+    for (model_key, ablation_id, ablation_label, decision_type), group in df.groupby(["model_key", "ablation_id", "ablation_label", "decision_type"], dropna=False):
         summary = {
+            "model_key": model_key,
             "ablation_id": ablation_id,
             "ablation_label": ablation_label,
             "decision_type": decision_type,
@@ -896,73 +894,91 @@ def summarize_by_decision_type(rows: List[Dict]) -> pd.DataFrame:
     return pd.DataFrame(summaries)
 
 
-def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator, model_id: str) -> List[Dict]:
+def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator) -> List[Dict]:
     rows = []
     for ablation_id, spec in specs.items():
         temp_path, collection, model, groups_by_type = collections[spec["embedding_model"]]
         logging.info("Running ablation: %s", ablation_id)
-        for scenario in sample:
-            decision_type = scenario["decision_type"]
-            candidates = groups_by_type[decision_type]
-            if spec["retrieval"] == "none":
-                retrieved = []
-            elif spec["retrieval"] == "random":
-                retrieved = retrieve_random(model, scenario, candidates, spec["k"], rng)
-            else:
-                retrieved = retrieve_similar(collection, model, scenario, spec["k"])
+        
+        # Determine models to evaluate for this ablation
+        if spec["llm"]:
+            # Evaluate all models defined in MODEL_SPECS
+            eval_models = [(k, info["openrouter_id"]) for k, info in MODEL_SPECS.items()]
+        else:
+            # Offline evaluations do not use LLMs, so we run them once
+            eval_models = [("offline", "none")]
+            
+        for model_key, model_id in eval_models:
             if spec["llm"]:
-                result = llm_prediction(scenario, spec, retrieved, model_id)
+                logging.info("  Evaluating model: %s (%s)", model_key, model_id)
             else:
-                result = nearest_neighbor_prediction(scenario, retrieved)
-            predictions = result["predictions"]
-            diag = result["diagnostics"]
-            metrics = scenario_metrics(predictions, scenario)
-            mean_distance = float(np.mean([item["distance"] for item in retrieved])) if retrieved else np.nan
-            for pred in predictions:
-                rows.append({
-                    "ablation_id": ablation_id,
-                    "ablation_label": spec["label"],
-                    "sample_seed": int(scenario["source_scenario_id"]),
-                    "decision_type": decision_type,
-                    "source_scenario_id": int(scenario["source_scenario_id"]),
-                    "source_position": int(scenario["source_position"]),
-                    "question": scenario.get("question", ""),
-                    "location": scenario.get("location", ""),
-                    "retrieval_mode": spec["retrieval"],
-                    "embedding_model": spec["embedding_model"],
-                    "k": int(spec["k"]),
-                    "include_hidden_params": bool(spec["include_hidden_params"]),
-                    "include_scores": bool(spec["include_scores"]),
-                    "include_ranks": bool(spec["include_ranks"]),
-                    "llm": bool(spec["llm"]),
-                    "alternative": pred["alternative"],
-                    "pred_energy_cost": pred["scores"].get("energy_cost", SENTINEL),
-                    "pred_environmental": pred["scores"].get("environmental", SENTINEL),
-                    "pred_comfort": pred["scores"].get("comfort", SENTINEL),
-                    "pred_practicality": pred["scores"].get("practicality", SENTINEL),
-                    "pred_weighted_score": pred["weighted_score"],
-                    "pred_rank": pred["rank"],
-                    "gt_mavt_score": next((alt["mavt_score"] for alt in scenario["alternatives"] if alt["alternative"] == pred["alternative"]), np.nan),
-                    "gt_rank": next((alt["rank"] for alt in scenario["alternatives"] if alt["alternative"] == pred["alternative"]), SENTINEL),
-                    "mean_retrieval_distance": mean_distance,
-                    "retrieval_count": len(retrieved),
-                    "score_mae": metrics["score_mae"],
-                    "score_rmse": metrics["score_rmse"],
-                    "kendall_tau": metrics["kendall_tau"],
-                    "spearman_rho": metrics["spearman_rho"],
-                    "top1_correct": metrics["top1_correct"],
-                    "top2_correct": metrics["top2_correct"],
-                    "gt_top1": metrics["gt_top1"],
-                    "pred_top1": metrics["pred_top1"],
-                    "api_calls": int(diag.get("api_calls", 0)),
-                    "successful_calls": int(diag.get("successful_calls", 0)),
-                    "failed_calls": int(diag.get("failed_calls", 0)),
-                    "prompt_tokens": int(diag.get("prompt_tokens", 0)),
-                    "completion_tokens": int(diag.get("completion_tokens", 0)),
-                    "total_tokens": int(diag.get("total_tokens", 0)),
-                    "latency_ms": float(diag.get("latency_ms", 0.0)),
-                    "error": pred.get("error", ""),
-                })
+                logging.info("  Evaluating offline NN prediction")
+                
+            for scenario in sample:
+                decision_type = scenario["decision_type"]
+                candidates = groups_by_type[decision_type]
+                if spec["retrieval"] == "none":
+                    retrieved = []
+                elif spec["retrieval"] == "random":
+                    retrieved = retrieve_random(model, scenario, candidates, spec["k"], rng)
+                else:
+                    retrieved = retrieve_similar(collection, model, scenario, spec["k"])
+                    
+                if spec["llm"]:
+                    result = llm_prediction(scenario, spec, retrieved, model_id)
+                else:
+                    result = nearest_neighbor_prediction(scenario, retrieved)
+                    
+                predictions = result["predictions"]
+                diag = result["diagnostics"]
+                metrics = scenario_metrics(predictions, scenario)
+                mean_distance = float(np.mean([item["distance"] for item in retrieved])) if retrieved else np.nan
+                for pred in predictions:
+                    rows.append({
+                        "model_key": model_key,
+                        "ablation_id": ablation_id,
+                        "ablation_label": spec["label"],
+                        "sample_seed": int(scenario["source_scenario_id"]),
+                        "decision_type": decision_type,
+                        "source_scenario_id": int(scenario["source_scenario_id"]),
+                        "source_position": int(scenario["source_position"]),
+                        "question": scenario.get("question", ""),
+                        "location": scenario.get("location", ""),
+                        "retrieval_mode": spec["retrieval"],
+                        "embedding_model": spec["embedding_model"],
+                        "k": int(spec["k"]),
+                        "include_hidden_params": bool(spec["include_hidden_params"]),
+                        "include_scores": bool(spec["include_scores"]),
+                        "include_ranks": bool(spec["include_ranks"]),
+                        "llm": bool(spec["llm"]),
+                        "alternative": pred["alternative"],
+                        "pred_energy_cost": pred["scores"].get("energy_cost", SENTINEL),
+                        "pred_environmental": pred["scores"].get("environmental", SENTINEL),
+                        "pred_comfort": pred["scores"].get("comfort", SENTINEL),
+                        "pred_practicality": pred["scores"].get("practicality", SENTINEL),
+                        "pred_weighted_score": pred["weighted_score"],
+                        "pred_rank": pred["rank"],
+                        "gt_mavt_score": next((alt["mavt_score"] for alt in scenario["alternatives"] if alt["alternative"] == pred["alternative"]), np.nan),
+                        "gt_rank": next((alt["rank"] for alt in scenario["alternatives"] if alt["alternative"] == pred["alternative"]), SENTINEL),
+                        "mean_retrieval_distance": mean_distance,
+                        "retrieval_count": len(retrieved),
+                        "score_mae": metrics["score_mae"],
+                        "score_rmse": metrics["score_rmse"],
+                        "kendall_tau": metrics["kendall_tau"],
+                        "spearman_rho": metrics["spearman_rho"],
+                        "top1_correct": metrics["top1_correct"],
+                        "top2_correct": metrics["top2_correct"],
+                        "gt_top1": metrics["gt_top1"],
+                        "pred_top1": metrics["pred_top1"],
+                        "api_calls": int(diag.get("api_calls", 0)),
+                        "successful_calls": int(diag.get("successful_calls", 0)),
+                        "failed_calls": int(diag.get("failed_calls", 0)),
+                        "prompt_tokens": int(diag.get("prompt_tokens", 0)),
+                        "completion_tokens": int(diag.get("completion_tokens", 0)),
+                        "total_tokens": int(diag.get("total_tokens", 0)),
+                        "latency_ms": float(diag.get("latency_ms", 0.0)),
+                        "error": pred.get("error", ""),
+                    })
     return rows
 
 
@@ -1004,7 +1020,7 @@ def make_plots(summary_df: pd.DataFrame, output_dir: Path) -> List[Path]:
     if summary_df.empty:
         return []
     plot_paths = []
-    ordered = summary_df.sort_values("ablation_id")
+    ordered = summary_df.sort_values(["model_key", "ablation_id"])
     for metric, filename, ylabel in [
         ("top1_accuracy", "rag_ablation_top1_accuracy.png", "Top-1 accuracy"),
         ("score_mae", "rag_ablation_score_mae.png", "Score MAE"),
@@ -1012,12 +1028,12 @@ def make_plots(summary_df: pd.DataFrame, output_dir: Path) -> List[Path]:
     ]:
         if metric not in ordered.columns or ordered[metric].isna().all():
             continue
-        labels = ordered["ablation_label"].astype(str).tolist()
+        labels = (ordered["model_key"].astype(str) + " - " + ordered["ablation_label"].astype(str)).tolist()
         values = ordered[metric].astype(float).tolist()
-        fig, ax = plt.subplots(figsize=(10, 5))
+        fig, ax = plt.subplots(figsize=(12, 6))
         ax.bar(range(len(labels)), values, color="#4C78A8")
         ax.set_xticks(range(len(labels)))
-        ax.set_xticklabels(labels, rotation=35, ha="right")
+        ax.set_xticklabels(labels, rotation=45, ha="right")
         ax.set_ylabel(ylabel)
         ax.set_title(f"RAG ablation: {ylabel}")
         ax.grid(axis="y", alpha=0.3)
@@ -1056,16 +1072,16 @@ def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs
     sections.append("## Ablation Configurations\n\n" + _format_md_table(pd.DataFrame(config_rows)))
     sections.append("## Overall Summary\n\n" + _format_md_table(
         summary_df,
-        float_cols=[c for c in summary_df.columns if c not in {"ablation_id", "ablation_label", "n_scenarios"}],
+        float_cols=[c for c in summary_df.columns if c not in {"model_key", "ablation_id", "ablation_label", "n_scenarios"}],
     ))
     sections.append("## Summary by Decision Type\n\n" + _format_md_table(
         dtype_summary_df,
-        float_cols=[c for c in dtype_summary_df.columns if c not in {"ablation_id", "ablation_label", "decision_type", "n_scenarios"}],
+        float_cols=[c for c in dtype_summary_df.columns if c not in {"model_key", "ablation_id", "ablation_label", "decision_type", "n_scenarios"}],
     ))
     worst = rows_df.sort_values("score_mae", ascending=False).head(20) if not rows_df.empty else pd.DataFrame()
     sections.append("## Highest Score-MAE Cases\n\n" + _format_md_table(
         worst[[
-            "ablation_id", "decision_type", "source_scenario_id", "question", "alternative",
+            "model_key", "ablation_id", "decision_type", "source_scenario_id", "question", "alternative",
             "score_mae", "kendall_tau", "gt_top1", "pred_top1", "error",
         ]] if not worst.empty else worst,
         float_cols=["score_mae", "kendall_tau"],
@@ -1099,7 +1115,7 @@ def run(args) -> Dict:
         collections[embedding_model_name] = build_collection(embedding_model_name, temp_root)
 
     rng = np.random.default_rng(args.seed)
-    rows = build_result_rows(sample, specs, collections, rng, get_model_id())
+    rows = build_result_rows(sample, specs, collections, rng)
     rows_df = pd.DataFrame(rows)
     rows_df["top1_accuracy"] = rows_df["top1_correct"].astype(float)
     rows_df["top2_accuracy"] = rows_df["top2_correct"].astype(float)
@@ -1123,7 +1139,7 @@ def run(args) -> Dict:
     print(f"Sample size: {'all' if sample_size is None else sample_size}")
     print(f"Scenarios: {rows_df['source_scenario_id'].nunique()}")
     print(f"Rows: {len(rows_df)}")
-    print(_format_md_table(summary_df, float_cols=[c for c in summary_df.columns if c not in {"ablation_id", "ablation_label", "n_scenarios"}]))
+    print(_format_md_table(summary_df, float_cols=[c for c in summary_df.columns if c not in {"model_key", "ablation_id", "ablation_label", "n_scenarios"}]))
     print(f"\nResults saved to: {results_path}")
     print(f"Report saved to: {report_path}")
 
