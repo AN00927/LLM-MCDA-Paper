@@ -27,6 +27,12 @@ from model_config import (
     REQUEST_TIMEOUT,
     RETRY_BASE_DELAY,
     MAX_RETRY_BACKOFF,
+    EXTRACTION_INVALID_JSON,
+    FAILED_MISSING_SCORE,
+    FAILED_OUT_OF_BOUNDS,
+    FAILED_INVALID_SCORE_TYPE,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN,
 )
 from sentinel_utils import (
     _atomic_write_json,
@@ -94,12 +100,12 @@ OUTPUT_CSV = OUTPUT_DIR / "rag_results.xlsx"
 OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "rag_results_diagnostics.json"
 
 RAG_FAILURE_COUNTER_KEYS = [
-    "failed_malformed_json",
-    "failed_missing_score",
-    "failed_out_of_bounds",
-    "failed_invalid_score_type",
-    "failed_api_exhausted",
-    "failed_unknown"
+    EXTRACTION_INVALID_JSON,
+    FAILED_MISSING_SCORE,
+    FAILED_OUT_OF_BOUNDS,
+    FAILED_INVALID_SCORE_TYPE,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN
 ]
 
 
@@ -233,7 +239,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             continue
 
     # Retries exhausted — raise so caller can map to failed_api_exhausted.
-    raise Exception(f"failed_api_exhausted: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
+    raise Exception(f"{FAILED_API_EXHAUSTED}: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
     """Build system prompt.
@@ -480,7 +486,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
         # Distinguish API/network exhaustion from genuine code/parse errors.
         error_text = str(e).lower()
-        failure_type = 'failed_api_exhausted' if 'failed_api_exhausted' in error_text else 'failed_unknown'
+        failure_type = FAILED_API_EXHAUSTED if FAILED_API_EXHAUSTED.lower() in error_text else FAILED_UNKNOWN
         diagnostics = {
             'prompt_tokens': 0,
             'completion_tokens': 0,
@@ -510,7 +516,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     except (json.JSONDecodeError, ValueError):
         logger.info("   Could not parse scores; failed")
         diagnostics['success'] = False
-        diagnostics['failure_types'] = ['failed_malformed_json']
+        diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
         diagnostics['rag_retrieved_count'] = len(retrieved)
         diagnostics['rag_context_length'] = len(rag_context)
         return dict(sentinel_scores), diagnostics
@@ -520,7 +526,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             logger.info(f"   Missing score for {criterion}; using sentinel {SENTINEL_VALUE}")
             scores[criterion] = SENTINEL_VALUE
             validation_failed = True
-            validation_failure_types.add('failed_missing_score')
+            validation_failure_types.add(FAILED_MISSING_SCORE)
             continue
 
         raw_score = parsed[criterion]
@@ -532,17 +538,17 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
                 logger.info(f"   Out-of-range score for {criterion}: {raw_value}; using sentinel {SENTINEL_VALUE}")
                 scores[criterion] = SENTINEL_VALUE
                 validation_failed = True
-                validation_failure_types.add('failed_out_of_bounds')
+                validation_failure_types.add(FAILED_OUT_OF_BOUNDS)
         else:
             logger.info(f"   Invalid score type for {criterion}: {raw_score}; using sentinel {SENTINEL_VALUE}")
             scores[criterion] = SENTINEL_VALUE
             validation_failed = True
-            validation_failure_types.add('failed_invalid_score_type')
+            validation_failure_types.add(FAILED_INVALID_SCORE_TYPE)
 
     if validation_failed:
         scores['_failed'] = True
         diagnostics['success'] = False
-        diagnostics['failure_types'] = sorted(validation_failure_types) if validation_failure_types else ['failed_unknown']
+        diagnostics['failure_types'] = sorted(validation_failure_types) if validation_failure_types else [FAILED_UNKNOWN]
     else:
         diagnostics['success'] = True
         diagnostics['failure_types'] = []
@@ -623,7 +629,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
         if scores.get('_failed'):
             logger.info(f" FAILED -- skipping alternative")
-            failure_types = diagnostics.get('failure_types') or ['failed_unknown']
+            failure_types = diagnostics.get('failure_types') or [FAILED_UNKNOWN]
             total_diagnostics['failed_calls'] += 1
             _increment_failure_counters(total_diagnostics, failure_types)
             alternatives_scores.append({
@@ -647,7 +653,7 @@ def run_scenario(scenario: Dict) -> Dict:
         if diagnostics.get('success', False):
             total_diagnostics['successful_calls'] += 1
         else:
-            failure_types = diagnostics.get('failure_types') or ['failed_unknown']
+            failure_types = diagnostics.get('failure_types') or [FAILED_UNKNOWN]
             total_diagnostics['failed_calls'] += 1
             _increment_failure_counters(total_diagnostics, failure_types)
 
