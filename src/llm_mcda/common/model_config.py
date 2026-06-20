@@ -1,19 +1,11 @@
 MODEL_KEY = "gptoss_weakest"
-N_RUNS = 10
+N_RUNS = 1
 
 
-# Sampling temperature for every architecture. Kept here (not hard-coded per
-# file) so all three architectures share one value and a single edit re-tunes
-# the whole benchmark. Low temperature keeps scoring as reproducible as the
-# model allows.
+
 TEMPERATURE = 0.3
 
-# OpenRouter request policy, shared by all three architectures so retry/timeout
-# behaviour is identical until we take a hard failure from OpenRouter:
-#   MAX_RETRIES        - attempts before giving up (<=0 means retry forever)
-#   REQUEST_TIMEOUT    - per-request socket timeout, seconds
-#   RETRY_BASE_DELAY   - base for exponential backoff, seconds
-#   MAX_RETRY_BACKOFF  - cap on a single backoff sleep, seconds
+
 MAX_RETRIES = 10
 REQUEST_TIMEOUT = 90
 RETRY_BASE_DELAY = 2
@@ -131,7 +123,7 @@ This section documents the canonical variable name plan for future implementatio
    - Canonical `alternatives_scores` instead of `alt_scores` / `alternatives_scores`.
    - Canonical `scenario_failed` boolean flag instead of reading `diag.get("scenario_failed")`.
 
-3. Example-Guided_LLM scoring.py.py internal variables:
+3. Eample-Guided_LLM_Scoring.py.py internal variables:
    - Canonical `alternatives_scores` instead of `alternative`.
    - Canonical `cumulative_diagnostics` instead of `total_diagnostics`.
    - Canonical `ranking_results` instead of `ranking_result`.
