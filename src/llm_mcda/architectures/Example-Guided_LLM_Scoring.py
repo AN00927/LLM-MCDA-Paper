@@ -19,7 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import (
     CRITERION_WEIGHTS,
     get_model_id,
-    get_output_folder,
+    get_output_folder_for_model_id,
     get_reasoning_payload,
     N_RUNS,
     TEMPERATURE,
@@ -46,8 +46,6 @@ from sentinel_utils import (
 )
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
-OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
@@ -66,6 +64,13 @@ if not OPENROUTER_API_KEY:
 
 MODEL_ID = get_model_id()
 REASONING_PAYLOAD = get_reasoning_payload()
+
+API_CONFIG = {
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "model": MODEL_ID,
+    "temperature": TEMPERATURE,
+    "reasoning": REASONING_PAYLOAD,
+}
 
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
@@ -96,8 +101,7 @@ def _compute_expected_source_hash() -> str:
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
-OUTPUT_CSV = OUTPUT_DIR / "rag_results.xlsx"
-OUTPUT_DIAGNOSTICS = OUTPUT_DIR / "rag_results_diagnostics.json"
+
 
 RAG_FAILURE_COUNTER_KEYS = [
     EXTRACTION_INVALID_JSON,
@@ -157,16 +161,13 @@ def init_rag_resources() -> None:
           f"(schema v{stored_version}, hash {stored_hash[:12]}...)")
 
 
-def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
-                     temperature: float = TEMPERATURE) -> Tuple[str, Dict]:
-    """Query openrouter.
-
-    Shared request policy across all three architectures (model_config):
-    MAX_RETRIES attempts, REQUEST_TIMEOUT-second socket timeout, exponential
-    backoff capped at MAX_RETRY_BACKOFF. latency_ms is the wall-clock round trip
-    of the successful HTTP request only (measured around requests.post).
-    """
-    url = "https://openrouter.ai/api/v1/chat/completions"
+def query_openrouter(messages: List[Dict], model: str = None,
+                     temperature: float = None) -> Tuple[str, Dict]:
+    if model is None:
+        model = API_CONFIG["model"]
+    if temperature is None:
+        temperature = API_CONFIG["temperature"]
+    url = API_CONFIG["endpoint"]
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -179,8 +180,9 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
         "messages": messages,
         "temperature": temperature,
     }
-    if REASONING_PAYLOAD:
-        payload["reasoning"] = REASONING_PAYLOAD
+    reasoning_payload = API_CONFIG["reasoning"]
+    if reasoning_payload:
+        payload["reasoning"] = reasoning_payload
 
     last_error = None
     response = None
@@ -492,7 +494,7 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'completion_tokens': 0,
             'total_tokens': 0,
             'latency_ms': 0.0,
-            'model': MODEL_ID,
+            'model': API_CONFIG['model'],
             'success': False,
             'error': str(e),
             'failure_types': [failure_type],
@@ -1019,10 +1021,19 @@ def main():
     if not TEST_SCENARIOS.exists():
         raise FileNotFoundError(f"Test scenarios file not found: {TEST_SCENARIOS}")
 
+    logger.info("Starting Example-Guided LLM Scoring Architecture Test...")
+    logger.info(f"Model: {API_CONFIG['model']}")
+    logger.info(f"Temperature: {API_CONFIG['temperature']}")
+
+    output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_csv = output_dir / "rag_results.xlsx"
+    output_diagnostics = output_dir / "rag_results_diagnostics.json"
+
     run_multi_and_aggregate(
         test_csv_path=str(TEST_SCENARIOS),
-        base_output_csv=str(OUTPUT_CSV),
-        base_diagnostics_path=str(OUTPUT_DIAGNOSTICS),
+        base_output_csv=str(output_csv),
+        base_diagnostics_path=str(output_diagnostics),
     )
 
 
