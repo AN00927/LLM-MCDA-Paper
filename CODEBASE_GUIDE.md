@@ -33,9 +33,9 @@ Higher weighted score is better; rank `1` is best.
 ```text
 LLM-MCDA Paper/
 ├── Architectures/
-│   ├── PurePrompting.py
-│   ├── RAGDatabaseOptimized.py
-│   └── Hybrid.py
+│   ├── Direct_LLM_Prompting.py
+│   ├── Example-Guided_LLM scoring.py.py
+│   └── LLM-Parameterized_Reference_Scoring.py
 ├── Ground Truth/
 │   ├── ground_truth_hvac.xlsx
 │   ├── ground_truth_appliance.xlsx
@@ -52,7 +52,7 @@ LLM-MCDA Paper/
 │   ├── EntropyWeights.py
 │   ├── ImpliedWeights.py
 │   ├── MERCECWeights.py
-│   ├── EvaluateHybridExtraction.py
+│   ├── EvaluateLLM-Parameterized_Reference_ScoringExtraction.py
 │   └── RunRAGAblations.py
 ├── Scenario Files/
 │   ├── ConsolidatedforSimaltaneousediting.xlsx
@@ -204,9 +204,9 @@ Flow:
 
 ```text
 run_benchmarks.main()
-  -> run_architecture("RAGDatabaseOptimized")
-  -> run_architecture("PurePrompting")
-  -> run_architecture("Hybrid")
+  -> run_architecture("Example-Guided_LLM scoring.py")
+  -> run_architecture("Direct_LLM_Prompting")
+  -> run_architecture("LLM-Parameterized_Reference_Scoring")
 ```
 
 Important functions:
@@ -316,34 +316,34 @@ Scenario matching is content-based, not strict ID-based. Strict ID matching is d
 
 | Architecture | File | LLM role | Deterministic role | API calls per scenario | Main output |
 | --- | --- | --- | --- | --- | --- |
-| Pure Prompting | `Architectures/PurePrompting.py` | Scores all four criteria directly for each alternative | Only MAVT aggregation after LLM scores | 3 | `pure_prompting_results.xlsx` |
-| RAG-Enhanced | `Architectures/RAGDatabaseOptimized.py` | Scores alternatives with retrieved exemplar context | Retrieval + MAVT aggregation | 3 | `rag_results.xlsx` |
-| Hybrid | `Architectures/Hybrid.py` | Extracts engineering parameters and calculator choice | Ground-truth calculator computes scores | 1 | `hybrid_results.xlsx` |
+| Pure Prompting | `Architectures/Direct_LLM_Prompting.py` | Scores all four criteria directly for each alternative | Only MAVT aggregation after LLM scores | 3 | `pure_prompting_results.xlsx` |
+| RAG-Enhanced | `Architectures/Example-Guided_LLM scoring.py.py` | Scores alternatives with retrieved exemplar context | Retrieval + MAVT aggregation | 3 | `rag_results.xlsx` |
+| LLM-Parameterized_Reference_Scoring | `Architectures/LLM-Parameterized_Reference_Scoring.py` | Extracts engineering parameters and calculator choice | Ground-truth calculator computes scores | 1 | `LLM-Parameterized_Reference_Scoring_results.xlsx` |
 
 ## 7. Pure Prompting architecture
 
-File: `Architectures/PurePrompting.py`.
+File: `Architectures/Direct_LLM_Prompting.py`.
 
 Purpose: ask the LLM to directly score each alternative on the four criteria, then aggregate by MAVT.
 
 Important constants:
 
-- test input: `TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"` at `Architectures/PurePrompting.py:64`
-- output files at `Architectures/PurePrompting.py:65`
-- OpenRouter config at `Architectures/PurePrompting.py:82`
-- failure counters at `Architectures/PurePrompting.py:94`
+- test input: `TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"` at `Architectures/Direct_LLM_Prompting.py:64`
+- output files at `Architectures/Direct_LLM_Promptingompting.py:65`
+- OpenRouter config at `Architectures/Direct_LLM_Promptingomptingomptingomptingomptingomptingomptingomptingomptingompting.py:82`
+- failure counters at `Architectures/Direct_LLM_Promptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingompting.py:94`
 
 Important functions:
 
-- `_init_failure_counters()` at `Architectures/PurePrompting.py:101`
+- `_init_failure_counters()` at `Architectures/Direct_LLM_Promptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingomptingompting.py:101`
 - `query_openrouter()` at `Architectures/PurePrompting.py:114`
-- `build_user_prompt()` at `Architectures/PurePrompting.py:213`
-- `score_alternative()` at `Architectures/PurePrompting.py:248`
-- `apply_mavt_ranking()` at `Architectures/PurePrompting.py:378`
-- `run_scenario()` at `Architectures/PurePrompting.py:417`
-- `run_test_set()` at `Architectures/PurePrompting.py:486`
-- `run_multi_and_aggregate()` at `Architectures/PurePrompting.py:650`
-- `main()` at `Architectures/PurePrompting.py:789`
+- `build_user_prompt()` at `Architectures/Direct_LLM_Prompting.py:213`
+- `score_alternative()` at `Architectures/Direct_LLM_Prompting.py:248`
+- `apply_mavt_ranking()` at `Architectures/Direct_LLM_Prompting.py:378`
+- `run_scenario()` at `Architectures/Direct_LLM_Prompting.py:417`
+- `run_test_set()` at `Architectures/Direct_LLM_Prompting.py:486`
+- `run_multi_and_aggregate()` at `Architectures/Direct_LLM_Prompting.py:650`
+- `main()` at `Architectures/Direct_LLM_Prompting.py:789`
 
 Pure flow:
 
@@ -368,51 +368,51 @@ main()
     -> write averaged xlsx + stats xlsx
 ```
 
-Output row fields are defined at `Architectures/PurePrompting.py:478`.
+Output row fields are defined at `Architectures/Direct_LLM_Prompting.py:478`.
 
 Aggregation details:
 
-- per-run resume uses `_is_complete_run_file()` at `Architectures/PurePrompting.py:663`
-- combines per-run files at `Architectures/PurePrompting.py:707`
-- converts sentinel to `NaN` at `Architectures/PurePrompting.py:710`
-- averages valid scores at `Architectures/PurePrompting.py:729`
-- restores `1928` when every run failed at `Architectures/PurePrompting.py:752`
-- recomputes rank from averaged scores at `Architectures/PurePrompting.py:760`
+- per-run resume uses `_is_complete_run_file()` at `Architectures/Direct_LLM_Prompting.py:663`
+- combines per-run files at `Architectures/Direct_LLM_Prompting.py:707`
+- converts sentinel to `NaN` at `Architectures/Direct_LLM_Prompting.py:710`
+- averages valid scores at `Architectures/Direct_LLM_Prompting.py:729`
+- restores `1928` when every run failed at `Architectures/Direct_LLM_Prompting.py:752`
+- recomputes rank from averaged scores at `Architectures/Direct_LLM_Prompting.py:760`
 
 ## 8. RAG-Enhanced architecture
 
-File: `Architectures/RAGDatabaseOptimized.py`.
+File: `Architectures/Example-Guided_LLM scoring.py.py`.
 
 Purpose: retrieve similar pre-scored scenarios from ChromaDB and include them as exemplars before asking the LLM to score each alternative.
 
 Important constants:
 
-- test input at `Architectures/RAGDatabaseOptimized.py:40`
-- output files at `Architectures/RAGDatabaseOptimized.py:41`
-- Chroma path at `Architectures/RAGDatabaseOptimized.py:62`
-- collection name at `Architectures/RAGDatabaseOptimized.py:63`
-- embedding model at `Architectures/RAGDatabaseOptimized.py:64`
-- retrieval count `RETRIEVE_K = 3` at `Architectures/RAGDatabaseOptimized.py:65`
-- expected RAG schema version at `Architectures/RAGDatabaseOptimized.py:67`
-- RAG source files at `Architectures/RAGDatabaseOptimized.py:68`
+- test input at `Architectures/Example-Guided_LLM scoring.py.py:40`
+- output files at `Architectures/Example-Guided_LLM scoring.py.py:41`
+- Chroma path at `Architectures/Example-Guided_LLM scoring.py.py:62`
+- collection name at `Architectures/Example-Guided_LLM scoring.py.py:63`
+- embedding model at `Architectures/Example-Guided_LLM scoring.py.py:64`
+- retrieval count `RETRIEVE_K = 3` at `Architectures/Example-Guided_LLM scoring.py.py:65`
+- expected RAG schema version at `Architectures/Example-Guided_LLM scoring.py.py:67`
+- RAG source files at `Architectures/Example-Guided_LLM scoring.py.py:68`
 
 Important functions:
 
-- `_compute_expected_source_hash()` at `Architectures/RAGDatabaseOptimized.py:75`
-- `init_rag_resources()` at `Architectures/RAGDatabaseOptimized.py:121`
-- `query_openrouter()` at `Architectures/RAGDatabaseOptimized.py:152`
-- `build_system_prompt()` at `Architectures/RAGDatabaseOptimized.py:236`
-- `format_scenario_text_for_retrieval()` at `Architectures/RAGDatabaseOptimized.py:253`
-- `retrieve_similar_scenarios()` at `Architectures/RAGDatabaseOptimized.py:264`
-- `_exemplar_param_lines()` at `Architectures/RAGDatabaseOptimized.py:317`
-- `format_rag_context()` at `Architectures/RAGDatabaseOptimized.py:361`
-- `build_user_prompt_with_rag()` at `Architectures/RAGDatabaseOptimized.py:408`
-- `score_alternative_with_rag()` at `Architectures/RAGDatabaseOptimized.py:450`
-- `apply_mavt_ranking()` at `Architectures/RAGDatabaseOptimized.py:553`
-- `run_scenario()` at `Architectures/RAGDatabaseOptimized.py:595`
-- `run_test_set()` at `Architectures/RAGDatabaseOptimized.py:677`
-- `run_multi_and_aggregate()` at `Architectures/RAGDatabaseOptimized.py:865`
-- `main()` at `Architectures/RAGDatabaseOptimized.py:1009`
+- `_compute_expected_source_hash()` at `Architectures/Example-Guided_LLM scoring.py.py:75`
+- `init_rag_resources()` at `Architectures/Example-Guided_LLM scoring.py.py:121`
+- `query_openrouter()` at `Architectures/Example-Guided_LLM scoring.py.py:152`
+- `build_system_prompt()` at `Architectures/Example-Guided_LLM scoring.py.py:236`
+- `format_scenario_text_for_retrieval()` at `Architectures/Example-Guided_LLM scoring.py.py:253`
+- `retrieve_similar_scenarios()` at `Architectures/Example-Guided_LLM scoring.py.py:264`
+- `_exemplar_param_lines()` at `Architectures/Example-Guided_LLM scoring.py.py:317`
+- `format_rag_context()` at `Architectures/Example-Guided_LLM scoring.py.py:361`
+- `build_user_prompt_with_rag()` at `Architectures/Example-Guided_LLM scoring.py.py:408`
+- `score_alternative_with_rag()` at `Architectures/Example-Guided_LLM scoring.py.py:450`
+- `apply_mavt_ranking()` at `Architectures/Example-Guided_LLM scoring.py.py:553`
+- `run_scenario()` at `Architectures/Example-Guided_LLM scoring.py.py:595`
+- `run_test_set()` at `Architectures/Example-Guided_LLM scoring.py.py:677`
+- `run_multi_and_aggregate()` at `Architectures/Example-Guided_LLM scoring.py.py:865`
+- `main()` at `Architectures/Example-Guided_LLM scoring.py.py:1009`
 
 RAG flow:
 
@@ -448,46 +448,46 @@ main()
 RAG schema/version contract:
 
 - `BuildRAG.py` writes `schema_version` and `source_table_sha256` into Chroma metadata at `Miscellaneous Scripts/BuildRAG.py:203`.
-- `RAGDatabaseOptimized.py` verifies those values at `Architectures/RAGDatabaseOptimized.py:128`.
+- `Example-Guided_LLM scoring.py.py` verifies those values at `Architectures/Example-Guided_LLM scoring.py.py:128`.
 - If the RAG sheets change but Chroma is stale, rerun `Miscellaneous Scripts/BuildRAG.py`.
-- If the embedding text or metadata schema changes, bump `RAG_SCHEMA_VERSION` in both `Miscellaneous Scripts/BuildRAG.py:44` and `Architectures/RAGDatabaseOptimized.py:67`, then rebuild.
+- If the embedding text or metadata schema changes, bump `RAG_SCHEMA_VERSION` in both `Miscellaneous Scripts/BuildRAG.py:44` and `Architectures/Example-Guided_LLM scoring.py.py:67`, then rebuild.
 
-## 9. Hybrid architecture
+## 9. LLM-Parameterized_Reference_Scoring architecture
 
-File: `Architectures/Hybrid.py`.
+File: `Architectures/LLM-Parameterized_Reference_Scoring.py`.
 
 Purpose: use the LLM only to infer hidden engineering parameters, then use deterministic ground-truth calculators to score all alternatives.
 
 Important constants:
 
-- test input at `Architectures/Hybrid.py:36`
-- ground-truth calculator directory at `Architectures/Hybrid.py:39`
-- calculator loader at `Architectures/Hybrid.py:41`
-- loaded calculators at `Architectures/Hybrid.py:51`
-- output files at `Architectures/Hybrid.py:85`
-- output columns at `Architectures/Hybrid.py:88`
-- numeric extraction columns at `Architectures/Hybrid.py:102`
-- categorical extraction columns at `Architectures/Hybrid.py:107`
-- failure counters at `Architectures/Hybrid.py:112`
-- numeric parameter bounds at `Architectures/Hybrid.py:128`
+- test input at `Architectures/LLM-Parameterized_Reference_Scoring.py:36`
+- ground-truth calculator directory at `Architectures/LLM-Parameterized_Reference_Scoring.py:39`
+- calculator loader at `Architectures/LLM-Parameterized_Reference_Scoring.py:41`
+- loaded calculators at `Architectures/LLM-Parameterized_Reference_Scoring.py:51`
+- output files at `Architectures/LLM-Parameterized_Reference_Scoring.py:85`
+- output columns at `Architectures/LLM-Parameterized_Reference_Scoring.py:88`
+- numeric extraction columns at `Architectures/LLM-Parameterized_Reference_Scoring.py:102`
+- categorical extraction columns at `Architectures/LLM-Parameterized_Reference_Scoring.py:107`
+- failure counters at `Architectures/LLM-Parameterized_Reference_Scoring.py:112`
+- numeric parameter bounds at `Architectures/LLM-Parameterized_Reference_Scoring.py:128`
 
 Important functions:
 
-- `_load_calculator_class()` at `Architectures/Hybrid.py:41`
-- `_validate_numeric_params()` at `Architectures/Hybrid.py:152`
-- `_init_failure_counters()` at `Architectures/Hybrid.py:175`
-- `_extracted_parameter_cells()` at `Architectures/Hybrid.py:179`
-- `query_openrouter()` at `Architectures/Hybrid.py:259`
-- `format_scenario_for_extraction()` at `Architectures/Hybrid.py:330`
-- `extract_all_with_ai()` at `Architectures/Hybrid.py:352`
-- `score_with_ground_truth()` at `Architectures/Hybrid.py:510`
-- `apply_mavt_ranking()` at `Architectures/Hybrid.py:585`
-- `run_scenario()` at `Architectures/Hybrid.py:624`
-- `run_test_set()` at `Architectures/Hybrid.py:802`
-- `run_multi_and_aggregate()` at `Architectures/Hybrid.py:1007`
-- `main()` at `Architectures/Hybrid.py:1195`
+- `_load_calculator_class()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:41`
+- `_validate_numeric_params()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:152`
+- `_init_failure_counters()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:175`
+- `_extracted_parameter_cells()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:179`
+- `query_openrouter()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:259`
+- `format_scenario_for_extraction()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:330`
+- `extract_all_with_ai()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:352`
+- `score_with_ground_truth()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:510`
+- `apply_mavt_ranking()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:585`
+- `run_scenario()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:624`
+- `run_test_set()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:802`
+- `run_multi_and_aggregate()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:1007`
+- `main()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:1195`
 
-Hybrid flow:
+LLM-Parameterized_Reference_Scoring flow:
 
 ```text
 main()
@@ -516,23 +516,23 @@ main()
     -> write averaged xlsx + stats xlsx
 ```
 
-Important Hybrid invariants:
+Important LLM-Parameterized_Reference_Scoring invariants:
 
-- The LLM extracts only engineering parameters. Alternatives come verbatim from `TestScenarios.xlsx` at `Architectures/Hybrid.py:510`.
-- The extracted decision type must match the known scenario decision type; mismatches are rejected rather than scored by the wrong calculator at `Architectures/Hybrid.py:439`.
-- Numeric extraction failures must not be coerced to `0.0`; invalid extracted parameters become failure/sentinel outputs at `Architectures/Hybrid.py:152`.
-- Hybrid output includes extraction diagnostics and flags such as `extraction_failed` and `gt_calculation_failed` at `Architectures/Hybrid.py:88`.
+- The LLM extracts only engineering parameters. Alternatives come verbatim from `TestScenarios.xlsx` at `Architectures/LLM-Parameterized_Reference_Scoring.py:510`.
+- The extracted decision type must match the known scenario decision type; mismatches are rejected rather than scored by the wrong calculator at `Architectures/LLM-Parameterized_Reference_Scoring.py:439`.
+- Numeric extraction failures must not be coerced to `0.0`; invalid extracted parameters become failure/sentinel outputs at `Architectures/LLM-Parameterized_Reference_Scoring.py:152`.
+- LLM-Parameterized_Reference_Scoring output includes extraction diagnostics and flags such as `extraction_failed` and `gt_calculation_failed` at `Architectures/LLM-Parameterized_Reference_Scoring.py:88`.
 
 Aggregation details:
 
-- resume logic at `Architectures/Hybrid.py:1020`
-- combine per-run files at `Architectures/Hybrid.py:1063`
-- convert sentinel to `NaN` at `Architectures/Hybrid.py:1066`
-- aggregate numeric extracted parameters by mean at `Architectures/Hybrid.py:1095`
-- aggregate categorical extracted parameters by mode at `Architectures/Hybrid.py:1108`
-- aggregate boolean flags with `any()` at `Architectures/Hybrid.py:1129`
-- restore sentinel when all runs failed at `Architectures/Hybrid.py:1154`
-- recompute rank from averaged scores at `Architectures/Hybrid.py:1162`
+- resume logic at `Architectures/LLM-Parameterized_Reference_Scoring.py:1020`
+- combine per-run files at `Architectures/LLM-Parameterized_Reference_Scoring.py:1063`
+- convert sentinel to `NaN` at `Architectures/LLM-Parameterized_Reference_Scoring.py:1066`
+- aggregate numeric extracted parameters by mean at `Architectures/LLM-Parameterized_Reference_Scoring.py:1095`
+- aggregate categorical extracted parameters by mode at `Architectures/LLM-Parameterized_Reference_Scoring.py:1108`
+- aggregate boolean flags with `any()` at `Architectures/LLM-Parameterized_Reference_Scoring.py:1129`
+- restore sentinel when all runs failed at `Architectures/LLM-Parameterized_Reference_Scoring.py:1154`
+- recompute rank from averaged scores at `Architectures/LLM-Parameterized_Reference_Scoring.py:1162`
 
 ## 10. Ground-truth calculators
 
@@ -641,13 +641,13 @@ Each architecture writes per-run files and an averaged final file under the acti
 - diagnostics: `<output_folder>/rag_results_diagnostics.json`
 - stats: `<output_folder>/rag_results_stats.xlsx`
 
-### Hybrid
+### LLM-Parameterized_Reference_Scoring
 
-- per-run: `<output_folder>/hybrid_results_run_NN.xlsx`
-- per-run diagnostics: `<output_folder>/hybrid_results_diagnostics_run_NN.json`
-- averaged: `<output_folder>/hybrid_results.xlsx`
-- diagnostics: `<output_folder>/hybrid_results_diagnostics.json`
-- stats: `<output_folder>/hybrid_results_stats.xlsx`
+- per-run: `<output_folder>/LLM-Parameterized_Reference_Scoring_results_run_NN.xlsx`
+- per-run diagnostics: `<output_folder>/LLM-Parameterized_Reference_Scoring_results_diagnostics_run_NN.json`
+- averaged: `<output_folder>/LLM-Parameterized_Reference_Scoring_results.xlsx`
+- diagnostics: `<output_folder>/LLM-Parameterized_Reference_Scoring_results_diagnostics.json`
+- stats: `<output_folder>/LLM-Parameterized_Reference_Scoring_results_stats.xlsx`
 
 ### Metrics
 
@@ -675,29 +675,29 @@ RAG also imports `format_embedding_text`.
 
 See imports:
 
-- Pure: `Architectures/PurePrompting.py:44`
-- RAG: `Architectures/RAGDatabaseOptimized.py:19`
-- Hybrid: `Architectures/Hybrid.py:16`
+- Pure: `Architectures/Direct_LLM_Prompting.py:44`
+- RAG: `Architectures/Example-Guided_LLM scoring.py.py:19`
+- LLM-Parameterized_Reference_Scoring: `Architectures/LLM-Parameterized_Reference_Scoring.py:16`
 
-### Ground truth calculators used by Hybrid
+### Ground truth calculators used by LLM-Parameterized_Reference_Scoring
 
-Hybrid dynamically loads calculator classes at import time:
+LLM-Parameterized_Reference_Scoring dynamically loads calculator classes at import time:
 
-- HVAC: `Architectures/Hybrid.py:51`
-- Appliance: `Architectures/Hybrid.py:58`
-- Shower: `Architectures/Hybrid.py:65`
+- HVAC: `Architectures/LLM-Parameterized_Reference_Scoring.py:51`
+- Appliance: `Architectures/LLM-Parameterized_Reference_Scoring.py:58`
+- Shower: `Architectures/LLM-Parameterized_Reference_Scoring.py:65`
 
-`score_with_ground_truth()` dispatches to the correct calculator at `Architectures/Hybrid.py:538`.
+`score_with_ground_truth()` dispatches to the correct calculator at `Architectures/LLM-Parameterized_Reference_Scoring.py:538`.
 
 ### RAG index used by RAG architecture
 
-`BuildRAG.py` writes Chroma metadata. `RAGDatabaseOptimized.py` reads and validates it.
+`BuildRAG.py` writes Chroma metadata. `Example-Guided_LLM scoring.py.py` reads and validates it.
 
 - source hash in BuildRAG: `Miscellaneous Scripts/BuildRAG.py:47`
-- source hash in RAG runtime: `Architectures/RAGDatabaseOptimized.py:75`
+- source hash in RAG runtime: `Architectures/Example-Guided_LLM scoring.py.py:75`
 - metadata write: `Miscellaneous Scripts/BuildRAG.py:203`
-- metadata validation: `Architectures/RAGDatabaseOptimized.py:128`
-- retrieval query: `Architectures/RAGDatabaseOptimized.py:280`
+- metadata validation: `Architectures/Example-Guided_LLM scoring.py.py:128`
+- retrieval query: `Architectures/Example-Guided_LLM scoring.py.py:280`
 
 ### Metrics script reads architecture outputs and ground truth
 
@@ -769,9 +769,9 @@ python run_benchmarks.py
 Run one architecture:
 
 ```powershell
-python "Architectures/PurePrompting.py"
-python "Architectures/RAGDatabaseOptimized.py"
-python "Architectures/Hybrid.py"
+python "Architectures/Direct_LLM_Prompting.py"
+python "Architectures/Example-Guided_LLM scoring.py.py"
+python "Architectures/LLM-Parameterized_Reference_Scoring.py"
 ```
 
 Rebuild Test/RAG sheets from the master workbook:
@@ -827,12 +827,12 @@ python "tests/audit_scenarios.py"
 | Change API model, temperature, retry policy | `model_config.py`, all architecture `query_openrouter` functions | rerun affected architectures | outputs reflect different model behavior |
 | Change `N_RUNS` | `model_config.py`, all `run_multi_and_aggregate` loops | rerun benchmarks | old outputs may mix different run counts |
 | Change scenario master workbook | `Scenario Files/rebuild_consolidated.py` | rerun rebuild, rebuild RAG, rerun affected outputs | Test/RAG sheets drift from source |
-| Change age/flow banding | `sentinel_utils.py`, `rebuild_consolidated.py`, `BuildRAG.py`, `RAGDatabaseOptimized.py` | rebuild Test/RAG, rebuild Chroma | RAG query/index text no longer matches |
+| Change age/flow banding | `sentinel_utils.py`, `rebuild_consolidated.py`, `BuildRAG.py`, `Example-Guided_LLM scoring.py.py` | rebuild Test/RAG, rebuild Chroma | RAG query/index text no longer matches |
 | Change ground-truth formula | domain calculator | rerun calculator, `SyncRAGGroundTruth.py`, `BuildRAG.py`, all architectures, metrics | RAG exemplars and metrics use stale GT |
-| Change RAG metadata schema or embedding text | `BuildRAG.py`, `RAGDatabaseOptimized.py`, `sentinel_utils.py` | bump `RAG_SCHEMA_VERSION` in both files, rebuild Chroma | stale Chroma metadata can silently corrupt retrieval |
-| Change Pure prompt | `Architectures/PurePrompting.py` | rerun Pure only | other architectures remain comparable |
-| Change RAG prompt/context | `Architectures/RAGDatabaseOptimized.py` | rerun RAG only | Pure/Hybrid remain comparable |
-| Change Hybrid extraction prompt or validation | `Architectures/Hybrid.py` | rerun Hybrid only | Pure/RAG remain comparable |
+| Change RAG metadata schema or embedding text | `BuildRAG.py`, `Example-Guided_LLM scoring.py.py`, `sentinel_utils.py` | bump `RAG_SCHEMA_VERSION` in both files, rebuild Chroma | stale Chroma metadata can silently corrupt retrieval |
+| Change Pure prompt | `Architectures/Direct_LLM_Prompting.py` | rerun Pure only | other architectures remain comparable |
+| Change RAG prompt/context | `Architectures/Example-Guided_LLM scoring.py.py` | rerun RAG only | Pure/LLM-Parameterized_Reference_Scoring remain comparable |
+| Change LLM-Parameterized_Reference_Scoring extraction prompt or validation | `Architectures/LLM-Parameterized_Reference_Scoring.py` | rerun LLM-Parameterized_Reference_Scoring only | Pure/RAG remain comparable |
 | Change metric matching | `Miscellaneous Scripts/CalculateMetrics.py` | rerun metrics only | benchmark outputs need not change |
 | Change output schema | architecture and metrics | update `CalculateMetrics.py` column mappings and tests | metrics may drop columns or misread fields |
 | Add new architecture | new file under `Architectures/`, `run_benchmarks.py`, metrics config | add tests for sentinel/aggregation/output schema | new outputs may not be evaluated |
@@ -843,12 +843,12 @@ python "tests/audit_scenarios.py"
 2. Do not average `1928` as if it were a score.
 3. Do not let failed numeric extraction become `0.0`; zero energy/cost can become a fabricated perfect score.
 4. RAG query text and RAG index text must be produced from the same embedding formatter. The shared function is `format_embedding_text()` at `sentinel_utils.py:258`.
-5. RAG schema version must be bumped in both `BuildRAG.py` and `RAGDatabaseOptimized.py` when embedding or metadata changes.
+5. RAG schema version must be bumped in both `BuildRAG.py` and `Example-Guided_LLM scoring.py.py` when embedding or metadata changes.
 6. Scenario IDs are not globally aligned across Test, RAG, and Ground Truth. Metrics match by content and normalized alternatives, not by raw ID.
 7. Ground-truth calculators currently use `TIE_BREAK_PRIORITY` in their ranking helpers, while the three architecture `apply_mavt_ranking()` functions sort by weighted score only:
-   - Pure: `Architectures/PurePrompting.py:378`
-   - RAG: `Architectures/RAGDatabaseOptimized.py:553`
-   - Hybrid: `Architectures/Hybrid.py:585`
+   - Pure: `Architectures/Direct_LLM_Prompting.py:378`
+   - RAG: `Architectures/Example-Guided_LLM scoring.py.py:553`
+   - LLM-Parameterized_Reference_Scoring: `Architectures/LLM-Parameterized_Reference_Scoring.py:585`
    - HVAC GT tie-break: `Ground Truth Calculators/HVACGroundTruthCalculator.py:736`
    - Appliance GT tie-break: `Ground Truth Calculators/ApplianceGroundTruthCalculator.py:691`
    - Shower GT tie-break: `Ground Truth Calculators/ShowerGroundTruthCalculator.py:583`
@@ -880,7 +880,7 @@ Think of the repository as four layers:
 
 1. **Scenario layer**: master workbook -> derived Test/RAG sheets.
 2. **Truth layer**: deterministic calculators -> `Ground Truth/*.xlsx`.
-3. **Architecture layer**: Pure, RAG, Hybrid produce per-run and averaged architecture outputs.
+3. **Architecture layer**: Pure, RAG, LLM-Parameterized_Reference_Scoring produce per-run and averaged architecture outputs.
 4. **Evaluation layer**: metrics script matches architecture outputs to ground truth and reports MAE/RMSE, ranking correlation, top-1/top-2 accuracy, failure rates, and diagnostics.
 
 The safest way to reason about a change is to identify which layer it touches, then follow the required refresh chain above.

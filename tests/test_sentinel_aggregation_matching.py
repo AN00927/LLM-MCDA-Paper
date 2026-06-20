@@ -5,7 +5,7 @@ Scope (per task specification):
   - sentinel coercion: numeric 1928, string "1928", nonnumeric strings, normal scores
   - aggregation: one-run, partial-run, malformed numeric, all-failed, mixed rows
   - metrics: failure-mode totals from JSON match CSV sentinels
-  - scenario matching: content match, alt drop warnings, Hybrid input_decision_type
+  - scenario matching: content match, alt drop warnings, LLM-Parameterized_Reference_Scoring input_decision_type
   - RAG: missing metadata fields, successful metadata fields
 
 Does NOT test anything that requires TestScenarios.xlsx to exist.
@@ -306,13 +306,13 @@ class TestLoadDiagnosticsJson:
         assert result["diag_failed_scenarios"] == 2
         assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 1
         assert result[f"diag_{FAILED_MISSING_SCORE}"] == 1
-        # Hybrid counter should NOT appear in Pure result
+        # LLM-Parameterized_Reference_Scoring counter should NOT appear in Pure result
         assert f"diag_{FAILED_EXTRACTION_INVALID_DECISION_TYPE}" not in result
 
-    def test_hybrid_counters_loaded(self, tmp_path):
-        results_path = tmp_path / "hybrid_results.xlsx"
+    def test_LLM_Parameterized_Reference_Scoring_counters_loaded(self, tmp_path):
+        results_path = tmp_path / "LLM-Parameterized_Reference_Scoring_results.xlsx"
         results_path.touch()
-        diag_path = tmp_path / "hybrid_results_diagnostics_run_01.json"
+        diag_path = tmp_path / "LLM-Parameterized_Reference_Scoring_results_diagnostics_run_01.json"
         self._write_diag(diag_path, {
             "total_scenarios": 5,
             "failed_scenarios": 1,
@@ -323,9 +323,9 @@ class TestLoadDiagnosticsJson:
             FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION: 0,
             FAILED_UNKNOWN: 0,
         })
-        result = self._cm._load_diagnostics_json(str(results_path), "Hybrid")
+        result = self._cm._load_diagnostics_json(str(results_path), "LLM-Parameterized_Reference_Scoring")
         assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 1
-        # Pure counter should NOT appear in Hybrid result
+        # Pure counter should NOT appear in LLM-Parameterized_Reference_Scoring result
         assert f"diag_{FAILED_MISSING_SCORE}" not in result
 
     def test_no_diag_file_graceful(self, tmp_path):
@@ -353,7 +353,7 @@ class TestLoadDiagnosticsJson:
 # ===========================================================================
 
 class TestMatchScenarios:
-    """match_scenarios: content-based matching, alt-drop warnings, Hybrid typing."""
+    """match_scenarios: content-based matching, alt-drop warnings, LLM-Parameterized_Reference_Scoring typing."""
 
     @pytest.fixture(autouse=True)
     def cm(self):
@@ -449,8 +449,8 @@ class TestMatchScenarios:
         output = buf.getvalue()
         assert "only 1/3 alternatives matched" in output.lower() or len(merged) == 1
 
-    def test_hybrid_input_decision_type_preserved(self):
-        """When Hybrid CSV has input_decision_type, it flows into merged rows."""
+    def test_LLM_Parameterized_Reference_Scoring_input_decision_type_preserved(self):
+        """When LLM-Parameterized_Reference_Scoring CSV has input_decision_type, it flows into merged rows."""
         gt_df = self._make_gt_df("HVAC", [
             ("Q HVAC?", "Exton, PA", [
                 ("72", 8, 7, 6, 5), ("76", 6, 7, 7, 5), ("80", 4, 5, 8, 6)
@@ -469,8 +469,8 @@ class TestMatchScenarios:
                 "energy_cost": 7.0, "environmental": 6.0, "comfort": 5.0, "practicality": 4.0,
                 "outdoor_temp": "85", "appliance_age": "", "flow_rate": "",
             })
-        arch_df = self._make_arch_df(arch_rows, arch_name="Hybrid")
-        merged, _ = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "Hybrid")
+        arch_df = self._make_arch_df(arch_rows, arch_name="LLM-Parameterized_Reference_Scoring")
+        merged, _ = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "LLM-Parameterized_Reference_Scoring")
         assert "input_decision_type" in merged.columns
         assert (merged["input_decision_type"] == "HVAC").all()
 
@@ -720,7 +720,7 @@ class TestRetryPolicy:
         return getattr(mod, "_is_transient_http_status", None)
 
     @pytest.mark.parametrize("arch_file", [
-        "PurePrompting.py", "RAGDatabaseOptimized.py", "Hybrid.py"
+        "Direct_LLM_Prompting.py", "Example-Guided_LLM scoring.py.py", "LLM-Parameterized_Reference_Scoring.py"
     ])
     def test_transient_codes_retry(self, arch_file):
         arch_path = PROJECT_ROOT / "Architectures" / arch_file
@@ -731,7 +731,7 @@ class TestRetryPolicy:
             assert fn(code), f"Expected {code} to be transient in {arch_file}"
 
     @pytest.mark.parametrize("arch_file", [
-        "PurePrompting.py", "RAGDatabaseOptimized.py", "Hybrid.py"
+        "Direct_LLM_Prompting.py", "Example-Guided_LLM scoring.py.py", "LLM-Parameterized_Reference_Scoring.py"
     ])
     def test_non_transient_codes_do_not_retry(self, arch_file):
         arch_path = PROJECT_ROOT / "Architectures" / arch_file

@@ -39,7 +39,7 @@
             state={Aargau},
             country={Switzerland}}
 \begin{abstract}
-Households contribute 13\% of U.S.\ carbon emissions, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Pure Prompting, Retrieval-Augmented Generation (RAG-Enhanced) Scoring, and a Hybrid of LLM parameter extraction with calculation. Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. \textit{[PLACEHOLDER: quantitative findings (Top-1, Kendall's $\tau$, MAE, token usage, latency) pending the corrected multi-model run.]}
+Households contribute 13\% of U.S.\ carbon emissions, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Pure Prompting, Retrieval-Augmented Generation (RAG-Enhanced) Scoring, and a LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoring of LLM parameter extraction with calculation. Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. \textit{[PLACEHOLDER: quantitative findings (Top-1, Kendall's $\tau$, MAE, token usage, latency) pending the corrected multi-model run.]}
 \end{abstract}
 \begin{keyword}
 Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute Value Theory \sep Household energy \sep Decision support systems \sep Retrieval-Augmented Generation \sep Sustainability
@@ -77,7 +77,7 @@ harder question of whether LLM-derived scores are actually correct
 against a physics-based ground truth.
 
 This paper addresses that question directly by benchmarking three LLM
-integration architectures --- Pure Prompting, RAG-Enhanced, and Hybrid
+integration architectures --- Pure Prompting, RAG-Enhanced, and LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoring
 --- against a MAVT ground truth across household energy decision
 scenarios spanning HVAC, appliance scheduling, and shower duration
 decisions. To our knowledge, this is the first study to evaluate
@@ -334,7 +334,7 @@ The calculator receives specific values that must be professionally graded for h
 
 To generalize parameters, we identified acceptable ranges for each qualitative level from published standards and mapped each scenario to a representative value within that range. Insulation tiers map to standard U.S.\ residential wall R-values: Poor to R-11 (minimal 2$\times$4 cavity fill, below current code), Medium to R-13 (standard 2$\times$4 batt), and Good to R-19 (2$\times$6 framing), consistent with code tables for wood-frame assemblies and ENERGY STAR guidance \cite{cec_ja43_2013,energystar_insulation2023}. For the Flow Rate parameter, if the scenario specified \texttt{standard}, the corresponding GPM assigned to the calculator was 2.5\,GPM (the federal maximum under the Energy Policy Act of 1992) \cite{epawatersense}; if \texttt{low\_flow}, the value was 1.5\,GPM (EPA WaterSense certified) \cite{epawatersense}. Table~\ref{table:param_generalization} summarizes the generalized parameters across all three decision types.
 
-The two sets overlap on environmental conditions, however so that both pipelines are reasoning about the same physical scenario. The LLM never sees the engineering parameters directly. For the Hybrid architecture, which needs to use those parameters within its calculations, it infers structured estimates of them from the description before the calculator is invoked. Further detail on choosing these specific parameters and their effects is available in Section~\ref{sec:mavt-design}.
+The two sets overlap on environmental conditions, however so that both pipelines are reasoning about the same physical scenario. The LLM never sees the engineering parameters directly. For the LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoring architecture, which needs to use those parameters within its calculations, it infers structured estimates of them from the description before the calculator is invoked. Further detail on choosing these specific parameters and their effects is available in Section~\ref{sec:mavt-design}.
 
 \begin{table}[htbp]
 \centering
@@ -820,13 +820,13 @@ The Pure Prompting architecture issues one API call per alternative (three calls
 \subsubsection{RAG-Enhanced}
 The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the RAG-only scenarios described in Section~\ref{sec:scenario-corpus} and is never queried with test scenarios \cite{lewis2020}.
 
-\subsubsection{Hybrid}
-The Hybrid architecture issues a single API call per scenario to extract structured parameters (decision type, calculator inputs such as SEER tier, kWh/cycle, GPM, baseline time, occupancy context, and the indoor temperatures or run times or durations that define the alternatives). The extracted JSON is validated, passed to the corresponding ground-truth calculator, and the four MAVT scores are returned. Hybrid uses 1 API call per scenario versus 3 for Pure and RAG and exploits the principle of decomposed prompting \cite{khot2023}, separating the natural-language understanding step (the LLM's strength) from the quantitative scoring step (the calculator's strength).
+\subsubsection{LLM-Parameterized_Reference_Scoring}
+The LLM-Parameterized_Reference_Scoring architecture issues a single API call per scenario to extract structured parameters (decision type, calculator inputs such as SEER tier, kWh/cycle, GPM, baseline time, occupancy context, and the indoor temperatures or run times or durations that define the alternatives). The extracted JSON is validated, passed to the corresponding ground-truth calculator, and the four MAVT scores are returned. LLM-Parameterized_Reference_Scoring uses 1 API call per scenario versus 3 for Pure and RAG and exploits the principle of decomposed prompting \cite{khot2023}, separating the natural-language understanding step (the LLM's strength) from the quantitative scoring step (the calculator's strength).
 
 \begin{figure*}[t]
 \centering
-\missingfigure[figwidth=\textwidth]{Side-by-side vertical pipeline flowcharts for three LLM integration architectures. Pure Prompting: 3 LLM calls, one per alternative, no external context. RAG-Enhanced: 3 LLM calls each preceded by ChromaDB retrieval ($k=3$ chunks). Hybrid: 1 LLM call for parameter extraction, output to physics-based calculator, then MAVT weighted sum.}
-\caption{Processing pipeline for each architecture. Pure Prompting and RAG-Enhanced require three API calls per scenario; Hybrid requires one.}
+\missingfigure[figwidth=\textwidth]{Side-by-side vertical pipeline flowcharts for three LLM integration architectures. Pure Prompting: 3 LLM calls, one per alternative, no external context. RAG-Enhanced: 3 LLM calls each preceded by ChromaDB retrieval ($k=3$ chunks). LLM-Parameterized_Reference_Scoring: 1 LLM call for parameter extraction, output to physics-based calculator, then MAVT weighted sum.}
+\caption{Processing pipeline for each architecture. Pure Prompting and RAG-Enhanced require three API calls per scenario; LLM-Parameterized_Reference_Scoring requires one.}
 \label{fig:pipeline}
 \end{figure*}
 
@@ -847,7 +847,7 @@ Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (M
 \label{sec:discussion}
 % ============================================================
 
-\textit{[PLACEHOLDER: Discussion not yet written. To include why Hybrid outperforms, why Pure Prompting fails, the intermediate standing of RAG-Enhanced, and efficiency trade-offs --- pending corrected results and the multi-model comparison.]}
+\textit{[PLACEHOLDER: Discussion not yet written. To include why LLM-Parameterized_Reference_Scoring outperforms, why Pure Prompting fails, the intermediate standing of RAG-Enhanced, and efficiency trade-offs --- pending corrected results and the multi-model comparison.]}
 
 \subsection{Limitations}
 

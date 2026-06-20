@@ -259,7 +259,7 @@ def format_embedding_text(decision_type: str, fields) -> str:
     """Build the similarity-embedding document for a scenario.
 
     Single source of truth shared by BuildRAG (index side, reads RAG sheets) and
-    RAGDatabaseOptimized (query side, reads TestScenarios) so the embedded string
+    Example-Guided_LLM scoring.py (query side, reads TestScenarios) so the embedded string
     is byte-identical field-for-field on both sides — retrieval quality depends on
     the query and index strings being produced by the *same* function.
 

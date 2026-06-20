@@ -34,7 +34,7 @@ run, so the *integration strategy* is the only variable under test.
 - **Models (4):** GPT-OSS-20B, Qwen 3.5 9B, DeepSeek V4 Flash, Gemini 3.5 Flash
   (`MODEL_SPECS` in [`model_config.py`](model_config.py)).
 
-**Central hypothesis:** the Hybrid architecture should beat Pure Prompting *even
+**Central hypothesis:** the LLM-Parameterized_Reference_Scoring architecture should beat Pure Prompting *even
 with weaker models*, because the physics backbone compensates for model
 capability.
 
@@ -51,7 +51,7 @@ OpenRouter at temperature 0.3, share one retry/timeout policy
 ([`model_config.py`](model_config.py)), and rank alternatives with the same MAVT
 weighted sum. They differ only in **how each alternative is scored**.
 
-### 2.1 Pure Prompting — [`PurePrompting.py`](Architectures/PurePrompting.py)
+### 2.1 Pure Prompting — [`Direct_LLM_Prompting.py`](Architectures/Direct_LLM_Prompting.py)
 
 - **3 API calls per scenario** (one per alternative).
 - The LLM is given the homeowner-facing scenario context and asked to return the
@@ -63,7 +63,7 @@ weighted sum. They differ only in **how each alternative is scored**.
   size, housing type, *house-age band*, utility budget. It never sees R-value,
   SEER, GPM, kWh/cycle, tank size, or occupancy context.
 
-### 2.2 RAG-Enhanced — [`RAGDatabaseOptimized.py`](Architectures/RAGDatabaseOptimized.py)
+### 2.2 RAG-Enhanced — [`Example-Guided_LLM scoring.py.py`](Architectures/Example-Guided_LLM scoring.py.py)
 
 - **3 API calls per scenario.** Before scoring each alternative, it retrieves the
   top *k* = 3 most similar **RAG** scenarios from a ChromaDB index
@@ -81,7 +81,7 @@ weighted sum. They differ only in **how each alternative is scored**.
   and is guarded by a schema-version + source-hash check, so a stale index makes
   the run abort rather than silently use old data.
 
-### 2.3 Hybrid — [`Hybrid.py`](Architectures/Hybrid.py)
+### 2.3 LLM-Parameterized_Reference_Scoring — [`LLM-Parameterized_Reference_Scoring.py`](Architectures/LLM-Parameterized_Reference_Scoring.py)
 
 This is the architecture worth the closest read.
 
@@ -106,7 +106,7 @@ This is the architecture worth the closest read.
   estimates, and the physics does the scoring. One caveat I want you to be aware
   of: the extracted parameters are *scenario-level* (the same for all three
   alternatives), so extraction error largely cancels in the *ranking* — meaning
-  Hybrid's ranking robustness is partly structural. The score-level error
+  LLM-Parameterized_Reference_Scoring's ranking robustness is partly structural. The score-level error
   (MAE/RMSE) and the Appliance result are the measures that truly test extraction
   quality. This is now stated explicitly in the paper's Limitations.
 
@@ -201,13 +201,13 @@ them explicitly so you know what changed since you last looked:
    score**, so I re-ran the calculators → `SyncRAGGroundTruth.py` → `BuildRAG.py`;
    all derived state is consistent and the staleness guard passes. New bounds are
    in the paper's reference-range table and the README.
-2. **Hybrid extraction now validates numbers.** Previously a non-numeric
+2. **LLM-Parameterized_Reference_Scoring extraction now validates numbers.** Previously a non-numeric
    extraction (e.g. `gpm: "low_flow"`) was silently coerced to 0.0, which could
    produce a fake perfect score. It is now rejected as a failure.
-3. **Hybrid rejects decision-type mismatches.** If the model mislabels a
+3. **LLM-Parameterized_Reference_Scoring rejects decision-type mismatches.** If the model mislabels a
    scenario's decision type, it is now failed rather than scored by the wrong
    calculator.
-4. **Paper corrections:** the Hybrid description and the parameter tables now
+4. **Paper corrections:** the LLM-Parameterized_Reference_Scoring description and the parameter tables now
    match the implementation (the LLM does *not* parse alternatives, and does
    *not* receive the parameters some tables claimed); the model list is now
    consistent (the four models above) everywhere; stale leaked metric numbers
@@ -222,7 +222,7 @@ them explicitly so you know what changed since you last looked:
 If any of these concern you, the relevant code is cited inline above and in the
 paper, and I'm happy to walk through the reasoning.
 
-> **River:** Perhaps you could also report the accuracy of parameter extraction in the hybrid parameter, as well as the final score/rank agreement. This could be interesting. As mentioned, the work involves identifying the most effective use of LLMs, so if parameter extraction is highly accurate, it's not surprising that the final accuracy is high.
+> **River:** Perhaps you could also report the accuracy of parameter extraction in the LLM-Parameterized_Reference_Scoring parameter, as well as the final score/rank agreement. This could be interesting. As mentioned, the work involves identifying the most effective use of LLMs, so if parameter extraction is highly accurate, it's not surprising that the final accuracy is high.
 >
 > Maybe the names for the three types of approaches can be improved for better recognization and easier understanding.
 
@@ -238,7 +238,7 @@ architectures.
 ### A. Correctly define and compare MAVT use
 
 - **Problem:** The architectures do not use MAVT in the same way. Ground Truth
-  and Hybrid explicitly calculate raw physical outcomes and transform them
+  and LLM-Parameterized_Reference_Scoring explicitly calculate raw physical outcomes and transform them
   through the reference value functions. Pure and RAG directly ask the LLM to
   estimate criterion-level `0–10` value scores and only apply the final additive
   weighting step.
@@ -248,19 +248,19 @@ architectures.
   3. additive MAVT aggregation.
 - **Completion criterion:** The manuscript explicitly states that Pure and RAG
   do not execute the reference value functions for target scenarios, while
-  Hybrid and Ground Truth do. Claims that all architectures use the “same MAVT
+  LLM-Parameterized_Reference_Scoring and Ground Truth do. Claims that all architectures use the “same MAVT
   procedure” are removed or qualified.
 
 ### B. Make the architecture comparison experimentally fair
 
-- **Problem:** Hybrid has direct access to the same calculators and value
-  functions used to generate the reference answers. Pure and RAG do not. Hybrid
+- **Problem:** LLM-Parameterized_Reference_Scoring has direct access to the same calculators and value
+  functions used to generate the reference answers. Pure and RAG do not. LLM-Parameterized_Reference_Scoring
   also evaluates all three alternatives jointly through one calculator call,
   whereas Pure and RAG score alternatives independently.
 - **Required improvement:** Run controlled ablations that independently vary:
   calculator access, value-function access, retrieval access, visible
   information, joint versus isolated alternative scoring, and LLM call budget.
-- **Completion criterion:** Any claimed Hybrid advantage remains significant
+- **Completion criterion:** Any claimed LLM-Parameterized_Reference_Scoring advantage remains significant
   after comparison against architectures with equivalent information and
   computational access.
 
@@ -302,7 +302,7 @@ architectures.
   against independent simulations, experts, behavioral observations, or a
   second independently specified model.
 
-### F. Evaluate Hybrid parameter extraction directly
+### F. Evaluate LLM-Parameterized_Reference_Scoring parameter extraction directly
 
 - **Problem:** Correct final ranking does not demonstrate correct extraction.
   Parameter errors may affect all alternatives similarly and therefore leave the
@@ -310,7 +310,7 @@ architectures.
 - **Required improvement:** Report parameter-level MAE, categorical accuracy,
   error distributions, and the probability that each parameter error changes
   the selected alternative.
-- **Completion criterion:** Hybrid's contribution is demonstrated beyond simply
+- **Completion criterion:** LLM-Parameterized_Reference_Scoring's contribution is demonstrated beyond simply
   reproducing the output of the shared calculator.
 
 ### G. Demonstrate that RAG retrieval adds value
