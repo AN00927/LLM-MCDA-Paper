@@ -52,6 +52,12 @@ from model_config import (
     REQUEST_TIMEOUT,
     RETRY_BASE_DELAY,
     MAX_RETRY_BACKOFF,
+    EXTRACTION_INVALID_JSON,
+    FAILED_MISSING_SCORE,
+    FAILED_OUT_OF_BOUNDS,
+    FAILED_INVALID_SCORE_TYPE,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN,
 )
 from sentinel_utils import (
     _atomic_write_json,
@@ -91,12 +97,12 @@ API_CONFIG = {
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 PURE_FAILURE_COUNTER_KEYS = [
-    "failed_malformed_json",
-    "failed_missing_score",
-    "failed_out_of_bounds",
-    "failed_invalid_score_type",
-    "failed_api_exhausted",
-    "failed_unknown"
+    EXTRACTION_INVALID_JSON,
+    FAILED_MISSING_SCORE,
+    FAILED_OUT_OF_BOUNDS,
+    FAILED_INVALID_SCORE_TYPE,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN
 ]
 
 
@@ -207,7 +213,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
             continue
 
     # Retries exhausted — mark API exhaustion explicitly
-    diagnostics["failure_types"] = ["failed_api_exhausted"]
+    diagnostics["failure_types"] = [FAILED_API_EXHAUSTED]
     return None, diagnostics
 
 
@@ -316,7 +322,7 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     if not response:
         logging.error(f"LLM scoring failed for alternative: {alternative}")
         if not diagnostics.get("failure_types"):
-            diagnostics["failure_types"] = ["failed_unknown"]
+            diagnostics["failure_types"] = [FAILED_UNKNOWN]
         return api_fallback_scores, diagnostics
 
 
@@ -341,7 +347,7 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
                 logging.warning(f"Missing score for {criterion}; using sentinel {SENTINEL_VALUE}")
                 validated_scores[criterion] = SENTINEL_VALUE
                 validation_failed = True
-                validation_failure_types.add("failed_missing_score")
+                validation_failure_types.add(FAILED_MISSING_SCORE)
                 continue
 
             raw_score = scores[criterion]
@@ -354,16 +360,16 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
                     logging.warning(f"Out-of-range score for {criterion}: {raw_value}; using sentinel {SENTINEL_VALUE}")
                     validated_scores[criterion] = SENTINEL_VALUE
                     validation_failed = True
-                    validation_failure_types.add("failed_out_of_bounds")
+                    validation_failure_types.add(FAILED_OUT_OF_BOUNDS)
             else:
                 logging.warning(f"Invalid score type for {criterion}: {raw_score}")
                 validated_scores[criterion] = SENTINEL_VALUE
                 validation_failed = True
-                validation_failure_types.add("failed_invalid_score_type")
+                validation_failure_types.add(FAILED_INVALID_SCORE_TYPE)
 
         if validation_failed:
             diagnostics["success"] = False
-            diagnostics["failure_types"] = sorted(validation_failure_types) if validation_failure_types else ["failed_unknown"]
+            diagnostics["failure_types"] = sorted(validation_failure_types) if validation_failure_types else [FAILED_UNKNOWN]
             return validated_scores, diagnostics
 
         diagnostics["failure_types"] = []
@@ -372,7 +378,7 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
 
     except (json.JSONDecodeError, ValueError) as e:
         diagnostics["success"] = False
-        diagnostics["failure_types"] = ["failed_malformed_json"]
+        diagnostics["failure_types"] = [EXTRACTION_INVALID_JSON]
         logging.error(f"JSON parse failed: {e}. Raw response: {response[:200]}")
         return parse_failure_scores, diagnostics
 
@@ -396,16 +402,16 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     if not valid_pairs:
         return {
             "ranked_alternatives": [],
-            "ranks": [1928] * len(alternatives),
-            "weighted_scores": [1928] * len(alternatives)
+            "ranks": [SENTINEL_VALUE] * len(alternatives),
+            "weighted_scores": [SENTINEL_FLOAT] * len(alternatives)
         }
 
     valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the indices lined up with the original order
-    ranks = [1928] * len(alternatives)
-    weighted_scores = [1928] * len(alternatives)
+    ranks = [SENTINEL_VALUE] * len(alternatives)
+    weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
         ranks[input_idx] = rank_position + 1
         weighted_scores[input_idx] = ws
@@ -437,7 +443,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
     for alt in alternatives:
         scores, diagnostics = score_alternative(scenario, alt)
-        alt_failed = any(scores.get(c) == 1928 for c in ["energy_cost", "environmental", "comfort", "practicality"])
+        alt_failed = has_sentinel_scores(scores)
         if alt_failed:
             diagnostics["success"] = False
 
@@ -455,7 +461,7 @@ def run_scenario(scenario: Dict) -> Dict:
         if diagnostics["success"]:
             total_diagnostics["successful_calls"] += 1
         else:
-            failure_types = diagnostics.get("failure_types") or ["failed_unknown"]
+            failure_types = diagnostics.get("failure_types") or [FAILED_UNKNOWN]
             total_diagnostics["failed_calls"] += 1
             _increment_failure_counters(total_diagnostics, failure_types)
 
@@ -551,8 +557,8 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
                 ],
                 "ranking_results": {
                     "ranked_alternatives": [],
-                    "ranks": [1928, 1928, 1928],
-                    "weighted_scores": [1928, 1928, 1928],
+                    "ranks": [SENTINEL_VALUE, SENTINEL_VALUE, SENTINEL_VALUE],
+                    "weighted_scores": [SENTINEL_FLOAT, SENTINEL_FLOAT, SENTINEL_FLOAT],
                     "error": str(e)
                 },
                 "diagnostics": {
@@ -609,12 +615,12 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
             alt = alt_scores["alternative"]
 
             if scenario_failed:
-                energy_cost = 1928
-                environmental = 1928
-                comfort = 1928
-                practicality = 1928
-                rank = 1928
-                weighted_score = 1928
+                energy_cost = SENTINEL_VALUE
+                environmental = SENTINEL_VALUE
+                comfort = SENTINEL_VALUE
+                practicality = SENTINEL_VALUE
+                rank = SENTINEL_VALUE
+                weighted_score = SENTINEL_FLOAT
             else:
                 energy_cost = alt_scores["energy_cost"]
                 environmental = alt_scores["environmental"]
@@ -710,7 +716,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
-    SENTINEL = 1928.0
+    SENTINEL = SENTINEL_FLOAT
 
     # Use pd.to_numeric (coerce) — handles string "1928" and malformed values
     for c in CRITERIA_COLS:

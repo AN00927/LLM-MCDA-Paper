@@ -24,6 +24,18 @@ from model_config import (
     REQUEST_TIMEOUT,
     RETRY_BASE_DELAY,
     MAX_RETRY_BACKOFF,
+    EXTRACTION_INVALID_JSON,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN,
+    FAILED_EXTRACTION_NON_JSON_WRAPPER,
+    FAILED_EXTRACTION_INVALID_DECISION_TYPE,
+    FAILED_EXTRACTION_INVALID_CALCULATOR,
+    FAILED_EXTRACTION_MISSING_PARAMETERS,
+    FAILED_EXTRACTION_INVALID_PARAMETERS,
+    FAILED_EXTRACTION_DECISION_TYPE_MISMATCH,
+    FAILED_EXTRACTION_EXCEPTION,
+    FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
+    FAILED_GROUND_TRUTH_MISSING_KEY,
 )
 from sentinel_utils import (
     _atomic_write_json,
@@ -112,18 +124,18 @@ HYBRID_CATEGORICAL_EXTRACTED_COLS = [
 
 
 HYBRID_FAILURE_COUNTER_KEYS = [
-    "failed_extraction_non_json_wrapper",
-    "failed_extraction_invalid_json",
-    "failed_extraction_invalid_decision_type",
-    "failed_extraction_invalid_calculator",
-    "failed_extraction_missing_parameters",
-    "failed_extraction_invalid_parameters",
-    "failed_extraction_decision_type_mismatch",
-    "failed_extraction_exception",
-    "failed_ground_truth_calculation_exception",
-    "failed_ground_truth_missing_key",
-    "failed_api_exhausted",
-    "failed_unknown"
+    FAILED_EXTRACTION_NON_JSON_WRAPPER,
+    EXTRACTION_INVALID_JSON,
+    FAILED_EXTRACTION_INVALID_DECISION_TYPE,
+    FAILED_EXTRACTION_INVALID_CALCULATOR,
+    FAILED_EXTRACTION_MISSING_PARAMETERS,
+    FAILED_EXTRACTION_INVALID_PARAMETERS,
+    FAILED_EXTRACTION_DECISION_TYPE_MISMATCH,
+    FAILED_EXTRACTION_EXCEPTION,
+    FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
+    FAILED_GROUND_TRUTH_MISSING_KEY,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN
 ]
 
 
@@ -327,7 +339,7 @@ def query_openrouter(messages: List[Dict], model: str = MODEL_ID,
             continue
 
     # We're out of retries at this point.
-    raise Exception(f"failed_api_exhausted: Failed to get response after {MAX_RETRIES} attempts")
+    raise Exception(f"{FAILED_API_EXHAUSTED}: Failed to get response after {MAX_RETRIES} attempts")
 
 def format_scenario_for_extraction(scenario: Dict) -> str:
     """Format scenario for extraction.
@@ -388,7 +400,7 @@ def extract_all_with_ai(scenario: Dict,
         if not strict_json_only:
             print("Extraction failed: non-JSON wrapper text detected")
             extraction_diagnostics['extraction_error'] = "Non-JSON wrapper text detected"
-            extraction_diagnostics['failure_types'] = ["failed_extraction_non_json_wrapper"]
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_NON_JSON_WRAPPER]
             return None, extraction_diagnostics
 
         import re
@@ -397,7 +409,7 @@ def extract_all_with_ai(scenario: Dict,
         if not json_match:
             print("Extraction failed: could not parse JSON")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-            extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
+            extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
             extraction_diagnostics.update({
                 'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                 'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -410,7 +422,7 @@ def extract_all_with_ai(scenario: Dict,
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Extraction failed: could not parse JSON: {e}")
             extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-            extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
+            extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
             extraction_diagnostics.update({
                 'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
                 'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -424,7 +436,7 @@ def extract_all_with_ai(scenario: Dict,
             if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
                 print(f" invalid decision_type: {extracted['decision_type']}")
                 extraction_diagnostics['extraction_error'] = "Invalid decision_type"
-                extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_decision_type"]
+                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_DECISION_TYPE]
                 return None, extraction_diagnostics
 
             valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
@@ -432,7 +444,7 @@ def extract_all_with_ai(scenario: Dict,
             if extracted['calculator'] not in valid_calculators:
                 print(f" invalid calculator: {extracted['calculator']}")
                 extraction_diagnostics['extraction_error'] = "Invalid calculator"
-                extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_calculator"]
+                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_CALCULATOR]
                 return None, extraction_diagnostics
 
             params = extracted['parameters']
@@ -448,7 +460,7 @@ def extract_all_with_ai(scenario: Dict,
                 extraction_diagnostics['extraction_error'] = (
                     f"decision_type mismatch: {decision_type} != {expected_decision_type}"
                 )
-                extraction_diagnostics['failure_types'] = ["failed_extraction_decision_type_mismatch"]
+                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_DECISION_TYPE_MISMATCH]
                 return None, extraction_diagnostics
 
             # Only the extrapolated engineering parameters are required from the
@@ -470,7 +482,7 @@ def extract_all_with_ai(scenario: Dict,
                     extraction_diagnostics['extraction_error'] = (
                         f"Invalid numeric parameters: {bad_numeric}"
                     )
-                    extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_parameters"]
+                    extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_PARAMETERS]
                     return None, extraction_diagnostics
 
                 extraction_diagnostics['success'] = True
@@ -484,12 +496,12 @@ def extract_all_with_ai(scenario: Dict,
 
             print(f"Missing required parameters for {decision_type}")
             extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
-            extraction_diagnostics['failure_types'] = ["failed_extraction_missing_parameters"]
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_MISSING_PARAMETERS]
             return None, extraction_diagnostics
 
         print("Extraction failed: could not parse JSON")
         extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-        extraction_diagnostics['failure_types'] = ["failed_extraction_invalid_json"]
+        extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
         extraction_diagnostics.update({
             'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
@@ -504,9 +516,9 @@ def extract_all_with_ai(scenario: Dict,
         # Distinguish API/network exhaustion (transient infrastructure failure)
         # from genuine extraction errors (bad LLM output, code bugs).
         if "failed to get response" in error_text or "request failed" in error_text:
-            extraction_diagnostics['failure_types'] = ['failed_api_exhausted']
+            extraction_diagnostics['failure_types'] = [FAILED_API_EXHAUSTED]
         else:
-            extraction_diagnostics['failure_types'] = ["failed_extraction_exception"]
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_EXCEPTION]
         return None, extraction_diagnostics
 
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
@@ -611,8 +623,8 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the array positions lined up with the original alternatives
-    ranks = [1928] * len(alternatives)
-    weighted_scores = [1928] * len(alternatives)
+    ranks = [SENTINEL_VALUE] * len(alternatives)
+    weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
         ranks[input_idx] = rank_position + 1
         weighted_scores[input_idx] = ws
@@ -640,7 +652,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
     if extraction_result is None:
         extraction_failure_types = extraction_diag.get('failure_types', [])
-        if extraction_failure_types == ['failed_api_exhausted']:
+        if extraction_failure_types == [FAILED_API_EXHAUSTED]:
             print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using fallback scores")
 
             neutral_alternatives = []
@@ -730,12 +742,12 @@ def run_scenario(scenario: Dict) -> Dict:
         print(f" Ground truth calculation failed: {e}")
         if isinstance(e, KeyError):
             missing_key = e.args[0] if e.args else 'unknown'
-            failure_type = 'failed_ground_truth_missing_key'
+            failure_type = FAILED_GROUND_TRUTH_MISSING_KEY
             failure_detail = f"missing scenario key: {missing_key!r}"
             failure_types_out = [failure_type]
             extra_diag = {'missing_scenario_key': missing_key}
         else:
-            failure_type = 'failed_ground_truth_calculation_exception'
+            failure_type = FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION
             failure_detail = str(e)
             failure_types_out = [failure_type]
             extra_diag = {}
@@ -912,7 +924,7 @@ def run_test_set(test_path: str, output_path: str,
             cumulative_diagnostics['failed_calls'] += 1
             cumulative_diagnostics['failed_scenarios'] += 1
             if not failure_types:
-                _increment_failure_counters(cumulative_diagnostics, ['failed_unknown'])
+                _increment_failure_counters(cumulative_diagnostics, [FAILED_UNKNOWN])
         else:
             cumulative_diagnostics['successful_calls'] += 1
             cumulative_diagnostics['successful_scenarios'] += 1
@@ -952,8 +964,8 @@ def run_test_set(test_path: str, output_path: str,
             scores = alt_data['scores']
 
             if scenario_failed:
-                energy_cost = environmental = comfort = practicality = 1928
-                rank = weighted_score = 1928
+                energy_cost = environmental = comfort = practicality = SENTINEL_VALUE
+                rank = weighted_score = SENTINEL_VALUE
             else:
                 energy_cost = scores['energy_cost']
                 environmental = scores['environmental']
@@ -1066,7 +1078,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     combined = combined.drop(columns=["rank", "weighted_score"], errors="ignore")
 
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
-    SENTINEL = 1928.0
+    SENTINEL = SENTINEL_FLOAT
 
     # Use pd.to_numeric (coerce) — handles string "1928" and malformed values
     for c in CRITERIA_COLS:

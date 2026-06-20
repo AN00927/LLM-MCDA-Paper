@@ -23,8 +23,26 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import get_output_folder, MODEL_KEY, CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import _atomic_write_xlsx, read_table_clean
+from model_config import (
+    get_output_folder,
+    MODEL_KEY,
+    CRITERION_WEIGHTS,
+    TIE_BREAK_PRIORITY,
+    EXTRACTION_INVALID_JSON,
+    FAILED_MISSING_SCORE,
+    FAILED_OUT_OF_BOUNDS,
+    FAILED_INVALID_SCORE_TYPE,
+    FAILED_API_EXHAUSTED,
+    FAILED_UNKNOWN,
+    FAILED_EXTRACTION_NON_JSON_WRAPPER,
+    FAILED_EXTRACTION_INVALID_DECISION_TYPE,
+    FAILED_EXTRACTION_INVALID_CALCULATOR,
+    FAILED_EXTRACTION_MISSING_PARAMETERS,
+    FAILED_EXTRACTION_EXCEPTION,
+    FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
+    FAILED_GROUND_TRUTH_MISSING_KEY,
+)
+from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',
@@ -61,7 +79,7 @@ CONFIG = {
 }
 
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
-FAIL_SENTINEL = 1928
+FAIL_SENTINEL = SENTINEL_VALUE
 
 # Scenario matching uses (question, location) content keys only. Strict
 # (decision_type, scenario_id) lookup is disabled because architecture
@@ -770,15 +788,15 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     # Keep aligned with PURE_FAILURE_COUNTER_KEYS / RAG_FAILURE_COUNTER_KEYS /
     # HYBRID_FAILURE_COUNTER_KEYS in the architecture modules.
     PURE_RAG_COUNTERS = [
-        "failed_malformed_json", "failed_missing_score", "failed_out_of_bounds",
-        "failed_invalid_score_type", "failed_api_exhausted", "failed_unknown"
+        EXTRACTION_INVALID_JSON, FAILED_MISSING_SCORE, FAILED_OUT_OF_BOUNDS,
+        FAILED_INVALID_SCORE_TYPE, FAILED_API_EXHAUSTED, FAILED_UNKNOWN
     ]
     HYBRID_COUNTERS = [
-        "failed_extraction_non_json_wrapper", "failed_extraction_invalid_json",
-        "failed_extraction_invalid_decision_type", "failed_extraction_invalid_calculator",
-        "failed_extraction_missing_parameters", "failed_extraction_exception",
-        "failed_ground_truth_calculation_exception", "failed_ground_truth_missing_key",
-        "failed_api_exhausted", "failed_unknown"
+        FAILED_EXTRACTION_NON_JSON_WRAPPER, EXTRACTION_INVALID_JSON,
+        FAILED_EXTRACTION_INVALID_DECISION_TYPE, FAILED_EXTRACTION_INVALID_CALCULATOR,
+        FAILED_EXTRACTION_MISSING_PARAMETERS, FAILED_EXTRACTION_EXCEPTION,
+        FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION, FAILED_GROUND_TRUTH_MISSING_KEY,
+        FAILED_API_EXHAUSTED, FAILED_UNKNOWN
     ]
     expected_counters = HYBRID_COUNTERS if arch_name == "Hybrid" else PURE_RAG_COUNTERS
 

@@ -89,3 +89,69 @@ def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
     if not reasoning_effort or reasoning_effort == "non-reasoning":
         return {}
     return {"enabled": True, "effort": reasoning_effort}
+
+
+# ===========================================================================
+# STANDARDIZED FAILURE TYPE CONSTANTS (Phase 2)
+# ===========================================================================
+EXTRACTION_INVALID_JSON = "EXTRACTION_INVALID_JSON"
+FAILED_MISSING_SCORE = "FAILED_MISSING_SCORE"
+FAILED_OUT_OF_BOUNDS = "FAILED_OUT_OF_BOUNDS"
+FAILED_INVALID_SCORE_TYPE = "FAILED_INVALID_SCORE_TYPE"
+FAILED_API_EXHAUSTED = "FAILED_API_EXHAUSTED"
+FAILED_UNKNOWN = "FAILED_UNKNOWN"
+
+# Hybrid-specific
+FAILED_EXTRACTION_NON_JSON_WRAPPER = "FAILED_EXTRACTION_NON_JSON_WRAPPER"
+FAILED_EXTRACTION_INVALID_DECISION_TYPE = "FAILED_EXTRACTION_INVALID_DECISION_TYPE"
+FAILED_EXTRACTION_INVALID_CALCULATOR = "FAILED_EXTRACTION_INVALID_CALCULATOR"
+FAILED_EXTRACTION_MISSING_PARAMETERS = "FAILED_EXTRACTION_MISSING_PARAMETERS"
+FAILED_EXTRACTION_INVALID_PARAMETERS = "FAILED_EXTRACTION_INVALID_PARAMETERS"
+FAILED_EXTRACTION_DECISION_TYPE_MISMATCH = "FAILED_EXTRACTION_DECISION_TYPE_MISMATCH"
+FAILED_EXTRACTION_EXCEPTION = "FAILED_EXTRACTION_EXCEPTION"
+FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION = "FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION"
+FAILED_GROUND_TRUTH_MISSING_KEY = "FAILED_GROUND_TRUTH_MISSING_KEY"
+
+
+# ===========================================================================
+# PARAMETER NAME STANDARDIZATION PLAN (Phase 3)
+# ===========================================================================
+"""
+This section documents the canonical variable name plan for future implementation:
+
+1. Hybrid.py internal variables:
+   - Canonical `extracted_result` instead of `extraction_result`.
+   - Canonical `extraction_diagnostics` instead of `extraction_diag`.
+   - Keep input `decision_type` separate from LLM-extracted `extracted_decision_type`.
+   - Canonical `failure_types` instead of `extraction_failure_types` / `failure_types_out`.
+
+2. PurePrompting.py internal variables:
+   - Canonical `scenario_diagnostics` (per-scenario) instead of `diagnostics`.
+   - Canonical `cumulative_diagnostics` (final/cumulative metrics) instead of `total_diagnostics`.
+   - Canonical `alternatives_scores` instead of `alt_scores` / `alternatives_scores`.
+   - Canonical `scenario_failed` boolean flag instead of reading `diag.get("scenario_failed")`.
+
+3. RAGDatabaseOptimized.py internal variables:
+   - Canonical `alternatives_scores` instead of `alternative`.
+   - Canonical `cumulative_diagnostics` instead of `total_diagnostics`.
+   - Canonical `ranking_results` instead of `ranking_result`.
+
+4. Output Columns & Schema:
+   - `scenario_id` (int): Unique identifier of the test scenario.
+   - `question` (str): Scenario question text.
+   - `location` (str): Location of the household/building.
+   - `decision_type` (str): HVAC | Appliance | Shower
+   - `outdoor_temp` (float/str): Outdoor temperature parameter.
+   - `appliance_age` (float/str): Appliance age in years.
+   - `flow_rate` (str): Shower flow rate label/value.
+   - `alternative` (str): Decision alternative name/option.
+   - `energy_cost` (float): Cost score or sentinel.
+   - `environmental` (float): Environmental score or sentinel.
+   - `comfort` (float): Comfort score or sentinel.
+   - `practicality` (float): Practicality score or sentinel.
+   - `rank` (int): Calculated alternative rank (1-3) or sentinel.
+   - `weighted_score` (float): Calculated multi-attribute score or sentinel.
+   - `calculator` (str): Ground truth calculator name used.
+   - `extraction_failed` (bool): (Hybrid only) True if LLM parameter extraction failed.
+   - `gt_calculation_failed` (bool): (Hybrid only) True if downstream calculator raised an exception.
+"""
