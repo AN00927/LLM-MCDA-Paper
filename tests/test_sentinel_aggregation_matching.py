@@ -286,10 +286,10 @@ class TestLoadDiagnosticsJson:
         with open(path, "w") as f:
             json.dump(data, f)
 
-    def test_pure_counters_loaded(self, tmp_path):
-        results_path = tmp_path / "pure_prompting_results.xlsx"
+    def test_direct_llm_scoring_counters_loaded(self, tmp_path):
+        results_path = tmp_path / "Direct_LLM_Scoring_results.xlsx"
         results_path.touch()
-        diag_path = tmp_path / "pure_prompting_results_diagnostics_run_01.json"
+        diag_path = tmp_path / "Direct_LLM_Scoring_results_diagnostics_run_01.json"
         self._write_diag(diag_path, {
             "total_scenarios": 10,
             "failed_scenarios": 2,
@@ -302,11 +302,11 @@ class TestLoadDiagnosticsJson:
             FAILED_INVALID_SCORE_TYPE: 0,
             FAILED_UNKNOWN: 2,
         })
-        result = self._cm._load_diagnostics_json(str(results_path), "Pure")
+        result = self._cm._load_diagnostics_json(str(results_path), "Direct_LLM_Scoring")
         assert result["diag_failed_scenarios"] == 2
         assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 1
         assert result[f"diag_{FAILED_MISSING_SCORE}"] == 1
-        # LLM-Parameterized_Reference_Scoring counter should NOT appear in Pure result
+        # LLM-Parameterized_Reference_Scoring counter should NOT appear in Direct_LLM_Scoring result
         assert f"diag_{FAILED_EXTRACTION_INVALID_DECISION_TYPE}" not in result
 
     def test_LLM_Parameterized_Reference_Scoring_counters_loaded(self, tmp_path):
@@ -329,20 +329,20 @@ class TestLoadDiagnosticsJson:
         assert f"diag_{FAILED_MISSING_SCORE}" not in result
 
     def test_no_diag_file_graceful(self, tmp_path):
-        results_path = tmp_path / "pure_prompting_results.xlsx"
+        results_path = tmp_path / "Direct_LLM_Scoring_results.xlsx"
         results_path.touch()
-        result = self._cm._load_diagnostics_json(str(results_path), "Pure")
+        result = self._cm._load_diagnostics_json(str(results_path), "Direct_LLM_Scoring")
         assert result["diag_files_loaded"] == 0
 
     def test_per_run_diag_files_aggregated(self, tmp_path):
         """Multiple _run_NN diagnostics files should be summed."""
-        results_path = tmp_path / "pure_prompting_results.xlsx"
+        results_path = tmp_path / "Direct_LLM_Scoring_results.xlsx"
         results_path.touch()
         for i in (1, 2):
-            p = tmp_path / f"pure_prompting_results_diagnostics_run_{i:02d}.json"
+            p = tmp_path / f"Direct_LLM_Scoring_results_diagnostics_run_{i:02d}.json"
             self._write_diag(p, {"failed_scenarios": 1, EXTRACTION_INVALID_JSON: 1,
                                   "total_scenarios": 5})
-        result = self._cm._load_diagnostics_json(str(results_path), "Pure")
+        result = self._cm._load_diagnostics_json(str(results_path), "Direct_LLM_Scoring")
         assert result["diag_files_loaded"] == 2
         assert result["diag_failed_scenarios"] == 2      # 1+1
         assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 2  # 1+1

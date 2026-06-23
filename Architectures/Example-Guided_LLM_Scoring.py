@@ -49,8 +49,12 @@ TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
+# Allow debug level to be controlled via environment variable
+DEBUG_API = os.getenv("DEBUG_API", "false").lower() == "true"
+DEBUG_LEVEL = logging.DEBUG if DEBUG_API else logging.INFO
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=DEBUG_LEVEL,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -71,6 +75,15 @@ API_CONFIG = {
     "temperature": TEMPERATURE,
     "reasoning": REASONING_PAYLOAD,
 }
+logger.info(f"Reasoning payload: {API_CONFIG['reasoning']} (exclude:true = no thinking tokens)")
+
+# Log startup config
+if DEBUG_API:
+    logger.debug(f"DEBUG_API mode enabled - will log full API responses")
+    logger.debug(f"Model: {MODEL_ID}")
+    logger.debug(f"Temperature: {TEMPERATURE}")
+    logger.debug(f"Max retries: {MAX_RETRIES}")
+    logger.debug(f"Request timeout: {REQUEST_TIMEOUT}s")
 
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
@@ -199,9 +212,45 @@ def query_openrouter(messages: List[Dict], model: str = None,
 
             if response.status_code == 200:
                 data = response.json()
+                
+                # DEBUG: Log full response structure
+                if DEBUG_API:
+                    logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
+                    logger.debug(f"Full response keys: {list(data.keys())}")
+                    logger.debug(f"Usage: {data.get('usage', {})}")
+                    if "choices" in data and len(data["choices"]) > 0:
+                        choice = data["choices"][0]
+                        logger.debug(f"Choice keys: {list(choice.keys())}")
+                        if "message" in choice:
+                            msg = choice["message"]
+                            logger.debug(f"Message keys: {list(msg.keys())}")
+                            logger.debug(f"Message role: {msg.get('role')}")
+                            logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
+                            # Check for reasoning/thinking fields
+                            for key in msg.keys():
+                                if key not in ['role', 'content']:
+                                    logger.debug(f"Message extra field '{key}': {msg.get(key)}")
+
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
                 usage = data.get('usage', {})
+                reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+                finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
+                # Always-on progress log: shows pipeline is alive + catches surprise reasoning
+                logger.info(
+                    f"  [call ok] attempt={attempt} latency={latency_ms/1000:.1f}s "
+                    f"prompt={usage.get('prompt_tokens', 0)} "
+                    f"completion={usage.get('completion_tokens', 0)} "
+                    f"reasoning_tokens={reasoning_tokens} "
+                    f"finish={finish_reason}"
+                )
+                if reasoning_tokens > 0:
+                    logger.warning(
+                        f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
+                        f"-- thinking was NOT suppressed despite exclude:true. "
+                        f"Consider switching provider or adding /no-think suffix."
+                    )
+
                 diagnostics = {
                     'prompt_tokens': usage.get('prompt_tokens', 0),
                     'completion_tokens': usage.get('completion_tokens', 0),
@@ -209,6 +258,9 @@ def query_openrouter(messages: List[Dict], model: str = None,
                     'latency_ms': latency_ms,
                     'model': model
                 }
+
+                if DEBUG_API:
+                    logger.debug(f"Returning content (len={len(content)}): {content[:200]}...")
 
                 return content, diagnostics
             else:
@@ -484,6 +536,12 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
 
     try:
         response_text, diagnostics = query_openrouter(messages)
+        
+        # DEBUG: Log the raw scoring response
+        if DEBUG_API:
+            logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
+            logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
+            logger.debug(f"Response length: {len(response_text)} chars")
     except Exception as e:
         logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
         # Distinguish API/network exhaustion from genuine code/parse errors.
@@ -696,7 +754,7 @@ def run_test_set(test_path: str, output_path: str,
     if chroma_collection is None or embedding_model is None:
         raise RuntimeError("RAG database not initialized; init_rag_resources() must be called before run_test_set.")
 
-    logger.info(f"RAG-ENHANCED MCDA ARCHITECTURE - TEST SET")
+    logger.info(f"EXAMPLE-GUIDED LLM SCORING ARCHITECTURE - TEST SET")
 
     logger.info(f"Loading test scenarios from: {test_csv_path}")
 
@@ -860,7 +918,7 @@ def run_test_set(test_path: str, output_path: str,
     _atomic_write_json(cumulative_diagnostics, output_diagnostics_path)
     logger.info(f"OK Diagnostics saved to: {output_diagnostics_path}")
 
-    logger.info(f"RAG-ENHANCED TEST COMPLETE")
+    logger.info(f"EXAMPLE-GUIDED LLM SCORING TEST COMPLETE")
     logger.info(f"Total scenarios: {cumulative_diagnostics['total_scenarios']}")
     logger.info(f"Total API calls: {cumulative_diagnostics['total_api_calls']}")
     logger.info(f"Successful calls: {cumulative_diagnostics['successful_calls']}")
@@ -1027,8 +1085,8 @@ def main():
 
     output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_csv = output_dir / "rag_results.xlsx"
-    output_diagnostics = output_dir / "rag_results_diagnostics.json"
+    output_csv = output_dir / "Example-Guided_LLM_Scoring_results.xlsx"
+    output_diagnostics = output_dir / "Example-Guided_LLM_Scoring_results_diagnostics.json"
 
     run_multi_and_aggregate(
         test_csv_path=str(TEST_SCENARIOS),
