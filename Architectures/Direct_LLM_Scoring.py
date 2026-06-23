@@ -77,12 +77,25 @@ load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 
+# Allow debug level to be controlled via environment variable
+DEBUG_API = os.getenv("DEBUG_API", "false").lower() == "true"
+DEBUG_LEVEL = logging.DEBUG if DEBUG_API else logging.INFO
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=DEBUG_LEVEL,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 MODEL_ID = get_model_id()
+
+# Log startup config
+logger = logging.getLogger(__name__)
+if DEBUG_API:
+    logger.debug(f"DEBUG_API mode enabled - will log full API responses")
+    logger.debug(f"Model: {MODEL_ID}")
+    logger.debug(f"Temperature: {TEMPERATURE}")
+    logger.debug(f"Max retries: {MAX_RETRIES}")
+    logger.debug(f"Request timeout: {REQUEST_TIMEOUT}s")
 
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
@@ -90,6 +103,7 @@ API_CONFIG = {
     "temperature": TEMPERATURE,  # shared across all three architectures (model_config)
     "reasoning": get_reasoning_payload(),
 }
+logger.info(f"Reasoning payload: {API_CONFIG['reasoning']} (exclude:true = no thinking tokens)")
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
@@ -169,15 +183,54 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
 
             if response.status_code == 200:
                 data = response.json()
+                
+                # DEBUG: Log full response structure
+                if DEBUG_API:
+                    logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
+                    logger.debug(f"Full response keys: {list(data.keys())}")
+                    logger.debug(f"Usage: {data.get('usage', {})}")
+                    if "choices" in data and len(data["choices"]) > 0:
+                        choice = data["choices"][0]
+                        logger.debug(f"Choice keys: {list(choice.keys())}")
+                        if "message" in choice:
+                            msg = choice["message"]
+                            logger.debug(f"Message keys: {list(msg.keys())}")
+                            logger.debug(f"Message role: {msg.get('role')}")
+                            logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
+                            # Check for reasoning/thinking fields
+                            for key in msg.keys():
+                                if key not in ['role', 'content']:
+                                    logger.debug(f"Message extra field '{key}': {msg.get(key)}")
+
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
                 # Grab token counts if the API sent them
                 usage = data.get("usage", {})
+                reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+                finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
+                # Always-on progress log: shows pipeline is alive + catches surprise reasoning
+                logger.info(
+                    f"  [call ok] attempt={attempt} latency={latency/1000:.1f}s "
+                    f"prompt={usage.get('prompt_tokens', 0)} "
+                    f"completion={usage.get('completion_tokens', 0)} "
+                    f"reasoning_tokens={reasoning_tokens} "
+                    f"finish={finish_reason}"
+                )
+                if reasoning_tokens > 0:
+                    logger.warning(
+                        f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
+                        f"-- thinking was NOT suppressed despite exclude:true. "
+                        f"Consider switching provider or adding /no-think suffix."
+                    )
+
                 diagnostics["tokens_input"] = usage.get("prompt_tokens", 0)
                 diagnostics["tokens_output"] = usage.get("completion_tokens", 0)
                 diagnostics["latency_ms"] = latency
                 diagnostics["success"] = True
                 diagnostics["retries"] = attempt - 1
+
+                if DEBUG_API:
+                    logger.debug(f"Returning content (len={len(content)}): {content[:200]}...")
 
                 return content, diagnostics
             else:
@@ -300,6 +353,13 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     ]
 
     response, diagnostics = query_openrouter(messages)
+    
+    # DEBUG: Log the raw scoring response
+    if DEBUG_API:
+        logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
+        logger.debug(f"Raw response (first 1000 chars): {response[:1000] if response else 'None'}")
+        logger.debug(f"Response length: {len(response) if response else 0} chars")
+    
     diagnostics.setdefault("failure_types", [])
 
     api_fallback_scores = {
@@ -796,7 +856,7 @@ def main():
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return
 
-    logging.info("Starting Pure Prompting Architecture Test...")
+    logging.info("Starting Direct LLM Scoring Architecture Test...")
     logging.info(f"Model: {API_CONFIG['model']}")
     logging.info(f"Temperature: {API_CONFIG['temperature']}")
     try:
@@ -826,11 +886,11 @@ def main():
 
     output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_xlsx = output_dir / "pure_prompting_results.xlsx"
-    output_diagnostics = output_dir / "pure_prompting_results_diagnostics.json"
+    output_xlsx = output_dir / "Direct_LLM_Scoring_results.xlsx"
+    output_diagnostics = output_dir / "Direct_LLM_Scoring_results_diagnostics.json"
 
     run_multi_and_aggregate(str(TEST_SCENARIOS), str(output_xlsx), str(output_diagnostics))
-    logging.info("PURE PROMPTING MULTI-RUN COMPLETE")
+    logging.info("DIRECT LLM SCORING MULTI-RUN COMPLETE")
 
 
 

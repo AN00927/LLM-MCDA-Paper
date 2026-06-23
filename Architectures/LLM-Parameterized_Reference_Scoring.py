@@ -83,6 +83,18 @@ except Exception as e:
 
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
+
+# Allow debug level to be controlled via environment variable
+DEBUG_API = os.getenv("DEBUG_API", "false").lower() == "true"
+
+import logging
+DEBUG_LEVEL = logging.DEBUG if DEBUG_API else logging.INFO
+logging.basicConfig(
+    level=DEBUG_LEVEL,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
@@ -99,6 +111,15 @@ API_CONFIG = {
     "temperature": TEMPERATURE,
     "reasoning": REASONING_PAYLOAD,
 }
+logger.info(f"Reasoning payload: {API_CONFIG['reasoning']} (exclude:true = no thinking tokens)")
+
+# Log startup config
+if DEBUG_API:
+    logger.debug(f"DEBUG_API mode enabled - will log full API responses")
+    logger.debug(f"Model: {MODEL_ID}")
+    logger.debug(f"Temperature: {TEMPERATURE}")
+    logger.debug(f"Max retries: {MAX_RETRIES}")
+    logger.debug(f"Request timeout: {REQUEST_TIMEOUT}s")
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
@@ -308,9 +329,45 @@ def query_openrouter(messages: List[Dict], model: str = None,
 
             if response.status_code == 200:
                 data = response.json()
+                
+                # DEBUG: Log full response structure
+                if DEBUG_API:
+                    logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
+                    logger.debug(f"Full response keys: {list(data.keys())}")
+                    logger.debug(f"Usage: {data.get('usage', {})}")
+                    if "choices" in data and len(data["choices"]) > 0:
+                        choice = data["choices"][0]
+                        logger.debug(f"Choice keys: {list(choice.keys())}")
+                        if "message" in choice:
+                            msg = choice["message"]
+                            logger.debug(f"Message keys: {list(msg.keys())}")
+                            logger.debug(f"Message role: {msg.get('role')}")
+                            logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
+                            # Check for reasoning/thinking fields
+                            for key in msg.keys():
+                                if key not in ['role', 'content']:
+                                    logger.debug(f"Message extra field '{key}': {msg.get(key)}")
+
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
                 usage = data.get('usage', {})
+                reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+                finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
+                # Always-on progress log: shows pipeline is alive + catches surprise reasoning
+                logger.info(
+                    f"  [call ok] attempt={attempt} latency={latency_ms/1000:.1f}s "
+                    f"prompt={usage.get('prompt_tokens', 0)} "
+                    f"completion={usage.get('completion_tokens', 0)} "
+                    f"reasoning_tokens={reasoning_tokens} "
+                    f"finish={finish_reason}"
+                )
+                if reasoning_tokens > 0:
+                    logger.warning(
+                        f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
+                        f"-- thinking was NOT suppressed despite exclude:true. "
+                        f"Consider switching provider or adding /no-think suffix."
+                    )
+
                 diagnostics = {
                     'prompt_tokens': usage.get('prompt_tokens', 0),
                     'completion_tokens': usage.get('completion_tokens', 0),
@@ -318,6 +375,9 @@ def query_openrouter(messages: List[Dict], model: str = None,
                     'latency_ms': latency_ms,
                     'model': model
                 }
+
+                if DEBUG_API:
+                    logger.debug(f"Returning content (len={len(content)}): {content[:200]}...")
 
                 return content, diagnostics
             else:
@@ -398,6 +458,13 @@ def extract_all_with_ai(scenario: Dict,
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
             'latency_ms': api_diagnostics.get('latency_ms', 0)
         })
+        
+        # DEBUG: Log the raw extraction response
+        if DEBUG_API:
+            logger.debug(f"=== EXTRACTION RESPONSE ===")
+            logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
+            logger.debug(f"Response length: {len(response_text)} chars")
+        
         stripped_response = response_text.strip()
         if stripped_response.startswith("```"):
             stripped_response = stripped_response.split("```", 2)[1]
