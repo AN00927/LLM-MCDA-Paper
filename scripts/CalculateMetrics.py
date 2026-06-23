@@ -3,7 +3,7 @@
 calculate_metrics.py - Metrics evaluation for MCDA architecture comparison
 Science Fair Project: LLM-assisted MCDA for Household Emissions Optimization
 
-Compares Pure Prompting, RAG-Enhanced, and LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoring architectures against
+Compares Direct LLM Scoring, Example-Guided LLM Scoring, and LLM-Parameterized Reference Scoring architectures against
 physics-based ground truth using MAVT scoring across HVAC, Appliance,
 and Shower decision scenarios.
 """
@@ -59,8 +59,8 @@ CONFIG = {
         "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx"),
     },
     "architectures": {
-        "Pure": str(OUTPUT_DIR / "pure_prompting_results.xlsx"),
-        "RAG": str(OUTPUT_DIR / "rag_results.xlsx"),
+        "Direct_LLM_Scoring": str(OUTPUT_DIR / "Direct_LLM_Scoring_results.xlsx"),
+        "Example-Guided_LLM_Scoring": str(OUTPUT_DIR / "Example-Guided_LLM_Scoring_results.xlsx"),
         "LLM-Parameterized_Reference_Scoring": str(OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
     },
     "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.xlsx"),
@@ -751,6 +751,7 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     The schema differs per architecture:
       Pure/RAG: failed_malformed_json, failed_missing_score, failed_out_of_bounds,
                 failed_invalid_score_type, failed_unknown
+      Direct_LLM_Scoring / Example-Guided_LLM_Scoring share the same counter schema.
       LLM-Parameterized_Reference_Scoring:   failed_extraction_*, failed_ground_truth_calculation_exception,
                 failed_unknown
 
@@ -888,9 +889,9 @@ def evaluate_all(config, include_baselines=False):
 
     # Determine architecture list based on whether baselines are included
     if include_baselines:
-        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
+        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
     else:
-        arch_list = ["Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
+        arch_list = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
     for arch_name in arch_list:
         merged = merged_dfs[arch_name]
@@ -1040,9 +1041,9 @@ def evaluate_all(config, include_baselines=False):
         return f"{int(val):>10}" if is_int else f"{val:>10.4f}"
 
     if include_baselines:
-        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
+        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
     else:
-        archs = ["Pure", "RAG", "LLM-Parameterized_Reference_Scoring"]
+        archs = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
     # Overall table
     header = f"  {'Metric':<24}" + "".join(f"{a:>10}" for a in archs)
