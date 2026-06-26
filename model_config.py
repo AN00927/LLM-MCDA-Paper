@@ -1,5 +1,5 @@
 MODEL_KEY = "qwen_weak"
-N_RUNS = 2
+N_RUNS = 1
 
 
 
