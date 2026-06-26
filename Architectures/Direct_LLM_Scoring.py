@@ -103,7 +103,7 @@ API_CONFIG = {
     "temperature": TEMPERATURE,  # shared across all three architectures (model_config)
     "reasoning": get_reasoning_payload(),
 }
-logger.info(f"Reasoning payload: {API_CONFIG['reasoning']} (exclude:true = no thinking tokens)")
+logger.info(f"Reasoning payload: {API_CONFIG['reasoning']}")
 
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
@@ -218,8 +218,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
                 if reasoning_tokens > 0:
                     logger.warning(
                         f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
-                        f"-- thinking was NOT suppressed despite exclude:true. "
-                        f"Consider switching provider or adding /no-think suffix."
+                        f"-- reasoning was not disabled for this provider/model."
                     )
 
                 diagnostics["tokens_input"] = usage.get("prompt_tokens", 0)
