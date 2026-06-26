@@ -111,7 +111,7 @@ API_CONFIG = {
     "temperature": TEMPERATURE,
     "reasoning": REASONING_PAYLOAD,
 }
-logger.info(f"Reasoning payload: {API_CONFIG['reasoning']} (exclude:true = no thinking tokens)")
+logger.info(f"Reasoning payload: {API_CONFIG['reasoning']}")
 
 # Log startup config
 if DEBUG_API:
@@ -363,8 +363,7 @@ def query_openrouter(messages: List[Dict], model: str = None,
                 if reasoning_tokens > 0:
                     logger.warning(
                         f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
-                        f"-- thinking was NOT suppressed despite exclude:true. "
-                        f"Consider switching provider or adding /no-think suffix."
+                        f"-- reasoning was not disabled for this provider/model."
                     )
 
                 diagnostics = {
