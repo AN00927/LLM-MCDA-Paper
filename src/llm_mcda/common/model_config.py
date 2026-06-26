@@ -1,5 +1,5 @@
 MODEL_KEY = "qwen_weak"
-N_RUNS = 1
+N_RUNS = 2
 
 
 
@@ -84,12 +84,12 @@ def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:
 def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
     resolved_key = _resolve_model_key(model_key)
     reasoning_effort = MODEL_SPECS[resolved_key].get("reasoning_effort")
-    # "non-reasoning" is an INTERNAL sentinel: send {"exclude": True} to actively suppress
-    # thinking tokens. Omitting the reasoning field entirely lets hybrid models (e.g.
-    # Qwen3.5-9B, DeepSeek-V4-Flash) default to thinking, causing 60-110 s latency per call.
+    # "non-reasoning" is an INTERNAL sentinel: actively disable reasoning.
+    # OpenRouter's {"exclude": True} only hides reasoning text from the response;
+    # Qwen can still spend tokens thinking internally unless enabled is false.
     # Real OpenRouter efforts are xhigh/high/medium/low/minimal/none.
     if not reasoning_effort or reasoning_effort == "non-reasoning":
-        return {"exclude": True}
+        return {"enabled": False}
     return {"enabled": True, "effort": reasoning_effort}
 
 
