@@ -330,23 +330,22 @@ def query_openrouter(messages: List[Dict], model: str = None,
             if response.status_code == 200:
                 data = response.json()
                 
-                # DEBUG: Log full response structure
-                if DEBUG_API:
-                    logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
-                    logger.debug(f"Full response keys: {list(data.keys())}")
-                    logger.debug(f"Usage: {data.get('usage', {})}")
-                    if "choices" in data and len(data["choices"]) > 0:
-                        choice = data["choices"][0]
-                        logger.debug(f"Choice keys: {list(choice.keys())}")
-                        if "message" in choice:
-                            msg = choice["message"]
-                            logger.debug(f"Message keys: {list(msg.keys())}")
-                            logger.debug(f"Message role: {msg.get('role')}")
-                            logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                            # Check for reasoning/thinking fields
-                            for key in msg.keys():
-                                if key not in ['role', 'content']:
-                                    logger.debug(f"Message extra field '{key}': {msg.get(key)}")
+                # DEBUG: Log full response structure (always log reasoning/thinking data)
+                logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
+                logger.debug(f"Full response keys: {list(data.keys())}")
+                logger.debug(f"Usage: {data.get('usage', {})}")
+                if "choices" in data and len(data["choices"]) > 0:
+                    choice = data["choices"][0]
+                    logger.debug(f"Choice keys: {list(choice.keys())}")
+                    if "message" in choice:
+                        msg = choice["message"]
+                        logger.debug(f"Message keys: {list(msg.keys())}")
+                        logger.debug(f"Message role: {msg.get('role')}")
+                        logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
+                        # Check for reasoning/thinking fields
+                        for key in msg.keys():
+                            if key not in ['role', 'content']:
+                                logger.debug(f"Message extra field '{key}': {msg.get(key)}")
 
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -459,11 +458,10 @@ def extract_all_with_ai(scenario: Dict,
             'latency_ms': api_diagnostics.get('latency_ms', 0)
         })
         
-        # DEBUG: Log the raw extraction response
-        if DEBUG_API:
-            logger.debug(f"=== EXTRACTION RESPONSE ===")
-            logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
-            logger.debug(f"Response length: {len(response_text)} chars")
+        # DEBUG: Log the raw extraction response (always log reasoning/thinking data)
+        logger.debug(f"=== EXTRACTION RESPONSE ===")
+        logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
+        logger.debug(f"Response length: {len(response_text)} chars")
         
         stripped_response = response_text.strip()
         if stripped_response.startswith("```"):
