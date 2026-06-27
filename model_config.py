@@ -1,5 +1,5 @@
-MODEL_KEY = "qwen_weak"
-N_RUNS = 2
+MODEL_KEY = "qwen"
+N_RUNS = 1
 
 
 
@@ -24,25 +24,25 @@ TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
 
 
 MODEL_SPECS = {
-    "gptoss_weakest": {
+    "gptoss": {
         "label": "input Price: $0.029/M, Output Price: $0.14/M",
         "openrouter_id": "openai/gpt-oss-20b:exacto",
         "output_folder": "Output Files GPT-OSS 20B",
         "reasoning_effort": "low",
     },
-    "qwen_weak": {
+    "qwen": {
         "label": "0.04/M, 0.15M",
         "openrouter_id": "qwen/qwen3.5-9b:exacto",
         "output_folder": "Output Files Qwen3.5 9B",
         "reasoning_effort": "non-reasoning",
     },
-    "deepseek_medium": {
+    "deepseek": {
         "label": "Input Price: $0.0983/M, Output Price: $0.1966/M",
         "openrouter_id": "deepseek/deepseek-v4-flash:exacto",
         "output_folder": "Output Files DeepSeek V4 Flash",
         "reasoning_effort": "non-reasoning",
     },
-    "gemini_strong": {
+    "gemini": {
         "label": "Input Price: $1.50/M, Output Price: $9/M",
         "openrouter_id": "google/gemini-3.5-flash:exacto",
         "output_folder": "Output Files Gemini 3.5 Flash",

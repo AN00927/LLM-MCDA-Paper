@@ -94,8 +94,8 @@ Output Files Gemini 3.5 Flash/
 
 Important constants:
 
-- `MODEL_KEY = "gptoss_weakest"` at `model_config.py:1`
-- `N_RUNS = 10` at `model_config.py:2`
+- `MODEL_KEY = "deepseek"` at `model_config.py:1`
+- `N_RUNS = 1` at `model_config.py:2`
 - `TEMPERATURE = 0.3` at `model_config.py:9`
 - retry policy at `model_config.py:17`
 - `CRITERION_WEIGHTS` at `model_config.py:23`
