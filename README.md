@@ -44,10 +44,10 @@ Model selection and output routing are controlled in [model_config.py](model_con
 
 | Key | Label | OpenRouter string | Reasoning effort | Output folder |
 | --- | --- | --- | --- | --- |
-| `gptoss_weakest` | Smallest — GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
-| `qwen_weak` | Small — Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | non-reasoning | `Output Files Qwen3.5 9B` |
-| `deepseek_medium` | Medium — DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | non-reasoning | `Output Files DeepSeek V4 Flash` |
-| `gemini_strong` | Large — Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
+| `gptoss` | Smallest — GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
+| `qwen` | Small — Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | non-reasoning | `Output Files Qwen3.5 9B` |
+| `deepseek` | Medium — DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | non-reasoning | `Output Files DeepSeek V4 Flash` |
+| `gemini` | Large — Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
 
 ### DeepSeek V4 Flash (Non-reasoning) — Representative Benchmarks
 
