@@ -15,6 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from model_config import (
     CRITERION_WEIGHTS,
+    TIE_BREAK_PRIORITY,
     get_model_id,
     get_output_folder_for_model_id,
     get_reasoning_payload,
@@ -691,7 +692,13 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             'weighted_scores': [SENTINEL_FLOAT] * len(alternatives)
         }
 
-    valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
+    # Deterministic tiebreaking based on TIE_BREAK_PRIORITY
+    def sort_key(pair):
+        idx, ws = pair
+        scores = alternatives_scores[idx]['scores']
+        return (ws,) + tuple(scores.get(crit, 0.0) for crit in TIE_BREAK_PRIORITY)
+
+    valid_pairs_sorted = sorted(valid_pairs, key=sort_key, reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the array positions lined up with the original alternatives
@@ -1257,7 +1264,12 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                 avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
             )
             avg.loc[valid_idx, "weighted_score"] = ws
-            avg.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
+            sub = avg.loc[valid_idx].copy()
+            sub["weighted_score"] = ws
+            sort_cols = ["weighted_score"] + TIE_BREAK_PRIORITY
+            # Stable sort descending on all sorting columns
+            sub_sorted = sub.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
+            avg.loc[sub_sorted.index, "rank"] = list(range(1, len(sub_sorted) + 1))
 
     col_order = [
         "scenario_id", "question", "location", "decision_type",
