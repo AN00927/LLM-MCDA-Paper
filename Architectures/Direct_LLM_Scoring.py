@@ -363,7 +363,6 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
 
     response, diagnostics = query_openrouter(messages)
     
-    # DEBUG: Log the raw scoring response (always log reasoning/thinking data)
     logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
     logger.debug(f"Raw response (first 1000 chars): {response[:1000] if response else 'None'}")
     logger.debug(f"Response length: {len(response) if response else 0} chars")
