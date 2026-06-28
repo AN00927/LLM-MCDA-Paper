@@ -18,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from model_config import (
     CRITERION_WEIGHTS,
+    TIE_BREAK_PRIORITY,
     get_model_id,
     get_output_folder_for_model_id,
     get_reasoning_payload,
@@ -307,7 +308,8 @@ def build_system_prompt() -> str:
 4. Practicality: Easier to implement/maintain = higher score
 
 
-Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X} where each X is between 0.0 and 1.0."""
+Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality": X} where each X is between 0.0 and 1.0. You must distinguish between the criteria: do not assign the same score to all 4 criteria for an alternative unless performance is actually identical across them.
+"""
 
 
 def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
@@ -462,12 +464,20 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         logger.info(f"   WARNING: skipped {skipped_alts} retrieved alternative(s) with missing scores. "
               f"Likely RAG metadata schema drift — re-run BuildRAG.")
 
-    context += "Use these examples as reference, but score based on the specific scenario below.\n"    
+    context += "Use these examples as reference, but score based on the specific scenario above.\n"    
     return context
 
 def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: str) -> str:
-    prompt = rag_context
-    prompt += f'Score this alternative: "{alternative}"\n\n'
+    # Get other alternatives in the scenario to show the LLM the comparative set
+    all_alts = [
+        scenario.get("alternative_1", ""),
+        scenario.get("alternative_2", ""),
+        scenario.get("alternative_3", "")
+    ]
+    other_alts = [str(a) for a in all_alts if a not in (None, "", "N/A") and str(a) != str(alternative)]
+    
+    prompt = f'Score this alternative: "{alternative}"\n'
+    prompt += f'Other alternatives available for this decision: {other_alts}\n\n'
     prompt += f'For the decision: "{scenario.get("question", "N/A")}"\n\n'
     prompt += "SCENARIO CONTEXT:\n"
     prompt += f"- Location: {scenario.get('location', 'N/A')}\n"
@@ -503,7 +513,11 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
         )
 
     prompt += "\nProvide scores (0-1) for all 4 criteria.\n"
-    prompt += "Consider how this specific alternative performs given the scenario context.\n"
+    prompt += "Consider how this specific alternative performs given the scenario context.\n\n"
+    
+    # RAG context goes after the prompt
+    if rag_context:
+        prompt += rag_context
 
     return prompt
 
@@ -640,7 +654,13 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             'weighted_scores': [SENTINEL_FLOAT] * len(alternatives)
         }
 
-    valid_pairs_sorted = sorted(valid_pairs, key=lambda x: x[1], reverse=True)
+    # Deterministic tiebreaking based on TIE_BREAK_PRIORITY
+    def sort_key(pair):
+        idx, ws = pair
+        scores = alternatives_scores[idx]['scores']
+        return (ws,) + tuple(scores.get(crit, 0.0) for crit in TIE_BREAK_PRIORITY)
+
+    valid_pairs_sorted = sorted(valid_pairs, key=sort_key, reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
     # Keep the indices lined up with the original alternatives
@@ -1053,7 +1073,12 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                 avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
             )
             avg.loc[valid_idx, "weighted_score"] = ws
-            avg.loc[valid_idx, "rank"] = ws.rank(ascending=False, method="min").astype(int)
+            sub = avg.loc[valid_idx].copy()
+            sub["weighted_score"] = ws
+            sort_cols = ["weighted_score"] + TIE_BREAK_PRIORITY
+            # Stable sort descending on all sorting columns
+            sub_sorted = sub.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
+            avg.loc[sub_sorted.index, "rank"] = list(range(1, len(sub_sorted) + 1))
 
     col_order = [
         "scenario_id", "question", "location", "decision_type", "outdoor_temp",
