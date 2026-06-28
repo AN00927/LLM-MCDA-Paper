@@ -1,4 +1,4 @@
-MODEL_KEY = "deepseek"
+MODEL_KEY = "gptoss"
 N_RUNS = 1
 
 
