@@ -1,0 +1,19 @@
+{
+  "total_scenarios": 195,
+  "total_api_calls": 585,
+  "total_latency_ms": 2074187.4437332153,
+  "total_tokens_input": 730785,
+  "total_tokens_output": 22023,
+  "successful_calls": 584,
+  "failed_calls": 1,
+  "successful_scenarios": 194,
+  "failed_scenarios": 1,
+  "EXTRACTION_INVALID_JSON": 1,
+  "FAILED_MISSING_SCORE": 0,
+  "FAILED_OUT_OF_BOUNDS": 0,
+  "FAILED_INVALID_SCORE_TYPE": 0,
+  "FAILED_API_EXHAUSTED": 0,
+  "FAILED_UNKNOWN": 0,
+  "avg_latency_ms": 3545.61956193712,
+  "success_rate": 0.9948717948717949
+}

@@ -1,4 +1,4 @@
-MODEL_KEY = "gptoss"
+MODEL_KEY = "qwen"
 N_RUNS = 5
 
 
