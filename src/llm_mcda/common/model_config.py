@@ -1,5 +1,5 @@
 MODEL_KEY = "gptoss"
-N_RUNS = 1
+N_RUNS = 5
 
 
 
@@ -28,7 +28,7 @@ MODEL_SPECS = {
         "label": "input Price: $0.029/M, Output Price: $0.14/M",
         "openrouter_id": "openai/gpt-oss-20b:exacto",
         "output_folder": "Output Files GPT-OSS 20B",
-        "reasoning_effort": "low",
+        "reasoning_effort": "low",  
     },
     "qwen": {
         "label": "0.04/M, 0.15M",
@@ -46,7 +46,7 @@ MODEL_SPECS = {
         "label": "Input Price: $1.50/M, Output Price: $9/M",
         "openrouter_id": "google/gemini-3.5-flash:exacto",
         "output_folder": "Output Files Gemini 3.5 Flash",
-        "reasoning_effort": "minimal",
+        "reasoning_effort": "non-reasoning",  
     },
 }
 
