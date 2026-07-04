@@ -158,7 +158,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
     }
     if API_CONFIG["reasoning"] is not None:
         payload["reasoning"] = API_CONFIG["reasoning"]
-    if API_CONFIG["native_thinking"] is not None:
+    if API_CONFIG.get("native_thinking") is not None:
         payload.update(API_CONFIG["native_thinking"])
 
     diagnostics = {
