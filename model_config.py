@@ -1,4 +1,4 @@
-MODEL_KEY = "qwen"
+MODEL_KEY = "deepseek"
 N_RUNS = 5
 
 
@@ -40,7 +40,7 @@ MODEL_SPECS = {
         "label": "Input Price: $0.0983/M, Output Price: $0.1966/M",
         "openrouter_id": "deepseek/deepseek-v4-flash:exacto",
         "output_folder": "Output Files DeepSeek V4 Flash",
-        "reasoning_effort": "non-reasoning",
+        "reasoning_effort": "none",
     },
     "gemini": {
         "label": "Input Price: $1.50/M, Output Price: $9/M",
@@ -84,18 +84,13 @@ def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:
 def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
     resolved_key = _resolve_model_key(model_key)
     reasoning_effort = MODEL_SPECS[resolved_key].get("reasoning_effort")
-    # "non-reasoning" is an INTERNAL sentinel: actively disable reasoning.
-    # OpenRouter's {"exclude": True} only hides reasoning text from the response;
-    # Qwen can still spend tokens thinking internally unless enabled is false.
-    # Real OpenRouter efforts are xhigh/high/medium/low/minimal/none.
     if not reasoning_effort or reasoning_effort == "non-reasoning":
         return {"enabled": False}
+    if reasoning_effort == "none":
+        return {"effort": "none"}
     return {"enabled": True, "effort": reasoning_effort}
 
 
-# ===========================================================================
-# STANDARDIZED FAILURE TYPE CONSTANTS (Phase 2)
-# ===========================================================================
 EXTRACTION_INVALID_JSON = "EXTRACTION_INVALID_JSON"
 FAILED_MISSING_SCORE = "FAILED_MISSING_SCORE"
 FAILED_OUT_OF_BOUNDS = "FAILED_OUT_OF_BOUNDS"
