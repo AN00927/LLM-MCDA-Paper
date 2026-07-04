@@ -1,4 +1,4 @@
-MODEL_KEY = "gemini"
+MODEL_KEY = "deepseek"
 N_RUNS = 5
 
 
@@ -46,7 +46,7 @@ MODEL_SPECS = {
         "label": "Input Price: $1.50/M, Output Price: $9/M",
         "openrouter_id": "google/gemini-3.5-flash:exacto",
         "output_folder": "Output Files Gemini 3.5 Flash",
-        "reasoning_effort": "minimal",  
+        "reasoning_effort": "non-reasoning",  
     },
 }
 
