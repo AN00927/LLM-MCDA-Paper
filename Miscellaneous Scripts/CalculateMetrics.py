@@ -26,6 +26,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import (
     get_output_folder,
     MODEL_KEY,
+    MODEL_SPECS,
     CRITERION_WEIGHTS,
     TIE_BREAK_PRIORITY,
     EXTRACTION_INVALID_JSON,
@@ -50,33 +51,40 @@ _COMMON_STR_COLS = [
 ]
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
-OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 
-CONFIG = {
-    "ground_truth": {
-        "HVAC": str(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx"),
-        "Appliance": str(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx"),
-        "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx"),
-    },
-    "architectures": {
-        "Direct_LLM_Scoring": str(OUTPUT_DIR / "Direct_LLM_Scoring_results.xlsx"),
-        "Example-Guided_LLM_Scoring": str(OUTPUT_DIR / "Example-Guided_LLM_Scoring_results.xlsx"),
-        "LLM-Parameterized_Reference_Scoring": str(OUTPUT_DIR / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
-    },
-    "output_csv": str(OUTPUT_DIR / f"metrics_summary_{MODEL_KEY}.xlsx"),
-    "gt_score_cols": {
-        "energy_cost": "energy_cost_score",
-        "environmental": "environmental_score",
-        "comfort": "comfort_score",
-        "practicality": "practicality_score",
-    },
-    "arch_score_cols": {
-        "energy_cost": "energy_cost",
-        "environmental": "environmental",
-        "comfort": "comfort",
-        "practicality": "practicality",
-    },
-}
+
+def _build_config(model_key: str) -> dict:
+    """Build the CONFIG dict for a given model_key."""
+    output_dir = PROJECT_ROOT / get_output_folder(model_key)
+    return {
+        "ground_truth": {
+            "HVAC": str(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx"),
+            "Appliance": str(GROUND_TRUTH_DIR / "ground_truth_appliance.xlsx"),
+            "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx"),
+        },
+        "architectures": {
+            "Direct_LLM_Scoring": str(output_dir / "Direct_LLM_Scoring_results.xlsx"),
+            "Example-Guided_LLM_Scoring": str(output_dir / "Example-Guided_LLM_Scoring_results.xlsx"),
+            "LLM-Parameterized_Reference_Scoring": str(output_dir / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
+        },
+        "output_csv": str(output_dir / f"metrics_summary_{model_key}.xlsx"),
+        "gt_score_cols": {
+            "energy_cost": "energy_cost_score",
+            "environmental": "environmental_score",
+            "comfort": "comfort_score",
+            "practicality": "practicality_score",
+        },
+        "arch_score_cols": {
+            "energy_cost": "energy_cost",
+            "environmental": "environmental",
+            "comfort": "comfort",
+            "practicality": "practicality",
+        },
+    }
+
+
+# Default CONFIG uses the MODEL_KEY from model_config (for import compatibility)
+CONFIG = _build_config(MODEL_KEY)
 
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = SENTINEL_VALUE
@@ -624,7 +632,12 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
 
 
 def compute_criterion_metrics(merged_df):
-    """Compute MAE and RMSE for each criterion and overall."""
+    """Compute MAE and RMSE for each criterion and overall.
+
+    Rows where either gt or arch score is NaN (genuinely missing, not sentinel)
+    are dropped per-criterion before computing errors so a single bad cell does
+    not propagate NaN across the whole result.
+    """
     results = {}
     all_abs_errors = []
     all_sq_errors = []
@@ -632,8 +645,16 @@ def compute_criterion_metrics(merged_df):
     for c in CRITERIA:
         gt = merged_df[f"gt_{c}"].astype(float)
         arch = merged_df[f"arch_{c}"].astype(float)
-        ae = (arch - gt).abs()
-        se = (arch - gt) ** 2
+        # Drop pairs where either value is NaN
+        valid_mask = gt.notna() & arch.notna()
+        gt_v = gt[valid_mask]
+        arch_v = arch[valid_mask]
+        if len(gt_v) == 0:
+            results[f"{c}_MAE"] = np.nan
+            results[f"{c}_RMSE"] = np.nan
+            continue
+        ae = (arch_v - gt_v).abs()
+        se = (arch_v - gt_v) ** 2
 
         results[f"{c}_MAE"] = round(ae.mean(), 4)
         results[f"{c}_RMSE"] = round(np.sqrt(se.mean()), 4)
@@ -650,7 +671,12 @@ def compute_criterion_metrics(merged_df):
 
 
 def compute_ranking_metrics(merged_df):
-    """Kendall tau, Spearman rho, Top-1/Top-2 - per-scenario then averaged."""
+    """Kendall tau, Spearman rho, Top-1/Top-2 - per-scenario then averaged.
+
+    Scenarios where any rank value is NaN (genuinely missing) are skipped
+    entirely so a single bad row does not turn the whole scenario's tau/rho
+    into NaN.
+    """
     taus, rhos = [], []
     top1_ok = top2_ok = 0
     n = 0
@@ -662,6 +688,11 @@ def compute_ranking_metrics(merged_df):
 
         gt_r = sc["gt_rank"].astype(float).values
         ar_r = sc["arch_rank"].astype(float).values
+
+        # Skip scenario if any rank is NaN (not sentinel-filtered, genuinely missing)
+        if np.isnan(gt_r).any() or np.isnan(ar_r).any():
+            continue
+
         n += 1
 
         # Kendall
@@ -816,9 +847,17 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     return result
 
 
-def evaluate_all(config, include_baselines=False):
+def evaluate_all(config, include_baselines=False, model_key=None):
+    """Evaluate all architectures against ground truth and return metrics.
+
+    Args:
+        config: CONFIG dict with paths for this model.
+        include_baselines: If True, also evaluate non-LLM baselines.
+        model_key: Human-readable model identifier shown in headers.
+    """
+    model_label = f" [{model_key.upper()}]" if model_key else ""
     print("=" * 72)
-    print("  MCDA ARCHITECTURE EVALUATION - METRICS REPORT")
+    print(f"  MCDA ARCHITECTURE EVALUATION - METRICS REPORT{model_label}")
     print("=" * 72)
 
     # 1. Load
@@ -1092,16 +1131,48 @@ def evaluate_all(config, include_baselines=False):
     return metrics_df, merged_dfs
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Calculate MCDA architecture metrics")
+    _all_model_keys = sorted(MODEL_SPECS.keys())
+    parser = argparse.ArgumentParser(
+        description="Calculate MCDA architecture metrics",
+        epilog=(
+            f"Available model keys: {', '.join(_all_model_keys)}. "
+            "Defaults to MODEL_KEY in model_config.py when --model is omitted."
+        )
+    )
+    parser.add_argument(
+        '--model', metavar='MODEL_KEY',
+        choices=_all_model_keys,
+        default=None,
+        help=(
+            f"Which model's output folder to evaluate "
+            f"({', '.join(_all_model_keys)}). "
+            "Defaults to the MODEL_KEY set in model_config.py."
+        )
+    )
+    parser.add_argument(
+        '--all-models', action='store_true',
+        help='Evaluate ALL models sequentially and write one metrics file per model.'
+    )
     parser.add_argument('--include-baselines', action='store_true',
                         help='Include 5 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)')
-    parser.add_argument('-h', '--help', action='help', help='Show this help message and exit')
     args = parser.parse_args()
 
-    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
-        print("Usage: python calculate_metrics.py [--include-baselines]")
-        print("  Modify CONFIG dict at top of file to change paths.")
-        sys.exit(0)
-
-    metrics_df, merged_dfs = evaluate_all(CONFIG, include_baselines=args.include_baselines)
+    if args.all_models:
+        # Evaluate every model and save a metrics file in each output folder
+        combined_rows = []
+        for mk in _all_model_keys:
+            cfg = _build_config(mk)
+            mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
+            mdf["model"] = mk
+            combined_rows.append(mdf)
+        # Also write a combined cross-model metrics file next to the project root
+        combined_df = pd.concat(combined_rows, ignore_index=True)
+        combined_path = str(PROJECT_ROOT / "metrics_summary_all_models.xlsx")
+        _atomic_write_xlsx(combined_df, combined_path)
+        print(f"\nCombined cross-model metrics saved to: {combined_path}")
+        print(f"Total combined metric rows: {len(combined_df)}")
+    else:
+        mk = args.model if args.model else MODEL_KEY
+        cfg = _build_config(mk)
+        metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
 
