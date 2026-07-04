@@ -101,7 +101,7 @@ if DEBUG_API:
 API_CONFIG = {
     "endpoint": "https://openrouter.ai/api/v1/chat/completions",
     "model": MODEL_ID,
-    "temperature": TEMPERATURE,  # shared across all three architectures (model_config)
+    "temperature": TEMPERATURE, 
     "reasoning": get_reasoning_payload(),
 }
 logger.info(f"Reasoning payload: {API_CONFIG['reasoning']}")
@@ -156,8 +156,10 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
         "messages": messages,
         "temperature": API_CONFIG["temperature"],
     }
-    if API_CONFIG["reasoning"]:
+    if API_CONFIG["reasoning"] is not None:
         payload["reasoning"] = API_CONFIG["reasoning"]
+    if API_CONFIG["native_thinking"] is not None:
+        payload.update(API_CONFIG["native_thinking"])
 
     diagnostics = {
         "tokens_input": 0,

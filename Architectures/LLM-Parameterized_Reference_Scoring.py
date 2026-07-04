@@ -244,8 +244,8 @@ def _is_transient_http_status(status_code: int) -> bool:
 
 
 UNIFIED_EXTRACTION_PROMPT = """You are a household-systems engineer. 
-Your ONLY job is to estimate the technical ENGINEERING parameters a homeowner would not state but that are required to physically model the decision,
-then name the decision type and its calculator.
+You base all assumptions off of given information.
+Understand how each parameter affects another. When extrapolating missing values, use all information given to specify a reasonable value for the value being extrapolated.
 
 SCENARIO:
 {scenario_text}
@@ -263,9 +263,9 @@ For HVAC decisions:
   "decision_type": "HVAC",
   "calculator": "HVACGroundTruthCalculator",
   "parameters": {{
-    "r_value": <number; whole-wall R-value implied by the insulation level and house age>,
-    "seer": <number; AC SEER implied by the system's age/efficiency>,
-    "hvac_age": <number; age of the HVAC unit in years based on house age>,
+    "r_value": <number>,
+    "seer": <number>,
+    "hvac_age": <number>,
     "occupancy_context": "occupied_all_day | unoccupied_<hours> | occupied_sleep"
   }}
 }}
@@ -276,7 +276,7 @@ For Appliance decisions:
   "calculator": "ApplianceGroundTruthCalculator",
   "parameters": {{
     "appliance": "Dishwasher | Washer | Dryer",
-    "kwh_per_cycle": <number; energy per cycle for that appliance, reflecting its age — older units use more energy per cycle than new ones of the same type>,
+    "kwh_per_cycle": <number>,
     "baseline_time": "<the time it currently is, e.g. 7pm, 8am>"
   }}
 }}
@@ -286,9 +286,9 @@ For Shower decisions:
   "decision_type": "Shower",
   "calculator": "ShowerGroundTruthCalculator",
   "parameters": {{
-    "gpm": <number; showerhead flow rate in gallons per minute, consistent with the stated flow_rate label (low_flow <=2.0, standard 2.5-3.0, high_flow >3.0)>,
-    "tank_size": <number; water-heater tank size in gallons, estimated from household size and housing type — ~30-40 for 1-2 occupants or a small apartment, ~50 for a typical family, up to ~80 for a large single-family home>,
-    "water_heater_temp": <number; water-heater setpoint in deg F; default to the standard 120 unless the scenario clearly implies otherwise>
+    "gpm": <number>,
+    "tank_size": <number>,
+    "water_heater_temp": <number>
   }}
 }}
 
@@ -315,8 +315,9 @@ def query_openrouter(messages: List[Dict], model: str = None,
         "temperature": temperature,
     }
     reasoning_payload = API_CONFIG["reasoning"]
-    if reasoning_payload:
+    if reasoning_payload is not None:
         payload["reasoning"] = reasoning_payload
+
 
     attempt = 0
     retry_forever = MAX_RETRIES <= 0
@@ -331,7 +332,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
             if response.status_code == 200:
                 data = response.json()
                 
-                # DEBUG: Log full response structure (always log reasoning/thinking data)
                 logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
                 logger.debug(f"Full response keys: {list(data.keys())}")
                 logger.debug(f"Usage: {data.get('usage', {})}")
@@ -353,7 +353,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
                 usage = data.get('usage', {})
                 reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
                 finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
-                # Always-on progress log: shows pipeline is alive + catches surprise reasoning
                 logger.info(
                     f"  [call ok] attempt={attempt} latency={latency_ms/1000:.1f}s "
                     f"prompt={usage.get('prompt_tokens', 0)} "
@@ -523,10 +522,6 @@ def extract_all_with_ai(scenario: Dict,
             params = extracted['parameters']
             decision_type = extracted['decision_type']
 
-            # The extracted decision type MUST agree with the scenario's known
-            # decision type. A mismatch means the wrong calculator would score
-            # the scenario (e.g. HVAC setpoints scored as shower durations),
-            # producing plausible-but-wrong numbers instead of a clean failure.
             if expected_decision_type is not None and decision_type != expected_decision_type:
                 print(f" decision_type mismatch: extracted {decision_type!r}, "
                       f"expected {expected_decision_type!r}")
@@ -536,9 +531,6 @@ def extract_all_with_ai(scenario: Dict,
                 extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_DECISION_TYPE_MISMATCH]
                 return None, extraction_diagnostics
 
-            # Only the extrapolated engineering parameters are required from the
-            # model; homeowner-facing fields and alternatives come from the
-            # scenario sheet and are merged in score_with_ground_truth.
             if decision_type == 'HVAC':
                 required_params = ['r_value', 'seer', 'hvac_age', 'occupancy_context']
             elif decision_type == 'Appliance':
@@ -546,9 +538,6 @@ def extract_all_with_ai(scenario: Dict,
             elif decision_type == 'Shower':
                 required_params = ['gpm', 'tank_size', 'water_heater_temp']
             if all(k in params for k in required_params):
-                # Numeric params must parse as finite numbers in physical range.
-                # Without this, score_with_ground_truth would coerce a bad value
-                # to 0.0 and fabricate a perfect score (see T1-1).
                 bad_numeric = _validate_numeric_params(decision_type, params)
                 if bad_numeric:
                     print(f"Invalid numeric parameters for {decision_type}: {bad_numeric}")

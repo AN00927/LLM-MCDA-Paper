@@ -195,7 +195,7 @@ def query_openrouter(messages: List[Dict], model: str = None,
         "temperature": temperature,
     }
     reasoning_payload = API_CONFIG["reasoning"]
-    if reasoning_payload:
+    if reasoning_payload is not None:
         payload["reasoning"] = reasoning_payload
 
     last_error = None
