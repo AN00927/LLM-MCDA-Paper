@@ -545,7 +545,7 @@ def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
             model_key = k
             break
     reasoning_payload = get_reasoning_payload(model_key) if model_key else get_reasoning_payload()
-    if reasoning_payload:
+    if reasoning_payload is not None:
         payload["reasoning"] = reasoning_payload
     last_error = None
     response = None
