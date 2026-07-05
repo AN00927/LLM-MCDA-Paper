@@ -1,4 +1,4 @@
-MODEL_KEY = "deepseek"
+MODEL_KEY = "qwen"
 N_RUNS = 5
 
 
