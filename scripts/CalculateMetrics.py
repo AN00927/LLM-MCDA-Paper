@@ -808,6 +808,70 @@ def compute_failure_rate(arch_df):
 
     return result
 
+def impute_failed_scores(merged_df, impute_value=5.0):
+    """Replace sentinel 1928 scores in arch_* columns with impute_value.
+
+    Returns (imputed_df, n_imputed_rows, n_imputed_scenarios).
+    Only touches arch_* score columns (energy_cost, environmental, comfort,
+    practicality). GT columns and metadata columns are left untouched.
+    """
+    df = merged_df.copy()
+    arch_score_cols = [f"arch_{c}" for c in CRITERIA]
+    n_imputed_rows = 0
+    imputed_sids = set()
+
+    for c in arch_score_cols:
+        if c not in df.columns:
+            continue
+        sentinel_mask = df[c] == FAIL_SENTINEL
+        if sentinel_mask.any():
+            n_imputed_rows += sentinel_mask.sum()
+            imputed_sids.update(df.loc[sentinel_mask, "arch_scenario_id"].unique())
+            df.loc[sentinel_mask, c] = float(impute_value)
+
+    n_imputed_scenarios = len(imputed_sids)
+    if n_imputed_rows > 0:
+        print(f"  Imputed {n_imputed_rows} sentinel scores to {impute_value} "
+              f"across {n_imputed_scenarios} scenarios")
+
+    return df, n_imputed_rows, n_imputed_scenarios
+
+
+def recompute_arch_ranks(merged_df):
+    """Recompute arch_weighted_score and arch_rank after imputation.
+
+    Uses CRITERION_WEIGHTS and TIE_BREAK_PRIORITY from model_config,
+    same logic as aggregate_run_files() so imputed ranks are consistent
+    with non-imputed output.
+    """
+    df = merged_df.copy()
+    arch_score_cols = [f"arch_{c}" for c in CRITERIA]
+    tiebreak_cols = [f"arch_{c}" for c in TIE_BREAK_PRIORITY]
+
+    for sid in df["arch_scenario_id"].unique():
+        sc_mask = df["arch_scenario_id"] == sid
+        idx = df.index[sc_mask]
+        sc = df.loc[idx]
+
+        ws = (
+            sc[arch_score_cols[0]] * CRITERION_WEIGHTS["energy_cost"] +
+            sc[arch_score_cols[1]] * CRITERION_WEIGHTS["environmental"] +
+            sc[arch_score_cols[2]] * CRITERION_WEIGHTS["comfort"] +
+            sc[arch_score_cols[3]] * CRITERION_WEIGHTS["practicality"]
+        )
+        df.loc[idx, "arch_weighted_score"] = ws.values
+
+        sub = df.loc[idx, [*arch_score_cols]].copy()
+        sub["weighted_score"] = ws.values
+        ranks = _rank_with_deterministic_tiebreak(
+            sub, "weighted_score", tiebreak_cols,
+            log_prefix=f"[recompute_arch_ranks sid={sid}] "
+        )
+        df.loc[idx, "arch_rank"] = ranks.astype(int).values
+
+    return df
+
+
 def _load_diagnostics_json(arch_path_str, arch_name):
     """Discover and load diagnostics JSON file(s) next to the run CSVs.
 
@@ -883,7 +947,7 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     return result
 
 
-def evaluate_all(config, include_baselines=False, model_key=None):
+def evaluate_all(config, include_baselines=False, model_key=None, impute_failures=False, impute_value=5.0):
     """Evaluate all architectures against ground truth and return metrics.
 
     Args:
@@ -1023,11 +1087,19 @@ def evaluate_all(config, include_baselines=False, model_key=None):
                 "metric": k, "value": v,
             })
 
-        # Filter out failed scenarios (1928 sentinel) before computing metrics
-        merged, n_failed, n_total = filter_failed_scenarios(merged)
-        if n_failed > 0:
-            print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
-                  f"evaluating {n_total - n_failed} successful scenarios")
+        # Impute or filter failed scenarios (1928 sentinel)
+        if impute_failures:
+            merged, n_imputed_rows, n_imputed_sids = impute_failed_scores(merged, impute_value)
+            merged = recompute_arch_ranks(merged)
+            n_eval_raw = merged["arch_scenario_id"].nunique() if len(merged) > 0 else 0
+            if n_imputed_sids > 0:
+                print(f"  Imputed mode: {n_imputed_sids}/{n_eval_raw} scenarios had sentinel scores "
+                      f"({n_imputed_rows} total cells set to {impute_value})")
+        else:
+            merged, n_failed, n_total = filter_failed_scenarios(merged)
+            if n_failed > 0:
+                print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
+                      f"evaluating {n_total - n_failed} successful scenarios")
 
         if len(merged) == 0:
             print(f"  No successful scenarios to evaluate after filtering")
@@ -1191,24 +1263,41 @@ if __name__ == "__main__":
     )
     parser.add_argument('--include-baselines', action='store_true',
                         help='Include 5 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)')
+    parser.add_argument('--impute-failures', action='store_true',
+                        help='Impute failed (sentinel 1928) scores with --impute-value instead of dropping scenarios')
+    parser.add_argument('--impute-value', type=float, default=5.0,
+                        help='Value to use for imputation when --impute-failures is set (default: 5.0)')
     args = parser.parse_args()
+
+    def _output_path(mk):
+        """Return output path for model mk, appending _imputed when applicable."""
+        od = PROJECT_ROOT / get_output_folder(mk)
+        base = od / f"metrics_summary_{mk}.xlsx"
+        if args.impute_failures:
+            return str(base.with_name(f"metrics_summary_{mk}_imputed.xlsx"))
+        return str(base)
 
     if args.all_models:
         # Evaluate every model and save a metrics file in each output folder
         combined_rows = []
         for mk in _all_model_keys:
             cfg = _build_config(mk)
-            mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
+            cfg["output_csv"] = _output_path(mk)
+            mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk,
+                                  impute_failures=args.impute_failures, impute_value=args.impute_value)
             mdf["model"] = mk
             combined_rows.append(mdf)
         # Also write a combined cross-model metrics file next to the project root
         combined_df = pd.concat(combined_rows, ignore_index=True)
-        combined_path = str(PROJECT_ROOT / "metrics_summary_all_models.xlsx")
+        suffix = "_imputed" if args.impute_failures else ""
+        combined_path = str(PROJECT_ROOT / f"metrics_summary_all_models{suffix}.xlsx")
         _atomic_write_xlsx(combined_df, combined_path)
         print(f"\nCombined cross-model metrics saved to: {combined_path}")
         print(f"Total combined metric rows: {len(combined_df)}")
     else:
         mk = args.model if args.model else MODEL_KEY
         cfg = _build_config(mk)
-        metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
+        cfg["output_csv"] = _output_path(mk)
+        metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk,
+                                              impute_failures=args.impute_failures, impute_value=args.impute_value)
 

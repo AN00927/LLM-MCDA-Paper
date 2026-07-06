@@ -113,7 +113,8 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     gt_lookup = build_gt_lookup(gt_by_type)
     gt_id_lookup = build_gt_id_lookup(gt_by_type)
 
-    arch_names = ["Pure", "RAG", "LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoringrameterized_Reference_Scoring"]
+    arch_names = list(CONFIG["architectures"].keys())
+    pure_name, rag_name, param_name = arch_names  # Direct_LLM_Scoring, Example-Guided_LLM_Scoring, LLM-Parameterized_Reference_Scoring
     clean_merged: dict[str, pd.DataFrame] = {}
     for name, path in CONFIG["architectures"].items():
         # Aggregate the per-run files the same way CalculateMetrics does, so the
@@ -172,7 +173,7 @@ def run_sensitivity_analysis() -> pd.DataFrame:
     scen_order = [s for s, _ in weight_scenarios]
     tau_pivot = tau_pivot.reindex(scen_order)
     # Column order
-    col_order = [c for c in ["Pure", "RAG", "LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring"] if c in tau_pivot.columns]
+    col_order = [c for c in arch_names if c in tau_pivot.columns]
     tau_pivot = tau_pivot[col_order]
 
     header = f"  {'Scenario':<22}" + "".join(f"{c:>10}" for c in col_order)
@@ -186,23 +187,22 @@ def run_sensitivity_analysis() -> pd.DataFrame:
         print(row)
 
     # 5. Robustness chec
-    print("\nRobustness check (LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring tau > RAG tau > Pure tau)")
-
+    print(f"\nRobustness check ({param_name} tau > {rag_name} tau > {pure_name} tau)")
 
     preserved = 0
     for scen in scen_order:
         sub = results_df[results_df["scenario_name"] == scen]
         tau = {row["architecture"]: row["kendall_tau"] for _, row in sub.iterrows()}
-        h = tau.get("LLM-Parameterized_Reference_Scoring", float("nan"))
-        r = tau.get("RAG", float("nan"))
-        p = tau.get("Pure", float("nan"))
+        h = tau.get(param_name, float("nan"))
+        r = tau.get(rag_name, float("nan"))
+        p = tau.get(pure_name, float("nan"))
         ok = (not np.isnan(h)) and (not np.isnan(r)) and (not np.isnan(p)) and (h > r > p)
         preserved += int(ok)
         status = "PRESERVED" if ok else "VIOLATED "
-        print(f"  {scen:<22}  {status}   LLM-Parameterized_Reference_Scoring={h:.4f}  RAG={r:.4f}  Pure={p:.4f}")
+        print(f"  {scen:<22}  {status}   {param_name}={h:.4f}  {rag_name}={r:.4f}  {pure_name}={p:.4f}")
 
     n_total_scen = len(weight_scenarios)
-    print(f"\n  Architecture order (LLM-Parameterized_Reference_Scoring > RAG > Pure) preserved in "
+    print(f"\n  Architecture order ({param_name} > {rag_name} > {pure_name}) preserved in "
           f"{preserved}/{n_total_scen} scenarios")
 
     # 6. Export
