@@ -91,6 +91,14 @@ LLM-Parameterized_Reference_Scoring dominates across all four models. RAG-Enhanc
 
 ---
 
+### Imputation Robustness Test
+
+`--impute-failures` retains failed scenarios by replacing sentinel scores (1928) with a configurable value (default 5.0, the 0-10 scale midpoint). `--impute-value` controls the replacement. Sentinels occur when an LLM call produces no valid scores for an alternative. Non-imputed mode drops the entire scenario. Imputed mode assigns the neutral score, then runs weighted scoring and ranking normally.
+
+We ran all 4 models across all 3 architectures with `--impute-failures --impute-value 5.0`. Results matched non-imputed output exactly for every model and architecture. The single scenario retaining all-run sentinels (GPT-OSS Hybrid SID 14) carries alternatives `"Alternative 1 (extraction failed)"` — placeholders that match no ground-truth alternative, so the scenario is dropped at the content-matching stage before the sentinel filter runs. No scenario that passed matching contained sentinel scores. The feature is wired and correct on this dataset; it matters for single-run runs or models where extraction fails on scenarios whose alternatives match ground truth.
+
+---
+
 ## Model Set
 
 Set `MODEL_KEY` and `N_RUNS` in [model_config.py](model_config.py) to control model selection and output routing.
@@ -340,7 +348,7 @@ Two scripts independently validate the subjective MAVT weights against the groun
 | Script | Purpose |
 | --- | --- |
 | [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes ChromaDB vector index from RAG scenario files (35 HVAC, 35 Appliance, 20 Shower). Computes SHA-256 of source files and stores schema version in collection metadata to detect when rebuild is needed. Current schema version: 4. |
-| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1/2 accuracy, Kendall's tau, Spearman rho, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to ground truth. Outputs metrics_summary_{MODEL_KEY}.xlsx. |
+| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1/2 accuracy, Kendall's tau, Spearman rho, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to ground truth. Supports `--impute-failures` to replace sentinels with a configurable value (default 5.0) instead of dropping scenarios. Outputs metrics_summary_{MODEL_KEY}.xlsx (or *_imputed.xlsx). |
 | [CreateRepresentativeSample.py](Miscellaneous Scripts/CreateRepresentativeSample.py) | Drop-in replacement for RunRAGAblations.py's stratified_sample. Stratafies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation samples. |
 | [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs updated ground truth scores back into RAG scenario workbooks after re-running ground truth calculators. Matches on descriptor columns. Run after calculator updates, then re-run BuildRAG.py. |
 | [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics across 10 weight perturbation scenarios (+/-0.05 per criterion + equal weights). Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
