@@ -88,6 +88,9 @@ CONFIG = _build_config(MODEL_KEY)
 
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = SENTINEL_VALUE
+PLACEHOLDER_ALT_RE = re.compile(
+    r"^Alternative\s+(\d+)\s+\(extraction failed\)$", re.IGNORECASE
+)
 
 # Scenario matching uses (question, location) content keys only. Strict
 # (decision_type, scenario_id) lookup is disabled because architecture
@@ -290,7 +293,6 @@ def _align_failed_placeholder_alternatives(combined, score_cols):
     placeholders should count as failed attempts for the real alternatives, not
     become separate unmatched alternatives.
     """
-    placeholder_re = re.compile(r"^Alternative\s+(\d+)\s+\(extraction failed\)$", re.IGNORECASE)
     out = combined.copy()
 
     for (sid, dtype), idx in out.groupby(["scenario_id", "decision_type"]).groups.items():
@@ -300,7 +302,7 @@ def _align_failed_placeholder_alternatives(combined, score_cols):
 
         for row_idx, alt in group["alternative"].items():
             alt_text = str(alt).strip()
-            match = placeholder_re.match(alt_text)
+            match = PLACEHOLDER_ALT_RE.match(alt_text)
             if match:
                 placeholder_positions.append((row_idx, int(match.group(1))))
             elif alt_text not in real_alternatives:
@@ -575,9 +577,18 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
 
         matched_alts = 0
         for norm_alt, arch_row in arch_norm_alts.items():
+            gt_row = None
             if norm_alt in best_match["alt_map"]:
                 gt_row = best_match["alt_map"][norm_alt]
+            else:
+                m = PLACEHOLDER_ALT_RE.match(norm_alt)
+                if m:
+                    alt_num = int(m.group(1))
+                    gt_alts = list(best_match["alt_map"].keys())
+                    if 1 <= alt_num <= len(gt_alts):
+                        gt_row = best_match["alt_map"][gt_alts[alt_num - 1]]
 
+            if gt_row is not None:
                 merged = {
                     "arch_scenario_id": arch_sid,
                     "gt_scenario_id": best_match["gt_sid"],
@@ -947,13 +958,17 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     return result
 
 
-def evaluate_all(config, include_baselines=False, model_key=None, impute_failures=False, impute_value=5.0):
+def evaluate_all(config, include_baselines=False, model_key=None, impute_value=5.0):
     """Evaluate all architectures against ground truth and return metrics.
+
+    Always runs both filtered (failed scenarios dropped) and imputed
+    (failed scores replaced with impute_value) modes.
 
     Args:
         config: CONFIG dict with paths for this model.
         include_baselines: If True, also evaluate non-LLM baselines.
         model_key: Human-readable model identifier shown in headers.
+        impute_value: Value to substitute for sentinel 1928 (default 5.0).
     """
     model_label = f" [{model_key.upper()}]" if model_key else ""
     print("=" * 72)
@@ -1087,97 +1102,95 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_failure
                 "metric": k, "value": v,
             })
 
-        # Impute or filter failed scenarios (1928 sentinel)
-        if impute_failures:
-            merged, n_imputed_rows, n_imputed_sids = impute_failed_scores(merged, impute_value)
-            merged = recompute_arch_ranks(merged)
-            n_eval_raw = merged["arch_scenario_id"].nunique() if len(merged) > 0 else 0
-            if n_imputed_sids > 0:
-                print(f"  Imputed mode: {n_imputed_sids}/{n_eval_raw} scenarios had sentinel scores "
-                      f"({n_imputed_rows} total cells set to {impute_value})")
-        else:
-            merged, n_failed, n_total = filter_failed_scenarios(merged)
-            if n_failed > 0:
-                print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
-                      f"evaluating {n_total - n_failed} successful scenarios")
+        # Run both modes: filtered (drop failures) and imputed (5.0 substitute)
+        merged_filtered, n_failed, n_total = filter_failed_scenarios(merged.copy())
+        merged_imputed, n_imputed_rows, n_imputed_sids = impute_failed_scores(merged.copy())
+        merged_imputed = recompute_arch_ranks(merged_imputed)
 
-        if len(merged) == 0:
-            print(f"  No successful scenarios to evaluate after filtering")
-            continue
+        if n_failed > 0:
+            print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
+                  f"evaluating {n_total - n_failed} successful scenarios")
+        if n_imputed_sids > 0:
+            print(f"  Imputed {n_imputed_sids} scenario(s) had sentinel scores "
+                  f"({n_imputed_rows} total cells set to {impute_value})")
 
-        crit = compute_criterion_metrics(merged)
-        rank = compute_ranking_metrics(merged)
-        n_eval = rank["n_scenarios_evaluated"]
-
-        print(f"\n  OVERALL ({n_eval} scenarios):")
-        print(f"    Criterion MAE / RMSE:")
-        for c in CRITERIA:
-            print(f"      {c:20s}  MAE={crit[f'{c}_MAE']:.4f}  "
-                  f"RMSE={crit[f'{c}_RMSE']:.4f}")
-        print(f"      {'OVERALL':20s}  MAE={crit['overall_MAE']:.4f}  "
-              f"RMSE={crit['overall_RMSE']:.4f}")
-
-        print(f"    Ranking:")
-        print(f"      Kendall tau:  {rank['kendall_tau']:.4f}")
-        print(f"      Spearman rho: {rank['spearman_rho']:.4f}")
-        print(f"      Top-1:      {rank['top1_accuracy']:.4f} "
-              f"({round(rank['top1_accuracy'] * n_eval)}/{n_eval})")
-        print(f"      Top-2:      {rank['top2_accuracy']:.4f} "
-              f"({round(rank['top2_accuracy'] * n_eval)}/{n_eval})")
-
-        # Store overall
-        for k, v in {**crit, **rank}.items():
-            all_metrics.append({
-                "architecture": arch_name,
-                "decision_type": "Overall",
-                "metric": k, "value": v,
-            })
-
-        # per decision type
-        for dtype in ["HVAC", "Appliance", "Shower"]:
-            dt_data = merged[merged["decision_type"] == dtype]
-            if len(dt_data) == 0:
-                print(f"\n  {dtype}: No matched data")
+        for mode, merged_mode in [("filtered", merged_filtered), ("imputed", merged_imputed)]:
+            if len(merged_mode) == 0:
                 continue
 
-            dt_crit = compute_criterion_metrics(dt_data)
-            dt_rank = compute_ranking_metrics(dt_data)
-            n_dt = dt_rank["n_scenarios_evaluated"]
+            crit = compute_criterion_metrics(merged_mode)
+            rank = compute_ranking_metrics(merged_mode)
+            n_eval = rank["n_scenarios_evaluated"]
 
-            print(f"\n  {dtype} ({n_dt} scenarios, {len(dt_data)} alt rows):")
-            print(f"    MAE:  EC={dt_crit['energy_cost_MAE']:.3f}  "
-                  f"ENV={dt_crit['environmental_MAE']:.3f}  "
-                  f"COM={dt_crit['comfort_MAE']:.3f}  "
-                  f"PRA={dt_crit['practicality_MAE']:.3f}  "
-                  f"All={dt_crit['overall_MAE']:.3f}")
-            print(f"    RMSE: EC={dt_crit['energy_cost_RMSE']:.3f}  "
-                  f"ENV={dt_crit['environmental_RMSE']:.3f}  "
-                  f"COM={dt_crit['comfort_RMSE']:.3f}  "
-                  f"PRA={dt_crit['practicality_RMSE']:.3f}  "
-                  f"All={dt_crit['overall_RMSE']:.3f}")
-            print(f"    tau={dt_rank['kendall_tau']:.4f}  "
-                  f"rho={dt_rank['spearman_rho']:.4f}  "
-                  f"Top1={dt_rank['top1_accuracy']:.4f} "
-                  f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
-                  f"Top2={dt_rank['top2_accuracy']:.4f} "
-                  f"({round(dt_rank['top2_accuracy']*n_dt)}/{n_dt})")
+            print(f"\n  {mode.upper()} ({n_eval} scenarios):")
+            print(f"    Criterion MAE / RMSE:")
+            for c in CRITERIA:
+                print(f"      {c:20s}  MAE={crit[f'{c}_MAE']:.4f}  "
+                      f"RMSE={crit[f'{c}_RMSE']:.4f}")
+            print(f"      {'OVERALL':20s}  MAE={crit['overall_MAE']:.4f}  "
+                  f"RMSE={crit['overall_RMSE']:.4f}")
 
-            for k, v in {**dt_crit, **dt_rank}.items():
+            print(f"    Ranking:")
+            print(f"      Kendall tau:  {rank['kendall_tau']:.4f}")
+            print(f"      Spearman rho: {rank['spearman_rho']:.4f}")
+            print(f"      Top-1:      {rank['top1_accuracy']:.4f} "
+                  f"({round(rank['top1_accuracy'] * n_eval)}/{n_eval})")
+            print(f"      Top-2:      {rank['top2_accuracy']:.4f} "
+                  f"({round(rank['top2_accuracy'] * n_eval)}/{n_eval})")
+
+            # Store overall
+            for k, v in {**crit, **rank}.items():
                 all_metrics.append({
                     "architecture": arch_name,
-                    "decision_type": dtype,
-                    "metric": k, "value": v,
+                    "decision_type": "Overall",
+                    "mode": mode, "metric": k, "value": v,
                 })
 
+            # per decision type
+            for dtype in ["HVAC", "Appliance", "Shower"]:
+                dt_data = merged_mode[merged_mode["decision_type"] == dtype]
+                if len(dt_data) == 0:
+                    continue
+
+                dt_crit = compute_criterion_metrics(dt_data)
+                dt_rank = compute_ranking_metrics(dt_data)
+                n_dt = dt_rank["n_scenarios_evaluated"]
+
+                print(f"\n  {mode.upper()} {dtype} ({n_dt} scenarios, {len(dt_data)} alt rows):")
+                print(f"    MAE:  EC={dt_crit['energy_cost_MAE']:.3f}  "
+                      f"ENV={dt_crit['environmental_MAE']:.3f}  "
+                      f"COM={dt_crit['comfort_MAE']:.3f}  "
+                      f"PRA={dt_crit['practicality_MAE']:.3f}  "
+                      f"All={dt_crit['overall_MAE']:.3f}")
+                print(f"    RMSE: EC={dt_crit['energy_cost_RMSE']:.3f}  "
+                      f"ENV={dt_crit['environmental_RMSE']:.3f}  "
+                      f"COM={dt_crit['comfort_RMSE']:.3f}  "
+                      f"PRA={dt_crit['practicality_RMSE']:.3f}  "
+                      f"All={dt_crit['overall_RMSE']:.3f}")
+                print(f"    tau={dt_rank['kendall_tau']:.4f}  "
+                      f"rho={dt_rank['spearman_rho']:.4f}  "
+                      f"Top1={dt_rank['top1_accuracy']:.4f} "
+                      f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
+                      f"Top2={dt_rank['top2_accuracy']:.4f} "
+                      f"({round(dt_rank['top2_accuracy']*n_dt)}/{n_dt})")
+
+                for k, v in {**dt_crit, **dt_rank}.items():
+                    all_metrics.append({
+                        "architecture": arch_name,
+                        "decision_type": dtype,
+                        "mode": mode, "metric": k, "value": v,
+                    })
 
 
-    def _get(arch, dtype, metric):
+
+    def _get_mode(arch, dtype, metric, mode):
         """Helper to pull a metric value from all_metrics list."""
         val = next(
             (m["value"] for m in all_metrics
              if m["architecture"] == arch
              and m["decision_type"] == dtype
-             and m["metric"] == metric),
+             and m["metric"] == metric
+             and m.get("mode") == mode),
             np.nan
         )
         return val
@@ -1192,49 +1205,78 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_failure
     else:
         archs = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
-    # Overall table
-    header = f"  {'Metric':<24}" + "".join(f"{a:>10}" for a in archs)
-    print(f"\n{header}")
-    print("  " + "-" * (24 + 10 * len(archs)))
+    for mode_label in ("filtered", "imputed"):
+        print(f"\n{'='*60}")
+        print(f"  {mode_label.upper()} METRICS")
+        print(f"{'='*60}")
 
-    for metric in ["overall_MAE", "overall_RMSE", "kendall_tau", "spearman_rho",
-                    "top1_accuracy", "top2_accuracy", "n_scenarios_evaluated"]:
-        is_int = metric == "n_scenarios_evaluated"
-        row = f"  {metric:<24}"
-        for a in archs:
-            row += _fmt(_get(a, "Overall", metric), is_int)
-        print(row)
+        # Overall table
+        header = f"  {'Metric':<24}" + "".join(f"{a:>10}" for a in archs)
+        print(f"\n{header}")
+        print("  " + "-" * (24 + 10 * len(archs)))
 
-    # Per-criterion MAE
-    print(f"\n  {'Criterion MAE':<24}" + "".join(f"{a:>10}" for a in archs))
-    print("  " + "-" * (24 + 10 * len(archs)))
-    for c in CRITERIA:
-        row = f"  {c:<24}"
-        for a in archs:
-            row += _fmt(_get(a, "Overall", f"{c}_MAE"))
-        print(row)
+        for metric in ["overall_MAE", "overall_RMSE", "kendall_tau", "spearman_rho",
+                        "top1_accuracy", "top2_accuracy", "n_scenarios_evaluated"]:
+            is_int = metric == "n_scenarios_evaluated"
+            row = f"  {metric:<24}"
+            for a in archs:
+                row += _fmt(_get_mode(a, "Overall", metric, mode_label), is_int)
+            print(row)
 
-    # Kendall tau by decision type
-    print(f"\n  {'Kendall tau by Type':<24}" + "".join(f"{a:>10}" for a in archs))
-    print("  " + "-" * (24 + 10 * len(archs)))
-    for dtype in ["HVAC", "Appliance", "Shower"]:
-        row = f"  {dtype:<24}"
-        for a in archs:
-            row += _fmt(_get(a, dtype, "kendall_tau"))
-        print(row)
+        # Per-criterion MAE
+        print(f"\n  {'Criterion MAE':<24}" + "".join(f"{a:>10}" for a in archs))
+        print("  " + "-" * (24 + 10 * len(archs)))
+        for c in CRITERIA:
+            row = f"  {c:<24}"
+            for a in archs:
+                row += _fmt(_get_mode(a, "Overall", f"{c}_MAE", mode_label))
+            print(row)
 
-    # Top-1 by decision type
-    print(f"\n  {'Top-1 by Type':<24}" + "".join(f"{a:>10}" for a in archs))
-    print("  " + "-" * (24 + 10 * len(archs)))
-    for dtype in ["HVAC", "Appliance", "Shower"]:
-        row = f"  {dtype:<24}"
-        for a in archs:
-            row += _fmt(_get(a, dtype, "top1_accuracy"))
-        print(row)
-    metrics_df = pd.DataFrame(all_metrics, columns=["architecture", "decision_type", "metric", "value"])
-    _atomic_write_xlsx(metrics_df, config["output_csv"])
-    print(f"\n\nMetrics saved to: {config['output_csv']}")
-    print(f"Total metric rows: {len(metrics_df)}")
+        # Kendall tau by decision type
+        print(f"\n  {'Kendall tau by Type':<24}" + "".join(f"{a:>10}" for a in archs))
+        print("  " + "-" * (24 + 10 * len(archs)))
+        for dtype in ["HVAC", "Appliance", "Shower"]:
+            row = f"  {dtype:<24}"
+            for a in archs:
+                row += _fmt(_get_mode(a, dtype, "kendall_tau", mode_label))
+            print(row)
+
+        # Top-1 by decision type
+        print(f"\n  {'Top-1 by Type':<24}" + "".join(f"{a:>10}" for a in archs))
+        print("  " + "-" * (24 + 10 * len(archs)))
+        for dtype in ["HVAC", "Appliance", "Shower"]:
+            row = f"  {dtype:<24}"
+            for a in archs:
+                row += _fmt(_get_mode(a, dtype, "top1_accuracy", mode_label))
+            print(row)
+
+    metrics_df = pd.DataFrame(all_metrics, columns=["architecture", "decision_type", "mode", "metric", "value"])
+
+    # Duplicate shared (no-mode) rows into both modes
+    shared = metrics_df[metrics_df["mode"].isna()]
+    df_f = pd.concat([
+        metrics_df[metrics_df["mode"] == "filtered"],
+        shared.assign(mode="filtered"),
+    ], ignore_index=True).drop(columns=["mode"])
+
+    df_i = pd.concat([
+        metrics_df[metrics_df["mode"] == "imputed"],
+        shared.assign(mode="imputed"),
+    ], ignore_index=True).drop(columns=["mode"])
+
+    base_out = Path(config["output_csv"])
+    out_dir = base_out.parent
+    stem = base_out.stem
+
+    filtered_path = str(out_dir / f"{stem}.xlsx")
+    imputed_path = str(out_dir / f"{stem}_imputed.xlsx")
+
+    _atomic_write_xlsx(df_f, filtered_path)
+    _atomic_write_xlsx(df_i, imputed_path)
+
+    print(f"\n\nFiltered metrics saved to: {filtered_path}")
+    print(f"Imputed metrics saved to: {imputed_path}")
+    print(f"Total metric rows: {len(metrics_df)} ({len(df_f)} filtered + {len(df_i)} imputed)")
 
     return metrics_df, merged_dfs
 
@@ -1263,41 +1305,35 @@ if __name__ == "__main__":
     )
     parser.add_argument('--include-baselines', action='store_true',
                         help='Include 5 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)')
-    parser.add_argument('--impute-failures', action='store_true',
-                        help='Impute failed (sentinel 1928) scores with --impute-value instead of dropping scenarios')
-    parser.add_argument('--impute-value', type=float, default=5.0,
-                        help='Value to use for imputation when --impute-failures is set (default: 5.0)')
     args = parser.parse_args()
 
-    def _output_path(mk):
-        """Return output path for model mk, appending _imputed when applicable."""
+    def _output_stem(mk):
+        """Return output path stem for model mk."""
         od = PROJECT_ROOT / get_output_folder(mk)
-        base = od / f"metrics_summary_{mk}.xlsx"
-        if args.impute_failures:
-            return str(base.with_name(f"metrics_summary_{mk}_imputed.xlsx"))
-        return str(base)
+        return str(od / f"metrics_summary_{mk}.xlsx")
 
     if args.all_models:
-        # Evaluate every model and save a metrics file in each output folder
-        combined_rows = []
+        all_mode_dfs = {"filtered": [], "imputed": []}
         for mk in _all_model_keys:
             cfg = _build_config(mk)
-            cfg["output_csv"] = _output_path(mk)
-            mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk,
-                                  impute_failures=args.impute_failures, impute_value=args.impute_value)
-            mdf["model"] = mk
-            combined_rows.append(mdf)
-        # Also write a combined cross-model metrics file next to the project root
-        combined_df = pd.concat(combined_rows, ignore_index=True)
-        suffix = "_imputed" if args.impute_failures else ""
-        combined_path = str(PROJECT_ROOT / f"metrics_summary_all_models{suffix}.xlsx")
-        _atomic_write_xlsx(combined_df, combined_path)
-        print(f"\nCombined cross-model metrics saved to: {combined_path}")
-        print(f"Total combined metric rows: {len(combined_df)}")
+            cfg["output_csv"] = _output_stem(mk)
+            mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
+            shared = mdf[mdf["mode"].isna()]
+            for mode_key in ("filtered", "imputed"):
+                md = pd.concat([
+                    mdf[mdf["mode"] == mode_key],
+                    shared.assign(mode=mode_key),
+                ], ignore_index=True).drop(columns=["mode"])
+                md["model"] = mk
+                all_mode_dfs[mode_key].append(md)
+        for mode_key in ("filtered", "imputed"):
+            combined = pd.concat(all_mode_dfs[mode_key], ignore_index=True)
+            suffix = "" if mode_key == "filtered" else "_imputed"
+            _atomic_write_xlsx(combined, str(PROJECT_ROOT / f"metrics_summary_all_models{suffix}.xlsx"))
+        print(f"\nCombined metrics saved for all models.")
     else:
         mk = args.model if args.model else MODEL_KEY
         cfg = _build_config(mk)
-        cfg["output_csv"] = _output_path(mk)
-        metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk,
-                                              impute_failures=args.impute_failures, impute_value=args.impute_value)
+        cfg["output_csv"] = _output_stem(mk)
+        metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
 
