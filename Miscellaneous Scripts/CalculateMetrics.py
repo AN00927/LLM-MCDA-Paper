@@ -281,6 +281,41 @@ def _coerce_score_columns(df, score_cols):
     return df
 
 
+def _align_failed_placeholder_alternatives(combined, score_cols):
+    """Map failed-run placeholder alternatives onto real alternatives.
+
+    LLM-Parameterized_Reference_Scoring writes rows like
+    "Alternative 1 (extraction failed)" when extraction fails before the
+    calculator sees the original alternatives. In multi-run aggregation, those
+    placeholders should count as failed attempts for the real alternatives, not
+    become separate unmatched alternatives.
+    """
+    placeholder_re = re.compile(r"^Alternative\s+(\d+)\s+\(extraction failed\)$", re.IGNORECASE)
+    out = combined.copy()
+
+    for (sid, dtype), idx in out.groupby(["scenario_id", "decision_type"]).groups.items():
+        group = out.loc[idx]
+        placeholder_positions = []
+        real_alternatives = []
+
+        for row_idx, alt in group["alternative"].items():
+            alt_text = str(alt).strip()
+            match = placeholder_re.match(alt_text)
+            if match:
+                placeholder_positions.append((row_idx, int(match.group(1))))
+            elif alt_text not in real_alternatives:
+                real_alternatives.append(alt_text)
+
+        if not placeholder_positions or len(real_alternatives) < 3:
+            continue
+
+        for row_idx, alt_num in placeholder_positions:
+            if 1 <= alt_num <= len(real_alternatives):
+                out.at[row_idx, "alternative"] = real_alternatives[alt_num - 1]
+
+    return out
+
+
 def aggregate_run_files(run_paths):
     """Aggregate multi-run results into a single dataframe with mean/std scores.
 
@@ -301,6 +336,7 @@ def aggregate_run_files(run_paths):
         CONFIG["arch_score_cols"]["practicality"],
     ]
     combined = _coerce_score_columns(combined, score_cols)
+    combined = _align_failed_placeholder_alternatives(combined, score_cols)
 
     # Treat sentinel rows as NaN for averaging
     for c in score_cols:

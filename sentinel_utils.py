@@ -119,7 +119,7 @@ def read_table_clean(path, dtype: dict = None, time_columns: list = None, keep_s
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
 
-    for col in df.select_dtypes(include=[object]).columns:
+    for col in df.select_dtypes(include=["object", "string"]).columns:
         if col in strcols:
             continue
         df[col] = df[col].astype(str).str.strip()
