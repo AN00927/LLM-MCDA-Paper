@@ -42,8 +42,6 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import (
-    CRITERION_WEIGHTS,
-    TIE_BREAK_PRIORITY,
     get_model_id,
     get_output_folder_for_model_id,
     get_reasoning_payload,
@@ -64,6 +62,7 @@ from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     _is_complete_run_file,
+    apply_mavt_ranking,
     has_sentinel_scores,
     read_table_clean,
     SENTINEL_VALUE,
@@ -449,50 +448,6 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
         return parse_failure_scores, diagnostics
 
 
-def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    alternatives = [alt["alternative"] for alt in alternatives_scores]
-
-
-    valid_pairs = []  # (input_idx, weighted_sum)
-    for idx, alt_scores in enumerate(alternatives_scores):
-        if has_sentinel_scores(alt_scores) or alt_scores.get("failed", False):
-            continue
-        weighted_sum = (
-                CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
-                CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
-                CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
-                CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
-        )
-        valid_pairs.append((idx, weighted_sum))
-
-    if not valid_pairs:
-        return {
-            "ranked_alternatives": [],
-            "ranks": [SENTINEL_VALUE] * len(alternatives),
-            "weighted_scores": [SENTINEL_FLOAT] * len(alternatives)
-        }
-
-    # Deterministic tiebreaking based on TIE_BREAK_PRIORITY
-    def sort_key(pair):
-        idx, ws = pair
-        alt_scores = alternatives_scores[idx]
-        return (ws,) + tuple(alt_scores.get(crit, 0.0) for crit in TIE_BREAK_PRIORITY)
-
-    valid_pairs_sorted = sorted(valid_pairs, key=sort_key, reverse=True)
-    ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
-
-    # Keep the indices lined up with the original order
-    ranks = [SENTINEL_VALUE] * len(alternatives)
-    weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
-    for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
-        ranks[input_idx] = rank_position + 1
-        weighted_scores[input_idx] = ws
-
-    return {
-        "ranked_alternatives": ranked_alternatives,
-        "ranks": ranks,
-        "weighted_scores": weighted_scores
-    }
 
 def run_scenario(scenario: Dict) -> Dict:
     alternatives = [
