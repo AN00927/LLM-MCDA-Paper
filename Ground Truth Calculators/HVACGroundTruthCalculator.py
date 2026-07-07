@@ -13,8 +13,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean
+from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
 
 
 class HVACGroundTruthCalculator:
@@ -718,72 +717,6 @@ def process_hvac_scenarios(
     print(f"\nGround truth saved to {output_path}")
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
-
-def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    try:
-        alternatives = [alt["alternative"] for alt in alternatives_scores]
-
-        # Calculate weighted sum for each alternative
-        weighted_scores = []
-        for alt_scores in alternatives_scores:
-            weighted_sum = (
-                    CRITERION_WEIGHTS["energy_cost"] * alt_scores["energy_cost"] +
-                    CRITERION_WEIGHTS["environmental"] * alt_scores["environmental"] +
-                    CRITERION_WEIGHTS["comfort"] * alt_scores["comfort"] +
-                    CRITERION_WEIGHTS["practicality"] * alt_scores["practicality"]
-            )
-            weighted_scores.append(weighted_sum)
-
-        # Rank alternatives: higher weighted sum = better (rank 1). Ties are
-        # broken deterministically by TIE_BREAK_PRIORITY criteria (each desc) so
-        # tied alternatives get a stable order instead of np.argsort's arbitrary
-        # one, and identically to how CalculateMetrics breaks ties.
-        order = sorted(
-            range(len(alternatives)),
-            key=lambda i: (weighted_scores[i],
-                           *[alternatives_scores[i][c] for c in TIE_BREAK_PRIORITY]),
-            reverse=True,
-        )
-        ranked_alternatives = [alternatives[i] for i in order]
-
-        # Create rank numbers (1 = best, 2 = second, 3 = third)
-        ranks = [0] * len(alternatives)
-        for rank_position, alt_index in enumerate(order):
-            ranks[alt_index] = rank_position + 1
-
-        return {
-            "ranked_alternatives": ranked_alternatives,
-            "ranks": ranks,
-            "weighted_scores": weighted_scores
-        }
-
-    except Exception as e:
-        logging.error(f"MAVT ranking failed: {e}")
-
-        # Fallback: rank by average score
-        avg_scores = []
-        for alt_scores in alternatives_scores:
-            avg = np.mean([
-                alt_scores["energy_cost"],
-                alt_scores["environmental"],
-                alt_scores["comfort"],
-                alt_scores["practicality"]
-            ])
-            avg_scores.append(avg)
-
-        ranked_indices = np.argsort(avg_scores)[::-1]
-        ranked_alternatives = [alternatives[i] for i in ranked_indices]
-
-        ranks = [0] * len(alternatives)
-        for rank_position, alt_index in enumerate(ranked_indices):
-            ranks[alt_index] = rank_position + 1
-
-        return {
-            "ranked_alternatives": ranked_alternatives,
-            "ranks": ranks,
-            "weighted_scores": avg_scores,
-            "error": str(e)
-        }
 
 
 if __name__ == "__main__":

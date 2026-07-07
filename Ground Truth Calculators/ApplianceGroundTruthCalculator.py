@@ -12,8 +12,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores
+from sentinel_utils import apply_mavt_ranking, read_table_clean, SENTINEL_VALUE, has_sentinel_scores
 
 class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
@@ -669,75 +668,6 @@ def process_appliance_scenarios(
     print(f"Total alternatives scored: {len(results_df)}")
     return results_df
 
-def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
-    try:
-        alternatives = [alt["alternative"] for alt in alternatives_scores]
-
-        # Exclude any alternative carrying the failure sentinel (1928) from
-        # ranking — it receives rank/weighted = SENTINEL_VALUE instead of a
-        # fabricated rank, mirroring the architecture-side rankers.
-        valid_idx = [i for i, a in enumerate(alternatives_scores) if not has_sentinel_scores(a)]
-
-        weighted_scores = [SENTINEL_VALUE] * len(alternatives)
-        for i in valid_idx:
-            a = alternatives_scores[i]
-            weighted_scores[i] = (
-                    CRITERION_WEIGHTS["energy_cost"] * a["energy_cost"] +
-                    CRITERION_WEIGHTS["environmental"] * a["environmental"] +
-                    CRITERION_WEIGHTS["comfort"] * a["comfort"] +
-                    CRITERION_WEIGHTS["practicality"] * a["practicality"]
-            )
-
-        # Rank valid alternatives: higher weighted sum = better (rank 1). Ties
-        # are broken deterministically by TIE_BREAK_PRIORITY criteria (each desc)
-        # so tied alternatives get a stable order instead of np.argsort's
-        # arbitrary one
-        order = sorted(
-            valid_idx,
-            key=lambda i: (weighted_scores[i],
-                           *[alternatives_scores[i][c] for c in TIE_BREAK_PRIORITY]),
-            reverse=True,
-        )
-        ranked_alternatives = [alternatives[i] for i in order]
-
-    
-        ranks = [SENTINEL_VALUE] * len(alternatives)
-        for rank_position, alt_index in enumerate(order):
-            ranks[alt_index] = rank_position + 1
-
-        return {
-            "ranked_alternatives": ranked_alternatives,
-            "ranks": ranks,
-            "weighted_scores": weighted_scores
-        }
-
-    except Exception as e:
-        logging.error(f"MAVT ranking failed: {e}")
-
-        # Fallback: rank by average score
-        avg_scores = []
-        for alt_scores in alternatives_scores:
-            avg = np.mean([
-                alt_scores["energy_cost"],
-                alt_scores["environmental"],
-                alt_scores["comfort"],
-                alt_scores["practicality"]
-            ])
-            avg_scores.append(avg)
-
-        ranked_indices = np.argsort(avg_scores)[::-1]
-        ranked_alternatives = [alternatives[i] for i in ranked_indices]
-
-        ranks = [0] * len(alternatives)
-        for rank_position, alt_index in enumerate(ranked_indices):
-            ranks[alt_index] = rank_position + 1
-
-        return {
-            "ranked_alternatives": ranked_alternatives,
-            "ranks": ranks,
-            "weighted_scores": avg_scores,
-            "error": str(e)
-        }
 
 
 if __name__ == "__main__":

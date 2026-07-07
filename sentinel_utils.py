@@ -255,6 +255,87 @@ def gpm_to_flow_rate_label(gpm) -> str:
     return "high_flow"
 
 
+def apply_mavt_ranking(alternatives_scores):
+    """MAVT ranking for flat-dict alternatives (GT calculators and Direct arch).
+
+    Each element of *alternatives_scores* must be a dict with an ``"alternative"``
+    key and the four criterion scores as top-level keys.  Elements whose scores
+    contain the sentinel value (1928) are excluded from ranking and receive
+    SENTINEL_VALUE rank / SENTINEL_FLOAT weighted_score in the output.
+
+    Returns a dict with keys:
+        ``ranked_alternatives`` — list of alternative labels, best first
+        ``ranks``              — parallel list of 1-based int ranks (or SENTINEL_VALUE)
+        ``weighted_scores``    — parallel list of weighted sums (or SENTINEL_FLOAT)
+    """
+    from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+    import math
+
+    alternatives = [a["alternative"] for a in alternatives_scores]
+
+    valid_pairs = []  # (input_idx, weighted_sum)
+    for idx, alt in enumerate(alternatives_scores):
+        if has_sentinel_scores(alt):
+            continue
+        try:
+            ws = (
+                CRITERION_WEIGHTS["energy_cost"]   * float(alt["energy_cost"]) +
+                CRITERION_WEIGHTS["environmental"] * float(alt["environmental"]) +
+                CRITERION_WEIGHTS["comfort"]       * float(alt["comfort"]) +
+                CRITERION_WEIGHTS["practicality"]  * float(alt["practicality"])
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+        if math.isnan(ws):
+            continue
+        valid_pairs.append((idx, ws))
+
+    if not valid_pairs:
+        return {
+            "ranked_alternatives": [],
+            "ranks": [SENTINEL_VALUE] * len(alternatives),
+            "weighted_scores": [SENTINEL_FLOAT] * len(alternatives),
+        }
+
+    def _sort_key(pair):
+        idx, ws = pair
+        alt = alternatives_scores[idx]
+        return (ws,) + tuple(float(alt.get(c, 0.0)) for c in TIE_BREAK_PRIORITY)
+
+    valid_pairs_sorted = sorted(valid_pairs, key=_sort_key, reverse=True)
+    ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
+
+    ranks = [SENTINEL_VALUE] * len(alternatives)
+    weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
+    for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
+        ranks[input_idx] = rank_position + 1
+        weighted_scores[input_idx] = ws
+
+    return {
+        "ranked_alternatives": ranked_alternatives,
+        "ranks": ranks,
+        "weighted_scores": weighted_scores,
+    }
+
+
+def find_file_in_paths(filename: str, search_dirs) -> str:
+    """Return the first path under *search_dirs* where *filename* exists.
+
+    Raises ``FileNotFoundError`` if the file is not found in any directory.
+    Used by the objective-weight analysis scripts (MERCECWeights, ImpliedWeights)
+    to locate ground-truth xlsx files regardless of the working directory.
+    """
+    import os
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            return path
+    raise FileNotFoundError(
+        f"Cannot find '{filename}' in {list(search_dirs)}. "
+        f"Run from repo root or set SEARCH_DIRS explicitly."
+    )
+
+
 def format_embedding_text(decision_type: str, fields) -> str:
     """Build the similarity-embedding document for a scenario.
 
