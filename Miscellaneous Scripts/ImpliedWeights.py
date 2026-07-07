@@ -62,7 +62,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import read_table_clean
+from sentinel_utils import find_file_in_paths, read_table_clean
 
 # Console output contains math symbols (σ, ≥, Σ, −); ensure stdout can encode them
 # on Windows where the default codec (cp1252) cannot.
@@ -121,21 +121,11 @@ OUTPUT_CSV = os.path.join(OUTPUT_DIR, OUTPUT_CSV)
 # Data Loading
 # ---------------------------------------------------------------------------
 
-def find_file(filename: str) -> str:
-    for d in SEARCH_DIRS:
-        path = os.path.join(d, filename)
-        if os.path.exists(path):
-            return path
-    raise FileNotFoundError(
-        f"Cannot find '{filename}' in {SEARCH_DIRS}. "
-        f"Run from repo root or update SEARCH_DIRS."
-    )
-
 
 def load_ground_truth() -> pd.DataFrame:
     frames = []
     for dtype, fname in GT_FILES.items():
-        df = read_table_clean(find_file(fname))
+        df = read_table_clean(find_file_in_paths(fname, SEARCH_DIRS))
         missing = [c for c in list(SCORE_COLS.values()) + [RANK_COL]
                    if c not in df.columns]
         if missing:

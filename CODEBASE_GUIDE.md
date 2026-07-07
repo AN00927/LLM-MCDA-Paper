@@ -34,7 +34,7 @@ Higher weighted score is better; rank `1` is best.
 LLM-MCDA Paper/
 ├── Architectures/
 │   ├── Direct_LLM_Prompting.py
-│   ├── Eample-Guided_LLM_Scoring.py.py
+│   ├── Example-Guided_LLM_Scoring.py
 │   └── LLM-Parameterized_Reference_Scoring.py
 ├── Ground Truth/
 │   ├── ground_truth_hvac.xlsx
@@ -52,7 +52,7 @@ LLM-MCDA Paper/
 │   ├── EntropyWeights.py
 │   ├── ImpliedWeights.py
 │   ├── MERCECWeights.py
-│   ├── EvaluateLLM-Parameterized_Reference_ScoringExtraction.py
+│   ├── EvaluateHybridExtraction.py
 │   └── RunRAGAblations.py
 ├── Scenario Files/
 │   ├── ConsolidatedforSimaltaneousediting.xlsx
