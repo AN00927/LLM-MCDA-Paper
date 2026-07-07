@@ -320,7 +320,8 @@ def load_source_groups() -> Dict[str, List[Dict]]:
             metadata = dict(first_row)
             metadata.update({
                 "decision_type": decision_type,
-                "source_scenario_id": scenario_id,
+                "source_scenario_id": f"{decision_type.lower()}_{scenario_id}",
+                "source_scenario_numeric": scenario_id,
                 "source_position": source_position,
                 "filename": filename,
                 "alternatives": alternatives,
@@ -363,7 +364,7 @@ def build_collection(embedding_model_name: str, temp_root: Path) -> Tuple[str, o
                 for alt in scenario["alternatives"]
             ])
             metadata = build_scenario_metadata(decision_type, pd.Series(first_row), metadata_group)
-            metadata["source_scenario_id"] = int(scenario["source_scenario_id"])
+            metadata["source_scenario_id"] = scenario["source_scenario_id"]
             metadata["source_position"] = int(scenario["source_position"])
             metadata["filename"] = scenario["filename"]
             collection.add(
@@ -563,7 +564,7 @@ def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
 def retrieve_similar(collection, model, scenario: Dict, k: int) -> List[Dict]:
     if k <= 0:
         return []
-    target_source_id = int(scenario["source_scenario_id"])
+    target_source_id = scenario["source_scenario_id"]
     decision_type = scenario["decision_type"]
     query_text = format_embedding_text(decision_type, scenario)
     query_embedding = model.encode(query_text).tolist()
@@ -584,11 +585,7 @@ def retrieve_similar(collection, model, scenario: Dict, k: int) -> List[Dict]:
             results["metadatas"][0],
             results["distances"][0],
         ):
-            metadata_source_id = metadata.get("source_scenario_id", doc_id)
-            try:
-                metadata_source_id = int(metadata_source_id)
-            except (TypeError, ValueError):
-                metadata_source_id = -1
+            metadata_source_id = str(metadata.get("source_scenario_id", doc_id))
             if metadata_source_id == target_source_id:
                 continue
             if metadata.get("decision_type") != decision_type:
@@ -913,9 +910,9 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                         "model_key": model_key,
                         "ablation_id": ablation_id,
                         "ablation_label": spec["label"],
-                        "sample_seed": int(scenario["source_scenario_id"]),
+                        "sample_seed": scenario.get("source_scenario_numeric", scenario.get("source_position", 0)),
                         "decision_type": decision_type,
-                        "source_scenario_id": int(scenario["source_scenario_id"]),
+                        "source_scenario_id": scenario["source_scenario_id"],
                         "source_position": int(scenario["source_position"]),
                         "question": scenario.get("question", ""),
                         "location": scenario.get("location", ""),
@@ -1103,8 +1100,8 @@ def run(args) -> Dict:
     dtype_summary_path = output_dir / "rag_ablation_summary_by_decision_type.xlsx"
     report_path = Path(args.output)
     _atomic_write_xlsx(rows_df, results_path)
-    summary_df = summarize_rows(rows)
-    dtype_summary_df = summarize_by_decision_type(rows)
+    summary_df = summarize_rows(rows_df)
+    dtype_summary_df = summarize_by_decision_type(rows_df)
     _atomic_write_xlsx(summary_df, summary_path)
     _atomic_write_xlsx(dtype_summary_df, dtype_summary_path)
     plot_paths = make_plots(summary_df, output_dir)
@@ -1144,12 +1141,12 @@ def parse_args():
     )
     parser.add_argument(
         "--output-dir",
-        default=str(OUTPUT_DIR),
+        default=str(PROJECT_ROOT),
         help="Directory for Excel outputs and plots.",
     )
     parser.add_argument(
         "--output",
-        default=str(OUTPUT_DIR / "rag_ablation_results.md"),
+        default=str(PROJECT_ROOT / "rag_ablation_results.md"),
         help="Markdown report output path.",
     )
     return parser.parse_args()
