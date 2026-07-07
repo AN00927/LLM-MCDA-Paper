@@ -40,6 +40,8 @@ from sentinel_utils import (
     read_table_clean,
 )
 
+from CreateRepresentativeSample import stratified_sample_by_features as stratified_sample
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
@@ -327,33 +329,6 @@ def load_source_groups() -> Dict[str, List[Dict]]:
         groups_by_type[decision_type] = groups
     return groups_by_type
 
-
-def stratified_sample(groups_by_type: Dict[str, List[Dict]], sample_size: Optional[int], seed: int) -> List[Dict]:
-    rng = np.random.default_rng(seed)
-    sampled = []
-    if sample_size is None:
-        for decision_type in DECISION_TYPES:
-            sampled.extend(groups_by_type[decision_type])
-        return sampled
-    groups = {dtype: list(groups_by_type[dtype]) for dtype in DECISION_TYPES}
-    counts = {dtype: len(groups[dtype]) for dtype in DECISION_TYPES}
-    base = sample_size // len(DECISION_TYPES)
-    remainder = sample_size % len(DECISION_TYPES)
-    allocations = {dtype: min(base, counts[dtype]) for dtype in DECISION_TYPES}
-    ordered = sorted(DECISION_TYPES, key=lambda dtype: counts[dtype], reverse=True)
-    for dtype in ordered:
-        if remainder <= 0:
-            break
-        if allocations[dtype] < counts[dtype]:
-            allocations[dtype] += 1
-            remainder -= 1
-    for dtype in DECISION_TYPES:
-        n = min(allocations[dtype], counts[dtype])
-        if n <= 0:
-            continue
-        indices = rng.choice(counts[dtype], size=n, replace=False)
-        sampled.extend([groups[dtype][int(i)] for i in sorted(indices)])
-    return sampled
 
 
 def build_collection(embedding_model_name: str, temp_root: Path) -> Tuple[str, object, object, Dict[str, List[Dict]]]:
