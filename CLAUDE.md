@@ -93,6 +93,6 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - **xlsx provenance:** every Test/RAG row must trace to a master under the transform
   rules in [PROVENANCE_AUDIT_PROMPT.md](PROVENANCE_AUDIT_PROMPT.md); column types are
   documented in [XLSX_Schema_Map.md](XLSX_Schema_Map.md).
-- **Commits are the user's job** — never run `git commit`/`git push` here.
+- **NEVER commit or push without explicit user permission** — `git commit`/`git push` are strictly forbidden unless the user directly instructs it.
 - Standalone master files (`*Scenarios.xlsx`) can drift from the consolidated workbook;
   the consolidated workbook is the source of truth for Test/RAG derivation.
