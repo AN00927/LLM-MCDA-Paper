@@ -612,6 +612,13 @@ Table~\ref{tab:item6} breaks MAE down by criterion. LLM-Parameterized\_Reference
 
 Error for all three architectures concentrates on Energy Cost and Environmental Impact. Pure Prompting scores 0.260 on Environmental and 0.240 on Energy Cost. RAG halves those to 0.141 and 0.147. LLM-Parameterized\_Reference\_Scoring cuts them further to 0.098 and 0.077. The gap between Energy Cost and Environmental MAE widens at higher error levels: Pure Prompting's Environmental MAE exceeds Energy Cost by 0.020, suggesting the model struggles more with emissions estimation than with dollar costs.
 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{fig_mae_criterion.png}
+	\caption{MAE by criterion at the architecture level. Error bars show pooled averages across GPT-OSS 20B, Qwen 3.5 9B, DeepSeek V4 Flash, and Gemini 3.5 Flash.}
+	\label{fig:mae_criterion}
+\end{figure}
+
 \subsection{Performance by Decision Type}
 \label{sec:res-bytype}
 Table~\ref{tab:item7} reports $\tau$ and Top-1/Top-2 by decision type. LLM-Parameterized\_Reference\_Scoring excels across all three: HVAC $\tau = 0.936$, Appliance $\tau = 0.944$, Shower $\tau = 0.817$. Shower is the weakest type due to GPM estimation limits, but still far above the other architectures.
@@ -620,17 +627,38 @@ RAG-Enhanced fails on HVAC ($\tau = 0.107$), performs moderately on Appliance ($
 
 Appliance results for LLM-Parameterized\_Reference\_Scoring ($\tau = 0.944$) track extraction quality most directly since the baseline time parameter varies across alternatives, making it the strongest test of extraction fidelity.
 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.65\textwidth]{fig_tau_decision.png}
+	\caption{Architecture-level Kendall's $\tau$ by decision type (pooled across four models). The dotted line marks $\tau = 0$ (random ranking).}
+	\label{fig:tau_decision}
+\end{figure}
+
 \subsection{RAG Ablation}
 \label{sec:rag-ablation}
 Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 12-scenario subset with six configurations across five models. The nearest-neighbor offline baseline assigns retrieved scenario scores directly without LLM rescoring and yields $\tau = 0.000$, confirming that naive exemplar copying provides no ranking signal.
 
 Retrieval $k=1$ ($\tau = 0.341$) matches the $k=3$ control ($\tau = 0.339$), and the exemplars\_no\_hidden\_params configuration ($\tau = 0.337$) performs comparably. The alternate embedding model (paraphrase-MiniLM-L3-v2) provides a marginal overall improvement ($\tau = 0.342$) and a larger gain on Appliance ($\tau = 0.733$ versus 0.690 for the control). The descriptions\_no\_scores\_ranks configuration, which omits all quantitative scores from the retrieved exemplars, performs worst ($\tau = 0.182$), confirming that exemplar scores provide critical anchoring information.
 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.75\textwidth]{fig_rag_ablation.png}
+	\caption{RAG ablation results: Kendall's $\tau$ by configuration and model on the 12-scenario subset.}
+	\label{fig:rag_ablation}
+\end{figure}
+
 \subsection{Efficiency and Cost}
 \label{sec:res-efficiency}
 Table~\ref{tab:item8} reports API usage and costs. LLM-Parameterized\_Reference\_Scoring is both the cheapest and the most accurate architecture, requiring one API call per scenario versus three for Pure Prompting and RAG-Enhanced. Cost per 195-scenario run ranges from \$0.01 (GPT-OSS, Qwen) to \$0.28 (Gemini). Pure Prompting costs 2--6$\times$ more per run (\$0.02--\$0.80). RAG-Enhanced is the most expensive, driven by the token overhead of three retrieved exemplars per call (\$0.03--\$1.28).
 
 Failure rates are near-zero across all architectures and models. The single exception is GPT-OSS LLM-Parameterized\_Reference\_Scoring, which shows a 12.8\% extraction failure rate on parameter parsing. Multi-run averaging recovers these scenarios, yielding 0\% scenario-level failure after matching.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.75\textwidth]{fig_cost_comparison.png}
+	\caption{API cost per 195-scenario benchmark run by model and architecture. Note logarithmic y-axis; LLM-Parameterized\_Reference\_Scoring is the cheapest architecture across all four models.}
+	\label{fig:cost_comparison}
+\end{figure}
 
 \section{Discussion}
 \label{sec4}
