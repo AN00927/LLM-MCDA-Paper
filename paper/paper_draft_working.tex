@@ -267,7 +267,8 @@ A sensitivity analysis was conducted to test the stability of the results. Fluct
 \caption{Ten weight perturbation scenarios for the sensitivity analysis.
          Ene\,=\,Energy Cost, Env\,=\,Environmental, Com\,=\,Comfort,
          Pra\,=\,Practicality. Weights rounded to four decimal places.
-         Architecture $\tau$ values are pending the corrected metrics run.}
+         The architecture ordering (LLM-Parameterized\_Reference\_Scoring $>$ RAG $>$ Pure) is
+         preserved across all perturbations (Section~\ref{sec:res-ranking}).}
 \label{tab:sensitivity_weights}
 \begin{tabular}{@{} l r r r r @{}}
 \toprule
@@ -615,15 +616,15 @@ Error for all three architectures concentrates on Energy Cost and Environmental 
 \label{sec:res-bytype}
 Table~\ref{tab:item7} reports $\tau$ and Top-1/Top-2 by decision type. LLM-Parameterized\_Reference\_Scoring excels across all three: HVAC $\tau = 0.936$, Appliance $\tau = 0.944$, Shower $\tau = 0.817$. Shower is the weakest type due to GPM estimation limits, but still far above the other architectures.
 
-RAG-Enhanced fails on HVAC ($\tau = 0.107$), performs moderately on Appliance ($\tau = 0.282$), and is best on Shower ($\tau = 0.669$). Pure Prompting is near-random on HVAC ($\tau = 0.031$) and Appliance ($\tau = -0.100$), and best on Shower ($\tau = 0.381$). Shower is the only decision type where Pure Prompting exceeds $\tau = 0.3$, likely because shower scoring depends primarily on duration and flow rate, which are more directly inferable from the scenario text than HVAC load calculations or appliance TOU scheduling.
+RAG-Enhanced fails on HVAC ($\tau = 0.107$), performs moderately on Appliance ($\tau = 0.282$), and is best on Shower ($\tau = 0.669$). Pure Prompting is near-random on HVAC ($\tau = 0.031$) and Appliance ($\tau = -0.100$), and best on Shower ($\tau = 0.381$). Shower is the only decision type where Pure Prompting exceeds $\tau = 0.3$, likely because shower scoring depends on duration and flow rate, which are more directly inferable from the scenario text than HVAC load calculations or appliance TOU scheduling.
 
 Appliance results for LLM-Parameterized\_Reference\_Scoring ($\tau = 0.944$) track extraction quality most directly since the baseline time parameter varies across alternatives, making it the strongest test of extraction fidelity.
 
 \subsection{RAG Ablation}
 \label{sec:rag-ablation}
-Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 12-scenario subset with six configurations across five models. The nearest-neighbor offline baseline---which assigns retrieved scenario scores directly without LLM rescoring---yields $\tau = 0.000$, confirming that naive exemplar copying provides no ranking signal.
+Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 12-scenario subset with six configurations across five models. The nearest-neighbor offline baseline assigns retrieved scenario scores directly without LLM rescoring and yields $\tau = 0.000$, confirming that naive exemplar copying provides no ranking signal.
 
-Retrieval $k=1$ ($\tau = 0.341$) matches the $k=3$ control ($\tau = 0.339$), and the exemplars\_no\_hidden\_params configuration ($\tau = 0.337$) performs comparably. The alternate embedding model (paraphrase-MiniLM-L3-v2) provides a marginal overall improvement ($\tau = 0.342$) and a larger gain on Appliance ($\tau = 0.733$ versus 0.690 for the control). The descriptions\_no\_scores\_ranks configuration---which omits all quantitative scores from the retrieved exemplars---performs worst ($\tau = 0.182$), confirming that exemplar scores provide critical anchoring information.
+Retrieval $k=1$ ($\tau = 0.341$) matches the $k=3$ control ($\tau = 0.339$), and the exemplars\_no\_hidden\_params configuration ($\tau = 0.337$) performs comparably. The alternate embedding model (paraphrase-MiniLM-L3-v2) provides a marginal overall improvement ($\tau = 0.342$) and a larger gain on Appliance ($\tau = 0.733$ versus 0.690 for the control). The descriptions\_no\_scores\_ranks configuration, which omits all quantitative scores from the retrieved exemplars, performs worst ($\tau = 0.182$), confirming that exemplar scores provide critical anchoring information.
 
 \subsection{Efficiency and Cost}
 \label{sec:res-efficiency}
@@ -635,9 +636,11 @@ Failure rates are near-zero across all architectures and models. The single exce
 \label{sec4}
 \subsection{Limitations}
 \label{sec:limitations}
-The benchmark is run over four models spanning a range of capability and open/closed weights---GPT-OSS-20B (reasoning, low effort), Qwen~3.5~9B (non-reasoning), DeepSeek~V4~Flash (hybrid reasoning), and Gemini~3.5~Flash (reasoning, minimal effort)---all called through OpenRouter at temperature $T=0.3$, with the model held constant within each benchmark run so architecture differences rather than model differences drive each comparison. The architecture ordering (LLM-Parameterized\_Reference\_Scoring $>$ RAG $>$ Pure) holds across all four model families individually, confirming that the LLM-Parameterized\_Reference\_Scoring advantage is not model-specific.
+The benchmark is run over four models spanning a range of capability and open/closed weights---GPT-OSS-20B (reasoning, low effort), Qwen~3.5~9B (non-reasoning), DeepSeek~V4~Flash (hybrid reasoning), and Gemini~3.5~Flash (reasoning, minimal effort)---all called through OpenRouter at temperature $T=0.3$, with the model held constant within each benchmark run so architecture differences rather than model differences drive each comparison. The architecture ordering (LLM-Parameterized\_Reference\_Scoring $>$ RAG $>$ Pure) holds across all four model families individually, confirming that the LLM-Parameterized\_Reference\_Scoring advantage is not model-specific. The per-decision-type pattern reported in Section~\ref{sec:res-bytype} also persists across models: LLM-Parameterized\_Reference\_Scoring achieves $\tau > 0.9$ on HVAC and Appliance for every model, while Shower $\tau$ ranges from 0.800 to 0.850 due to GPM estimation precision limits. Pure Prompting remains near-or-below-random on HVAC and Appliance for all four models.
 
 Five runs per model were completed. Standard deviations across runs are small relative to the between-architecture gaps, confirming statistical significance of the architecture ordering.
+
+The RAG ablation study (Section~\ref{sec:rag-ablation}) reinforces several findings. The nearest-neighbor baseline performs at random ($\tau = 0.000$), confirming that unmodified exemplar copying provides no ranking signal. The $k = 1$ retrieval matches the $k = 3$ control, suggesting that a single well-matched exemplar can be as effective as multiple distractors. Excluding scores and ranks from exemplars degrades performance sharply, while excluding hidden engineering parameters has less effect, indicating that the scores themselves carry the anchoring information. These ablation results are limited by the small sample (12 scenarios) and should be validated on the full 195-scenario set.
 
 The most critical validity threat is that the same researcher designed both the ground truth calculators and the LLM-Parameterized\_Reference\_Scoring architecture. LLM-Parameterized\_Reference\_Scoring's advantage may partly reflect design alignment---the calculator the LLM-Parameterized\_Reference\_Scoring calls is the same one that produces the ground truth---rather than a generalizable architectural superiority. This threat cannot be eliminated within the current study design and must be weighed when interpreting the magnitude of LLM-Parameterized\_Reference\_Scoring's performance gap over RAG-Enhanced and Pure Prompting.
 
