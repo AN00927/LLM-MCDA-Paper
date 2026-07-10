@@ -64,7 +64,7 @@ for the factors that influence a decision, but that requires expertise
 in the field. This includes the choice of weighting scheme, value
 function form, and normalization, which also consumes too much time to
 be realistic to create for routine household use
-\cite{cerneviciene2022,huangburgherr2024}.
+\cite{desouza2022,huangburgherr2024}.
 
 Large language models (LLMs) can, in principle, remove this barrier
 by translating a natural-language household description into the
@@ -174,11 +174,11 @@ under those conditions.
 Multi-criteria decision analysis (MCDA), life-cycle assessment (LCA),
 and Pareto-based prediction methods have been used to track and reduce
 environmental impact at building and organizational scales
-\cite{collinge2014,huang2011}. Engineering frameworks of this kind
+\cite{huang2011}. Engineering frameworks of this kind
 can optimize complex decisions, but their construction is
 time-consuming: signal-processing pipelines such as the Hilbert--Huang
 transform are not rapid, and constructing the decision matrix itself
-is a recognized bottleneck \cite{cerneviciene2022}. Huang and Burgherr
+is a recognized bottleneck \cite{desouza2022,huang2011}. Huang and Burgherr
 (2024) addressed part of this by building a streamlined MCDA
 calculator that compresses several accepted methods into a single
 workflow \cite{huangburgherr2024}. Even with their simplification,
@@ -190,7 +190,7 @@ The harder problem is operational. Constructing an MCDA framework for
 a specific decision normally requires methodological knowledge,
 including the choice of weighting scheme, value function form, and
 normalization, alongside rubric design and domain familiarity
-\cite{cerneviciene2022,huangburgherr2024}. Existing simplified
+\cite{desouza2022,huangburgherr2024}. Existing simplified
 calculators reduce but do not eliminate this barrier.
 
 \subsection{Criterion Selection and Weighting}
@@ -330,7 +330,7 @@ Occupancy Frequency      & \checkmark & ---        \\
 \end{tabular}
 \end{table}
 
-The calculator receives specific values that must be professionally graded for households, and thus are unreasonable to be requested of homeowners. The architectures receive generalized version (e.g.\ insulation, which is a general estimate of poor/average/good rather than a specific R-value) or do not receive counterparts to some parameters at all (e.g.\ occupancy context, which the architecture instead has to infer from the question text). These parameters are chosen as they are things a household member would actually know \cite{attari2010}.
+The calculator receives specific values that must be professionally graded for households, and thus are unreasonable to be requested of homeowners. The architectures receive generalized version (e.g.\ insulation, which is a general estimate of poor/average/good rather than a specific R-value) or do not receive counterparts to some parameters at all (e.g.\ occupancy context, which the architecture instead has to infer from the question text). These parameters are chosen as they are things a household member would actually know \cite{doehesscore2021}.
 
 To generalize parameters, we identified acceptable ranges for each qualitative level from published standards and mapped each scenario to a representative value within that range. Insulation tiers map to standard U.S.\ residential wall R-values: Poor to R-11 (minimal 2$\times$4 cavity fill, below current code), Medium to R-13 (standard 2$\times$4 batt), and Good to R-19 (2$\times$6 framing), consistent with code tables for wood-frame assemblies and ENERGY STAR guidance \cite{cec_ja43_2013,energystar_insulation2023}. For the Flow Rate parameter, if the scenario specified \texttt{standard}, the corresponding GPM assigned to the calculator was 2.5\,GPM (the federal maximum under the Energy Policy Act of 1992) \cite{epawatersense}; if \texttt{low\_flow}, the value was 1.5\,GPM (EPA WaterSense certified) \cite{epawatersense}. Table~\ref{table:param_generalization} summarizes the generalized parameters across all three decision types.
 
@@ -634,7 +634,7 @@ PPL, 2--9pm for most FirstEnergy utilities).
 Comfort is a piecewise
 decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr
 (dishwashers), 8\,hr (washers), and 6\,hr (dryers) \cite{paetz2012,waseem2020}, plus an
-additive noise penalty scaled by housing type for runs after 10\,pm \cite{who2018noise} and a
+additive noise penalty scaled by housing type for runs after 10\,pm \cite{epa1974noise,epavic2021} and a
 household-size penalty.
 Delays are computed as the minimum circular distance from the baseline time $t_0$ on a
 24-hour clock (avoiding wrap-around artifacts), i.e.,
@@ -815,7 +815,7 @@ per-shower cost using an average showers-per-person-per-day rate:
 All three architectures call the same underlying model via OpenRouter: Mistral Small 3.2 24B Instruct at temperature 0.3. Temperature is fixed so the comparison isolates architecture from sampling variance. Each architecture is described below; pipeline schematics appear in Figure~\ref{fig:pipeline}.
 
 \subsubsection{Pure Prompting}
-The Pure Prompting architecture issues one API call per alternative (three calls per scenario) using a calibrated system prompt that combines role-prompting \cite{shanahan2023}, structured-output constraints \cite{wei2022cot}, and explicit bias-mitigation language drawn from Galaz et al.\ on AI sustainability priors \cite{galaz2021}. The model is asked to return JSON with all four criterion scores on a 0--10 scale; no external context is supplied beyond the scenario description.
+The Pure Prompting architecture issues one API call per alternative (three calls per scenario) using a calibrated system prompt that combines role-prompting \cite{shanahan2023}, structured-output constraints \cite{wei2022cot}, and explicit bias-mitigation language drawn from the NIST framework for identifying and managing AI bias \cite{nistsp1270}. The model is asked to return JSON with all four criterion scores on a 0--10 scale; no external context is supplied beyond the scenario description.
 
 \subsubsection{RAG-Enhanced}
 The RAG-Enhanced architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieved scenarios and their ground-truth scores are injected into the system prompt as context; the model is instructed to use them as reference but to score the target scenario independently. Like Pure Prompting, RAG-Enhanced uses three API calls per scenario (one per alternative). The retrieval index is built once from the RAG-only scenarios described in Section~\ref{sec:scenario-corpus} and is never queried with test scenarios \cite{lewis2020}.

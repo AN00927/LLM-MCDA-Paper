@@ -62,6 +62,7 @@ scripts
 paper/Images
 paper/_sync_test.txt
 paper/Charts
+paper/per_run_metrics/
 paper/Notebook (text format)
 paper/SensitivityAnalysis.tex
 paper/desktop.ini
@@ -93,3 +94,9 @@ cleanuprepo.txt
 .rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_qkdiogoa/76db1fdc-c509-4198-8763-7dcec821ca64/header.bin
 .rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_qkdiogoa/76db1fdc-c509-4198-8763-7dcec821ca64/length.bin
 .rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_qkdiogoa/76db1fdc-c509-4198-8763-7dcec821ca64/link_lists.bin
+paper_pipeline/calculate_per_run_metrics.py
+paper_pipeline/generate_boxplot_tex.py
+paper_pipeline/generate_violin_tex.py
+paper_pipeline/run_all.py
+paper_pipeline/generate_variance_snippet.py
+generate_figures.py
