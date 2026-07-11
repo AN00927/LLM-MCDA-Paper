@@ -678,6 +678,43 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
     return merged_df, match_method_counts
 
 
+def compute_cross_criterion_correlation(merged_df):
+    """Compute Spearman rho between energy_cost and environmental impact.
+
+    Uses ground-truth scores across all alternatives in all matched scenarios.
+    Returns overall rho plus per-decision-type breakdowns. This measures how
+    correlated the two criteria are in the dataset, which is relevant to the
+    preferential-independence assumption in MAVT.
+    """
+    results = {}
+
+    gt_ec = merged_df["gt_energy_cost"].astype(float)
+    gt_env = merged_df["gt_environmental"].astype(float)
+    valid = gt_ec.notna() & gt_env.notna()
+    if valid.sum() >= 3:
+        rho, pval = stats.spearmanr(gt_ec[valid], gt_env[valid])
+        results["cross_criterion_rho_overall"] = round(rho, 4)
+        results["cross_criterion_rho_pvalue"] = round(pval, 6)
+    else:
+        results["cross_criterion_rho_overall"] = np.nan
+        results["cross_criterion_rho_pvalue"] = np.nan
+
+    for dtype in ["HVAC", "Appliance", "Shower"]:
+        subset = merged_df[merged_df["decision_type"] == dtype]
+        ec = subset["gt_energy_cost"].astype(float)
+        env = subset["gt_environmental"].astype(float)
+        v = ec.notna() & env.notna()
+        if v.sum() >= 3:
+            rho, pval = stats.spearmanr(ec[v], env[v])
+            results[f"cross_criterion_rho_{dtype}"] = round(rho, 4)
+            results[f"cross_criterion_rho_{dtype}_pvalue"] = round(pval, 6)
+        else:
+            results[f"cross_criterion_rho_{dtype}"] = np.nan
+            results[f"cross_criterion_rho_{dtype}_pvalue"] = np.nan
+
+    return results
+
+
 def compute_criterion_metrics(merged_df):
     """Compute MAE and RMSE for each criterion and overall.
 
@@ -1101,6 +1138,21 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=5
                 "decision_type": "Overall",
                 "metric": k, "value": v,
             })
+
+        # Cross-criterion correlation (ground-truth scores only)
+        xcorr = compute_cross_criterion_correlation(merged)
+        for k, v in xcorr.items():
+            all_metrics.append({
+                "architecture": arch_name,
+                "decision_type": "Overall",
+                "metric": k, "value": v,
+            })
+        print(f"\n  Cross-criterion Spearman rho (cost vs. environmental):")
+        print(f"    Overall: {xcorr['cross_criterion_rho_overall']:.4f} "
+              f"(p={xcorr['cross_criterion_rho_pvalue']:.2e})")
+        for dtype in ["HVAC", "Appliance", "Shower"]:
+            print(f"    {dtype}: {xcorr[f'cross_criterion_rho_{dtype}']:.4f} "
+                  f"(p={xcorr[f'cross_criterion_rho_{dtype}_pvalue']:.2e})")
 
         # Run both modes: filtered (drop failures) and imputed (5.0 substitute)
         merged_filtered, n_failed, n_total = filter_failed_scenarios(merged.copy())
