@@ -96,3 +96,4 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - **NEVER commit or push without explicit user permission** — `git commit`/`git push` are strictly forbidden unless the user directly instructs it.
 - Standalone master files (`*Scenarios.xlsx`) can drift from the consolidated workbook;
   the consolidated workbook is the source of truth for Test/RAG derivation.
+- **Never edit the Introduction, Literature Review, or initial Methodology sections (up to and including the MAVT framework design, §2.2) without explicit user consultation.** These sections carry the paper's research narrative and have been carefully reviewed; changes risk breaking argumentative flow.
