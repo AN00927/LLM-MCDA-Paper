@@ -101,3 +101,4 @@ paper_pipeline/run_all.py
 paper_pipeline/generate_variance_snippet.py
 generate_figures.py
 paper_draft_working.spl
+paper/incremental_contribution_table.tex
