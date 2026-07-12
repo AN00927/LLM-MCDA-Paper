@@ -5,7 +5,7 @@ GenerateBaselineTable.py - Incremental Contribution Table Generator
 Reads metrics_summary_{MODEL_KEY}.xlsx (produced by CalculateMetrics.py with --include-baselines)
 and prints/saves the incremental contribution table comparing all 8 systems:
 - 5 baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)
-- 3 LLM architectures (Pure, RAG, LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring)
+- 3 LLM architectures (Direct_LLM_Scoring, Example-Guided_LLM_Scoring, LLM-Parameterized_Reference_Scoring)
 
 Output formats: Console (formatted), LaTeX (paper-ready), CSV (for further analysis)
 """
@@ -46,7 +46,7 @@ def extract_key_metrics(metrics_df):
     )
     
     # Ensure all architectures are present
-    expected_archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Pure", "RAG", "LLM-Parameterized_Reference_Scoringrameterized_Reference_Scoring"]
+    expected_archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
     for arch in expected_archs:
         if arch not in pivot.index:
             pivot.loc[arch] = np.nan
@@ -71,14 +71,14 @@ def format_console_table(pivot, inc_df):
     """Format the incremental contribution table for console output."""
     lines = []
     lines.append("=" * 100)
-    lines.append("  INCREMENTAL CONTRIBUTION TABLE — Top-1 Accuracy & Kendall τ")
+    lines.append("  INCREMENTAL CONTRIBUTION TABLE -- Top-1 Accuracy & Kendall tau")
     lines.append("=" * 100)
     lines.append("")
     
     # Header
-    header = f"{'System':<28} {'Top-1':>8} {'Δ vs FixedDef':>14} {'Kendall τ':>10} {'Δ vs FixedDef':>14}"
+    header = f"{'System':<28} {'Top-1':>8} {'Delta vs FixedDef':>17} {'Kendall tau':>12} {'Delta vs FixedDef':>17}"
     lines.append(header)
-    lines.append("─" * len(header))
+    lines.append("-" * len(header))
     
     # Rows
     for arch in pivot.index:
@@ -109,8 +109,8 @@ def format_console_table(pivot, inc_df):
     lines.append("")
     lines.append("  ADDITIONAL METRICS")
     lines.append("=" * 100)
-    lines.append(f"{'System':<28} {'Spearman ρ':>10} {'Δ':>12} {'Top-2':>8} {'Δ':>12} {'MAE':>8} {'RMSE':>8}")
-    lines.append("─" * 78)
+    lines.append(f"{'System':<28} {'Spearman rho':>12} {'Delta':>12} {'Top-2':>8} {'Delta':>12} {'MAE':>8} {'RMSE':>8}")
+    lines.append("-" * 80)
     
     for arch in pivot.index:
         rho = pivot.loc[arch, 'spearman_rho'] if 'spearman_rho' in pivot.columns else np.nan
