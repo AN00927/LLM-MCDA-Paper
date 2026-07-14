@@ -103,3 +103,10 @@ generate_figures.py
 paper_draft_working.spl
 paper/incremental_contribution_table.tex
 REVISION_PLAN.md
+generate_numbers_master.py
+numbers_master.csv
+reviewer_notes.md
+docs/superpowers/plans/2026-07-13-manuscript-revision.md
+docs/superpowers/plans/2026-07-14-numbers-master.md
+docs/superpowers/plans/task-0-report.md
+docs/superpowers/specs/2026-07-13-manuscript-revision-design.md
