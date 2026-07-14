@@ -97,3 +97,10 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - Standalone master files (`*Scenarios.xlsx`) can drift from the consolidated workbook;
   the consolidated workbook is the source of truth for Test/RAG derivation.
 - **Never edit the Introduction, Literature Review, or initial Methodology sections (up to and including the MAVT framework design, §2.2) without explicit user consultation.** These sections carry the paper's research narrative and have been carefully reviewed; changes risk breaking argumentative flow.
+
+## Communication conventions
+
+- **"Explain X to me" means explain in conversation.** When the user asks you to
+  explain something, they want a direct answer in the chat — not a plan item, not
+  a file edit, not a todo. Do NOT add explanatory requests to task lists or plan
+  documents. Just answer.
