@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-RunBaselines.py - Non-LLM Baselines & Oracle Upper Bound
-Computes five baselines for MCDA architecture comparison.
+RunBaselines.py - Non-LLM Baselines
+Computes four baselines for MCDA architecture comparison.
 """
 import argparse
 import sys
@@ -209,72 +209,12 @@ def build_scenario_from_test(row, decision_type):
     scenario['alternatives'] = alternatives
     return scenario
 
-def build_scenario_from_test_oracle(row, decision_type):
-    """Build a scenario dict from TestScenarios row using TRUE hidden params."""
-    # NOTE: Largely unused now that run_oracle_baseline reads GT files directly, 
-    # but kept for compatibility if needed elsewhere.
-    scenario = {
-        'question': str(row.get('question', '')).strip(),
-        'location': str(row.get('location', '')).strip(),
-        'household_size': int(float(row.get('household_size', 2))),
-        'utility_budget': float(row.get('utility_budget', 0)),
-        'housing_type': str(row.get('housing_type', 'Single-family')),
-    }
-    
-    if decision_type == "HVAC":
-        scenario.update({
-            'square_footage': int(float(row.get('square_footage', 2000))),
-            'outdoor_temp': float(row.get('outdoor_temp', 50)),
-            'hvac_age': int(float(row.get('hvac_age', 13))),
-            'r_value': int(float(row.get('r_value', 15))),
-            'seer': int(float(row.get('seer', 13))),
-            'occupancy_context': str(row.get('occupancy_context', 'occupied_all_day')),
-            'electricity_rate': HVACGroundTruthCalculator.ELECTRICITY_RATE_PA,
-            'alternative_1': str(row.get('alternative_1', '')),
-            'alternative_2': str(row.get('alternative_2', '')),
-            'alternative_3': str(row.get('alternative_3', '')),
-        })
-    elif decision_type == "Appliance":
-        app_type = str(row.get('appliance', 'washing_machine')).strip().lower()
-        if 'washer' in app_type and 'dishwasher' not in app_type: app_type = 'washing_machine'
-        elif 'dryer' in app_type: app_type = 'dryer'
-        elif 'dishwasher' in app_type: app_type = 'dishwasher'
-        else: app_type = 'washing_machine'
-            
-        scenario.update({
-            'appliance': app_type,
-            'kwh_per_cycle': float(row.get('kwh_per_cycle', 1.0)),
-            'appliance_age': int(float(row.get('appliance_age', 11))),
-            'baseline_time': str(row.get('baseline_time', '7pm')),
-            'alternative_1': str(row.get('alternative_1', '')),
-            'alternative_2': str(row.get('alternative_2', '')),
-            'alternative_3': str(row.get('alternative_3', '')),
-        })
-    elif decision_type == "Shower":
-        scenario.update({
-            'gpm': float(row.get('gpm', 2.5)),
-            'tank_size': float(row.get('tank_size', 50)),
-            'water_heater_temp': float(row.get('water_heater_temp', 120)),
-            'outdoor_temp': float(row.get('outdoor_temp', 50)),
-            'alternative_1': str(row.get('alternative_1', '')),
-            'alternative_2': str(row.get('alternative_2', '')),
-            'alternative_3': str(row.get('alternative_3', '')),
-        })
 
-    alternatives = []
-    for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
-        alt_val = str(row.get(alt_col, '')).strip()
-        if pd.isna(row.get(alt_col)) or alt_val == '' or alt_val.lower() == 'nan':
-            continue
-        alternatives.append(float(alt_val) if decision_type == "Shower" else alt_val)
-    scenario['alternatives'] = alternatives
-    return scenario
-
-def run_calculator_on_scenarios(decision_type, scenarios, calculator_class):
+def run_calculator_on_scenarios(decision_type, scenarios, calculator_class, id_offset=0):
     """Run a GT calculator on a list of scenarios and return results DataFrame."""
     calculator = calculator_class()
     all_results = []
-    for idx, scenario in enumerate(scenarios):
+    for idx, scenario in enumerate(scenarios, start=id_offset):
         try:
             raw_scores = calculator.calculate_scenario_scores(scenario)
 
@@ -427,9 +367,15 @@ def run_fixed_default_baseline(test_df):
         scenarios[row['decision_type']].append(build_scenario_from_test(row, row['decision_type']))
     
     results = []
-    if scenarios["HVAC"]: results.append(run_calculator_on_scenarios("HVAC", scenarios["HVAC"], HVACGroundTruthCalculator))
-    if scenarios["Appliance"]: results.append(run_calculator_on_scenarios("Appliance", scenarios["Appliance"], ApplianceGroundTruthCalculator))
-    if scenarios["Shower"]: results.append(run_calculator_on_scenarios("Shower", scenarios["Shower"], ShowerGroundTruthCalculator))
+    offset = 0
+    if scenarios["HVAC"]:
+        results.append(run_calculator_on_scenarios("HVAC", scenarios["HVAC"], HVACGroundTruthCalculator, id_offset=offset))
+        offset += len(scenarios["HVAC"])
+    if scenarios["Appliance"]:
+        results.append(run_calculator_on_scenarios("Appliance", scenarios["Appliance"], ApplianceGroundTruthCalculator, id_offset=offset))
+        offset += len(scenarios["Appliance"])
+    if scenarios["Shower"]:
+        results.append(run_calculator_on_scenarios("Shower", scenarios["Shower"], ShowerGroundTruthCalculator, id_offset=offset))
     return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
 
 def run_nearest_neighbor_baseline(test_df, k=3):
@@ -476,52 +422,8 @@ def run_nearest_neighbor_baseline(test_df, k=3):
     finally:
         shutil.rmtree(temp_path, ignore_errors=True)
 
-# FIX 3: Read true GT scores directly (no calculator re-run needed)
-def run_oracle_baseline(test_df):
-    """Oracle upper bound: read true GT scores directly (no calculator re-run needed)."""
-    gt_dfs = {
-        dt: read_table_clean(GROUND_TRUTH_DIR / fname, keep_str_cols=COMMON_STR_COLS)
-        for dt, fname in [
-            ("HVAC",      "ground_truth_hvac.xlsx"),
-            ("Appliance", "ground_truth_appliance.xlsx"),
-            ("Shower",    "ground_truth_shower.xlsx"),
-        ]
-    }
-
-    all_rows = []
-    for idx, row in test_df.iterrows():
-        dtype  = row["decision_type"]
-        gt_df  = gt_dfs[dtype]
-        q      = str(row["question"]).strip()
-        loc    = str(row["location"]).strip()
-
-        match = gt_df[
-            (gt_df["question"].str.strip() == q) &
-            (gt_df["location"].str.strip() == loc)
-        ]
-        if match.empty:
-            print(f"WARNING: No GT match for {dtype}: '{q}' at '{loc}'")
-            continue
-
-        for _, gt_row in match.iterrows():
-            all_rows.append({
-                "scenario_id":         idx,
-                "question":            row["question"],
-                "location":            row["location"],
-                "decision_type":       dtype,
-                "alternative":         gt_row["alternative"],
-                "energy_cost_score":   float(gt_row["energy_cost_score"]),
-                "environmental_score": float(gt_row["environmental_score"]),
-                "comfort_score":       float(gt_row["comfort_score"]),
-                "practicality_score":  float(gt_row["practicality_score"]),
-                "mavt_score":          float(gt_row["mavt_score"]),
-                "rank":                int(gt_row["rank"]),
-            })
-
-    return pd.DataFrame(all_rows)
-
 def run_all_baselines(test_df, baselines=None, n_seeds=1000, k=3):
-    if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor', 'oracle']
+    if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
     results = {}
     if 'random' in baselines:
         print("Running Random baseline..."); results['Random'] = run_random_baseline(test_df, n_seeds=n_seeds)
@@ -531,14 +433,12 @@ def run_all_baselines(test_df, baselines=None, n_seeds=1000, k=3):
         print("Running Fixed-Default baseline..."); results['FixedDefault'] = run_fixed_default_baseline(test_df)
     if 'nearest_neighbor' in baselines:
         print("Running Nearest-Neighbor baseline..."); results['NearestNeighbor'] = run_nearest_neighbor_baseline(test_df, k=k)
-    if 'oracle' in baselines:
-        print("Running Oracle baseline..."); results['Oracle'] = run_oracle_baseline(test_df)
     return results
 
 def main():
-    parser = argparse.ArgumentParser(description="Run non-LLM baselines and oracle upper bound")
-    parser.add_argument('--baselines', nargs='+', default=['random', 'uniform', 'fixed_default', 'nearest_neighbor', 'oracle'],
-                        choices=['random', 'uniform', 'fixed_default', 'nearest_neighbor', 'oracle', 'all'], help='Which baselines to run')
+    parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
+    parser.add_argument('--baselines', nargs='+', default=['random', 'uniform', 'fixed_default', 'nearest_neighbor'],
+                        choices=['random', 'uniform', 'fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
     parser.add_argument('--seeds', type=int, default=1000, help='Number of seeds for Random baseline')
     parser.add_argument('--k', type=int, default=3, help='k for Nearest-Neighbor baseline')
     parser.add_argument('--verify', action='store_true', help='Run verification checks')
@@ -546,7 +446,7 @@ def main():
     parser.add_argument('--assert-top1-min', type=float, help='Assert minimum Top-1 accuracy')
     args = parser.parse_args()
     
-    baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor', 'oracle'] if args.baselines == ['all'] else args.baselines
+    baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor'] if args.baselines == ['all'] else args.baselines
     
     test_path = SCENARIO_DIR / "TestScenarios.xlsx"
     test_df = read_table_clean(test_path)

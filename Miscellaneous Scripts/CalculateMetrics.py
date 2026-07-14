@@ -856,7 +856,7 @@ def compute_failure_rate(arch_df):
 
     return result
 
-def impute_failed_scores(merged_df, impute_value=5.0):
+def impute_failed_scores(merged_df, impute_value=0.5):
     """Replace sentinel 1928 scores in arch_* columns with impute_value.
 
     Returns (imputed_df, n_imputed_rows, n_imputed_scenarios).
@@ -995,7 +995,7 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     return result
 
 
-def evaluate_all(config, include_baselines=False, model_key=None, impute_value=5.0):
+def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0.5):
     """Evaluate all architectures against ground truth and return metrics.
 
     Always runs both filtered (failed scenarios dropped) and imputed
@@ -1005,7 +1005,7 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=5
         config: CONFIG dict with paths for this model.
         include_baselines: If True, also evaluate non-LLM baselines.
         model_key: Human-readable model identifier shown in headers.
-        impute_value: Value to substitute for sentinel 1928 (default 5.0).
+        impute_value: Value to substitute for sentinel 1928 (default 0.5).
     """
     model_label = f" [{model_key.upper()}]" if model_key else ""
     print("=" * 72)
@@ -1080,7 +1080,7 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=5
 
     # Determine architecture list based on whether baselines are included
     if include_baselines:
-        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
+        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
     else:
         arch_list = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
@@ -1253,7 +1253,7 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=5
         return f"{int(val):>10}" if is_int else f"{val:>10.4f}"
 
     if include_baselines:
-        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Oracle", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
+        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
     else:
         archs = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
@@ -1356,7 +1356,7 @@ if __name__ == "__main__":
         help='Evaluate ALL models sequentially and write one metrics file per model.'
     )
     parser.add_argument('--include-baselines', action='store_true',
-                        help='Include 5 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor, Oracle)')
+                        help='Include 4 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor)')
     args = parser.parse_args()
 
     def _output_stem(mk):
