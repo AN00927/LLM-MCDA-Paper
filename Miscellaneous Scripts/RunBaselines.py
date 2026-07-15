@@ -314,53 +314,6 @@ def run_calculator_on_scenarios(decision_type, scenarios, calculator_class, id_o
 # =============================================================================
 # BASELINES
 # =============================================================================
-def run_random_baseline(test_df, n_seeds=1000):
-    results_by_seed = []
-    for seed in range(n_seeds):
-        rng = np.random.default_rng(seed)
-        all_rows = []
-        for idx, row in test_df.iterrows():
-            dtype = row['decision_type']
-            alternatives = [str(row[alt_col]).strip() for alt_col in ['alternative_1', 'alternative_2', 'alternative_3'] 
-                            if not pd.isna(row.get(alt_col)) and str(row.get(alt_col)).strip().lower() not in ('', 'nan')]
-            if len(alternatives) < 2: continue
-            
-            ranks = list(range(1, len(alternatives) + 1))
-            rng.shuffle(ranks)
-            for alt_idx, alt in enumerate(alternatives):
-                noise = rng.normal(0, 1e-6, 4)
-                all_rows.append({
-                    'scenario_id': idx, 'question': row['question'], 'location': row['location'], 'decision_type': dtype,
-                    'alternative': alt, 'energy_cost_score': 0.5 + noise[0], 'environmental_score': 0.5 + noise[1],
-                    'comfort_score': 0.5 + noise[2], 'practicality_score': 0.5 + noise[3],
-                    'mavt_score': 0.5 + noise.mean(), 'rank': ranks[alt_idx], 'seed': seed
-                })
-        results_by_seed.append(pd.DataFrame(all_rows))
-    return pd.concat(results_by_seed, ignore_index=True)
-
-def run_uniform_baseline(test_df):
-    all_rows = []
-    for idx, row in test_df.iterrows():
-        dtype = row['decision_type']
-        alternatives = [str(row[alt_col]).strip() for alt_col in ['alternative_1', 'alternative_2', 'alternative_3'] 
-                        if not pd.isna(row.get(alt_col)) and str(row.get(alt_col)).strip().lower() not in ('', 'nan')]
-        if not alternatives: continue
-        
-        for alt in alternatives:
-            all_rows.append({
-                'scenario_id': idx, 'question': row['question'], 'location': row['location'], 'decision_type': dtype,
-                'alternative': alt, 'energy_cost_score': 0.5, 'environmental_score': 0.5,
-                'comfort_score': 0.5, 'practicality_score': 0.5, 'mavt_score': 0.5, 'rank': SENTINEL_VALUE
-            })
-    df = pd.DataFrame(all_rows)
-    arch_score_to_col = {"energy_cost": "energy_cost_score", "environmental": "environmental_score",
-                         "comfort": "comfort_score", "practicality": "practicality_score"}
-    tiebreak_cols = [arch_score_to_col[c] for c in TIE_BREAK_PRIORITY]
-    for sid in df['scenario_id'].unique():
-        sc_mask = df['scenario_id'] == sid
-        df.loc[sc_mask, 'rank'] = _rank_with_deterministic_tiebreak(df[sc_mask], 'mavt_score', tiebreak_cols).astype(int)
-    return df
-
 def run_fixed_default_baseline(test_df):
     scenarios = {"HVAC": [], "Appliance": [], "Shower": []}
     for _, row in test_df.iterrows():
@@ -422,13 +375,9 @@ def run_nearest_neighbor_baseline(test_df, k=3):
     finally:
         shutil.rmtree(temp_path, ignore_errors=True)
 
-def run_all_baselines(test_df, baselines=None, n_seeds=1000, k=3):
-    if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
+def run_all_baselines(test_df, baselines=None, k=3):
+    if baselines is None: baselines = ['fixed_default', 'nearest_neighbor']
     results = {}
-    if 'random' in baselines:
-        print("Running Random baseline..."); results['Random'] = run_random_baseline(test_df, n_seeds=n_seeds)
-    if 'uniform' in baselines:
-        print("Running Uniform baseline..."); results['Uniform'] = run_uniform_baseline(test_df)
     if 'fixed_default' in baselines:
         print("Running Fixed-Default baseline..."); results['FixedDefault'] = run_fixed_default_baseline(test_df)
     if 'nearest_neighbor' in baselines:
@@ -437,16 +386,15 @@ def run_all_baselines(test_df, baselines=None, n_seeds=1000, k=3):
 
 def main():
     parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
-    parser.add_argument('--baselines', nargs='+', default=['random', 'uniform', 'fixed_default', 'nearest_neighbor'],
-                        choices=['random', 'uniform', 'fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
-    parser.add_argument('--seeds', type=int, default=1000, help='Number of seeds for Random baseline')
+    parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
+                        choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
     parser.add_argument('--k', type=int, default=3, help='k for Nearest-Neighbor baseline')
     parser.add_argument('--verify', action='store_true', help='Run verification checks')
     parser.add_argument('--baseline', type=str, help='Run single baseline (for verification)')
     parser.add_argument('--assert-top1-min', type=float, help='Assert minimum Top-1 accuracy')
     args = parser.parse_args()
     
-    baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor'] if args.baselines == ['all'] else args.baselines
+    baselines = ['fixed_default', 'nearest_neighbor'] if args.baselines == ['all'] else args.baselines
     
     test_path = SCENARIO_DIR / "TestScenarios.xlsx"
     test_df = read_table_clean(test_path)
@@ -455,15 +403,12 @@ def main():
     
     if args.baseline: baselines = [args.baseline]
     
-    results = run_all_baselines(test_df, baselines, n_seeds=args.seeds, k=args.k)
+    results = run_all_baselines(test_df, baselines, k=args.k)
     
     OUTPUT_DIR = PROJECT_ROOT / "Output Files" / "Baselines"
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for name, df in results.items():
-        if name == 'Random':
-            df.to_excel(OUTPUT_DIR / "baseline_random_aggregated.xlsx", index=False, engine="openpyxl")
-        else:
-            df.to_excel(OUTPUT_DIR / f"baseline_{name.lower()}.xlsx", index=False, engine="openpyxl")
+        df.to_excel(OUTPUT_DIR / f"baseline_{name.lower()}.xlsx", index=False, engine="openpyxl")
         print(f"Saved {name} baseline to {OUTPUT_DIR} ({len(df)} rows)")
 
 if __name__ == "__main__":
