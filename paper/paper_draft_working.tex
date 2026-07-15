@@ -110,15 +110,15 @@
 \newcommand{\plotRagAblation}{%
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.95\textwidth, height=5cm,
+    width=0.95\textwidth, height=5.5cm,
     ylabel={Kendall's $\tau$},
-    symbolic x coords={k=3 (control),k=1,k=5,No hidden params,Alt embedding,No scores},
+    symbolic x coords={Random exemplars,Control ($k=3$),Retrieval $k=1$,Retrieval $k=5$,No hidden params,Alt embedding,No scores},
     xtick=data,
     xticklabel style={font=\small, align=center},
-    enlarge x limits=0.15,
-    bar width=4.5pt,
+    enlarge x limits=0.12,
+    bar width=4pt,
     ybar,
-    ymin=-0.15, ymax=0.55,
+    ymin=-0.15, ymax=0.65,
     legend style={font=\small, at={(0.5,1.02)}, anchor=south, legend columns=4},
     legend cell align={left},
     grid=major,
@@ -126,39 +126,43 @@
     ymajorgrids=true,
 ]
 \addplot[fill=colorGemini] coordinates {
-    (k=3 (control),0.111)
-    (k=1,0.346)
-    (k=5,0.343)
-    (No hidden params,0.200)
-    (Alt embedding,0.400)
-    (No scores,-0.079)
+    (Random exemplars,-0.023)
+    (Control ($k=3$),0.342)
+    (Retrieval $k=1$,0.353)
+    (Retrieval $k=5$,0.480)
+    (No hidden params,0.309)
+    (Alt embedding,0.447)
+    (No scores,0.105)
 };
 \addplot[fill=colorDeepSeek] coordinates {
-    (k=3 (control),0.002)
-    (k=1,0.388)
-    (k=5,0.168)
-    (No hidden params,0.353)
-    (Alt embedding,0.410)
-    (No scores,-0.035)
+    (Random exemplars,0.228)
+    (Control ($k=3$),0.348)
+    (Retrieval $k=1$,0.461)
+    (Retrieval $k=5$,0.570)
+    (No hidden params,0.459)
+    (Alt embedding,0.405)
+    (No scores,0.081)
 };
 \addplot[fill=colorGPTOSS] coordinates {
-    (k=3 (control),0.244)
-    (k=1,0.289)
-    (k=5,0.067)
-    (No hidden params,0.366)
-    (Alt embedding,0.146)
-    (No scores,-0.044)
+    (Random exemplars,-0.034)
+    (Control ($k=3$),0.200)
+    (Retrieval $k=1$,0.268)
+    (Retrieval $k=5$,0.328)
+    (No hidden params,0.200)
+    (Alt embedding,0.219)
+    (No scores,-0.065)
 };
 \addplot[fill=colorQwen] coordinates {
-    (k=3 (control),0.212)
-    (k=1,0.422)
-    (k=5,0.168)
-    (No hidden params,0.200)
-    (Alt embedding,0.254)
-    (No scores,0.048)
+    (Random exemplars,0.082)
+    (Control ($k=3$),0.377)
+    (Retrieval $k=1$,0.373)
+    (Retrieval $k=5$,0.167)
+    (No hidden params,0.232)
+    (Alt embedding,0.229)
+    (No scores,0.316)
 };
 \addplot[dashed, gray!60, sharp plot, update limits=false] coordinates {
-    (k=3 (control),0) (No scores,0)
+    (Random exemplars,0) (No scores,0)
 };
 \legend{Gemini,DeepSeek,GPT-OSS,Qwen}
 \end{axis}
@@ -951,7 +955,7 @@ Return ONLY the JSON, no explanation.
 
 \subsection{RAG Ablation Design}
 \label{sec:rag-ablation-methods}
-Ablation experiments use a stratified 12-scenario subset (4 per decision type) selected to span the full range of ground-truth scores while keeping computational cost manageable. Six configurations modify one design variable at a time against a $k=3$ control: retrieval $k$ (1, 5), embedding model (paraphrase-MiniLM-L3-v2 replacing all-MiniLM-L6-v2), exemplar content (hidden engineering parameters included/excluded), score anchoring (scores and ranks present/absent), and a baseline where every input is given at the median of the range Each configuration is evaluated across all four models. The $k=1$ variant tests whether a single high-similarity exemplar provides sufficient guidance; $k=5$ tests whether broader context improves or dilutes the signal. The embedding-swap tests a different matching architecture. The exemplar-content variants isolate whether the model benefits from seeing the engineering parameters (R-value, SEER, GPM, kWh/cycle) or only the homeowner-facing labels. The score-anchoring variants test whether the model uses the ground-truth scores as calibration anchors or merely as noise. The nearest-neighbor offline baseline assigns retrieved scenario scores directly without LLM rescoring, testing whether unmodified exemplar copying provides ranking signal.
+Ablation experiments use a stratified 35-scenario subset drawn from the RAG corpus to ensure adequate statistical power. Seven configurations modify one design variable at a time against a $k=3$ control: retrieval $k$ (1, 5), embedding model (paraphrase-MiniLM-L3-v2 replacing all-MiniLM-L6-v2), exemplar content (hidden engineering parameters included/excluded), score anchoring (scores and ranks present/absent), random exemplar selection (replacing similarity-ranked exemplars with random corpus draws), and a nearest-neighbor offline baseline that assigns retrieved scenario scores directly without LLM rescoring. Each configuration is evaluated across all four models. The $k=1$ variant tests whether a single high-similarity exemplar provides sufficient guidance; $k=5$ tests whether broader context improves or dilutes the signal. The embedding-swap tests a different matching architecture. The exemplar-content variants isolate whether the model benefits from seeing the engineering parameters (R-value, SEER, GPM, kWh/cycle) or only the homeowner-facing labels. The score-anchoring variants test whether the model uses the ground-truth scores as calibration anchors or merely as noise. The random-exemplar variant controls for retrieval quality: if retrieval similarity matters, random exemplars should perform worse than similarity-ranked ones. The nearest-neighbor offline baseline tests whether unmodified exemplar copying provides ranking signal.
 
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
@@ -1106,9 +1110,7 @@ Appliance results for $\mathcal{A}_{\text{H}}$ track extraction quality since th
 
 \subsection{RAG Ablation}
 \label{sec:rag-ablation}
-% TODO: The 12-scenario subset is underpowered for detecting configuration-level differences.
-% Consider expanding to a larger subset (e.g., 30-40 scenarios) before final submission.
-Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 12-scenario subset with six configurations across five models. The nearest-neighbor offline baseline assigns retrieved scenario scores directly without LLM rescoring and yields $\tau = 0.000$, confirming that naive exemplar copying provides no ranking signal.
+Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 35-scenario subset from the RAG corpus with seven configurations across four models, plus an offline nearest-neighbor baseline. The nearest-neighbor offline baseline assigns retrieved scenario scores directly without LLM rescoring and yields $\tau = -0.039$ (95\% CI: $[-0.333,\, 0.261]$), below zero and confirming that naive exemplar copying provides no ranking signal.
 
 \begin{table}[t]
 \small
@@ -1116,30 +1118,34 @@ Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 12-scenario
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lccc}
 \toprule
-Configuration & Overall $\tau$ & Key Finding \\
+Configuration & Overall $\tau$ & 95\% CI & Overall MAE \\
 \midrule
-Control (k=3, all-MiniLM-L6-v2) & 0.339 & Baseline RAG configuration \\
-Nearest-neighbor (offline) & 0.000 & Random-level performance \\
-retrieval\_k=1 & 0.341 & Matches $k=3$ control \\
-retrieval\_k=5 & 0.186 & Weaker than $k=3$ or $k=1$ \\
-Alt. embedding (paraphrase-MiniLM-L3-v2) & 0.342 & Improves Appliance ($\tau=0.733$) \\
-exemplars\_no\_hidden\_params & 0.337 & Comparable to control \\
-descriptions\_no\_scores\_ranks & 0.182 & Worst configuration \\
+Retrieval $k=5$ & 0.386 & $[0.285,\, 0.486]$ & 0.079 \\
+Retrieval $k=1$ & 0.364 & $[0.250,\, 0.474]$ & 0.093 \\
+Alt.\ embedding (paraphrase-MiniLM-L3-v2) & 0.326 & $[0.208,\, 0.443]$ & 0.081 \\
+Control ($k=3$, all-MiniLM-L6-v2) & 0.316 & $[0.203,\, 0.426]$ & 0.086 \\
+Exemplars w/o hidden params & 0.300 & $[0.181,\, 0.413]$ & 0.085 \\
+Descriptions w/o scores or ranks & 0.109 & $[-0.008,\, 0.219]$ & 0.142 \\
+Random exemplars ($k=3$) & 0.062 & $[-0.058,\, 0.183]$ & 0.152 \\
+\midrule
+Nearest-neighbor (offline) & $-0.039$ & $[-0.333,\, 0.261]$ & 0.096 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \\[4pt]
-{\small Evaluated on a 12-scenario subset with 4 models. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring.}
-\caption{RAG ablation: Kendall's $\tau$ by configuration.}
+{\small Evaluated on a 35-scenario subset with 4 models. 95\% CIs are bias-corrected bootstrap intervals. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring.}
+\caption{RAG ablation: Kendall's $\tau$ and MAE by configuration.}
 \label{tab:item9}
 \end{table}
 
-Retrieval $k=1$ ($\tau = 0.341$) matches the $k=3$ control ($\tau = 0.339$), and the exemplars\_no\_hidden\_params configuration ($\tau = 0.337$) performs comparably. The alternate embedding model (paraphrase-MiniLM-L3-v2) provides a modest improvement ($\tau = 0.342$) and a larger gain on Appliance ($\tau = 0.733$ versus 0.690 for the control). The descriptions\_no\_scores\_ranks configuration, which omits all quantitative scores from the retrieved exemplars, performs worst ($\tau = 0.182$), confirming that exemplar scores provide critical anchoring information (Figure~\ref{fig:rag_ablation}).
+Retrieval $k=5$ achieves the highest overall $\tau$ (0.386), marginally above $k=1$ (0.364), with both configurations outperforming the $k=3$ control (0.316). The exemplars\_no\_hidden\_params configuration ($\tau = 0.300$) performs comparably to the control, indicating that the engineering parameters (R-value, SEER, GPM, kWh/cycle) contribute little additional signal. The alternate embedding model (paraphrase-MiniLM-L3-v2) yields $\tau = 0.326$, comparable to the control. The descriptions\_no\_scores\_ranks configuration, which omits all quantitative scores from the retrieved exemplars, drops to $\tau = 0.109$---the lowest among the LLM-based configurations---confirming that exemplar scores provide critical anchoring information. The random-exemplar variant ($\tau = 0.062$) performs even worse, demonstrating that retrieval similarity matters: semantic matching selects exemplars that are more informative than random corpus draws. The nearest-neighbor offline baseline yields $\tau = -0.039$, confirming that exemplar copying without LLM rescoring provides no useful signal (Figure~\ref{fig:rag_ablation}).
+
+A Friedman test across configurations is marginally significant on Kendall's $\tau$ ($\chi^2_7 = 12.45$, $p = 0.087$) and highly significant on MAE ($\chi^2_7 = 37.53$, $p < 0.001$). Post-hoc Dunn tests with Holm correction confirm that the control, retrieval, exemplar-content, and alternate-embedding configurations form a statistically indistinguishable cluster (pairwise $p_{\text{Holm}} > 0.97$), while random exemplars and descriptions without scores are significantly worse ($p_{\text{Holm}} < 0.003$ versus every configuration in the top cluster). The score MAE tells a consistent story: the top cluster ranges from 0.079 to 0.086, while descriptions without scores (0.142) and random exemplars (0.152) nearly double the error.
 
 \begin{figure}[htbp]
 	\centering
 	\plotRagAblation
-	\caption{RAG ablation results: Kendall's $\tau$ by configuration and model on the 12-scenario subset.}
+	\caption{RAG ablation results: Kendall's $\tau$ by configuration and model on the 35-scenario subset. Configurations are ordered by overall $\tau$. Dashed line marks $\tau = 0$.}
 	\label{fig:rag_ablation}
 \end{figure}
 
@@ -1301,7 +1307,7 @@ The model-separation finding deserves emphasis. Across four models spanning two 
 
 The ranking advantage of $\mathcal{A}_{\text{H}}$ is partly structural (see Section~\ref{sec:architectures}). The MAE results confirm that extraction is genuinely accurate: $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.043--0.068 across models (see Section~\ref{sec:res-baselines}), while RMSE remains below 0.11 for all models.
 
-The RAG ablation study (Table~\ref{tab:item9}) confirms that exemplar scores provide the anchoring signal while hidden engineering parameters contribute little, consistent with the structural argument above.
+The RAG ablation study (Table~\ref{tab:item9}) confirms that exemplar scores provide the anchoring signal: removing scores drops $\tau$ from 0.316 to 0.109, while removing hidden engineering parameters has negligible effect ($\tau = 0.300$ versus 0.316). The near-equivalence of the top cluster (control, retrieval variants, exemplar-content, and alternate embedding; pairwise $p_{\text{Holm}} > 0.97$) and the poor performance of random exemplars ($\tau = 0.062$) together demonstrate that the RAG contribution comes from the semantic selection of similar exemplars whose scores serve as calibration anchors, not from the retrieval architecture or the engineering parameters within the exemplars.
 
 The Top-2 accuracy figures add practical context. $\mathcal{A}_{\text{E}}$ achieves Top-2 of roughly 80\% across models, meaning the ground-truth best alternative appears in the architecture's top two about four times out of five. For many household decisions, this is sufficient: if the cost and comfort difference between the top two alternatives is small, the user can make an informed choice from either. The practical sufficiency of Top-2 depends on the decision domain---when the cost gap between first and second place is large, Top-1 accuracy matters; when the alternatives are closely matched, Top-2 provides actionable guidance. $\mathcal{A}_{\text{H}}$ at 97.8\% Top-2 effectively eliminates the problem: the best alternative is almost always in the recommended pair.
 
