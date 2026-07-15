@@ -169,6 +169,25 @@ def stratified_sample_by_features(
             allocations[dt] += 1
             remainder -= 1
 
+    # Ensure each type gets at least as many scenarios as it has non-empty strata
+    for dt in DECISION_TYPES:
+        stratum_fn = STRATUM_FN[dt]
+        n_strata = len(set(stratum_fn(s) for s in groups_by_type[dt]))
+        if allocations[dt] < n_strata:
+            deficit = n_strata - allocations[dt]
+            # Steal from types with surplus
+            for donor in ordered:
+                if donor == dt:
+                    continue
+                surplus = allocations[donor] - len(set(STRATUM_FN[donor](s) for s in groups_by_type[donor]))
+                transfer = min(deficit, surplus)
+                if transfer > 0:
+                    allocations[donor] -= transfer
+                    allocations[dt] += transfer
+                    deficit -= transfer
+                if deficit <= 0:
+                    break
+
     sampled = []
     for dt in DECISION_TYPES:
         n = allocations[dt]

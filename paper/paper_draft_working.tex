@@ -316,7 +316,7 @@
             state={Aargau},
             country={Switzerland}}
 \begin{abstract}
-[PLACEHOLDER: INSERT CURRENT RESIDENTIAL EMISSIONS PERCENTAGE WITH CITATION], yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: $\mathcal{A}_{\text{D}}$~(Direct LLM Scoring), $\mathcal{A}_{\text{E}}$~(Example-Guided LLM Scoring), and $\mathcal{A}_{\text{H}}$~(LLM-Parameterized Reference Scoring, which extracts engineering parameters for a deterministic physics calculator). Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. $\mathcal{A}_{\text{H}}$ achieved a Kendall's tau of 0.902, MAE of 0.051, and 91.7\% Top-1 accuracy across 195 scenarios. $\mathcal{A}_{\text{E}}$ scored 0.339, 0.138, and 51.7\%; $\mathcal{A}_{\text{D}}$ scored 0.095, 0.219, and 35.4\%.
+The residential sector accounts for 18\% of global CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: $\mathcal{A}_{\text{D}}$~(Direct LLM Scoring), $\mathcal{A}_{\text{E}}$~(Example-Guided LLM Scoring), and $\mathcal{A}_{\text{H}}$~(LLM-Parameterized Reference Scoring, which extracts engineering parameters for a deterministic physics calculator). Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. $\mathcal{A}_{\text{H}}$ achieved a Kendall's tau of 0.902, MAE of 0.051, and 91.7\% Top-1 accuracy across 195 scenarios. $\mathcal{A}_{\text{E}}$ scored 0.339, 0.138, and 51.7\%; $\mathcal{A}_{\text{D}}$ scored 0.095, 0.219, and 35.4\%.
 \end{abstract}
 \begin{keyword}
 Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute Value Theory \sep Household energy \sep Decision support systems \sep Retrieval-Augmented Generation \sep Sustainability
@@ -325,7 +325,7 @@ Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute
 
 \section{Introduction}
 \label{sec1}
-The average U.S.\ household emits roughly 8{,}744 pounds of CO\textsubscript{2}e and consumes about 10{,}791 kWh of electricity each year \cite{epa_household2024,wikipedia_domestic_energy2024}. However, there is more than enough evidence that this could be much further optimized to reduce cost to families and environmental impact \cite{dietz2009,ohler2020}.
+The average U.S.\ household emits roughly 8{,}744 pounds of CO\textsubscript{2}e and consumes about 10{,}791 kWh of electricity each year \cite{epa_household2024,wikipedia_domestic_energy2024}. Globally, residential energy consumption has grown at roughly 1\% per year since 2000, driven by increasing household sizes and comfort demands in emerging economies \cite{GONZALEZTORRES2022112428}. However, there is more than enough evidence that this could be much further optimized to reduce cost to families and environmental impact \cite{dietz2009,ohler2020}.
 
 Tools that combine optimization, behavioral insight, and decision support can close part of that gap, but only if they are usable without specialized training. Certain frameworks, such as Multi-Criteria Decision Analysis (MCDA), can be used to choose an optimal balance of factors that matter to users \cite{huang2011}. Unfortunately, these are extremely taxing to create oneself accurately even as an expert, and they require extensive time which makes using them by themselves impractical for household decisions.
 
@@ -341,7 +341,7 @@ Then, How consistently does the architecture ranking hold across models of varyi
 
 \subsection{Household Energy Decision-Making and Adoption Barriers}
 
-When transportation, food, and goods are included, the per-capita footprints rise to about 17.9 tons of CO\textsubscript{2}e and 81{,}767 kWh of total annual energy \cite{joneskammen2011,umich2024}. The U.S.\ Department of Energy estimates that households can save \$200--\$400 annually by adopting ENERGY STAR practices \cite{ohler2020,doe}. Residential buildings alone account for [PLACEHOLDER] of U.S.\ CO\textsubscript{2} emissions \cite{eia2022}, and national reform of household practices could reduce emissions by [PLACEHOLDER] annually \cite{dietz2009}. Figure~\ref{fig:intro-placeholder-1} tracks Pennsylvania residential emissions from 2005 to 2022.
+When transportation, food, and goods are included, the per-capita footprints rise to about 17.9 tons of CO\textsubscript{2}e and 81{,}767 kWh of total annual energy \cite{joneskammen2011,umich2024}. The U.S.\ Department of Energy estimates that households can save \$200--\$400 annually by adopting ENERGY STAR practices \cite{ohler2020,doe}. Globally, residential buildings account for 18\% of CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}; in the United States, the residential sector accounts for roughly 20\% of energy-related CO\textsubscript{2} emissions \cite{eia2022}. Dietz et al.\ (2009) estimated that household behavioral changes could reduce U.S.\ emissions by 123 MtC (approximately 451 MtCO\textsubscript{2}e) annually \cite{dietz2009}. HVAC systems alone account for roughly a third of global residential energy consumption \cite{GONZALEZTORRES2022112428}. Figure~\ref{fig:intro-placeholder-1} tracks Pennsylvania residential emissions from 2005 to 2022.
 
 \begin{figure}[H]
 	\centering
@@ -354,13 +354,13 @@ Attari et al.\ (2010) found that consumers undervalue energy use and savings by 
 
 Multi-criteria decision analysis (MCDA) can optimize complex decisions with multiple interacting variables such as household energy choices \cite{huang2011}. However, constructing the decision matrix is time-consuming even for experts \cite{desouza2022,huang2011}. Huang and Burgherr (2024) built a streamlined MCDA calculator that compresses several accepted methods into a single workflow \cite{huangburgherr2024}, yet the user still needs enough familiarity with MCDA construction to frame the alternatives, criteria, and weights, which keeps the tool out of routine household use. Constructing an MCDA framework for a specific decision requires methodological knowledge---choice of weighting scheme, value function form, normalization, rubric design, and domain familiarity---all of which impose barriers that limit household adoption.
 
-A persistent gap between intent and behavior keeps many households from realizing available savings and footprint reduction \cite{kollmuss2002}. Even when the benefits of structured decision tools are clear, the workflow tax of switching from a routine choice adds time and cognitive cost \cite{ariely2001,leclerc1995}, and under time pressure people default to satisficing rather than engaging with structured inputs \cite{bobadilla2018,hahn1992}. Tools that require sustained attention or structured entries are unlikely to influence behavior under these conditions. A language model that converts natural-language household descriptions into MCDA-ready structures would, in principle, remove the methodological barrier while sidestepping the workflow tax.
+A persistent gap between intent and behavior keeps many households from realizing available savings and footprint reduction \cite{kollmuss2002}. Even when the benefits of structured decision tools are clear, the workflow tax of switching from a routine choice adds time and cognitive cost \cite{ariely2001,leclerc1995}, and under time pressure people default to satisficing rather than engaging with structured inputs \cite{bobadilla2018,hahn1992}. The COVID-19 pandemic sharpened this problem: lockdowns forced people to spend more time at home, increasing residential demand for HVAC, cooking, and appliances, and those habits persisted as teleworking and remote schooling became permanent lifestyles \cite{GONZALEZTORRES2022112428}. Tools that require sustained attention or structured entries are unlikely to influence behavior under these conditions. A language model that converts natural-language household descriptions into MCDA-ready structures would, in principle, remove the methodological barrier while sidestepping the workflow tax.
 
 \subsection{LLMs as Numeric Reasoners and Scorers}
 
 Cobbe et al. (2021) introduced the GSM8K benchmark of grade-school arithmetic word problems and found that even large Transformers fall well short of human accuracy once a problem needs more than a few chained steps, with errors compounding rather than cancelling \cite{cobbe2021gsm8k}. Imani et al. (2023) approach the same problem from the fix side, building MathPrompter on the observation that LLMs "often provide incorrect answers" on arithmetic benchmarks unless cross-checked against multiple generated solution paths \cite{imani2023mathprompter}. As such, expecting LLMs to solely be responsible for and accurately understand how competing (and often similar) alternatives can have one clear winner alone is therefore unreliable without external grounding.
 
-The original uses of RAG is injecting external facts into an LLM's context to reduce hallucination in open-domain QA \cite{lewis2020}. An MCDA scoring task is closer to Case-Based Reasoning, which treats problem-solving as retrieving similar prior cases and reusing their recorded solutions \cite{aamodtplaza1994}. Wiratunga et al. (2024) build CBR-RAG, where retrieved legal cases act as structured exemplars that shape an LLM's reasoning rather than supply facts \cite{wiratunga2024cbrrag}; Minor and Kaucher (2024) get a similar result, finding that retrieved example explanations used as in-context demonstrations improve LLM-generated outputs over zero-shot prompting \cite{minorkaucher2024}. Thus, providing pre-scored expert scenarios, which essentially can provide more evidence and nudge the LLM in the correct dimension, could reasonably increase accuracy. Additionally, creating databases with graded expert examples is not an infeasible task for large scale use; [EXPLAIN WQH].
+The original uses of RAG is injecting external facts into an LLM's context to reduce hallucination in open-domain QA \cite{lewis2020}. An MCDA scoring task is closer to Case-Based Reasoning, which treats problem-solving as retrieving similar prior cases and reusing their recorded solutions \cite{aamodtplaza1994}. Wiratunga et al. (2024) build CBR-RAG, where retrieved legal cases act as structured exemplars that shape an LLM's reasoning rather than supply facts \cite{wiratunga2024cbrrag}; Minor and Kaucher (2024) get a similar result, finding that retrieved example explanations used as in-context demonstrations improve LLM-generated outputs over zero-shot prompting \cite{minorkaucher2024}. Thus, providing pre-scored expert scenarios, which essentially can provide more evidence and nudge the LLM in the correct dimension, could reasonably increase accuracy. Additionally, creating databases with graded expert examples is not an infeasible task for large scale use; the US Energy Information Administration's Residential Energy Consumption Survey, for example, has produced nationally representative household energy profiles since 2005 through standardized survey instruments, and comparable instruments exist in other nations \cite{GONZALEZTORRES2022112428}.
 
 However, both of these implementations have their fundamental flaws; Wang et al.\ (2024) show that LLMs exhibit positional bias when scoring, ranking the first response higher simply because of its placement \cite{wang2024fairescalers}. Their conclusion that LLMs are ``not fair evaluators'' in default zero-shot configurations \cite{wang2024fairescalers} motivates our study rather than contradicts it. Firstly, the models used in the tests were relatively weak compared to newer models in reasoning. Thus, newer testing on more powerful models can reveal new results.
 
@@ -376,7 +376,7 @@ Despite extensive work on LLM numeracy, retrieval-augmented generation, and LLM-
 Table~\ref{tab:item1} in Appendix~A lists the notation used throughout this paper.
 
 \subsection{Decision Types and Scenario Corpus}
-Three decision types were selected for their high behavioral plasticity and RAER: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
+Three decision types were selected for their high behavioral plasticity and RAER: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration). HVAC was prioritized because space heating and cooling account for approximately a third of global residential energy consumption and represent the fastest-growing end-use as household incomes rise \cite{GONZALEZTORRES2022112428}.
 
 Three LLM-MCDA integration architectures were benchmarked: Direct LLM Scoring ($\mathcal{A}_{\text{D}}$), Example-Guided LLM Scoring ($\mathcal{A}_{\text{E}}$), and LLM-Parameterized Reference Scoring ($\mathcal{A}_{\text{H}}$).
 
@@ -465,7 +465,7 @@ The calculator receives specific engineering values that would require professio
 
 We first built the scenarios with all parameters completely specified. This was the information that the ground truth calculators received. Then, we identified acceptable ranges for each from published standards and mapped each scenario to a representative value within that range. 
 
-Insulation tiers map to standard U.S.\ residential wall R-values: Poor to R-11 (minimal 2$\times$4 cavity fill, below current code), Medium to R-13 (standard 2$\times$4 batt), and Good to R-19 (2$\times$6 framing), consistent with code tables for wood-frame assemblies and ENERGY STAR guidance \cite{cec_ja43_2013,energystar_insulation2023}. The R-11/R-13/R-19 values represent the midpoint of each tier's real-world range (roughly R-10 to R-12, R-12 to R-14, and R-18 to R-21); the tier boundaries are chosen so that adjacent tiers differ by 15--20\% in wall R-value, matching the minimum difference a homeowner could detect by inspecting cavity depth. SEER ratings in the test corpus span 8--22, covering pre-1992 units (SEER~8--10), standard-efficiency replacements (SEER~13--14), and high-efficiency models (SEER~16--22), consistent with the ENERGY STAR Most Efficient threshold \cite{energystar_ac2023}. Appliance age bands (1--3, 4--6, 7--9, 10--12, 13--17, 18--22 years) map to measured kWh/cycle ranges drawn from the ENERGY STAR certified-products database, so that a ``7--9 year'' dishwasher maps to the same energy draw whether the true age is 7 or 9. Housing type (apartment, condo, townhouse, rowhouse, twin, single-family) determines the envelope multiplier in the HVAC load equation and the noise propagation factor in the appliance comfort model; these mappings are detailed in Section~\ref{sec:gt-calculators}.
+Each insulation tier spans a range of R-values drawn from standard U.S.\ residential wall assemblies \cite{cec_ja43_2013,energystar_insulation2023}: Poor scenarios use R-8 to R-12 (minimal 2$\times$4 cavity fill, below current code), Medium scenarios use R-13 to R-18 (standard 2$\times$4 batt through 2$\times$6 mixed), and Good scenarios use R-19 to R-24 (2$\times$6 framing and above). The tier boundaries are chosen so that adjacent tiers differ by 15--20\% in wall R-value, matching the minimum difference a homeowner could detect by inspecting cavity depth. SEER ratings in the test corpus span 8--22, covering pre-1992 units (SEER~8--10), standard-efficiency replacements (SEER~13--14), and high-efficiency models (SEER~16--22), consistent with the ENERGY STAR Most Efficient threshold \cite{energystar_ac2023}. Appliance age bands (1--3, 4--6, 7--9, 10--12, 13--17, 18--22 years) map to measured kWh/cycle ranges drawn from the ENERGY STAR certified-products database, so that a ``7--9 year'' dishwasher maps to the same energy draw whether the true age is 7 or 9. Housing type (apartment, condo, townhouse, rowhouse, twin, single-family) determines the envelope multiplier in the HVAC load equation and the noise propagation factor in the appliance comfort model; these mappings are detailed in Section~\ref{sec:gt-calculators}.
 
 
 
@@ -858,7 +858,7 @@ All three architectures call the same underlying model via OpenRouter at tempera
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=1\textwidth]{ArchitectureFlowcharts.png}
-  \caption{APPROPPRIATE CAPTION HERE}
+  \caption{Processing pipeline for each architecture. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ issue three LLM API calls per scenario (one per alternative); $\mathcal{A}_{\text{H}}$ issues a single extraction call and delegates scoring to the deterministic ground-truth calculator.}
 	\label{fig:pipeline}
 \end{figure}
 
@@ -955,7 +955,7 @@ Ablation experiments use a stratified 12-scenario subset (4 per decision type) s
 
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
-Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--1 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ and Spearman's $\rho$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). For each scenario, Kendall's $\tau$ is computed between the ground-truth rank and the architecture's rank over the three alternatives, then averaged across all 195 scenarios by arithmetic mean. With $n=3$ alternatives, per-scenario $\tau$ can take only discrete values ($-1, -\frac{1}{3}, \frac{1}{3}, 1$) before averaging. Efficiency is evaluated using total tokens (input plus output) and cost, both summed across the 195-scenario test set.
+Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--1 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). For each scenario, Kendall's $\tau$ is computed between the ground-truth rank and the architecture's rank over the three alternatives, then averaged across all 195 scenarios by arithmetic mean. With $n=3$ alternatives, per-scenario $\tau$ can take only discrete values ($-1, -\frac{1}{3}, \frac{1}{3}, 1$) before averaging. Efficiency is evaluated using total tokens (input plus output) and cost, both summed across the 195-scenario test set.
 
 Failure is recorded per scenario via a reserved sentinel value (1928) that marks any of the failure modes listed in Table~\ref{tab:failure-modes}. Accuracy metrics are conditioned on success: scenarios containing any sentinel are excluded from MAE/RMSE and ranking computations and counted separately in the failure rate. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ issue one call per alternative and mark the whole scenario failed if any alternative fails; $\mathcal{A}_{\text{H}}$ issues a single extraction call per scenario, so its failure unit is the scenario.
 
@@ -996,38 +996,36 @@ Results are reported as five-run averages: each architecture--model combination 
 \subsection{Overall Ranking Accuracy}
 \label{sec:res-ranking}
 
-\begin{figure*}[htbp]
-	\centering
-	\plotOverallByModel
-	\caption{Ranking accuracy by model (5-run mean, 195 scenarios each).
-	Each line is one model; the x-axis is architecture
-	($\mathcal{A}_{\text{D}}$~$\rightarrow$~$\mathcal{A}_{\text{E}}$~$\rightarrow$~$\mathcal{A}_{\text{H}}$).}
-	\label{fig:overall_by_model}
-\end{figure*}
+\begin{table*}[htbp]
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.10}
+\begin{tabular}{lccccccccc ccc ccc}
+\toprule
+ & \multicolumn{3}{c}{Kendall's $\tau$} & \multicolumn{3}{c}{Top-1 (\%)} & \multicolumn{3}{c}{MAE} & \multicolumn{3}{c}{RMSE} & \multicolumn{3}{c}{RMSE/MAE} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}\cmidrule(lr){14-16}
+Model & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
+\midrule
+Gemini   & 0.189 $\pm$ 0.278 & 0.405 $\pm$ 0.315 & \textbf{0.920 $\pm$ 0.062} & 36.9 $\pm$ 15.1 & 56.1 $\pm$ 22.9 & \textbf{92.9 $\pm$ 4.9} & 0.218 $\pm$ 0.051 & 0.127 $\pm$ 0.029 & \textbf{0.048 $\pm$ 0.013} & 0.288 $\pm$ 0.064 & 0.194 $\pm$ 0.035 & \textbf{0.097 $\pm$ 0.028} & 1.32 $\pm$ 0.03 & 1.54 $\pm$ 0.07 & 2.02 $\pm$ 0.07 \\
+DeepSeek & 0.157 $\pm$ 0.259 & 0.338 $\pm$ 0.221 & \textbf{0.895 $\pm$ 0.071} & 37.5 $\pm$ 16.4 & 49.9 $\pm$ 13.5 & \textbf{90.5 $\pm$ 6.5} & 0.231 $\pm$ 0.026 & 0.139 $\pm$ 0.019 & \textbf{0.046 $\pm$ 0.009} & 0.300 $\pm$ 0.033 & 0.204 $\pm$ 0.021 & \textbf{0.091 $\pm$ 0.015} & 1.30 $\pm$ 0.01 & 1.47 $\pm$ 0.06 & 2.00 $\pm$ 0.20 \\
+GPT-OSS  & 0.041 $\pm$ 0.129 & 0.335 $\pm$ 0.198 & \textbf{0.898 $\pm$ 0.073} & 33.2 $\pm$ 6.0 & 51.9 $\pm$ 11.8 & \textbf{91.6 $\pm$ 6.5} & 0.242 $\pm$ 0.031 & 0.145 $\pm$ 0.027 & \textbf{0.052 $\pm$ 0.002} & 0.305 $\pm$ 0.035 & 0.212 $\pm$ 0.034 & \textbf{0.101 $\pm$ 0.006} & 1.27 $\pm$ 0.03 & 1.47 $\pm$ 0.04 & 1.95 $\pm$ 0.05 \\
+Qwen     & 0.011 $\pm$ 0.065 & 0.280 $\pm$ 0.127 & \textbf{0.880 $\pm$ 0.029} & 30.0 $\pm$ 6.3 & 50.9 $\pm$ 7.9 & \textbf{89.8 $\pm$ 2.8} & 0.235 $\pm$ 0.031 & 0.169 $\pm$ 0.017 & \textbf{0.071 $\pm$ 0.030} & 0.294 $\pm$ 0.033 & 0.236 $\pm$ 0.019 & \textbf{0.152 $\pm$ 0.056} & 1.25 $\pm$ 0.03 & 1.40 $\pm$ 0.04 & 2.18 $\pm$ 0.15 \\
+\midrule
+Mean     & 0.100 $\pm$ 0.091 & 0.339 $\pm$ 0.050 & \textbf{0.898 $\pm$ 0.017} & 34.4 $\pm$ 3.3 & 52.2 $\pm$ 2.6 & \textbf{91.2 $\pm$ 1.3} & 0.231 $\pm$ 0.011 & 0.145 $\pm$ 0.017 & \textbf{0.054 $\pm$ 0.011} & 0.297 $\pm$ 0.008 & 0.212 $\pm$ 0.018 & \textbf{0.110 $\pm$ 0.027} & 1.29 $\pm$ 0.03 & 1.47 $\pm$ 0.06 & 2.04 $\pm$ 0.10 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{Overall performance by model (5-run mean $\pm$ std, 195 scenarios). Best architecture per metric per model is bolded.}
+\label{tab:overall_by_model}
+\end{table*}
 
-\begin{figure}[htbp]
-	\centering
-	\plotOverallMAEByModel
-	\caption{Overall MAE by model (5-run mean, 195 scenarios each). Lower is
-	better; every model's line descends monotonically from $\mathcal{A}_{\text{D}}$ to $\mathcal{A}_{\text{H}}$.}
-	\label{fig:overall_mae_by_model}
-\end{figure}
-
-\begin{figure}[htbp]
-	\centering
-	\plotOverallRMSEByModel
-	\caption{Overall RMSE by model (5-run mean, 195 scenarios each). Lower is
-	better; RMSE penalizes large errors more heavily than MAE.}
-	\label{fig:overall_rmse_by_model}
-\end{figure}
-
-Figure~\ref{fig:overall_by_model} shows each model's trajectory across architectures. $\mathcal{A}_{\text{H}}$ dominates on every metric for all four models: $\tau$ ranges from 0.877 (Qwen) to 0.925 (Gemini), Top-1 from 90.3\% (Qwen) to 93.3\% (Gemini). $\mathcal{A}_{\text{E}}$ places second across all models: $\tau$ from 0.282 (Qwen) to 0.378 (Gemini), Top-1 from 49.7\% (DeepSeek) to 54.4\% (Gemini). $\mathcal{A}_{\text{D}}$ ranks third: $\tau$ from $-0.002$ (Qwen) to 0.169 (Gemini), Top-1 from 31.8\% (Qwen) to 40.0\% (DeepSeek), near the random baseline of $\tau = 0$ for a three-alternative ranking. The most interesting finding is while the model success order stays almost exactly the same, for $\mathcal{A}_{\text{H}}$, the gap is much smaller than in $\mathcal{A}_{\text{D}}$
+Table~\ref{tab:overall_by_model} shows each model's performance across architectures. $\mathcal{A}_{\text{H}}$ dominates on every metric for all four models: $\tau$ ranges from 0.877 (Qwen) to 0.925 (Gemini), Top-1 from 90.3\% (Qwen) to 93.3\% (Gemini). $\mathcal{A}_{\text{E}}$ places second across all models: $\tau$ from 0.282 (Qwen) to 0.378 (Gemini), Top-1 from 49.7\% (DeepSeek) to 54.4\% (Gemini). $\mathcal{A}_{\text{D}}$ ranks third: $\tau$ from $-0.002$ (Qwen) to 0.169 (Gemini), Top-1 from 31.8\% (Qwen) to 40.0\% (DeepSeek), near the random baseline of $\tau = 0$ for a three-alternative ranking. The most interesting finding is while the model success order stays almost exactly the same, for $\mathcal{A}_{\text{H}}$, the gap is much smaller than in $\mathcal{A}_{\text{D}}$
 
 The ranking metrics are partly structurally favored in $\mathcal{A}_{\text{H}}$ (see Section~\ref{sec:architectures} for the structural argument); the score-level error (MAE/RMSE) is the stronger evidence of extraction fidelity.
 
-The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-design}). Pairwise differences between architectures are significant under Wilcoxon signed-rank testing ($p < 0.001$ for each adjacent pair), paired on per-scenario Kendall's $\tau$, pooled across all models and runs.
+The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-design}). Pairwise differences between architectures are significant under Wilcoxon signed-rank testing ($p < 0.001$ for each adjacent pair), applied to per-scenario Kendall's $\tau$ within each model and combined across models using Stouffer's method (see Appendix~\ref{app:significance} for full results).
 
-The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.051 on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5\% on average---well within the tolerance needed for household decision guidance. Its RMSE of 0.105 (Figure~\ref{fig:overall_rmse_by_model}) confirms that no large errors dominate: even the worst-case scenarios produce scores within about 0.1 points of the truth. By contrast, $\mathcal{A}_{\text{D}}$ MAE of 0.219 means individual scores routinely miss by more than 0.2 points on a 1-point scale, and $\mathcal{A}_{\text{E}}$ at 0.138 falls in between---usable for rough ranking but not for reliable score comparison.
+The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.051 on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5\% on average. Its RMSE of 0.105 (Table~\ref{tab:overall_by_model}) yields an RMSE/MAE ratio of 2.06---the highest among the three architectures---indicating that while average error is low, a small number of scenarios (primarily shower cases requiring GPM estimation) produce larger deviations that pull RMSE above twice the MAE. By contrast, $\mathcal{A}_{\text{D}}$ MAE of 0.219 means individual scores routinely miss by more than 0.2 points on a 1-point scale, and $\mathcal{A}_{\text{E}}$ at 0.138 falls in between---usable for rough ranking but not for reliable score comparison.
 
 The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$, as achieved by $\mathcal{A}_{\text{H}}$ across all four models, means the architecture identifies the correct ranking order in nearly every scenario---comparable to the agreement two human experts would reach on the same decision. $\tau$ between 0.3 and 0.5, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.7\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 35.4\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
 
@@ -1054,7 +1052,7 @@ Overall & 0.219 $\pm$ 0.008 & 0.138 $\pm$ 0.012 & \textbf{0.051 $\pm$ 0.011} \\
 \renewcommand{\arraystretch}{1.0}
 \\[2pt]
 {\small Environmental MAE for Shower reflects water-consumption proxy (gallons); see Section~\ref{sec:gt-calculators}.}
-\caption{MAE per criterion by architecture (pooled across 4 models, 5 runs each).}
+\caption{MAE per criterion by architecture (5 runs each, 195 scenarios).}
 \label{tab:item6}
 \end{table}
 
@@ -1075,21 +1073,21 @@ Table~\ref{tab:item7} and Figure~\ref{fig:tau_decision} report $\tau$ by decisio
 \footnotesize
 \centering
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lccccccccc}
+\begin{tabular}{lcccccc}
 \toprule
- & \multicolumn{3}{c}{$\mathcal{A}_{\text{D}}$} & \multicolumn{3}{c}{$\mathcal{A}_{\text{E}}$} & \multicolumn{3}{c}{$\mathcal{A}_{\text{H}}$} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
-Decision Type & $\tau$ & Top-1 (\%) & Top-2 (\%) & $\tau$ & Top-1 (\%) & Top-2 (\%) & $\tau$ & Top-1 (\%) & Top-2 (\%) \\
+ & \multicolumn{2}{c}{$\mathcal{A}_{\text{D}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{E}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{H}}$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Decision Type & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) \\
 \midrule
-HVAC & 0.031 $\pm$ 0.136 & 32.5 $\pm$ 12.4 & 68.9 $\pm$ 5.8 & 0.107 $\pm$ 0.132 & 33.6 $\pm$ 11.1 & 70.4 $\pm$ 6.9 & \textbf{0.936 $\pm$ 0.037} & \textbf{92.5 $\pm$ 4.1} & 98.9 $\pm$ 1.2 \\
-Appliance & -0.100 $\pm$ 0.064 & 25.8 $\pm$ 4.1 & 55.4 $\pm$ 3.8 & 0.282 $\pm$ 0.146 & 53.8 $\pm$ 11.1 & 80.8 $\pm$ 4.9 & \textbf{0.944 $\pm$ 0.027} & \textbf{96.9 $\pm$ 1.9} & 99.2 $\pm$ 1.3 \\
-Shower & 0.381 $\pm$ 0.299 & 49.2 $\pm$ 20.6 & 79.6 $\pm$ 13.0 & 0.669 $\pm$ 0.144 & 70.4 $\pm$ 7.3 & 93.3 $\pm$ 5.9 & \textbf{0.817 $\pm$ 0.025} & \textbf{85.4 $\pm$ 3.8} & 95.0 $\pm$ 1.2 \\
+HVAC & 0.031 $\pm$ 0.136 & 32.5 $\pm$ 12.4 & 0.107 $\pm$ 0.132 & 33.6 $\pm$ 11.1 & \textbf{0.936 $\pm$ 0.037} & \textbf{92.5 $\pm$ 4.1} \\
+Appliance & -0.100 $\pm$ 0.064 & 25.8 $\pm$ 4.1 & 0.282 $\pm$ 0.146 & 53.8 $\pm$ 11.1 & \textbf{0.944 $\pm$ 0.027} & \textbf{96.9 $\pm$ 1.9} \\
+Shower & 0.381 $\pm$ 0.299 & 49.2 $\pm$ 20.6 & 0.669 $\pm$ 0.144 & 70.4 $\pm$ 7.3 & \textbf{0.817 $\pm$ 0.025} & \textbf{85.4 $\pm$ 3.8} \\
 \midrule
-Overall & 0.095 $\pm$ 0.072 & 35.4 $\pm$ 3.0 & 67.7 $\pm$ 3.2 & 0.339 $\pm$ 0.035 & 51.7 $\pm$ 1.7 & 80.9 $\pm$ 1.4 & \textbf{0.902 $\pm$ 0.017} & \textbf{91.7 $\pm$ 1.1} & 97.8 $\pm$ 1.0 \\
+Overall & 0.095 $\pm$ 0.072 & 35.4 $\pm$ 3.0 & 0.339 $\pm$ 0.035 & 51.7 $\pm$ 1.7 & \textbf{0.902 $\pm$ 0.017} & \textbf{91.7 $\pm$ 1.1} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\caption{Ranking accuracy by decision type (pooled across 4 models, 5 runs each, 195 scenarios).}
+\caption{Ranking accuracy by decision type (pooled across 4 models, 5 runs each, 195 scenarios). Top-2 accuracy appears in Appendix~\ref{app:variance}.}
 \label{tab:item7}
 \end{table*}
 
@@ -1171,6 +1169,8 @@ $\mathcal{A}_{\text{H}}$ & \$0.28 & \$0.01 & \$0.01 & \$0.01 \\
 {\small Failure rates: Gemini 0\%, DeepSeek 0\%, GPT-OSS 0\% for $\mathcal{A}_{\text{D}}$/$\mathcal{A}_{\text{E}}$, 12.8\% extraction failures on $\mathcal{A}_{\text{H}}$ (0\% after multi-run matching), Qwen 0\%.}
 \\[2pt]
 {\small Cost-accuracy tradeoff: $\mathcal{A}_{\text{H}}$ with Qwen (\$0.01/run) achieves $\tau = 0.877$; $\mathcal{A}_{\text{H}}$ with Gemini (\$0.28/run) achieves $\tau = 0.925$---a 5\% accuracy gain at 28$\times$ the cost. For production deployment, even the most expensive configuration costs under \$1.30 per 195-scenario evaluation.}
+\\[2pt]
+{\small Model-separation finding: across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$ $\tau$ varies only between 0.877 and 0.925 (range of 0.048), while $\mathcal{A}_{\text{D}}$ spans 0.171 and $\mathcal{A}_{\text{E}}$ spans 0.096. The $\mathcal{A}_{\text{H}}$ architecture compresses the capability gap: cheaper models become viable in production with minimal accuracy loss.}
 % TODO-HUMAN: Add the exact date/version of OpenRouter pricing used for these cost estimates.
 \caption{Cost per run (USD), API calls, token usage, and failure rates. Costs estimated from OpenRouter pricing.}
 \label{tab:item8}
@@ -1264,7 +1264,7 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
 \label{fig:box_tau}
 \end{figure*}
 
-RMSE, which penalizes large errors more heavily than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for every model and every run, while $\mathcal{A}_{\text{D}}$ never drops below 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.166]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The architecture ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds in every single run across all four models with no overlap: no run of any architecture overtakes another's median metric. This perfect separation confirms that the ranking advantage is not driven by lucky seeds or favourable random initialisations but is a stable structural property of the architecture design. Full per-metric distributions (MAE, RMSE, Top-1 accuracy, Spearman's $\rho$) appear in Appendix~\ref{app:variance}.
+RMSE, which penalizes large errors more heavily than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for every model and every run, while $\mathcal{A}_{\text{D}}$ never drops below 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.166]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The architecture ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds in every single run across all four models with no overlap: no run of any architecture overtakes another's median metric. This perfect separation confirms that the ranking advantage is not driven by lucky seeds or favourable random initialisations but is a stable structural property of the architecture design. Full per-metric distributions (MAE, RMSE, Top-1 accuracy) appear in Appendix~\ref{app:variance}.
 
 \subsection{Baseline Comparison}
 \label{sec:res-baselines}
@@ -1286,7 +1286,7 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
     \bottomrule
   \end{tabular}
 \end{table}
-Per the structural argument in Section~\ref{sec:architectures}, the score-level error is the stronger evidence of extraction fidelity, shown per model in Figure~\ref{fig:overall_mae_by_model}. Across the four models, $\mathcal{A}_{\text{H}}$ MAE ranges from 0.043 (DeepSeek) to 0.068 (Qwen), representing reductions of 63--81\% over $\mathcal{A}_{\text{D}}$ (0.208--0.230) and 47--73\% over $\mathcal{A}_{\text{E}}$ (0.127--0.159) per model. RMSE follows the same ranking across all four models.
+Per the structural argument in Section~\ref{sec:architectures}, the score-level error is the stronger evidence of extraction fidelity, shown per model in Table~\ref{tab:overall_by_model}. Across the four models, $\mathcal{A}_{\text{H}}$ MAE ranges from 0.043 (DeepSeek) to 0.068 (Qwen), representing reductions of 63--81\% over $\mathcal{A}_{\text{D}}$ (0.208--0.230) and 47--73\% over $\mathcal{A}_{\text{E}}$ (0.127--0.159) per model. RMSE follows the same ranking across all four models.
 
 \FloatBarrier
 \section{Discussion}
@@ -1338,7 +1338,7 @@ The appliance budget penalty uses fixed monthly cycle rates (18 for dishwashers,
 
 The shower practicality model assumes 80\% of nominal tank size $S$ is available: $H_{\mathrm{avail}} = 0.8\,S$. Actual draw fraction depends on tank recovery rate, inlet temperature, and heater power. A 0.8 factor may trigger the capacity penalty for a four-person household when a 0.9 factor would not, potentially flipping the ranking between a 7-minute and 9-minute shower alternative.
 
-Insulation tiers (Poor/Medium/Good) correspond to overlapping R-value ranges (Poor: R-8 to R-12, Medium: R-12 to R-18, Good: R-16 to R-22), with SEER varying independently (8--22). Appliance age bands map to kWh/cycle ranges that also vary within bands. A house with R-15 walls receives R-13 in both the ground truth and the $\mathcal{A}_{\text{H}}$ extraction target. The 2 R-value difference changes HVAC load by roughly 4\%, shifting energy cost by about \$0.13 per 8-hour period. Banding compresses continuous parameters into discrete bins, introducing quantization error that propagates through the value functions. Both pipelines see the same quantized input, so the architecture comparison remains valid, but the absolute scores diverge from what a continuous parameterization would produce.
+Insulation tiers (Poor/Medium/Good) correspond to R-value ranges (Poor: R-8 to R-12, Medium: R-13 to R-18, Good: R-19 to R-24), with SEER varying independently (8--22). Appliance age bands map to kWh/cycle ranges that also vary within bands. A scenario with R-15 walls retains R-15 in both the ground truth and the $\mathcal{A}_{\text{H}}$ extraction target, while a scenario with R-8 walls (the low end of the Poor tier) retains R-8. The banding compresses continuous parameters into discrete bins, introducing quantization error that propagates through the value functions. Both pipelines see the same quantized input, so the architecture comparison remains valid, but the absolute scores diverge from what a continuous parameterization would produce.
 
 The HVAC calculator maps occupancy context to a run-time fraction (1.0 for fully occupied, 0.75 for overnight, $1 - 0.5(h_{\mathrm{away}}/24)$ for daytime unoccupied). The mapping discards intra-day variation: a household cycling HVAC off for 2 hours at noon and on for 2 hours at midnight receives the same fraction as one holding steady. The resulting energy use differs by 5--12\%.
 
@@ -1377,7 +1377,7 @@ Replacing the water-consumption proxy in the Shower environmental criterion with
 
 Several further research directions emerge from this study. First, the criterion weights were supplied as fixed values; a multi-turn conversational interface that iteratively elicits and refines a household's preferences would reduce the cognitive burden of single-shot weight specification and improve the ecological validity of the tool \cite{keeneyraiffa1976,roszkowska2026}. Such an elicitation loop could use partial rankings or pairwise trade-off questions, grounding the dialogue in the same MAVT framework that underpins the scoring architecture.
 
-Second, the benchmark is confined to the Pennsylvania/PJM grid with its specific rate structure and marginal emissions factors. Cross-grid generalization---evaluating on utilities with different time-of-use tariffs, seasonal pricing, and regional grid mix---would test whether the architecture ordering is a local artifact or a robust structural finding \cite{holland2016,eia2022}. Variants of the $\mathcal{A}_{\text{H}}$ calculators that accept grid-specific parameters as inputs rather than hard-coding them would also reduce the per-domain engineering cost identified as a limitation of $\mathcal{A}_{\text{H}}$.
+Second, the benchmark is confined to the Pennsylvania/PJM grid with its specific rate structure and marginal emissions factors. Cross-grid generalization---evaluating on utilities with different time-of-use tariffs, seasonal pricing, and regional grid mix---would test whether the architecture ordering is a local artifact or a robust structural finding \cite{holland2016,eia2022}. Cross-country generalization is equally important: residential energy intensity varies widely across nations (from 7 koe/m$^2$ in China to 18 koe/m$^2$ in the EU), and HVAC dominates residential consumption differently depending on climate and building stock \cite{GONZALEZTORRES2022112428}. Variants of the $\mathcal{A}_{\text{H}}$ calculators that accept grid-specific parameters as inputs rather than hard-coding them would also reduce the per-domain engineering cost identified as a limitation of $\mathcal{A}_{\text{H}}$.
 
 Third, the $\mathcal{A}_{\text{H}}$ architecture currently routes the LLM's extracted parameters to an embedded Python calculator. An agentic design in which the LLM issues structured function calls to external calculators via tool-use APIs would decouple model updates from calculator maintenance, allow runtime selection among candidate calculators, and enable the LLM to request additional information when extraction confidence is low \cite{schick2023toolformer,gao2023pal,khot2023}.
 
@@ -1430,7 +1430,6 @@ All code, prompts, ground-truth calculators, and raw run outputs are available a
 Symbol & Definition \\
 \midrule
 $\tau$ & Kendall's rank correlation coefficient \\
-$\rho$ & Spearman's rank correlation coefficient \\
 $w_i$ & weight of criterion $i$ ($i=1\ldots4$), summing to 1 \\
 $v_i(x)$ & value function score for criterion $i$ at raw value $x$, range $[0,10]$ \\
 $\alpha$ & shape parameter for logarithmic value functions \\
@@ -2018,66 +2017,7 @@ ordering.
 \label{fig:box_top1}
 \end{figure*}
 
-\begin{figure*}[t]
-\centering
-\begin{minipage}{0.24\textwidth}
-\centering
-\begin{tikzpicture}
-\begin{axis}[boxplot/draw direction=y, width=\textwidth, height=5cm,
-  ylabel={Spearman's $\rho$}, ymin=-0.15, ymax=1.05,
-  xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
-  title={\small Gemini}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.149) (1, 0.1537) (1, 0.159) (1, 0.1658) (1, 0.1729) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.3959) (2, 0.4017) (2, 0.4062) (2, 0.4128) (2, 0.4222) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.9318) (3, 0.9318) (3, 0.9364) (3, 0.9364) (3, 0.9364) };
-\end{axis}
-\end{tikzpicture}
-\end{minipage}
-\hfill
-\begin{minipage}{0.24\textwidth}
-\centering
-\begin{tikzpicture}
-\begin{axis}[boxplot/draw direction=y, width=\textwidth, height=5cm,
-  ylabel={Spearman's $\rho$}, ymin=-0.15, ymax=1.05,
-  xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
-  title={\small DeepSeek}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.1082) (1, 0.1231) (1, 0.1302) (1, 0.1418) (1, 0.2228) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.3051) (2, 0.3231) (2, 0.3308) (2, 0.3692) (2, 0.4179) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.9051) (3, 0.9072) (3, 0.9077) (3, 0.9128) (3, 0.9179) };
-\end{axis}
-\end{tikzpicture}
-\end{minipage}
-\hfill
-\begin{minipage}{0.24\textwidth}
-\centering
-\begin{tikzpicture}
-\begin{axis}[boxplot/draw direction=y, width=\textwidth, height=5cm,
-  ylabel={Spearman's $\rho$}, ymin=-0.15, ymax=1.05,
-  xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
-  title={\small GPT-OSS}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, -0.0103) (1, 0.0026) (1, 0.0282) (1, 0.0641) (1, 0.1077) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.3256) (2, 0.3282) (2, 0.3436) (2, 0.3718) (2, 0.3923) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.9029) (3, 0.908) (3, 0.9112) (3, 0.9147) (3, 0.9171) };
-\end{axis}
-\end{tikzpicture}
-\end{minipage}
-\hfill
-\begin{minipage}{0.24\textwidth}
-\centering
-\begin{tikzpicture}
-\begin{axis}[boxplot/draw direction=y, width=\textwidth, height=5cm,
-  ylabel={Spearman's $\rho$}, ymin=-0.15, ymax=1.05,
-  xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
-  title={\small Qwen}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, -0.0692) (1, 0.0179) (1, 0.0205) (1, 0.0335) (1, 0.0361) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2641) (2, 0.2718) (2, 0.2821) (2, 0.2821) (2, 0.3436) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.8692) (3, 0.8897) (3, 0.8923) (3, 0.8943) (3, 0.9021) };
-\end{axis}
-\end{tikzpicture}
-\end{minipage}
-\caption{Distribution of Spearman's $\rho$ across five independent runs per model.}
-\label{fig:box_rho}
-\end{figure*}
+
 
 \begin{figure*}[t]
 \centering
@@ -2155,6 +2095,128 @@ GPT-OSS & 0.241 & 0.145 & 0.052 \\
 Qwen & 0.235 & 0.170 & 0.071 \\
 \bottomrule
 \end{tabular}
+\end{table}
+
+\section{Statistical Significance Tests}
+\label{app:significance}
+
+Three complementary statistical approaches evaluate whether the architecture ordering ($\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$) is statistically robust. All tests use per-scenario metrics computed from the 195 test scenarios, with five independent runs per architecture--model combination.
+
+\subsection{Intraclass Correlation Coefficient}
+
+Table~\ref{tab:icc} reports ICC(2,1) values decomposing total metric variance into between-model and residual components. The ICC quantifies how much of the observed metric variation is attributable to model choice versus scenario difficulty and random noise. A high ICC for MAE (0.80--0.91 across architectures) indicates that model choice is the dominant source of score-level error variation, while a low ICC for Top-1 accuracy (0.08--0.27) indicates that correct-alternative identification is largely scenario-driven.
+
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.10}
+\caption{ICC(2,1) variance decomposition: fraction of total variance attributable to between-model differences ($\sigma^2_{\text{model}}$) and residual ($\sigma^2_{\text{residual}}$).}
+\label{tab:icc}
+\begin{tabular}{@{}ll rr@{}}
+\toprule
+Architecture & Metric & $\sigma^2_{\text{model}}$ & $\sigma^2_{\text{residual}}$ \\
+\midrule
+\multirow{3}{*}{$\mathcal{A}_{\text{D}}$}
+ & Kendall's $\tau$ & 0.427 & 0.573 \\
+ & MAE & 0.798 & 0.202 \\
+ & Top-1 & 0.081 & 0.919 \\
+\midrule
+\multirow{3}{*}{$\mathcal{A}_{\text{E}}$}
+ & Kendall's $\tau$ & 0.205 & 0.795 \\
+ & MAE & 0.914 & 0.086 \\
+ & Top-1 & 0.101 & 0.899 \\
+\midrule
+\multirow{3}{*}{$\mathcal{A}_{\text{H}}$}
+ & Kendall's $\tau$ & 0.448 & 0.552 \\
+ & MAE & 0.818 & 0.182 \\
+ & Top-1 & 0.267 & 0.733 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+\subsection{Pairwise Wilcoxon Tests with Stouffer Combination}
+
+Table~\ref{tab:wilcoxon} reports Wilcoxon signed-rank statistics for pairwise architecture comparisons on each primary metric, applied independently within each model and combined across models using Stouffer's method. The Wilcoxon test is a non-parametric paired test that makes no distributional assumptions; Stouffer's method combines per-model p-values into a single omnibus test by summing Z-transformed p-values. All pairwise comparisons are significant ($p < 0.001$) for every metric.
+
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.10}
+\caption{Wilcoxon signed-rank tests: per-model and Stouffer-combined $p$-values for pairwise architecture comparisons.}
+\label{tab:wilcoxon}
+\begin{tabular}{@{}ll ccc cc@{}}
+\toprule
+ & & \multicolumn{4}{c}{Per-model $p$-value} \\
+\cmidrule(lr){3-6}
+Comparison & Metric & Gemini & DeepSeek & GPT-OSS & Qwen & Stouffer $p$ \\
+\midrule
+\multirow{3}{*}{$\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$}
+ & $\tau$ & $<$.001 & $<$.001 & $<$.001 & $<$.001 & $<$.001 \\
+ & MAE & $<$.001 & $<$.001 & $<$.001 & $<$.001 & $<$.001 \\
+ & Top-1 & $<$.001 & $<$.001 & $<$.001 & $<$.001 & $<$.001 \\
+\midrule
+\multirow{3}{*}{$\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$}
+ & $\tau$ & $<$.001 & $<$.001 & $<$.001 & $<$.001 & $<$.001 \\
+ & MAE & $<$.001 & $<$.001 & $<$.001 & $<$.001 & $<$.001 \\
+ & Top-1 & $<$.001 & $<$.001 & $<$.001 & $<$.001 & $<$.001 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+\subsection{Effect Sizes}
+
+Table~\ref{tab:effect_sizes} reports Cliff's $\delta$ for each pairwise comparison. Cliff's $\delta$ is a non-parametric effect size ranging from $-1$ to $+1$; interpretation follows the thresholds: $|\delta| < 0.147$ (negligible), $< 0.33$ (small), $< 0.474$ (medium), $\ge 0.474$ (large). The $\mathcal{A}_{\text{H}}$ vs.\ $\mathcal{A}_{\text{E}}$ comparisons show large effects on MAE ($\delta = 0.66$--$0.80$) and $\tau$ ($\delta = 0.55$--$0.77$), confirming that the architecture advantage is not merely statistically significant but substantively large.
+
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.10}
+\caption{Cliff's $\delta$ effect sizes for pairwise architecture comparisons (mean across four models).}
+\label{tab:effect_sizes}
+\begin{tabular}{@{}l ccc@{}}
+\toprule
+Comparison & $\tau$ & MAE & Top-1 \\
+\midrule
+$\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ & $-$0.26 (small) & 0.61 (large) & $-$0.25 (small) \\
+$\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$ & $-$0.69 (large) & 0.73 (large) & $-$0.58 (large) \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+\subsection{Bootstrap Confidence Intervals}
+
+Table~\ref{tab:bootstrap_ci} reports 95\% bias-corrected and accelerated (BCa) bootstrap confidence intervals for primary metrics, computed over 10,000 resamples of scenarios (with replacement). Non-overlapping intervals between architectures indicate statistically significant differences at the $\alpha = 0.05$ level. The $\mathcal{A}_{\text{H}}$ intervals never overlap with $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$ on any metric, confirming the robustness of the architecture ordering.
+
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.10}
+\caption{Bootstrap 95\% BCa confidence intervals for primary metrics (all models pooled, 10,000 resamples).}
+\label{tab:bootstrap_ci}
+\begin{tabular}{@{}l l cc@{}}
+\toprule
+Metric & Architecture & Point Est. & 95\% CI \\
+\midrule
+\multirow{3}{*}{Kendall's $\tau$}
+ & $\mathcal{A}_{\text{D}}$ & 0.093 & [0.058, 0.125] \\
+ & $\mathcal{A}_{\text{E}}$ & 0.329 & [0.307, 0.350] \\
+ & $\mathcal{A}_{\text{H}}$ & 0.899 & [0.892, 0.907] \\
+\midrule
+\multirow{3}{*}{MAE}
+ & $\mathcal{A}_{\text{D}}$ & 0.232 & [0.228, 0.235] \\
+ & $\mathcal{A}_{\text{E}}$ & 0.146 & [0.140, 0.153] \\
+ & $\mathcal{A}_{\text{H}}$ & 0.054 & [0.050, 0.060] \\
+\midrule
+\multirow{3}{*}{Top-1 (\%)}
+ & $\mathcal{A}_{\text{D}}$ & 34.1 & [32.5, 35.6] \\
+ & $\mathcal{A}_{\text{E}}$ & 51.5 & [50.3, 52.7] \\
+ & $\mathcal{A}_{\text{H}}$ & 91.3 & [90.7, 91.9] \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
 \end{table}
 
 \end{document}
