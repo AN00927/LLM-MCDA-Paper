@@ -31,13 +31,13 @@ MODEL_SPECS = {
         "reasoning_effort": "low",  
     },
     "qwen": {
-        "label": "0.04/M, 0.15M",
+        "label": "Input Price: $0.10/M, Output Price: $0.15/M",
         "openrouter_id": "qwen/qwen3.5-9b:exacto",
         "output_folder": "Output Files Qwen3.5 9B",
         "reasoning_effort": "non-reasoning",
     },
     "deepseek": {
-        "label": "Input Price: $0.0983/M, Output Price: $0.1966/M",
+        "label": "Input Price: $0.09/M, Output Price: $0.18/M",
         "openrouter_id": "deepseek/deepseek-v4-flash:exacto",
         "output_folder": "Output Files DeepSeek V4 Flash",
         "reasoning_effort": "none",
