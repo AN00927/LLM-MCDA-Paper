@@ -751,18 +751,19 @@ def compute_criterion_metrics(merged_df):
     # return NaN for the overall figure if any single cell were missing.
     results["overall_MAE"] = round(np.nanmean(all_abs_errors), 4) if all_abs_errors else np.nan
     results["overall_RMSE"] = round(np.sqrt(np.nanmean(all_sq_errors)), 4) if all_sq_errors else np.nan
+    results["overall_rmse_mae_ratio"] = round(results["overall_RMSE"] / results["overall_MAE"], 4) if results["overall_MAE"] != 0 else np.nan
     return results
 
 
 def compute_ranking_metrics(merged_df):
-    """Kendall tau, Spearman rho, Top-1/Top-2 - per-scenario then averaged.
+    """Kendall tau, Top-1 - per-scenario then averaged.
 
     Scenarios where any rank value is NaN (genuinely missing) are skipped
-    entirely so a single bad row does not turn the whole scenario's tau/rho
+    entirely so a single bad row does not turn the whole scenario's tau
     into NaN.
     """
-    taus, rhos = [], []
-    top1_ok = top2_ok = 0
+    taus = []
+    top1_ok = 0
     n = 0
 
     for sid in merged_df["arch_scenario_id"].unique():
@@ -786,28 +787,15 @@ def compute_ranking_metrics(merged_df):
         else:
             taus.append(1.0 if np.array_equal(gt_r, ar_r) else 0.0)
 
-        # Spearman
-        if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
-            rho, _ = stats.spearmanr(gt_r, ar_r)
-            rhos.append(rho if not np.isnan(rho) else 0.0)
-        else:
-            rhos.append(1.0 if np.array_equal(gt_r, ar_r) else 0.0)
-
         # top-1
         gt_top1 = sc.loc[sc["gt_rank"].astype(float).idxmin(), "norm_alternative"]
         ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
         if gt_top1 == ar_top1:
             top1_ok += 1
-        # top-2
-        ar_top2 = set(sc.sort_values("arch_rank").head(2)["norm_alternative"])
-        if gt_top1 in ar_top2:
-            top2_ok += 1
 
     return {
         "kendall_tau": round(np.mean(taus), 4) if taus else np.nan,
-        "spearman_rho": round(np.mean(rhos), 4) if rhos else np.nan,
         "top1_accuracy": round(top1_ok / n, 4) if n else np.nan,
-        "top2_accuracy": round(top2_ok / n, 4) if n else np.nan,
         "n_scenarios_evaluated": n,
     }
 
@@ -1184,11 +1172,8 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
 
             print(f"    Ranking:")
             print(f"      Kendall tau:  {rank['kendall_tau']:.4f}")
-            print(f"      Spearman rho: {rank['spearman_rho']:.4f}")
             print(f"      Top-1:      {rank['top1_accuracy']:.4f} "
                   f"({round(rank['top1_accuracy'] * n_eval)}/{n_eval})")
-            print(f"      Top-2:      {rank['top2_accuracy']:.4f} "
-                  f"({round(rank['top2_accuracy'] * n_eval)}/{n_eval})")
 
             # Store overall
             for k, v in {**crit, **rank}.items():
@@ -1220,11 +1205,8 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
                       f"PRA={dt_crit['practicality_RMSE']:.3f}  "
                       f"All={dt_crit['overall_RMSE']:.3f}")
                 print(f"    tau={dt_rank['kendall_tau']:.4f}  "
-                      f"rho={dt_rank['spearman_rho']:.4f}  "
                       f"Top1={dt_rank['top1_accuracy']:.4f} "
-                      f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})  "
-                      f"Top2={dt_rank['top2_accuracy']:.4f} "
-                      f"({round(dt_rank['top2_accuracy']*n_dt)}/{n_dt})")
+                      f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})")
 
                 for k, v in {**dt_crit, **dt_rank}.items():
                     all_metrics.append({
@@ -1267,8 +1249,8 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
         print(f"\n{header}")
         print("  " + "-" * (24 + 10 * len(archs)))
 
-        for metric in ["overall_MAE", "overall_RMSE", "kendall_tau", "spearman_rho",
-                        "top1_accuracy", "top2_accuracy", "n_scenarios_evaluated"]:
+        for metric in ["overall_MAE", "overall_RMSE", "overall_rmse_mae_ratio", "kendall_tau",
+                        "top1_accuracy", "n_scenarios_evaluated"]:
             is_int = metric == "n_scenarios_evaluated"
             row = f"  {metric:<24}"
             for a in archs:
