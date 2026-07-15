@@ -24,8 +24,12 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   `rebuild_consolidated.py` derives `TestScenarios.xlsx` + the 3 `*RAGScenarios.xlsx`
   from it (audited, deterministic, backs up first).
 - `Miscellaneous Scripts/` — `BuildRAG.py` (Chroma index), `SyncRAGGroundTruth.py`
-  (refresh RAG scores from GT), `CalculateMetrics.py`, weight scripts.
+  (refresh RAG scores from GT), `CalculateMetrics.py`, weight scripts,
+  `run_benchmarks.py`.
+- `paper_pipeline/` — `run_all.py` (master pipeline), `generate_figures.py`,
+  `generate_numbers_master.py`, per-run metrics + LaTeX snippet generators.
 - `model_config.py`, `sentinel_utils.py` — shared config + shared utilities.
+- `docs/` — `CODEBASE_GUIDE.md`, `PROVENANCE_AUDIT_PROMPT.md`, `REVISION_PLAN.md`.
 - `chroma_rag_db/` — built RAG vector index (gitignored).
 
 ## Running
