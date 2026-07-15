@@ -102,7 +102,6 @@ paper_pipeline/generate_variance_snippet.py
 generate_figures.py
 paper_draft_working.spl
 paper/incremental_contribution_table.tex
-REVISION_PLAN.md
 generate_numbers_master.py
 numbers_master.csv
 reviewer_notes.md
@@ -110,3 +109,12 @@ docs/superpowers/plans/2026-07-13-manuscript-revision.md
 docs/superpowers/plans/2026-07-14-numbers-master.md
 docs/superpowers/plans/task-0-report.md
 docs/superpowers/specs/2026-07-13-manuscript-revision-design.md
+.rag_ablation_temp/rag_ablation_sentence_transformers_all_MiniLM_L6_v2_qhezhjsh/87250cba-068a-4d20-af04-47bfe7226b69/data_level0.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_all_MiniLM_L6_v2_qhezhjsh/87250cba-068a-4d20-af04-47bfe7226b69/header.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_all_MiniLM_L6_v2_qhezhjsh/87250cba-068a-4d20-af04-47bfe7226b69/length.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_all_MiniLM_L6_v2_qhezhjsh/87250cba-068a-4d20-af04-47bfe7226b69/link_lists.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_6r5q6552/c3e7b052-28ad-49f5-890f-0b14899a57ab/data_level0.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_6r5q6552/c3e7b052-28ad-49f5-890f-0b14899a57ab/header.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_6r5q6552/c3e7b052-28ad-49f5-890f-0b14899a57ab/length.bin
+.rag_ablation_temp/rag_ablation_sentence_transformers_paraphrase_MiniLM_L3_v2_6r5q6552/c3e7b052-28ad-49f5-890f-0b14899a57ab/link_lists.bin
+docs/superpowers/plans/2026-07-15-bootstrap-confidence-intervals.md

@@ -866,6 +866,221 @@ def summarize_by_decision_type(rows: List[Dict]) -> pd.DataFrame:
     return pd.DataFrame(summaries)
 
 
+def cliff_delta(x, y):
+    """Compute Cliff's delta effect size between two paired samples.
+
+    Cliff's delta is a non-parametric effect size measure that quantifies
+    the degree of difference between two groups.  It ranges from -1 to +1:
+
+        |delta| < 0.147  = negligible
+        |delta| < 0.33   = small
+        |delta| < 0.474  = medium
+        |delta| >= 0.474  = large
+
+    Args:
+        x: array-like of scores for group 1.
+        y: array-like of scores for group 2.
+
+    Returns:
+        Tuple of (delta, interpretation) where *delta* is a float in [-1, 1]
+        and *interpretation* is one of "negligible", "small", "medium", "large".
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n_x, n_y = len(x), len(y)
+    concordant = sum(np.sum(xi > y) for xi in x)
+    discordant = sum(np.sum(xi < y) for xi in x)
+    delta = (concordant - discordant) / (n_x * n_y)
+    abs_delta = abs(delta)
+    if abs_delta < 0.147:
+        interpretation = "negligible"
+    elif abs_delta < 0.33:
+        interpretation = "small"
+    elif abs_delta < 0.474:
+        interpretation = "medium"
+    else:
+        interpretation = "large"
+    return delta, interpretation
+
+
+def friedman_test_per_metric(scenario_df: pd.DataFrame, metric_cols: List[str],
+                             config_col: str = 'ablation_id',
+                             scenario_col: str = 'source_scenario_id') -> pd.DataFrame:
+    """Perform Friedman tests for each metric across ablation configurations.
+
+    The Friedman test is a non-parametric alternative to a repeated-measures
+    ANOVA.  It tests whether there are statistically significant differences
+    between two or more related groups (here: ablation configurations evaluated
+    on the same set of scenarios).
+
+    A significant result (p < 0.05) indicates that at least one configuration
+    differs from the others for that metric.  Use post-hoc pairwise tests to
+    determine which specific pairs differ.
+
+    Args:
+        scenario_df: DataFrame with one row per (config, scenario) combination.
+        metric_cols: list of column names to test.
+        config_col: column identifying the ablation configuration.
+        scenario_col: column identifying the scenario.
+
+    Returns:
+        DataFrame with columns: metric, chi2, p_value, df, n_scenarios, n_configs.
+    """
+    from scipy.stats import friedmanchisquare
+
+    results = []
+    for metric in metric_cols:
+        if metric not in scenario_df.columns:
+            continue
+        pivoted = scenario_df.pivot_table(
+            index=scenario_col, columns=config_col, values=metric, aggfunc='first'
+        )
+        pivoted = pivoted.dropna()
+        k = pivoted.shape[1]
+        n = pivoted.shape[0]
+        if k < 3 or n < 2:
+            continue
+        try:
+            stat, p_value = friedmanchisquare(
+                *[pivoted[col].values for col in pivoted.columns]
+            )
+        except Exception:
+            continue
+        results.append({
+            'metric': metric,
+            'chi2': float(stat),
+            'p_value': float(p_value),
+            'df': k - 1,
+            'n_scenarios': n,
+            'n_configs': k,
+        })
+    return pd.DataFrame(results)
+
+
+def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
+                           config_col: str = 'ablation_id',
+                           scenario_col: str = 'source_scenario_id',
+                           alpha: float = 0.05) -> pd.DataFrame:
+    """Perform pairwise Wilcoxon signed-rank tests with Holm-Bonferroni correction.
+
+    After a significant Friedman test, this function determines which specific
+    pairs of configurations differ significantly.  Each pair is tested with the
+    Wilcoxon signed-rank test, and p-values are corrected for multiple
+    comparisons using the Holm-Bonferroni sequential procedure.  Effect sizes
+    are reported as Cliff's delta with magnitude interpretation.
+
+    Args:
+        scenario_df: DataFrame with one row per (config, scenario) combination.
+        metric: the metric column to compare.
+        config_col: column identifying the ablation configuration.
+        scenario_col: column identifying the scenario.
+        alpha: significance level (default 0.05).
+
+    Returns:
+        DataFrame with columns: config_i, config_j, statistic, p_value,
+        p_holm, significant_holm, cliff_delta, cliff_delta_interpretation,
+        n_pairs.
+    """
+    from scipy.stats import wilcoxon
+
+    pivoted = scenario_df.pivot_table(
+        index=scenario_col, columns=config_col, values=metric, aggfunc='first'
+    )
+    pivoted = pivoted.dropna()
+    configs = list(pivoted.columns)
+
+    pairs = []
+    for i in range(len(configs)):
+        for j in range(i + 1, len(configs)):
+            ci, cj = configs[i], configs[j]
+            vi = pivoted[ci].values.astype(float)
+            vj = pivoted[cj].values.astype(float)
+            n_pairs = len(vi)
+            if n_pairs < 5:
+                continue
+            try:
+                stat, p_val = wilcoxon(vi, vj, alternative='two-sided')
+            except ValueError:
+                continue
+            delta, delta_interp = cliff_delta(vi, vj)
+            pairs.append({
+                'config_i': ci,
+                'config_j': cj,
+                'statistic': float(stat),
+                'p_value': float(p_val),
+                'cliff_delta': delta,
+                'cliff_delta_interpretation': delta_interp,
+                'n_pairs': n_pairs,
+            })
+
+    if not pairs:
+        return pd.DataFrame(columns=[
+            'config_i', 'config_j', 'statistic', 'p_value', 'p_holm',
+            'significant_holm', 'cliff_delta', 'cliff_delta_interpretation', 'n_pairs',
+        ])
+
+    pairs_df = pd.DataFrame(pairs).sort_values('p_value').reset_index(drop=True)
+    m = len(pairs_df)
+    p_holm = np.ones(m, dtype=float)
+    significant_holm = np.zeros(m, dtype=bool)
+    for rank in range(m):
+        threshold = alpha / (m - rank)
+        p_holm[rank] = min(float(pairs_df.iloc[rank]['p_value']) * (m - rank), 1.0)
+        significant_holm[rank] = float(pairs_df.iloc[rank]['p_value']) < threshold
+
+    pairs_df['p_holm'] = p_holm
+    pairs_df['significant_holm'] = significant_holm
+    return pairs_df
+
+
+def bootstrap_ci_per_config(scenario_df: pd.DataFrame, metric: str,
+                            config_col: str = 'ablation_id',
+                            n_bootstrap: int = 10000,
+                            seed: int = 42) -> pd.DataFrame:
+    """Compute bootstrap 95% confidence intervals for each configuration's mean.
+
+    For each ablation configuration the function resamples the scenario-level
+    metric values with replacement to construct a 95 % confidence interval for
+    the mean.  The percentile method is used for CI construction.
+
+    Args:
+        scenario_df: DataFrame with one row per (config, scenario) combination.
+        metric: the metric column to bootstrap.
+        config_col: column identifying the ablation configuration.
+        n_bootstrap: number of bootstrap resamples (default 10 000).
+        seed: random seed for reproducibility.
+
+    Returns:
+        DataFrame with columns: ablation_id, ablation_label, point_estimate,
+        ci_lower, ci_upper, metric.
+    """
+    rng = np.random.default_rng(seed)
+    results = []
+
+    for config_id, group in scenario_df.groupby(config_col):
+        values = group[metric].dropna().values.astype(float)
+        if len(values) < 2:
+            continue
+        point_estimate = float(np.mean(values))
+        boot_means = np.empty(n_bootstrap)
+        for b in range(n_bootstrap):
+            sample = rng.choice(values, size=len(values), replace=True)
+            boot_means[b] = np.mean(sample)
+        ci_lower = float(np.percentile(boot_means, 2.5))
+        ci_upper = float(np.percentile(boot_means, 97.5))
+        label = group['ablation_label'].iloc[0] if 'ablation_label' in group.columns else config_id
+        results.append({
+            'ablation_id': config_id,
+            'ablation_label': label,
+            'point_estimate': point_estimate,
+            'ci_lower': ci_lower,
+            'ci_upper': ci_upper,
+            'metric': metric,
+        })
+
+    return pd.DataFrame(results)
+
+
 def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator) -> List[Dict]:
     rows = []
     for ablation_id, spec in specs.items():
@@ -1017,7 +1232,7 @@ def make_plots(summary_df: pd.DataFrame, output_dir: Path) -> List[Path]:
     return plot_paths
 
 
-def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs: OrderedDict, summary_df: pd.DataFrame, dtype_summary_df: pd.DataFrame, rows_df: pd.DataFrame, plot_paths: List[Path]) -> None:
+def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs: OrderedDict, summary_df: pd.DataFrame, dtype_summary_df: pd.DataFrame, rows_df: pd.DataFrame, plot_paths: List[Path], friedman_results: Optional[pd.DataFrame] = None, posthoc_df: Optional[pd.DataFrame] = None, bootstrap_df: Optional[pd.DataFrame] = None) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sections = []
     sections.append("## Overview\n\n" + "\n".join([
@@ -1058,6 +1273,20 @@ def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs
         ]] if not worst.empty else worst,
         float_cols=["score_mae", "kendall_tau"],
     ))
+
+    if friedman_results is not None and not friedman_results.empty:
+        sections.append("## Friedman Tests (non-parametric omnibus)\n\n"
+                        "Chi-squared statistic for each metric across all ablation configurations.\n\n"
+                        + _format_md_table(friedman_results, float_cols=["chi2", "p_value"]))
+    if posthoc_df is not None and not posthoc_df.empty:
+        sections.append("## Post-hoc Pairwise Wilcoxon Tests (Holm-corrected)\n\n"
+                        "Significant pairwise differences after Holm-Bonferroni correction.\n\n"
+                        + _format_md_table(posthoc_df, float_cols=["statistic", "p_value", "p_holm", "cliff_delta"]))
+    if bootstrap_df is not None and not bootstrap_df.empty:
+        sections.append("## Bootstrap 95% Confidence Intervals\n\n"
+                        "Percentile-method 95% CIs for each configuration's mean metric value.\n\n"
+                        + _format_md_table(bootstrap_df, float_cols=["point_estimate", "ci_lower", "ci_upper"]))
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("# RAG Ablation Study\n\n")
         for section in sections:
@@ -1104,8 +1333,34 @@ def run(args) -> Dict:
     dtype_summary_df = summarize_by_decision_type(rows_df)
     _atomic_write_xlsx(summary_df, summary_path)
     _atomic_write_xlsx(dtype_summary_df, dtype_summary_path)
+
+    scenario_df = scenario_level_df(rows_df)
+    stat_metrics = ['kendall_tau', 'score_mae', 'score_rmse', 'top1_accuracy']
+
+    friedman_results = friedman_test_per_metric(scenario_df, stat_metrics)
+    friedman_path = output_dir / "rag_ablation_friedman_tests.xlsx"
+    _atomic_write_xlsx(friedman_results, friedman_path)
+
+    posthoc_parts = []
+    for _, frow in friedman_results.iterrows():
+        if frow['p_value'] < 0.05:
+            ph = posthoc_wilcoxon_holm(scenario_df, frow['metric'])
+            posthoc_parts.append(ph)
+    posthoc_df = pd.concat(posthoc_parts, ignore_index=True) if posthoc_parts else pd.DataFrame()
+    posthoc_path = output_dir / "rag_ablation_posthoc_tests.xlsx"
+    _atomic_write_xlsx(posthoc_df, posthoc_path)
+
+    bootstrap_parts = []
+    for metric in ['kendall_tau', 'score_mae', 'top1_accuracy']:
+        bc = bootstrap_ci_per_config(scenario_df, metric)
+        bootstrap_parts.append(bc)
+    bootstrap_df = pd.concat(bootstrap_parts, ignore_index=True) if bootstrap_parts else pd.DataFrame()
+    bootstrap_path = output_dir / "rag_ablation_bootstrap_ci.xlsx"
+    _atomic_write_xlsx(bootstrap_df, bootstrap_path)
+
     plot_paths = make_plots(summary_df, output_dir)
-    write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, plot_paths)
+    write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, plot_paths,
+                 friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
 
     print("\nRAG ABLATION COMPLETE")
     print(f"Sample size: {'all' if sample_size is None else sample_size}")
@@ -1114,6 +1369,14 @@ def run(args) -> Dict:
     print(_format_md_table(summary_df, float_cols=[c for c in summary_df.columns if c not in {"model_key", "ablation_id", "ablation_label", "n_scenarios"}]))
     print(f"\nResults saved to: {results_path}")
     print(f"Report saved to: {report_path}")
+    print(f"Friedman tests saved to: {friedman_path}")
+    print(f"Post-hoc tests saved to: {posthoc_path}")
+    print(f"Bootstrap CIs saved to: {bootstrap_path}")
+    if not friedman_results.empty:
+        sig = friedman_results[friedman_results['p_value'] < 0.05]
+        if not sig.empty:
+            print(f"\nSignificant Friedman results (p < 0.05):")
+            print(_format_md_table(sig))
 
     return {
         "rows": rows_df,
