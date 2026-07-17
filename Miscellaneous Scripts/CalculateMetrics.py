@@ -1363,7 +1363,7 @@ if __name__ == "__main__":
         for mode_key in ("filtered", "imputed"):
             combined = pd.concat(all_mode_dfs[mode_key], ignore_index=True)
             suffix = "" if mode_key == "filtered" else "_imputed"
-            _atomic_write_xlsx(combined, str(PROJECT_ROOT / f"metrics_summary_all_models{suffix}.xlsx"))
+            _atomic_write_xlsx(combined, str(PROJECT_ROOT / "Analysis" / "MetricsSummary" / f"metrics_summary_all_models{suffix}.xlsx"))
         print(f"\nCombined metrics saved for all models.")
     else:
         mk = args.model if args.model else MODEL_KEY
