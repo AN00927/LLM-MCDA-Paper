@@ -105,6 +105,35 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 ## Paper editing conventions (`paper/paper_draft_working.tex`)
 
+### Float placement (tables and figures)
+
+LaTeX's default float algorithm pushes `[htbp]` tables/figures to the top of
+the page or even past the text that references them. This document already has
+`\FloatBarrier` (from `placeins`) before every `\subsection` and `\section`
+boundary in Results and Discussion. Rules:
+
+- **Every `\subsection` and `\section` in Results/Discussion must be preceded by
+  `\FloatBarrier`.** This corals floats within their subsection so they cannot
+  jump ahead of the next subsection's introducing text.
+- **Preamble float fraction tuning is load-bearing.** Do not remove:
+  ```latex
+  \renewcommand{\floatpagefraction}{0.7}
+  \renewcommand{\textfraction}{0.15}
+  \renewcommand{\topfraction}{0.85}
+  \renewcommand{\bottomfraction}{0.65}
+  ```
+- **If you add a new table or figure**, place it after the text that references
+  it and before the next `\FloatBarrier`. If it must appear before its
+  reference, use `[H]` (hard placement) — but prefer `\FloatBarrier` spacing.
+- **If you add a new `\subsection`** in Results or Discussion, add
+  `\FloatBarrier` immediately before it.
+- After any float layout change, **recompile twice** (pdflatex → bibtex →
+  pdflatex × 2) and visually verify tables sit after their references.
+- **No fully pooled tables without user approval.** When presenting metrics
+  across multiple models, do not pool all data into a single aggregate table
+  without asking the user first. Show per-model breakdowns or at minimum
+  strongest+weakest model.
+
 When editing text in this file, change the absolute minimum required to
 satisfy the request:
 

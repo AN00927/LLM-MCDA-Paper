@@ -877,17 +877,25 @@ def cliff_delta(x, y):
         |delta| < 0.474  = medium
         |delta| >= 0.474  = large
 
+    Non-finite values (NaN, inf) are removed before computation.  Returns
+    (nan, "") if either array is empty after filtering.
+
     Args:
         x: array-like of scores for group 1.
         y: array-like of scores for group 2.
 
     Returns:
         Tuple of (delta, interpretation) where *delta* is a float in [-1, 1]
-        and *interpretation* is one of "negligible", "small", "medium", "large".
+        and *interpretation* is one of "negligible", "small", "medium", "large",
+        or (nan, "") when insufficient data is available.
     """
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
+    x = x[np.isfinite(x)]
+    y = y[np.isfinite(y)]
     n_x, n_y = len(x), len(y)
+    if n_x == 0 or n_y == 0:
+        return float('nan'), ""
     concordant = sum(np.sum(xi > y) for xi in x)
     discordant = sum(np.sum(xi < y) for xi in x)
     delta = (concordant - discordant) / (n_x * n_y)
@@ -1027,6 +1035,16 @@ def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
         threshold = alpha / (m - rank)
         p_holm[rank] = min(float(pairs_df.iloc[rank]['p_value']) * (m - rank), 1.0)
         significant_holm[rank] = float(pairs_df.iloc[rank]['p_value']) < threshold
+
+    # Enforce Holm step-down monotonicity: once the sequential procedure
+    # encounters a non-rejection, all remaining pairs (which have equal or
+    # larger p-values) must also be not rejected, regardless of whether their
+    # individual p-value falls below their threshold.  Without this pass the
+    # significant_holm array can have a False followed by a True, which
+    # violates the family-wise error rate guarantee of the Holm procedure.
+    for rank in range(1, m):
+        if not significant_holm[rank - 1]:
+            significant_holm[rank] = False
 
     pairs_df['p_holm'] = p_holm
     pairs_df['significant_holm'] = significant_holm
