@@ -103,6 +103,24 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   the consolidated workbook is the source of truth for Test/RAG derivation.
 - **Never edit the Introduction, Literature Review, or initial Methodology sections (up to and including the MAVT framework design, §2.2) without explicit user consultation.** These sections carry the paper's research narrative and have been carefully reviewed; changes risk breaking argumentative flow.
 
+## Paper editing conventions (`paper/paper_draft_working.tex`)
+
+When editing text in this file, change the absolute minimum required to
+satisfy the request:
+
+1. **Prefer word-level swaps over sentence rewrites.** If a single word,
+   number, or phrase needs changing, change only that token — do not
+   rephrase the surrounding sentence.
+2. **Do not reword for clarity.** Even if nearby prose could be improved,
+   leave it as-is unless the task explicitly requires it.
+3. **Do not reorder or restructure.** Keep sentences, paragraphs, and
+   sections in their original form. Move content only when the edit
+   specifically demands it.
+4. **Scope edits to the target.** If fixing one sentence, touch no other
+   sentence — not for flow, not for consistency, not for style.
+5. **When in doubt, do less.** Every character changed beyond what the
+   task requires is excess.
+
 ## Communication conventions
 
 - **"Explain X to me" means explain in conversation.** When the user asks you to
