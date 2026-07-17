@@ -46,6 +46,7 @@ chroma_rag_db/
 *.sqlite3
 .rag_ablation_temp/
 Output Files/
+Analysis/
 
 # Scenario Files
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
@@ -61,7 +62,7 @@ paper/incremental_contribution_table.tex
 
 # Paper pipeline outputs
 paper_draft_working.spl
-numbers_master.csv
+paper/numbers_master.csv
 paper_pipeline/calculate_per_run_metrics.py
 paper_pipeline/generate_boxplot_tex.py
 paper_pipeline/generate_violin_tex.py
