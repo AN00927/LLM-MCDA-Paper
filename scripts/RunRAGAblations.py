@@ -1216,38 +1216,8 @@ def _format_md_table(df: pd.DataFrame, float_cols=None, max_rows: Optional[int] 
 
 
 def make_plots(summary_df: pd.DataFrame, output_dir: Path) -> List[Path]:
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except Exception:
-        return []
-    if summary_df.empty:
-        return []
-    plot_paths = []
-    ordered = summary_df.sort_values(["model_key", "ablation_id"])
-    for metric, filename, ylabel in [
-        ("top1_accuracy", "rag_ablation_top1_accuracy.png", "Top-1 accuracy"),
-        ("score_mae", "rag_ablation_score_mae.png", "Score MAE"),
-        ("mean_retrieval_distance", "rag_ablation_retrieval_distance.png", "Mean retrieval distance"),
-    ]:
-        if metric not in ordered.columns or ordered[metric].isna().all():
-            continue
-        labels = (ordered["model_key"].astype(str) + " - " + ordered["ablation_label"].astype(str)).tolist()
-        values = ordered[metric].astype(float).tolist()
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.bar(range(len(labels)), values, color="#4C78A8")
-        ax.set_xticks(range(len(labels)))
-        ax.set_xticklabels(labels, rotation=45, ha="right")
-        ax.set_ylabel(ylabel)
-        ax.set_title(f"RAG ablation: {ylabel}")
-        ax.grid(axis="y", alpha=0.3)
-        fig.tight_layout()
-        path = output_dir / filename
-        fig.savefig(path, dpi=180)
-        plt.close(fig)
-        plot_paths.append(path)
-    return plot_paths
+    """No-op: PNG plots removed. Returns empty list for report compatibility."""
+    return []
 
 
 def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs: OrderedDict, summary_df: pd.DataFrame, dtype_summary_df: pd.DataFrame, rows_df: pd.DataFrame, plot_paths: List[Path], friedman_results: Optional[pd.DataFrame] = None, posthoc_df: Optional[pd.DataFrame] = None, bootstrap_df: Optional[pd.DataFrame] = None) -> None:
@@ -1422,8 +1392,8 @@ def parse_args():
     )
     parser.add_argument(
         "--output-dir",
-        default=str(PROJECT_ROOT),
-        help="Directory for Excel outputs and plots.",
+        default=str(PROJECT_ROOT / "Analysis" / "RAG_Ablation"),
+        help="Directory for Excel outputs.",
     )
     parser.add_argument(
         "--output",
