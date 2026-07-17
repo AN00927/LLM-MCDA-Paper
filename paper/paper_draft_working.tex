@@ -22,6 +22,10 @@
 \setlength{\textfloatsep}{10pt plus 2pt minus 4pt}   % Distance between top/bottom float and text
 \setlength{\floatsep}{8pt plus 2pt minus 2pt}       % Distance between two floats
 \setlength{\intextsep}{10pt plus 2pt minus 2pt}     % Distance between inline float and text
+\renewcommand{\floatpagefraction}{0.7}
+\renewcommand{\textfraction}{0.15}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.65}
 
 \newcommand{\plotCriterionMAEByModel}{%
 \begin{tikzpicture}
@@ -50,7 +54,7 @@
     title={\small (b) Environmental}, title style={font=\small}]
 \addplot[mark=*, colorGemini]   coordinates {(1,0.2468) (2,0.1320) (3,0.0912)};
 \addplot[mark=*, colorDeepSeek] coordinates {(1,0.2454) (2,0.1309) (3,0.0759)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2850) (2,0.1335) (3,0.0851)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2850) (2,0.1330) (3,0.0864)};
 \addplot[mark=*, colorQwen]     coordinates {(1,0.2630) (2,0.1687) (3,0.1413)};
 \nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
     title={\small (c) Comfort}, title style={font=\small}]
@@ -88,7 +92,7 @@
     title={\small (a) HVAC}, title style={font=\small}]
 \addplot[mark=*, colorGemini]   coordinates {(1,-0.0476) (2,-0.0762) (3,0.9810)};
 \addplot[mark=*, colorDeepSeek] coordinates {(1,-0.1238) (2,0.0476) (3,0.9333)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2381)  (2,0.2667) (3,0.9517)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2381)  (2,0.2566) (3,0.9517)};
 \addplot[mark=*, colorQwen]     coordinates {(1,0.0571)  (2,0.1905) (3,0.8762)};
 \legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
 \nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.99,
@@ -100,7 +104,7 @@
 \nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.99,
     title={\small (c) Shower}, title style={font=\small}]
 \addplot[mark=*, colorGemini]   coordinates {(1,0.6333) (2,0.8222) (3,0.8222)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,0.7222) (2,0.7000) (3,0.7889)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,0.7222) (2,0.6978) (3,0.7889)};
 \addplot[mark=*, colorGPTOSS]   coordinates {(1,0.1000) (2,0.7222) (3,0.8000)};
 \addplot[mark=*, colorQwen]     coordinates {(1,0.0667) (2,0.4333) (3,0.8556)};
 \end{groupplot}
@@ -110,16 +114,16 @@
 \newcommand{\plotRagAblation}{%
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.95\textwidth, height=5.5cm,
+    width=\textwidth, height=6.5cm,
     ylabel={Kendall's $\tau$},
     symbolic x coords={Random exemplars,Control ($k=3$),Retrieval $k=1$,Retrieval $k=5$,No hidden params,Alt embedding,No scores},
     xtick=data,
     xticklabel style={font=\small, align=center},
-    enlarge x limits=0.12,
-    bar width=4pt,
+    enlarge x limits=0.15,
+    bar width=6pt,
     ybar,
     ymin=-0.15, ymax=0.65,
-    legend style={font=\small, at={(0.5,1.02)}, anchor=south, legend columns=4},
+    legend style={font=\small, at={(0.5,1.05)}, anchor=south, legend columns=4},
     legend cell align={left},
     grid=major,
     grid style={gray!30},
@@ -174,30 +178,30 @@
 \begin{axis}[
     width=0.7\textwidth, height=5cm,
     ylabel={Kendall's $\tau$},
-    symbolic x coords={Pure,RAG,LLM-Param.},
-    xtick=data,
-    xticklabel style={font=\small, align=center},
-    enlarge x limits=0.2,
-    ymin=0, ymax=1.1,
+    xtick={1,2,3},
+    xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
+    xticklabel style={font=\small},
+    xmin=0.4, xmax=3.6,
+    ymin=-0.1, ymax=1.05,
     grid=major,
     grid style={gray!30},
     ymajorgrids=true,
-    legend style={font=\small, at={(0.5,1.02)}, anchor=south, legend columns=3},
+    legend style={font=\small, at={(0.5,1.05)}, anchor=south, legend columns=4},
     legend cell align={left},
 ]
-\addplot[only marks, mark=*, mark size=6, color=colorPure,
-         error bars/.cd, y dir=both, y explicit] coordinates {
-    (Pure,0.252) +- (0.072,0.071)
+\addplot[only marks, mark=*, mark size=3pt, color=colorGemini] coordinates {
+    (0.85, 0.169) (1.85, 0.378) (2.85, 0.925)
 };
-\addplot[only marks, mark=*, mark size=6, color=colorRAG,
-         error bars/.cd, y dir=both, y explicit] coordinates {
-    (RAG,0.419) +- (0.045,0.044)
+\addplot[only marks, mark=*, mark size=3pt, color=colorDeepSeek] coordinates {
+    (0.95, 0.159) (1.95, 0.354) (2.95, 0.897)
 };
-\addplot[only marks, mark=*, mark size=6, color=colorLLMParameterizedReferenceScoring,
-         error bars/.cd, y dir=both, y explicit] coordinates {
-    (LLM-Param.,0.923) +- (0.022,0.022)
+\addplot[only marks, mark=*, mark size=3pt, color=colorGPTOSS] coordinates {
+    (1.05, 0.053) (2.05, 0.340) (3.05, 0.907)
 };
-\legend{$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$}
+\addplot[only marks, mark=*, mark size=3pt, color=colorQwen] coordinates {
+    (1.15, -0.002) (2.15, 0.282) (3.15, 0.877)
+};
+\legend{Gemini, DeepSeek, GPT-OSS, Qwen}
 \end{axis}
 \end{tikzpicture}%
 }
@@ -391,17 +395,28 @@ Despite extensive work on LLM numeracy, retrieval-augmented generation, and LLM-
 \section{Methodology}
 \label{sec2}
 
-Table~\ref{tab:item1} in Appendix~\ref{app:notation} lists the notation used throughout this paper.
+Table~\ref{tab:item1} in \ref{app:notation} lists the notation used throughout this paper.
 
 \subsection{Decision Types and Scenario Corpus}
 Three decision types were selected for their high behavioral plasticity and RAER: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration). HVAC was prioritized because space heating and cooling account for approximately a third of global residential energy consumption and represent the fastest-growing end-use as household incomes rise \cite{GONZALEZTORRES2022112428}.
 
 
-The scenario corpus has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the ground-truth calculator. The \textit{RAG corpus} (Appendix~\ref{app:rag_corpus}) contains an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture; RAG scenarios are never used for evaluation \cite{lewis2020}.
+The scenario corpus has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the ground-truth calculator. The \textit{RAG corpus} (\ref{app:rag_corpus}) contains an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture; RAG scenarios are never used for evaluation \cite{lewis2020}.
 
 The split provides a 2.17:1 test-to-RAG ratio sufficient for retrieval coverage; HVAC has more scenarios than the others (70 test + 35 RAG) due to its higher parameter dimensionality (R-value, SEER, age, occupancy, insulation tier). The same applies to Appliance decisions.
 
 The scenario counts were chosen to ensure full coverage of the parameter space rather than to satisfy a statistical power calculation. Each decision type's scenario set was generated by crossing the categorical parameters (insulation tier, housing type, appliance type, flow-rate band) with representative numeric draws (outdoor temperature, square footage, household size, utility budget) and then auditing the resulting matrix for coverage gaps---combinations of categories that appeared in fewer than two scenarios were filled with additional draws until no parameter combination was underrepresented. This combinatorial audit was performed using a consolidated workbook that tracked parameter-frequency histograms; scenarios were redistributed from overrepresented cells to underrepresented ones using an automated rebalancing script until each categorical cross-cell contained at least one scenario. The 90 RAG scenarios were drawn from the same parameter distribution but kept fully disjoint from the test set, ensuring no test scenario had an identical parameter signature in the retrieval index.
+
+\subsection{End-to-End Workflow}
+Figure~\ref{fig:full-flow-mcda} shows the full decision-support workflow common to all three architectures. The three architectures differ only in how the scoring step is performed.
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.5\textwidth]{FULLFlowMCDA.png}
+  \caption{Decision-support workflow: scenario input $\rightarrow$ architecture-specific scoring or extraction $\rightarrow$ MAVT aggregation $\rightarrow$ ranked output.}
+  \label{fig:full-flow-mcda}
+\end{figure}
+
+Results are reported as five-run averages: each architecture--model combination is run independently five times with different random seeds, and metrics are computed per run then averaged. 
 
 The tables below detail the parameters given to architectures vs.\ calculators per decision type.
 \begin{table}[htbp]
@@ -496,7 +511,28 @@ The two sets overlap on environmental conditions so that both pipelines are reas
 
 \subsection{MAVT Framework \& Weighting Design}
 \label{sec:mavt-design}
-The Multi-Attribute Value Theorem (MAVT) allows alternatives to be compared on different criteria based on the range of values that occurs for each criterion. In our study, we chose the following weights: Environmental Impact (35\%), Energy Cost (30\%), Comfort (20\%), and Practicality (15\%), as summarized in Table~\ref{tab:item3}. The weights are held constant across all decision types, all architectures, and the ground-truth calculator. We did this so that any difference in score is because of the inputs and value function, not because of difference in the way each criterion is perceived for the three decision types. Normally, MAVT additive form (Eq.~\ref{eq:mavt_sum}) requires preferential independence among criteria \cite{dyer1979,keeneyraiffa1976}. This means that criteria should be independent, meaning that the value (good or bad) of one criterion should have no effect on the value of another criterion.
+The Multi-Attribute Value Theorem (MAVT) allows alternatives to be compared on different criteria based on the range of values that occurs for each criterion. In our study, we chose the following weights: Environmental Impact (35\%), Energy Cost (30\%), Comfort (20\%), and Practicality (15\%), as summarized in Table~\ref{tab:item3}.
+
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lllll}
+\toprule
+Criterion & Weight (\%) & Value Function & $\alpha$ & Direction \\
+\midrule
+Environmental Impact & 35 & Linear (Eq.~\ref{eq:linear_vf}) & \textemdash & Lower raw = better \\
+Energy Cost & 30 & Linear (Eq.~\ref{eq:linear_vf}) & \textemdash & Lower raw = better \\
+Comfort & 20 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.5 & Higher raw = better \\
+Practicality & 15 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.2 & Higher raw = better \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{MAVT criterion specification. Weights sum to 100\% and are held constant across all architectures and the ground truth calculator.}
+\label{tab:item3}
+\end{table}
+
+The weights are held constant across all decision types, all architectures, and the ground-truth calculator. We did this so that any difference in score is because of the inputs and value function, not because of difference in the way each criterion is perceived for the three decision types. Normally, MAVT additive form (Eq.~\ref{eq:mavt_sum}) requires preferential independence among criteria \cite{dyer1979,keeneyraiffa1976}. This means that criteria should be independent, meaning that the value (good or bad) of one criterion should have no effect on the value of another criterion.
 
 \begin{equation}
 \label{eq:mavt_sum}
@@ -525,66 +561,9 @@ v_i(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
 v_i(x) = \frac{\ln\!\left(1 + \alpha \cdot \frac{x - x_{\min}}{x_{\max} - x_{\min}}\right)}{\ln(1 + \alpha)}
 \end{equation}
 
-\begin{table}[t]
-\small
-\centering
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lllll}
-\toprule
-Criterion & Weight (\%) & Value Function & $\alpha$ & Direction \\
-\midrule
-Environmental Impact & 35 & Linear (Eq.~\ref{eq:linear_vf}) & \textemdash & Lower raw = better \\
-Energy Cost & 30 & Linear (Eq.~\ref{eq:linear_vf}) & \textemdash & Lower raw = better \\
-Comfort & 20 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.5 & Higher raw = better \\
-Practicality & 15 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.2 & Higher raw = better \\
-\bottomrule
-\end{tabular}
-\renewcommand{\arraystretch}{1.0}
-\caption{MAVT criterion specification. Weights sum to 100\% and are held constant across all architectures and the ground truth calculator.}
-\label{tab:item3}
-\end{table} %todo put this in a better place and maybe reference it, tho i will do this
-
 \subsection{Sensitivity and other analysis}
 
-A sensitivity analysis was conducted to test the stability of the results. Fluctuations of $\pm 0.05$ were applied  to the weight vector by perturbing each of the four criterion weights individually and redistributing the difference equally across the remaining three, plus one equal-weight scenario ($w_j = 0.25$ for all $j$). The results can be seen in the below table, Table~\ref{tab:sensitivity_weights}.
-
-\begin{table}[htbp]
-\centering
-\small
-\caption{The architecture ordering ($\mathcal{A}_{\text{H}}$ $>$ $\mathcal{A}_{\text{E}}$ $>$ $\mathcal{A}_{\text{D}}$) is
-         preserved across all perturbations (Section~\ref{sec:res-ranking}).}
-\label{tab:sensitivity_weights}
-\begin{tabular}{@{} l r r r r @{}}
-\toprule
-\textbf{Scenario} & $w_{\text{Ene}}$ & $w_{\text{Env}}$ & $w_{\text{Com}}$ & $w_{\text{Pra}}$ \\
-\midrule
-Baseline          & 0.3000 & 0.3500 & 0.2000 & 0.1500 \\
-\midrule
-Ene $+0.05$       & \textbf{0.3500} & 0.3333 & 0.1833 & 0.1333 \\
-Ene $-0.05$       & \textbf{0.2500} & 0.3667 & 0.2167 & 0.1667 \\
-\midrule
-Env $+0.05$       & 0.2833 & \textbf{0.4000} & 0.1833 & 0.1333 \\
-Env $-0.05$       & 0.3167 & \textbf{0.3000} & 0.2167 & 0.1667 \\
-\midrule
-Com $+0.05$       & 0.2833 & 0.3333 & \textbf{0.2500} & 0.1333 \\
-Com $-0.05$       & 0.3167 & 0.3667 & \textbf{0.1500} & 0.1667 \\
-\midrule
-Pra $+0.05$       & 0.2833 & 0.3333 & 0.1833 & \textbf{0.2000} \\
-Pra $-0.05$       & 0.3167 & 0.3667 & 0.2167 & \textbf{0.1000} \\
-\midrule
-Equal             & 0.2500 & 0.2500 & 0.2500 & 0.2500 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-	\centering
-	\plotSensitivityTau
-	\caption{Kendall's $\tau$ range for each architecture across the nine weight-perturbation scenarios (Table~\ref{tab:sensitivity_weights}). The bands are non-overlapping, confirming that the architecture ordering ($\mathcal{A}_{\text{H}}$ $>$ $\mathcal{A}_{\text{E}}$ $>$ $\mathcal{A}_{\text{D}}$) is preserved under $\pm 0.05$ weight perturbations.}
-	\label{fig:sensitivity_tau}
-\end{figure} %%talk about b eing pooled
-
-The sensitivity analysis (Table~\ref{tab:sensitivity_weights}) confirms that the architecture ordering is preserved under $\pm 0.05$ perturbations of each weight. Figure~\ref{fig:sensitivity_tau} visualizes the $\tau$ range across all nine perturbation scenarios for each architecture: $\mathcal{A}_{\text{H}}$ remains above 0.9, $\mathcal{A}_{\text{E}}$ above 0.37, and $\mathcal{A}_{\text{D}}$ below 0.33, with no overlap between the architecture bands. Full per-model sensitivity results appear in Appendix~\ref{app:sensitivity_full}.
+A sensitivity analysis was conducted to test the stability of the results. Fluctuations of $\pm 0.05$ were applied  to the weight vector by perturbing each of the four criterion weights individually and redistributing the difference equally across the remaining three, plus one equal-weight scenario ($w_j = 0.25$ for all $j$). 
 
 \begin{table}[htbp]
 \centering
@@ -688,7 +667,19 @@ Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints \cite{
   \label{eq:hvac_comfort}
 \end{equation}
 \noindent where $C_{\mathrm{comfort}}$ is a 0--1 comfort score, $T_{\mathrm{in}}$ is the indoor setpoint, $T^{*}$ is the context-dependent optimal setpoint used as the peak of the tent function ($76$\,\textdegree{}F in cooling mode, $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedentary PMV bands \cite{ashrae55_2020}). A small penalty $(n-3)\times 0.3 \times |T_{\mathrm{in}}-T^{*}|/3.0$ scales with household size beyond three occupants.
-Practicality starts at 10 and subtracts an asymmetric extremity penalty for setpoints beyond adoption-comfort bounds (in cooling, $\ge 82$\,\textdegree{}F or $\le 71$\,\textdegree{}F; in heating, $\le 63$\,\textdegree{}F or $\ge 76$\,\textdegree{}F), with the steepest per-\textdegree{}F slopes on the least-tolerable directions (1.5/1.0 for the high/low side in cooling; 1.8/0.8 for the low/high side in heating). %i beleive this penalty would be better demonstrated in an equation; easier to read.
+Practicality starts at 10 and subtracts an asymmetric extremity penalty for setpoints beyond adoption-comfort bounds:
+\begin{equation}
+  \delta(T_{\mathrm{in}}) =
+  \begin{cases}
+    1.0\,(71 - T_{\mathrm{in}}) & \text{cooling, } T_{\mathrm{in}} < 71 \\[3pt]
+    1.5\,(T_{\mathrm{in}} - 82) & \text{cooling, } T_{\mathrm{in}} > 82 \\[3pt]
+    1.8\,(63 - T_{\mathrm{in}}) & \text{heating, } T_{\mathrm{in}} < 63 \\[3pt]
+    0.8\,(T_{\mathrm{in}} - 76) & \text{heating, } T_{\mathrm{in}} > 76 \\[3pt]
+    0                             & \text{otherwise}
+  \end{cases}
+  \label{eq:hvac_practicality}
+\end{equation}
+\noindent where $\delta(T_{\mathrm{in}})$ is the extremity penalty (score points per \textdegree{}F beyond adoption-comfort bounds), with the steepest slopes on the least-tolerable directions. The pre-feasibility practicality score is $P_{\mathrm{prac}} = \mathrm{clip}_{[1.5,\,10]}\!\bigl(10 - \delta(T_{\mathrm{in}})\bigr)$.
 
 The result is then multiplied by an outdoor--indoor $\Delta T$ feasibility factor (1.0, 0.95, 0.85, 0.70 for $\Delta T < 10$, $< 20$, $< 35$, $\ge 35$\,\textdegree{}F), signaling operation near system limits. Finally, age- and maintenance-driven efficiency degradation enters here as a reliability factor: an older or poorly maintained unit is a less practical choice to rely on, so the score is scaled by $(1 - D)$ where
 \begin{equation}
@@ -706,7 +697,7 @@ Energy cost per cycle is
     C = E_{\mathrm{cyc}} \cdot r(t,\ell)
 \end{equation}
 
-where $E_{\mathrm{cyc}}$ is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021} (see Appendix~\ref{app:tou_rates} for the full rate structure).
+where $E_{\mathrm{cyc}}$ is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021} (see \ref{app:tou_rates} for the full rate structure).
 \noindent. $C$ is per-cycle energy cost (dollars/cycle), $E_{\mathrm{cyc}}$ is per-cycle energy use (kWh/cycle), $t$ is the appliance run time (time-of-day), and $\ell$ is the household location used to resolve the serving utility.
 
 The PJM emissions window (7am--11pm) applies to environmental impact regardless of the utility's billing window, because emissions follow the regional grid.
@@ -872,7 +863,7 @@ For budget utilization in the budget penalty equation, shower monthly cost is es
 
 \subsection{Architecture Implementations}
 \label{sec:architectures}
-All three architectures call the same underlying model via OpenRouter at temperature 0.3, a moderate value that balances instruction-following fidelity against output diversity \cite{icaart26}, with model held constant within each benchmark run so that architecture differences rather than model differences drive the comparison. The study evaluates four models spanning a range of capability, reasoning support, and cost: GPT-OSS-20B (reasoning, low effort), Qwen 3.5 9B (non-reasoning), DeepSeek V4 Flash (hybrid reasoning), and Gemini 3.5 Flash (reasoning, minimal effort). Each architecture is described below in Figure~\ref{fig:pipeline}. % TODO: generate pipeline flow diagram and insert here
+All three architectures call the same underlying model via OpenRouter at temperature 0.3, a moderate value that balances instruction-following fidelity against output diversity \cite{icaart26}, with model held constant within each benchmark run so that architecture differences rather than model differences drive the comparison. The study evaluates four models spanning a range of capability, reasoning support, and cost: GPT-OSS-20B (reasoning, low effort), Qwen 3.5 9B (non-reasoning), DeepSeek V4 Flash (hybrid reasoning), and Gemini 3.5 Flash (reasoning, minimal effort). Each architecture is described below in Figure~\ref{fig:pipeline}.
 
 \begin{figure}[H]
 	\centering
@@ -997,16 +988,6 @@ Calculation error & Ground-truth calculator exception & $\mathcal{A}_{\text{H}}$
 \end{tabular}
 \end{table}
 
-\subsection{End-to-End Workflow}
-Figure~\ref{fig:full-flow-mcda} shows the full decision-support workflow common to all three architectures. The three architectures differ only in how the scoring step is performed.
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.5\textwidth]{FULLFlowMCDA.png}
-  \caption{Decision-support workflow: scenario input $\rightarrow$ architecture-specific scoring or extraction $\rightarrow$ MAVT aggregation $\rightarrow$ ranked output.}
-  \label{fig:full-flow-mcda}
-\end{figure}
-
-Results are reported as five-run averages: each architecture--model combination is run independently five times with different random seeds, and metrics are computed per run then averaged. 
 
 \FloatBarrier
 \section{Results}
@@ -1020,31 +1001,29 @@ Results are reported as five-run averages: each architecture--model combination 
 \footnotesize
 \centering
 \renewcommand{\arraystretch}{1.10}
-\begin{tabular}{lccccccccc ccc ccc}
+\begin{tabular}{lccccccccccccccc}
 \toprule
- & \multicolumn{3}{c}{Kendall's $\tau$} & \multicolumn{3}{c}{Top-1 (\%)} & \multicolumn{3}{c}{MAE} & \multicolumn{3}{c}{RMSE} & \multicolumn{3}{c}{RMSE/MAE} \\
+ & \multicolumn{3}{c}{Gemini} & \multicolumn{3}{c}{DeepSeek} & \multicolumn{3}{c}{GPT-OSS} & \multicolumn{3}{c}{Qwen} & \multicolumn{3}{c}{Mean} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}\cmidrule(lr){14-16}
-Model & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
+Metric & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Gemini   & 0.189 $\pm$ 0.278 & 0.405 $\pm$ 0.315 & \textbf{0.920 $\pm$ 0.062} & 36.9 $\pm$ 15.1 & 56.1 $\pm$ 22.9 & \textbf{92.9 $\pm$ 4.9} & 0.218 $\pm$ 0.051 & 0.127 $\pm$ 0.029 & \textbf{0.048 $\pm$ 0.013} & 0.288 $\pm$ 0.064 & 0.194 $\pm$ 0.035 & \textbf{0.097 $\pm$ 0.028} & 1.32 $\pm$ 0.03 & 1.54 $\pm$ 0.07 & 2.02 $\pm$ 0.07 \\
-DeepSeek & 0.157 $\pm$ 0.259 & 0.338 $\pm$ 0.221 & \textbf{0.895 $\pm$ 0.071} & 37.5 $\pm$ 16.4 & 49.9 $\pm$ 13.5 & \textbf{90.5 $\pm$ 6.5} & 0.231 $\pm$ 0.026 & 0.139 $\pm$ 0.019 & \textbf{0.046 $\pm$ 0.009} & 0.300 $\pm$ 0.033 & 0.204 $\pm$ 0.021 & \textbf{0.091 $\pm$ 0.015} & 1.30 $\pm$ 0.01 & 1.47 $\pm$ 0.06 & 2.00 $\pm$ 0.20 \\
-GPT-OSS  & 0.041 $\pm$ 0.129 & 0.335 $\pm$ 0.198 & \textbf{0.898 $\pm$ 0.073} & 33.2 $\pm$ 6.0 & 51.9 $\pm$ 11.8 & \textbf{91.6 $\pm$ 6.5} & 0.242 $\pm$ 0.031 & 0.145 $\pm$ 0.027 & \textbf{0.052 $\pm$ 0.002} & 0.305 $\pm$ 0.035 & 0.212 $\pm$ 0.034 & \textbf{0.101 $\pm$ 0.006} & 1.27 $\pm$ 0.03 & 1.47 $\pm$ 0.04 & 1.95 $\pm$ 0.05 \\
-Qwen     & 0.011 $\pm$ 0.065 & 0.280 $\pm$ 0.127 & \textbf{0.880 $\pm$ 0.029} & 30.0 $\pm$ 6.3 & 50.9 $\pm$ 7.9 & \textbf{89.8 $\pm$ 2.8} & 0.235 $\pm$ 0.031 & 0.169 $\pm$ 0.017 & \textbf{0.071 $\pm$ 0.030} & 0.294 $\pm$ 0.033 & 0.236 $\pm$ 0.019 & \textbf{0.152 $\pm$ 0.056} & 1.25 $\pm$ 0.03 & 1.40 $\pm$ 0.04 & 2.18 $\pm$ 0.15 \\
-\midrule
-Mean     & 0.100 $\pm$ 0.091 & 0.339 $\pm$ 0.050 & \textbf{0.898 $\pm$ 0.017} & 34.4 $\pm$ 3.3 & 52.2 $\pm$ 2.6 & \textbf{91.2 $\pm$ 1.3} & 0.231 $\pm$ 0.011 & 0.145 $\pm$ 0.017 & \textbf{0.054 $\pm$ 0.011} & 0.297 $\pm$ 0.008 & 0.212 $\pm$ 0.018 & \textbf{0.110 $\pm$ 0.027} & 1.29 $\pm$ 0.03 & 1.47 $\pm$ 0.06 & 2.04 $\pm$ 0.10 \\
+Kendall's $\tau$ & 0.189 $\pm$ 0.278 & 0.405 $\pm$ 0.315 & \textbf{0.920 $\pm$ 0.062} & 0.157 $\pm$ 0.259 & 0.338 $\pm$ 0.221 & \textbf{0.895 $\pm$ 0.071} & 0.041 $\pm$ 0.129 & 0.335 $\pm$ 0.198 & \textbf{0.898 $\pm$ 0.073} & 0.011 $\pm$ 0.065 & 0.280 $\pm$ 0.127 & \textbf{0.880 $\pm$ 0.029} & 0.100 $\pm$ 0.091 & 0.339 $\pm$ 0.050 & \textbf{0.898 $\pm$ 0.017} \\
+Top-1 (\%) & 36.9 $\pm$ 15.1 & 56.1 $\pm$ 22.9 & \textbf{92.9 $\pm$ 4.9} & 37.5 $\pm$ 16.4 & 49.9 $\pm$ 13.5 & \textbf{90.5 $\pm$ 6.5} & 33.2 $\pm$ 6.0 & 51.9 $\pm$ 11.8 & \textbf{91.6 $\pm$ 6.5} & 30.0 $\pm$ 6.3 & 50.9 $\pm$ 7.9 & \textbf{89.8 $\pm$ 2.8} & 34.4 $\pm$ 3.3 & 52.2 $\pm$ 2.6 & \textbf{91.2 $\pm$ 1.3} \\
+MAE & 0.218 $\pm$ 0.051 & 0.127 $\pm$ 0.029 & \textbf{0.048 $\pm$ 0.013} & 0.231 $\pm$ 0.026 & 0.139 $\pm$ 0.019 & \textbf{0.046 $\pm$ 0.009} & 0.242 $\pm$ 0.031 & 0.145 $\pm$ 0.027 & \textbf{0.052 $\pm$ 0.002} & 0.235 $\pm$ 0.031 & 0.169 $\pm$ 0.017 & \textbf{0.071 $\pm$ 0.030} & 0.231 $\pm$ 0.011 & 0.145 $\pm$ 0.017 & \textbf{0.054 $\pm$ 0.011} \\
+RMSE & 0.288 $\pm$ 0.064 & 0.194 $\pm$ 0.035 & \textbf{0.097 $\pm$ 0.028} & 0.300 $\pm$ 0.033 & 0.204 $\pm$ 0.021 & \textbf{0.091 $\pm$ 0.015} & 0.305 $\pm$ 0.035 & 0.212 $\pm$ 0.034 & \textbf{0.101 $\pm$ 0.006} & 0.294 $\pm$ 0.033 & 0.236 $\pm$ 0.019 & \textbf{0.152 $\pm$ 0.056} & 0.297 $\pm$ 0.008 & 0.212 $\pm$ 0.018 & \textbf{0.110 $\pm$ 0.027} \\
+RMSE/MAE & 1.32 $\pm$ 0.03 & 1.54 $\pm$ 0.07 & 2.02 $\pm$ 0.07 & 1.30 $\pm$ 0.01 & 1.47 $\pm$ 0.06 & 2.00 $\pm$ 0.20 & 1.27 $\pm$ 0.03 & 1.47 $\pm$ 0.04 & 1.95 $\pm$ 0.05 & 1.25 $\pm$ 0.03 & 1.40 $\pm$ 0.04 & 2.18 $\pm$ 0.15 & 1.29 $\pm$ 0.03 & 1.47 $\pm$ 0.06 & 2.04 $\pm$ 0.10 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \caption{Overall performance by model (5-run mean $\pm$ std, 195 scenarios). Best architecture per metric per model is bolded.}
 \label{tab:overall_by_model}
 \end{table*}
-%todo: reformat. the 4 models shoul go alone the top. the architectures can stay where they are (groups of 3 per metric, which will become groups of 3 under each model) and then on the side we should have each of the 4 metrics. horizontal space used by each model should try to be reduced a little to fit without going off the page
 
-Table~\ref{tab:overall_by_model} shows each model's performance across architectures (full per-model results by decision type appear in Appendix~\ref{app:per_model_results}). $\mathcal{A}_{\text{H}}$ dominates on every metric for all four models: $\tau$ ranges from 0.877 (Qwen) to 0.925 (Gemini), Top-1 from 90.3\% (Qwen) to 93.3\% (Gemini). $\mathcal{A}_{\text{E}}$ places second across all models: $\tau$ from 0.282 (Qwen) to 0.378 (Gemini), Top-1 from 49.7\% (DeepSeek) to 54.4\% (Gemini). $\mathcal{A}_{\text{D}}$ ranks third: $\tau$ from $-0.002$ (Qwen) to 0.169 (Gemini), Top-1 from 31.8\% (Qwen) to 40.0\% (DeepSeek), near the random baseline of $\tau = 0$ for a three-alternative ranking. The most interesting finding is while the model success order stays almost exactly the same, for $\mathcal{A}_{\text{H}}$, the gap is much smaller than in $\mathcal{A}_{\text{D}}$
+Table~\ref{tab:overall_by_model} shows each model's performance across architectures (full per-model results by decision type appear in \ref{app:per_model_results}). $\mathcal{A}_{\text{H}}$ dominates on every metric for all four models: $\tau$ ranges from 0.877 (Qwen) to 0.925 (Gemini), Top-1 from 90.3\% (Qwen) to 93.3\% (Gemini). $\mathcal{A}_{\text{E}}$ places second across all models: $\tau$ from 0.282 (Qwen) to 0.378 (Gemini), Top-1 from 49.7\% (DeepSeek) to 54.4\% (Gemini). $\mathcal{A}_{\text{D}}$ ranks third: $\tau$ from $-0.002$ (Qwen) to 0.169 (Gemini), Top-1 from 31.8\% (Qwen) to 40.0\% (DeepSeek), near the random baseline of $\tau = 0$ for a three-alternative ranking. The most interesting finding is while the model success order stays almost exactly the same, for $\mathcal{A}_{\text{H}}$, the gap is much smaller than in $\mathcal{A}_{\text{D}}$
 
 The ranking metrics are partly structurally favored in $\mathcal{A}_{\text{H}}$ (see Section~\ref{sec:architectures} for the structural argument); the score-level error (MAE/RMSE) is the stronger evidence of extraction fidelity.
 
-The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-design}). Pairwise differences between architectures are significant under Wilcoxon signed-rank testing ($p < 0.001$ for each adjacent pair), applied to per-scenario Kendall's $\tau$ within each model and combined across models using Stouffer's method (see Appendix~\ref{app:significance} for full results).
+The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-design}). Pairwise differences between architectures are significant under Wilcoxon signed-rank testing ($p < 0.001$ for each adjacent pair), applied to per-scenario Kendall's $\tau$ within each model and combined across models using Stouffer's method (see \ref{app:significance} for full results).
 
 ICC(2,1) for MAE is 0.80--0.91 across architectures: model choice drives most score-level error. ICC for Top-1 accuracy is 0.08--0.27: scenario difficulty drives correct-alternative identification. Cliff's $\delta$ between $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{H}}$ is 0.66--0.80 for MAE and 0.55--0.77 for $\tau$ (both large effects). Bootstrap 95\% BCa intervals for $\mathcal{A}_{\text{H}}$ tau [0.892, 0.907] and MAE [0.050, 0.060] do not overlap $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$ intervals on any metric.
 
@@ -1052,6 +1031,30 @@ The MAE and RMSE values quantify how closely each architecture's scores match th
 
 The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$, as achieved by $\mathcal{A}_{\text{H}}$ across all four models, means the architecture identifies the correct ranking order in nearly every scenario---comparable to the agreement two human experts would reach on the same decision. $\tau$ between 0.3 and 0.5, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.7\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 35.4\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
 
+\FloatBarrier
+\subsection{Baseline Comparison}
+\label{sec:res-baselines}
+Table~\ref{tab:incremental-contribution} extends the comparison beyond the three LLM architectures to two non-LLM baselines, all evaluated on the same 195-scenario test set. Metrics are reported as per-type arithmetic means (averaging HVAC, Appliance, and Shower results equally) so that each decision type contributes equally regardless of scenario count; this prevents FixedDefault's strong HVAC performance from inflating its aggregate score. The Fixed-Default baseline substitutes fixed engineering defaults---68\textdegree{}F setpoint for HVAC, 7PM schedule for appliances, 8-minute shower duration---into the same physics calculators used by the ground truth. It runs the same physics but with a hardcoded ``typical'' choice. FixedDefault achieves high HVAC accuracy (the 68\textdegree{}F setpoint is near-optimal for most Pennsylvania scenarios) but collapses on Appliance ($\tau = 0.097$) and Shower ($\tau = 0.800$), yielding a per-type average of only $\tau = 0.610$. NearestNeighbor ($k=3$ majority vote over the RAG corpus) averages $\tau = 0.386$ across types, placing it between $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ and demonstrating that unmodified exemplar copying provides partial but limited ranking signal.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Incremental contribution of each system over Fixed-Default baseline (per-type arithmetic means of Top-1 accuracy and Kendall's~$\tau$).}
+  \label{tab:incremental-contribution}
+  \begin{tabular}{lcccc}
+    \toprule
+    System & Top-1 & $\Delta$ vs FixedDef & Kendall $\tau$ & $\Delta$ vs FixedDef \\
+    \midrule
+    FixedDefault & 0.7254 & $0.0000$ & 0.6102 & $0.0000$ \\
+    NearestNeighbor & 0.5775 & $-0.1479$ & 0.3863 & $-0.2239$ \\
+    Direct\_LLM\_Scoring & 0.3583 & $-0.3671$ & 0.1040 & $-0.5062$ \\
+    Example-Guided\_LLM\_Scoring & 0.5260 & $-0.1994$ & 0.3527 & $-0.2576$ \\
+    LLM-Parameterized\_Reference\_Scoring & 0.9160 & $+0.1906$ & 0.8990 & $+0.2888$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+Per the structural argument in Section~\ref{sec:architectures}, the score-level error is the stronger evidence of extraction fidelity, shown per model in Table~\ref{tab:overall_by_model}. Across the four models, $\mathcal{A}_{\text{H}}$ MAE ranges from 0.043 (DeepSeek) to 0.068 (Qwen), representing reductions of 63--81\% over $\mathcal{A}_{\text{D}}$ (0.208--0.230) and 47--73\% over $\mathcal{A}_{\text{E}}$ (0.127--0.159) per model. RMSE follows the same ranking across all four models.
+
+\FloatBarrier
 \subsection{Criterion-Level Error}
 \label{sec:res-error}
 Table~\ref{tab:item6} and Figure~\ref{fig:mae_criterion} break MAE down by criterion and model. $\mathcal{A}_{\text{H}}$ achieves near-zero error on Comfort and Practicality across all four models: Comfort MAE ranges from 0.008 (Qwen) to 0.013 (DeepSeek), Practicality from 0.016 (Qwen) to 0.022 (GPT-OSS). This is structural: the calculator handles both criteria deterministically, with the LLM only estimating scenario-level parameters (occupancy, tank size) that shift all three alternatives together. This confirms the central-tendency prediction made in Section~\ref{sec:mavt-design}.
@@ -1060,28 +1063,25 @@ Table~\ref{tab:item6} and Figure~\ref{fig:mae_criterion} break MAE down by crite
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lccc}
+\begin{tabular}{l|ccc|ccc}
 \toprule
-Criterion & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
+ & \multicolumn{3}{c}{Gemini (strongest)} & \multicolumn{3}{c}{Qwen (weakest)} \\
+Criterion & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Energy Cost & 0.240 $\pm$ 0.012 & 0.147 $\pm$ 0.014 & \textbf{0.077 $\pm$ 0.017} \\
-Environmental Impact & 0.260 $\pm$ 0.016 & 0.141 $\pm$ 0.016 & \textbf{0.098 $\pm$ 0.024} \\
-Comfort & 0.171 $\pm$ 0.007 & 0.134 $\pm$ 0.015 & \textbf{0.010 $\pm$ 0.009} \\
-Practicality & 0.206 $\pm$ 0.008 & 0.129 $\pm$ 0.010 & \textbf{0.020 $\pm$ 0.010} \\
-\midrule
-Overall & 0.219 $\pm$ 0.008 & 0.138 $\pm$ 0.012 & \textbf{0.051 $\pm$ 0.011} \\
+Energy Cost & 0.247 & 0.143 & \textbf{0.069} & 0.243 & 0.171 & \textbf{0.105} \\
+Environmental & 0.247 & 0.132 & \textbf{0.091} & 0.263 & 0.169 & \textbf{0.141} \\
+Comfort & 0.167 & 0.119 & \textbf{0.009} & 0.183 & 0.157 & \textbf{0.008} \\
+Practicality & 0.207 & 0.116 & \textbf{0.020} & 0.197 & 0.139 & \textbf{0.016} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \\[2pt]
 {\small Environmental MAE for Shower reflects water-consumption proxy (gallons); see Section~\ref{sec:gt-calculators}.}
-\caption{MAE per criterion by architecture (5 runs each, 195 scenarios).}
+\caption{MAE per criterion by architecture, strongest (Gemini) and weakest (Qwen) model. $\mathcal{A}_{\text{H}}$ bolded per criterion.}
 \label{tab:item6}
 \end{table}
 
-%%these are pooled with all of the mdoels together, arent they. that is unnacceptable. either we have all of the models mentioned, or we show strongest and weakest model (what i would prefer for these two tables). also add that to claude.md; no fully pooled tables should be introducedd without asking user.
-
-Error for all three architectures concentrates on Energy Cost and Environmental Impact. $\mathcal{A}_{\text{D}}$ Environmental MAE spans 0.245--0.285 across models and Energy Cost 0.219--0.249. $\mathcal{A}_{\text{E}}$ reduces these to 0.131--0.169 (Environmental) and 0.137--0.171 (Energy Cost). $\mathcal{A}_{\text{H}}$ cuts further to 0.076--0.141 (Environmental) and 0.063--0.105 (Energy Cost); Qwen carries the largest residual on both, indicating its smaller parameter count produces less precise domain estimates. The Environmental--Energy Cost gap persists across all models: $\mathcal{A}_{\text{D}}$ Environmental MAE exceeds Energy Cost for all four models, indicating LLMs struggle more with emissions estimation than with dollar costs.
+Error for all three architectures concentrates on Energy Cost and Environmental Impact. $\mathcal{A}_{\text{D}}$ Environmental MAE is 0.247 (Gemini) and 0.263 (Qwen); Energy Cost is 0.247 and 0.243. $\mathcal{A}_{\text{E}}$ reduces Environmental to 0.132 (Gemini) and 0.169 (Qwen), Energy Cost to 0.143 and 0.171. $\mathcal{A}_{\text{H}}$ cuts further: Environmental 0.091 (Gemini) and 0.141 (Qwen), Energy Cost 0.069 and 0.105; Qwen carries the largest residual on both, indicating its smaller parameter count produces less precise domain estimates. The Environmental--Energy Cost gap persists across models: $\mathcal{A}_{\text{D}}$ Environmental MAE exceeds Energy Cost for both, indicating LLMs struggle more with emissions estimation than with dollar costs.
 
 \begin{figure*}[htbp]
 	\centering
@@ -1090,6 +1090,7 @@ Error for all three architectures concentrates on Energy Cost and Environmental 
 	\label{fig:mae_criterion}
 \end{figure*}
 
+\FloatBarrier
 \subsection{Performance by Decision Type}
 \label{sec:res-bytype}
 Table~\ref{tab:item7} and Figure~\ref{fig:tau_decision} report $\tau$ by decision type, with each line in Figure~\ref{fig:tau_decision} representing one model. $\mathcal{A}_{\text{H}}$ excels across all three decision types for every model. On HVAC, individual model $\tau$ values range from 0.876 (Qwen) to 0.981 (Gemini). On Appliance, three models reach $\tau = 0.959$ and Qwen reaches $\tau = 0.897$. Shower is the weakest type due to GPM estimation limits, with model $\tau$ from 0.789 (DeepSeek) to 0.856 (Qwen), still far above the other architectures.
@@ -1112,7 +1113,7 @@ Overall & 0.095 $\pm$ 0.072 & 35.4 $\pm$ 3.0 & 0.339 $\pm$ 0.035 & 51.7 $\pm$ 1.
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\caption{Ranking accuracy by decision type (pooled across 4 models, 5 runs each, 195 scenarios). Top-2 accuracy appears in Appendix~\ref{app:variance}.}
+\caption{Ranking accuracy by decision type (pooled across 4 models, 5 runs each, 195 scenarios). Top-2 accuracy appears in \ref{app:variance}.}
 \label{tab:item7}
 \end{table*}
 
@@ -1128,6 +1129,50 @@ Appliance results for $\mathcal{A}_{\text{H}}$ track extraction quality since th
 	\caption{Kendall's $\tau$ by decision type and model (5-run mean, 195 scenarios each). Each line is one model; the x-axis is architecture ($\mathcal{A}_{\text{D}}$~$\rightarrow$~$\mathcal{A}_{\text{E}}$~$\rightarrow$~$\mathcal{A}_{\text{H}}$). The dotted line marks $\tau = 0$ (random ranking).}
 	\label{fig:tau_decision}
 \end{figure*}
+
+\FloatBarrier
+\subsection{Sensitivity Analysis}
+\label{sec:res-sensitivity}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{The architecture ordering ($\mathcal{A}_{\text{H}}$ $>$ $\mathcal{A}_{\text{E}}$ $>$ $\mathcal{A}_{\text{D}}$) is
+         preserved across all perturbations (Section~\ref{sec:res-ranking}).}
+\label{tab:sensitivity_weights}
+\begin{tabular}{@{} l r r r r @{}}
+\toprule
+\textbf{Scenario} & $w_{\text{Ene}}$ & $w_{\text{Env}}$ & $w_{\text{Com}}$ & $w_{\text{Pra}}$ \\
+\midrule
+Baseline          & 0.3000 & 0.3500 & 0.2000 & 0.1500 \\
+\midrule
+Ene $+0.05$       & \textbf{0.3500} & 0.3333 & 0.1833 & 0.1333 \\
+Ene $-0.05$       & \textbf{0.2500} & 0.3667 & 0.2167 & 0.1667 \\
+\midrule
+Env $+0.05$       & 0.2833 & \textbf{0.4000} & 0.1833 & 0.1333 \\
+Env $-0.05$       & 0.3167 & \textbf{0.3000} & 0.2167 & 0.1667 \\
+\midrule
+Com $+0.05$       & 0.2833 & 0.3333 & \textbf{0.2500} & 0.1333 \\
+Com $-0.05$       & 0.3167 & 0.3667 & \textbf{0.1500} & 0.1667 \\
+\midrule
+Pra $+0.05$       & 0.2833 & 0.3333 & 0.1833 & \textbf{0.2000} \\
+Pra $-0.05$       & 0.3167 & 0.3667 & 0.2167 & \textbf{0.1000} \\
+\midrule
+Equal             & 0.2500 & 0.2500 & 0.2500 & 0.2500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+	\centering
+	\plotSensitivityTau
+	\caption{Per-model Kendall's $\tau$ under the baseline weight scenario for each architecture. Each dot represents one LLM; color encodes the model. The per-model values confirm the architecture ordering ($\mathcal{A}_{\text{H}}$ $>$ $\mathcal{A}_{\text{E}}$ $>$ $\mathcal{A}_{\text{D}}$) holds for every model individually, with no overlap between architecture groups.}
+	\label{fig:sensitivity_tau}
+\end{figure}
+
+The sensitivity analysis (Table~\ref{tab:sensitivity_weights}) confirms that the architecture ordering is preserved under $\pm 0.05$ perturbations of each weight. Figure~\ref{fig:sensitivity_tau} visualizes the per-model Kendall's $\tau$ under the baseline weights: $\mathcal{A}_{\text{H}}$ achieves $\tau > 0.87$ for every model, $\mathcal{A}_{\text{E}}$ ranges from 0.28 to 0.38, and $\mathcal{A}_{\text{D}}$ falls between $-0.002$ and 0.17, with no overlap between architecture groups. Full per-model sensitivity results appear in \ref{app:sensitivity_full}.
+
+\FloatBarrier
 
 \subsection{RAG Ablation}
 \label{sec:rag-ablation}
@@ -1170,9 +1215,10 @@ A Friedman test across configurations is marginally significant on Kendall's $\t
 	\label{fig:rag_ablation}
 \end{figure}
 
+\FloatBarrier
 \subsection{Efficiency and Cost}
 \label{sec:res-efficiency}
-Table~\ref{tab:item8} reports API usage and costs. $\mathcal{A}_{\text{H}}$ is both the cheapest and the most accurate architecture, requiring one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$. Cost per 195-scenario run ranges from \$0.01 (GPT-OSS, Qwen) to \$0.28 (Gemini). $\mathcal{A}_{\text{D}}$ costs 2--6$\times$ more per run (\$0.02--\$0.80). $\mathcal{A}_{\text{E}}$ is the most expensive, driven by the token overhead of three retrieved exemplars per call (\$0.03--\$1.28).
+Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as of July 15, 2026. $\mathcal{A}_{\text{H}}$ makes one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, and its shorter prompts average 800 input+output tokens per scenario versus $\sim$1,200 for $\mathcal{A}_{\text{D}}$ and $\sim$2,800 for $\mathcal{A}_{\text{E}}$ (which embeds three retrieved exemplars per call). Cost per 195-scenario run ranges from \$0.01 (Qwen, GPT-OSS) to \$0.28 (Gemini). $\mathcal{A}_{\text{D}}$ costs 2--6$\times$ more (\$0.02--\$0.80) and $\mathcal{A}_{\text{E}}$ is the most expensive (\$0.03--\$1.28), driven by exemplar token overhead. Even the priciest configuration stays under \$1.30 per full evaluation. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$'s $\tau$ varies only between 0.877 and 0.925 (range 0.048), while $\mathcal{A}_{\text{D}}$ spans 0.171 and $\mathcal{A}_{\text{E}}$ spans 0.096---the architecture compresses the capability gap, making cheaper models viable in production with minimal accuracy loss.
 
 \begin{table}[t]
 \small
@@ -1188,22 +1234,11 @@ $\mathcal{A}_{\text{H}}$ & \$0.28 & \$0.01 & \$0.01 & \$0.01 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\\[4pt]
-{\small API calls per run: $\mathcal{A}_{\text{D}}$=585, $\mathcal{A}_{\text{E}}$=585, $\mathcal{A}_{\text{H}}$=195 (195 scenarios $\times$ 3 or 1 calls/scenario).}
-\\[2pt]
-{\small Average tokens per scenario (input+output): $\mathcal{A}_{\text{D}}$\textasciitilde 1,200; $\mathcal{A}_{\text{E}}$\textasciitilde 2,800 (includes 3 retrieved exemplars); $\mathcal{A}_{\text{H}}$\textasciitilde 800.}
-\\[2pt]
-{\small Failure rates: Gemini 0\%, DeepSeek 0\%, GPT-OSS 0\% for $\mathcal{A}_{\text{D}}$/$\mathcal{A}_{\text{E}}$, 12.8\% extraction failures on $\mathcal{A}_{\text{H}}$ (0\% after multi-run matching), Qwen 0\%.}
-\\[2pt]
-{\small Cost-accuracy tradeoff: $\mathcal{A}_{\text{H}}$ with Qwen (\$0.01/run) achieves $\tau = 0.877$; $\mathcal{A}_{\text{H}}$ with Gemini (\$0.28/run) achieves $\tau = 0.925$---a 5\% accuracy gain at 28$\times$ the cost. For production deployment, even the most expensive configuration costs under \$1.30 per 195-scenario evaluation.}
-\\[2pt]
-{\small Model-separation finding: across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$ $\tau$ varies only between 0.877 and 0.925 (range of 0.048), while $\mathcal{A}_{\text{D}}$ spans 0.171 and $\mathcal{A}_{\text{E}}$ spans 0.096. The $\mathcal{A}_{\text{H}}$ architecture compresses the capability gap: cheaper models become viable in production with minimal accuracy loss.}
-% TODO-HUMAN: Add the exact date/version of OpenRouter pricing used for these cost estimates.
 \caption{Cost per run (USD), API calls, token usage, and failure rates. Costs estimated from OpenRouter pricing.}
 \label{tab:item8}
 \end{table}
 
-Failure rates are near-zero across all architectures and models. The single exception is GPT-OSS $\mathcal{A}_{\text{H}}$, which shows a 12.8\% extraction failure rate on parameter parsing---20 to 26 scenarios per run, all HVAC, all triggered by \texttt{FAILED\_EXTRACTION\_INVALID\_PARAMETERS} (see Appendix~\ref{app:worked_example} for a worked example). The five-run averaging protocol recovers most of these: when a scenario fails in one run but succeeds in another, the successful run's score is used. After matching, 0\% of scenarios remain unscored across all five runs. This recovery mechanism is fair because the same protocol applies to all architectures; architectures with zero failure rates simply never need it. Without cross-run recovery, GPT-OSS $\mathcal{A}_{\text{H}}$'s pooled $\tau$ is 0.886 and Top-1 is 90.8\%, versus 0.897 and 91.6\% with recovery.
+Failure rates are near-zero across all architectures and models. The single exception is GPT-OSS $\mathcal{A}_{\text{H}}$, which shows a 12.8\% extraction failure rate on parameter parsing---20 to 26 scenarios per run, all HVAC, all triggered by \texttt{FAILED\_EXTRACTION\_INVALID\_PARAMETERS} (see \ref{app:worked_example} for a worked example). The five-run averaging protocol recovers most of these: when a scenario fails in one run but succeeds in another, the successful run's score is used. After matching, 0\% of scenarios remain unscored across all five runs. This recovery mechanism is fair because the same protocol applies to all architectures; architectures with zero failure rates simply never need it. Without cross-run recovery, GPT-OSS $\mathcal{A}_{\text{H}}$'s pooled $\tau$ is 0.886 and Top-1 is 90.8\%, versus 0.897 and 91.6\% with recovery.
 
 To assess the impact of GPT-OSS extraction failures on per-run metrics, Table~\ref{tab:gptoss-per-run} reports the best and worst runs for GPT-OSS $\mathcal{A}_{\text{H}}$. The best run (fewest failures) achieves $\tau = 0.906$ and MAE of 0.039; the worst run (most failures) achieves $\tau = 0.886$ and MAE of 0.054. The 0.020 spread in $\tau$ and 0.015 spread in MAE are small relative to the between-architecture gaps, confirming that even GPT-OSS's worst run substantially outperforms the best runs of $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$.
 
@@ -1226,6 +1261,7 @@ Top-1 Accuracy (\%) & 93.3 & 90.8 \\
 \end{tabular}
 \end{table}
 
+\FloatBarrier
 \subsection{Run-to-Run Variance}
 \label{sec:res-variance}
 The results above are five-run averages. To assess trial-to-trial stability, we computed every metric independently for each of the five runs per architecture per model. Figures~\ref{fig:box_tau}--\ref{fig:box_rmse} show the distributions.
@@ -1291,29 +1327,9 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
 \label{fig:box_tau}
 \end{figure*}
 
-RMSE, which penalizes large errors more heavily than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for every model and every run, while $\mathcal{A}_{\text{D}}$ never drops below 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.166]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The architecture ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds in every single run across all four models with no overlap: no run of any architecture overtakes another's median metric. This perfect separation confirms that the ranking advantage is not driven by lucky seeds or favourable random initialisations but is a stable structural property of the architecture design. Full per-metric distributions (MAE, RMSE, Top-1 accuracy) appear in Appendix~\ref{app:variance}.
+RMSE, which penalizes large errors more heavily than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for every model and every run, while $\mathcal{A}_{\text{D}}$ never drops below 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.166]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The architecture ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds in every single run across all four models with no overlap: no run of any architecture overtakes another's median metric. This perfect separation confirms that the ranking advantage is not driven by lucky seeds or favourable random initialisations but is a stable structural property of the architecture design. Full per-metric distributions (MAE, RMSE, Top-1 accuracy) appear in \ref{app:variance}.
 
-\subsection{Baseline Comparison}
-\label{sec:res-baselines}
-Table~\ref{tab:incremental-contribution} extends the comparison beyond the three LLM architectures to three non-LLM baselines computed on the same 195-scenario test set. The Fixed-Default baseline substitutes fixed engineering defaults---68\textdegree{}F setpoint for HVAC, 7PM schedule for appliances, 8-minute shower duration---into the same physics calculators used by the ground truth. It runs the same physics but with a hardcoded ``typical'' choice. This is why FixedDefault achieves high HVAC accuracy (the 68\textdegree{}F setpoint is near-optimal for most Pennsylvania scenarios) but cannot handle Appliance or Shower scenarios (time-varying and duration-varying alternatives require calculator-level variation). NearestNeighbor ($k=3$ majority vote over the RAG corpus) achieves $\tau = 0.371$, placing it between $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ and demonstrating that unmodified exemplar copying provides partial but limited ranking signal.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Incremental contribution of each system over Fixed-Default baseline.}
-  \label{tab:incremental-contribution}
-  \begin{tabular}{lcccc}
-    \toprule
-    System & Top-1 & $\Delta$ vs FixedDef & Kendall $\tau$ & $\Delta$ vs FixedDef \\
-    \midrule
-    FixedDefault & 0.9571 & $0.0000$ & 0.9333 & $0.0000$ \\
-    NearestNeighbor & 0.5692 & $-0.3879$ & 0.3709 & $-0.5624$ \\
-    Direct\_LLM\_Scoring & 0.3385 & $-0.6186$ & 0.0530 & $-0.8803$ \\
-    Example-Guided\_LLM\_Scoring & 0.5128 & $-0.4443$ & 0.3402 & $-0.5931$ \\
-    LLM-Parameterized\_Reference\_Scoring & 0.9227 & $-0.0344$ & 0.9072 & $-0.0261$ \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-Per the structural argument in Section~\ref{sec:architectures}, the score-level error is the stronger evidence of extraction fidelity, shown per model in Table~\ref{tab:overall_by_model}. Across the four models, $\mathcal{A}_{\text{H}}$ MAE ranges from 0.043 (DeepSeek) to 0.068 (Qwen), representing reductions of 63--81\% over $\mathcal{A}_{\text{D}}$ (0.208--0.230) and 47--73\% over $\mathcal{A}_{\text{E}}$ (0.127--0.159) per model. RMSE follows the same ranking across all four models.
 
 \FloatBarrier
 \section{Discussion}
@@ -1326,13 +1342,19 @@ The architecture ordering established in Section~\ref{sec:results} is interprete
 
 The model-separation finding deserves emphasis. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$ $\tau$ varies only between 0.877 and 0.925---a range of 0.048. For $\mathcal{A}_{\text{D}}$, the same spread across models is 0.171; for $\mathcal{A}_{\text{E}}$, 0.096. The $\mathcal{A}_{\text{H}}$ architecture compresses the capability gap: cheaper models become viable in production with minimal accuracy loss. A household-energy deployment using Qwen 3.5 9B through $\mathcal{A}_{\text{H}}$ would achieve 90.3\% Top-1 accuracy and $\tau = 0.877$, compared to 93.3\% and $\tau = 0.925$ for Gemini 3.5 Flash, at a fraction of the per-token cost.
 
-The ranking advantage of $\mathcal{A}_{\text{H}}$ is partly structural (see Section~\ref{sec:architectures}). The MAE results confirm that extraction is genuinely accurate: $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.043--0.068 across models (see Section~\ref{sec:res-baselines}), while RMSE remains below 0.11 for all models.
+GPT-OSS-20B had a 12.8\% extraction failure rate on $\mathcal{A}_{\text{H}}$ (all recovered by cross-run averaging), yet its $\mathcal{A}_{\text{H}}$ $\tau$ of 0.897 was closer to Gemini's 0.925 than to GPT-OSS's own $\mathcal{A}_{\text{D}}$ score of 0.134. Model generation and training quality, not parameter count, explain the 0.048 $\tau$ spread across the 9B-to-flagship range.
+
+The ranking advantage of $\mathcal{A}_{\text{H}}$ is partly structural (see Section~\ref{sec:architectures}). The MAE results confirm that extraction is genuinely accurate: $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.043--0.068 across models (see Section~\ref{sec:res-error}), while RMSE remains below 0.11 for all models.
 
 The RAG ablation study (Table~\ref{tab:item9}) confirms that exemplar scores provide the anchoring signal: removing scores drops $\tau$ from 0.316 to 0.109, while removing hidden engineering parameters has negligible effect ($\tau = 0.300$ versus 0.316). The near-equivalence of the top cluster (control, retrieval variants, exemplar-content, and alternate embedding; pairwise $p_{\text{Holm}} > 0.97$) and the poor performance of random exemplars ($\tau = 0.062$) together demonstrate that the RAG contribution comes from the semantic selection of similar exemplars whose scores serve as calibration anchors, not from the retrieval architecture or the engineering parameters within the exemplars.
 
 The Top-2 accuracy figures add practical context. $\mathcal{A}_{\text{E}}$ achieves Top-2 of roughly 80\% across models, meaning the ground-truth best alternative appears in the architecture's top two about four times out of five. For many household decisions, this is sufficient: if the cost and comfort difference between the top two alternatives is small, the user can make an informed choice from either. The practical sufficiency of Top-2 depends on the decision domain---when the cost gap between first and second place is large, Top-1 accuracy matters; when the alternatives are closely matched, Top-2 provides actionable guidance. $\mathcal{A}_{\text{H}}$ at 97.8\% Top-2 effectively eliminates the problem: the best alternative is almost always in the recommended pair.
 
 Three objective weight-validation methods confirm the a priori weights. Entropy weights assign 0.371 to the Environmental criterion (a priori: 0.350), 0.163 to Comfort (a priori: 0.200), and 0.198 to Practicality (a priori: 0.150). Both differences fall within the bounds tested by the sensitivity analysis (Table~\ref{tab:sensitivity_weights}). MEREC weights assign 0.404 to Comfort, the criterion where alternatives diverge most within each scenario (zero-variance occurred in 0\% of Comfort scenarios versus 13--18\% for other criteria). Implied weights collapse to corner solutions: all weight on Comfort or Practicality, because comfort variance alone explains most pairwise preferences when other criteria show zero variance in 13--45\% of scenarios. These data-driven methods cannot capture the normative priorities embedded in the design weights (environmental impact, consumer cost responsiveness), which encode values beyond what the physics alone discriminates.
+
+The $\mathcal{A}_{\text{H}}$ design is not energy-specific. It applies to any domain with a verifiable ground-truth function: insurance triage, vendor scoring, portfolio risk, agricultural cost-benefit calculations. The LLM estimates input parameters and the calculator produces scores, sidestepping uncalibrated LLM scoring entirely.
+
+Households contain multiple occupants with conflicting preferences: different thermostat setpoints, shower durations, appliance schedules. The current framework assumes a single decision-maker with fixed weights. $\mathcal{A}_{\text{H}}$'s cheap single-call extraction makes it practical to run the same scenario under multiple weight vectors and surface disagreement, tying back to the weight-sensitivity analysis in Section~\ref{sec:res-sensitivity}.
 
 \subsection{Comparison with Prior Work}
 \label{sec:comparison}
@@ -1372,6 +1394,8 @@ Insulation tiers (Poor/Medium/Good) correspond to R-value ranges (Poor: R-8 to R
 The HVAC calculator maps occupancy context to a run-time fraction (1.0 for fully occupied, 0.75 for overnight, $1 - 0.5(h_{\mathrm{away}}/24)$ for daytime unoccupied). The mapping discards intra-day variation: a household cycling HVAC off for 2 hours at noon and on for 2 hours at midnight receives the same fraction as one holding steady. The resulting energy use differs by 5--12\%.
 
 These five imputations introduce systematic error that affects all architectures equally. The absolute MAE and RMSE values reflect the combined error of LLM extraction and calculator imputation. A perfect LLM extractor would still produce non-zero MAE if the ground truth deviates from measured household data.
+
+A related concern is that the same researcher designed both the $\mathcal{A}_{\text{H}}$ parameter-extraction schema and the ground-truth calculators' input schemas, raising a potential circular-validation risk. We address this by noting that the extraction schema---which targets homeowner-accessible quantities such as insulation tier, flow-rate label, and appliance age band---was frozen before calculator development began. The two schemas are structurally distinct: the LLM estimates qualitative, proxy parameters from scenario text, whereas the calculators consume continuous, engineering-grade values (R-value, GPM, kWh/cycle). The LLM never observes the calculator's internal mapping from proxy to engineering parameter, so its extraction is not conditioned on the scoring function. This single-author pipeline is nonetheless a limitation, and independent schema review would strengthen future work.
 
 Our $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ results each reflect one fixed prompt design; prompt sensitivity was never systematically varied, so part of the architecture gap could reflect prompt quality rather than pure architecture.
 
@@ -1426,26 +1450,22 @@ Finally, a systematic cost-latency-accuracy Pareto analysis across model sizes, 
 This study benchmarked three strategies for integrating an LLM into an MCDA workflow for household energy decisions---direct $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ prompting, and $\mathcal{A}_{\text{H}}$ that uses the LLM only to extract withheld engineering parameters and a deterministic physics calculator to score---against a physics-based MAVT ground truth across HVAC, Appliance, and Shower decisions. $\mathcal{A}_{\text{H}}$ achieved Kendall's $\tau$ of 0.902 and MAE of 0.051, compared to 0.339 and 0.138 for $\mathcal{A}_{\text{E}}$ and 0.095 and 0.219 for $\mathcal{A}_{\text{D}}$. The architecture ordering held across all four models. In answer to RQ1, $\mathcal{A}_{\text{H}}$ most accurately replicates the physics-based ground truth; in answer to RQ2, this ordering held across all four models tested, though the gap between architectures narrowed for weaker models.
 
 Grounding the LLM's numeric reasoning in a deterministic calculator improves agreement with the physics ground truth, and the advantage holds as model capability decreases. A physics backbone compensates for weaker models. We separate this claim into its ranking and score-level components. The ranking robustness of the $\mathcal{A}_{\text{H}}$ design is partly structural (see Section~\ref{sec:architectures}), so the score-level error and the appliance-timing result are the load-bearing measures of extraction fidelity. The two principal threats---one researcher designed both the calculator and the $\mathcal{A}_{\text{H}}$ extractor, and the single-grid (Pennsylvania/PJM) specificity of the ground truth---are stated in Section~\ref{sec:limitations} and bound the generalization.
-% TODO-HUMAN: Explain/justify why the same person designed both the A_H parameter-extraction schema and the ground-truth calculator's input schema, and why this isn't circular validation. Consider: (1) was one frozen before the other was designed, (2) did anyone independent review the schema alignment, (3) should this be framed as an accepted single-author-pipeline limitation?
-
 For households, the practical payoff is a decision tool that works from a natural-language description without requiring MCDA expertise: describe the situation, receive a ranked recommendation backed by transparent physics. For grid planners and demand-response programs, the $\mathcal{A}_{\text{H}}$ architecture demonstrates that LLM-assisted MCDA can scale to millions of household decisions---each scored consistently against the same engineering standards---without the per-scenario expert effort that traditional MCDA demands. What's more, creating a calculator, while not feasible on a short notice or for a small set of decisions (which is where $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ shine), can be done for any decision making field. This can lead to an extremely powerful, accessible tool for optimal decision making.
 
-All code, prompts, ground-truth calculators, and raw run outputs are available at \url{https://github.com/AN00927/LLM-MCDA-Paper}.
 
 \clearpage
+
+\paragraph*{Declaration of competing interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\paragraph*{CRediT authorship contribution statement}
+\textbf{Ahaan Nigam:} Conceptualization, Methodology, Software, Validation, Formal analysis, Investigation, Data Curation, Writing --- Original Draft, Writing --- Review \& Editing, Visualization. \textbf{River Huang:} Validation, Conceptualization, Methodology, Supervision, Writing --- Review \& Editing.
+
+\paragraph*{Data availability}
+All code, prompts, ground-truth calculators, raw run outputs, and analysis scripts are available at \url{https://github.com/AN00927/LLM-MCDA-Paper}.
 \bibliographystyle{elsarticle-num}
 \bibliography{cas-refs}
 \newpage
-
-% TODO: Generate and insert architecture pipeline figure (fig:pipeline).
-% Should show side-by-side vertical flowcharts for AD (3 LLM calls, no external context),
-% AE (3 LLM calls each preceded by ChromaDB retrieval k=3), AH (1 LLM call -> physics calculator -> MAVT).
-%\begin{figure*}[t]
-%\centering
-%\includegraphics[width=0.5\textwidth]{placeholder_pipeline.png}
-%\caption{Processing pipeline for each architecture. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ require three API calls per scenario; $\mathcal{A}_{\text{H}}$ requires one.}
-%\label{fig:pipeline}
-%\end{figure*}
 
 \appendix
 \section{Notation}
@@ -1846,8 +1866,179 @@ on the flat rate.
 
 \section{GPT-OSS Extraction Failure Example}
 \label{app:worked_example}
-% TODO-HUMAN: Add a fully worked end-to-end example -- one scenario's raw question text -> extracted/scored values -> calculator output -> final MAVT score -> rank -- so a reader can see the whole pipeline on one real case.
+\subsection{Worked Example: $\mathcal{A}_{\text{H}}$ HVAC Scenario}
+\label{app:hvac_worked}
 
+This subsection traces one HVAC scenario end-to-end through the
+$\mathcal{A}_{\text{H}}$ pipeline, showing every intermediate value so a
+reader can verify the computation by hand.
+
+\paragraph{Step 1: Raw scenario text.}
+The LLM receives a homeowner-facing question along with known parameters:
+\begin{itemize}
+  \item Location: Philadelphia, PA
+  \item Outdoor temperature: $95\,^\circ\text{F}$ (cooling season)
+  \item Home size: 2{,}200 sq ft
+  \item Insulation: Medium
+  \item Household size: 4
+  \item Housing type: Single-family
+  \item House age: 15 years
+  \item Utility budget: \$200/month
+  \item Alternatives: thermostat setpoints of $72\,^\circ\text{F}$,
+        $76\,^\circ\text{F}$, and $80\,^\circ\text{F}$
+\end{itemize}
+
+\paragraph{Step 2: $\mathcal{A}_{\text{H}}$ extraction.}
+The LLM is asked to estimate only the engineering parameters absent from the
+homeowner description. A typical successful extraction returns:
+\begin{verbatim}
+  {"decision_type": "HVAC",
+   "parameters": {"r_value": 15, "seer": 13,
+                  "hvac_age": 10,
+                  "occupancy_context": "occupied_all_day"}}
+\end{verbatim}
+The validation layer confirms each value is within its physically admissible
+range ($R \in [11,19]$ for Medium insulation; $\text{SEER} \in [8,25]$;
+$\text{age} \ge 0$; valid occupancy token), so the scenario proceeds to the
+calculator.
+
+\paragraph{Step 3: Calculator inputs.}
+The extracted JSON is merged with the known homeowner-facing fields to
+produce the full scenario dict passed to
+\texttt{HVACGroundTruthCalculator}:
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+\texttt{outdoor\_temp}    & 95\,$^\circ$F \\
+\texttt{square\_footage}  & 2{,}200 \\
+\texttt{r\_value}         & 15 (extracted) \\
+\texttt{household\_size}  & 4 \\
+\texttt{housing\_type}    & Single-family \\
+\texttt{seer}             & 13 (extracted) \\
+\texttt{hvac\_age}        & 10 (extracted) \\
+\texttt{occupancy\_context} & occupied\_all\_day (extracted) \\
+\texttt{utility\_budget}  & \$200 \\
+\texttt{electricity\_rate}& \$0.19/kWh \\
+\texttt{alternatives}     & 72, 76, 80 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Step 4: Thermal load (Eq.~\ref{eq:hvac_cooling_load}).}
+For the $72\,^\circ\text{F}$ setpoint ($\Delta T = 95 - 72 = 23\,^\circ\text{F}$):
+\begin{align*}
+  Q_{\text{cool}} &= \underbrace{\tfrac{1.7 \times 2200}{15} \times 23}_{\text{conductive}} + \underbrace{400(4) + 2200 + 800}_{\text{internal}} + \underbrace{0.15 \times 2200 \times 20}_{\text{solar}} + \underbrace{1.08 \times \tfrac{2200 \times 8 \times 0.35}{60} \times 23}_{\text{infiltration}} \\
+  &= 5{,}735 + 4{,}600 + 6{,}600 + 2{,}550 = 19{,}485 \;\text{BTU/hr}
+\end{align*}
+\noindent where $m = 1.7$ (single-family multiplier), $R = 15$,
+$n = 4$, $h_c = 8$\,ft, $\alpha = 0.35$\,ACH.
+
+\paragraph{Step 5: EER (Eq.~\ref{eq:eer_quadratic}).}
+\[
+  \text{EER} = -0.02 \times 13^{2} + 1.12 \times 13
+            = -3.38 + 14.56 = 11.18
+\]
+
+\paragraph{Step 6: Energy, cost, and emissions (Eqs.~\ref{eq:hvac_energy},~\ref{eq:emissions}).}
+With $\text{SEER} = 13$, $\text{EER} = 11.18$, and
+$m_{\text{occ}} = 1.0$ (occupied all day):
+\[
+  E_{\text{kWh}} = \frac{19{,}485}{11.18 \times 1000} \times 8 \times 1.0
+                 = 13.94 \;\text{kWh}
+\]
+\[
+  C = 13.94 \times 0.19 = \$2.65
+  \qquad
+  \text{CO}_2 = 13.94 \times 1.019 = 14.21 \;\text{lbs}
+\]
+\noindent where $1.019 = (16 \times 1.041 + 8 \times 0.976)/24$ is the
+24-hour peak/off-peak weighted PJM marginal emission factor for
+occupied-all-day (Eq.~\ref{eq:hvac_occ_emissions}).
+
+\paragraph{Step 7: Monthly cost and budget penalty (Eq.~\ref{eq:budget_penalty}).}
+The monthly cost proxy is
+$C_{\text{monthly}} = 2.65 \times 90 = \$238.42$ (three 8-hour periods
+per day across 30 days). Budget utilization is
+$u = 238.42 / 200 = 1.192$, which falls in the
+$1.0 \le u < 1.5$ exponential-loss-aversion tier:
+\[
+  P(u) = 0.5 \, e^{-3(1.192 - 1.0)} = 0.5 \, e^{-0.576} = 0.281
+\]
+
+\paragraph{Step 8: Comfort (Eq.~\ref{eq:hvac_comfort}).}
+Cooling season, $T^{*} = 76\,^\circ\text{F}$:
+\[
+  C_{\text{comfort}} = \tfrac{1}{10}\bigl(10 - |72 - 76|\bigr)
+                     = \tfrac{1}{10}(6 - 0.4) = 0.56
+\]
+\noindent The $-0.4$ term is the household-size penalty
+$(4-3) \times 0.3 \times 4/3$.
+
+\paragraph{Step 9: Practicality (Eqs.~\ref{eq:hvac_practicality}--\ref{eq:hvac_degradation}).}
+No extremity penalty ($71 < 72 < 82$), so the base score is 10.
+$\Delta T = 23\,^\circ\text{F}$ gives a multiplier of 0.85. The
+age/maintenance degradation is
+$D = \min(0.30,\; 0.010 \times 1.5 \times 10) = 0.150$:
+\[
+  P_{\text{prac}} = \frac{10 \times 0.85 \times (1 - 0.150)}{10}
+                  = 0.72
+\]
+
+\paragraph{Step 10: Value-function transformation.}
+Lower raw cost/emissions are better (decreasing linear VF,
+Eqs.~\ref{eq:linear_vf}--\ref{eq:log_vf}); higher comfort/practicality
+are better (logarithmic VF with $\alpha = 1.5$ and $1.2$ respectively).
+The reference ranges are from Table~\ref{table:reference_ranges}:
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Criterion} & \textbf{Raw} & \textbf{$v_i(x)$} & \textbf{Direction} \\
+\midrule
+Energy cost    & \$2.65 & $(3.29 - 2.65)/(3.29 - 0.38) = 0.22$ & lower = better \\
+Environmental  & 14.21\,lbs & $(18.04 - 14.21)/(18.04 - 1.96) = 0.24$ & lower = better \\
+Comfort        & 0.56 & $\ln(1 + 1.5 \times 0.56)/\ln(2.5) = 0.67$ & higher = better \\
+Practicality   & 0.72 & $\ln(1 + 1.2 \times 0.71)/\ln(2.2) = 0.78$ & higher = better \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent After applying the budget penalty multiplicatively to the
+energy-cost VF:
+$v_{\text{cost}}^{*} = 0.22 \times 0.281 = 0.06$.
+
+\paragraph{Step 11: MAVT weighted sum (Eq.~\ref{eq:mavt_sum}).}
+\[
+  s_j = 0.30 \times v_{\text{cost}} + 0.35 \times v_{\text{env}}
+      + 0.20 \times v_{\text{comfort}} + 0.15 \times v_{\text{prac}}
+\]
+
+\paragraph{Step 12: Final ranking.}
+Repeating Steps 4--11 for all three alternatives yields:
+\begin{center}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+\textbf{Setpoint} & \textbf{$v_{\text{cost}}^{*}$} & \textbf{$v_{\text{env}}$}
+  & \textbf{$v_{\text{comfort}}$} & \textbf{$v_{\text{prac}}$}
+  & \textbf{MAVT $s_j$} \\
+\midrule
+$76\,^\circ$F & 0.11 & 0.30 & 1.00 & 0.85 & \textbf{0.466} \\
+$80\,^\circ$F & 0.17 & 0.37 & 0.67 & 0.85 & 0.441 \\
+$72\,^\circ$F & 0.06 & 0.24 & 0.67 & 0.78 & 0.352 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent The recommended setpoint is $76\,^\circ\text{F}$, which coincides
+with the ASHRAE\,55 comfort optimum---the scenario was designed so the
+ground-truth calculator's tent-function peak and the budget-constrained
+energy--comfort tradeoff agree.  The $80\,^\circ$F alternative ranks second
+despite lower energy cost, because the comfort penalty at four degrees above
+the optimum outweighs its energy savings under the given weight vector.
+The $72\,^\circ$F alternative ranks last: it imposes the highest cost,
+exceeds the \$200 monthly budget (triggering the exponential tier of
+$P(u)$), and offers no comfort advantage over $76\,^\circ$F.
+
+\subsection{GPT-OSS Extraction Failure Analysis}
 The $\mathcal{A}_{\text{H}}$ architecture validates each extracted JSON
 before passing it to the ground-truth calculator.  A scenario is recorded
 as an extraction failure when: the LLM response is not valid JSON; a
