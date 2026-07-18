@@ -83,3 +83,20 @@ docs/superpowers/specs/
 
 # Misc scripts (local, not tracked)
 Miscellaneous Scripts/run_benchmarks.py
+
+TinyTeX
+
+TinyTeX\bin
+TinyTeX\bin\windows
+TinyTeX\texmf-config
+TinyTeX\texmf-dist
+TinyTeX\texmf-local
+TinyTeX\texmf-var
+TinyTeX\tlpkg
+TinyTeX\.tinytex
+TinyTeX\LICENSE.CTAN
+TinyTeX\LICENSE.TL
+TinyTeX\release-texlive.txt
+TinyTeX\texmf.cnf
+TinyTeX\texmfcnf.lua
+TinyTeX\tl-tray-menu.exe
