@@ -89,7 +89,7 @@ if DEBUG_API:
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-RETRIEVE_K = 3
+RETRIEVE_K = 1
 
 EXPECTED_RAG_SCHEMA_VERSION = 4
 RAG_SOURCE_FILES = [

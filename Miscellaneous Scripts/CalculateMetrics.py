@@ -269,6 +269,9 @@ def load_architecture(source, arch_name):
             rename_map[col] = f"arch_{criterion}"
     df = df.rename(columns=rename_map)
 
+    arch_score_cols = [f"arch_{c}" for c in CRITERIA]
+    df = _coerce_score_columns(df, arch_score_cols)
+
     if "rank" in df.columns:
         df = df.rename(columns={"rank": "arch_rank"})
     if "weighted_score" in df.columns:
@@ -859,7 +862,7 @@ def impute_failed_scores(merged_df, impute_value=0.5):
     for c in arch_score_cols:
         if c not in df.columns:
             continue
-        sentinel_mask = df[c] == FAIL_SENTINEL
+        sentinel_mask = pd.to_numeric(df[c], errors="coerce") == FAIL_SENTINEL
         if sentinel_mask.any():
             n_imputed_rows += sentinel_mask.sum()
             imputed_sids.update(df.loc[sentinel_mask, "arch_scenario_id"].unique())
