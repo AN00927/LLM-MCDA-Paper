@@ -606,7 +606,10 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
             try:
                 gt_scenario[key] = float(gt_scenario[key])
             except (ValueError, TypeError):
-                gt_scenario[key] = 0.0
+                raise ValueError(
+                    f"Cannot parse scenario field '{key}' = {gt_scenario[key]!r} as float. "
+                    f"This field is required by the ground truth calculator."
+                )
 
     calculator_name = extracted_result['calculator']
     print(f"  Using calculator: {calculator_name}")

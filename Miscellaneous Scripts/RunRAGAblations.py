@@ -169,6 +169,8 @@ def _to_float(value) -> float:
         return np.nan
     if not math.isfinite(value):
         return np.nan
+    if value == SENTINEL:
+        return np.nan
     return value
 
 

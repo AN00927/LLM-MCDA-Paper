@@ -184,7 +184,7 @@ class ShowerGroundTruthCalculator:
         # Larger households experience pressure to keep showers short
         contention_penalty = 0.0
         if occupants >= 4:
-            excess_duration = max(0, duration - ShowerGroundTruthCalculator.COMFORT_DURATION_OPTIMAL)
+            excess_duration = max(0, duration - optimal_duration)
             contention_penalty = excess_duration * 0.5
 
         total_comfort = base_comfort - temp_penalty - contention_penalty
