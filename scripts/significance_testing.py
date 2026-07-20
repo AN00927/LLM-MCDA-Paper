@@ -40,6 +40,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+from CalculateMetrics import filter_failed_scenarios
 
 # ---------------------------------------------------------------------------
 # Paths and constants
@@ -346,7 +347,7 @@ def compute_scenario_metrics(matched_df):
         ar_r = pd.to_numeric(group["arch_rank"], errors="coerce").values
 
         # Kendall tau
-        if np.isnan(gt_r).any() or np.isnan(ar_r).any():
+        if np.isnan(gt_r).any() or np.isnan(ar_r).any() or (gt_r == SENTINEL_VALUE).any() or (ar_r == SENTINEL_VALUE).any():
             kendall_tau = np.nan
         elif len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
             tau, _ = stats.kendalltau(gt_r, ar_r)
@@ -355,7 +356,7 @@ def compute_scenario_metrics(matched_df):
             kendall_tau = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
 
         # Top-1 accuracy
-        if np.isnan(gt_r).any() or np.isnan(ar_r).any():
+        if np.isnan(gt_r).any() or np.isnan(ar_r).any() or (gt_r == SENTINEL_VALUE).any() or (ar_r == SENTINEL_VALUE).any():
             top1 = np.nan
         else:
             gt_best_idx = np.nanargmin(gt_r)
@@ -451,6 +452,9 @@ def compute_per_scenario_metrics_from_raw():
                     arch_df["rank"] = pd.to_numeric(arch_df["rank"], errors="coerce")
 
                 matched = match_arch_to_gt(arch_df, arch_name, gt_lookup)
+                if len(matched) == 0:
+                    continue
+                matched, n_failed, n_total = filter_failed_scenarios(matched)
                 if len(matched) == 0:
                     continue
                 scen_metrics = compute_scenario_metrics(matched)
@@ -755,10 +759,29 @@ def run_wilcoxon(per_scenario_df):
                 round(z_comb, 4) if not np.isnan(z_comb) else np.nan,
                 round(p_comb, 6) if not np.isnan(p_comb) else np.nan,
             ))
-    return pd.DataFrame(rows, columns=[
+    df = pd.DataFrame(rows, columns=[
         "comparison", "metric", "model", "Z_statistic", "p_value",
         "n_scenarios", "Stouffer_Z", "Stouffer_p"
     ])
+
+    alpha = 0.05
+    model_mask = df["model"] != "Stouffer"
+    holm_df = df[model_mask].copy()
+    holm_df = holm_df.reset_index(drop=True)
+    holm_df["rank"] = holm_df["p_value"].rank(method="min", ascending=True, na_option="keep")
+    k = holm_df["p_value"].notna().sum()
+    holm_df["p_holm"] = holm_df.apply(
+        lambda r: min(r["p_value"] * (k - r["rank"] + 1), 1.0) if pd.notna(r["p_value"]) else np.nan,
+        axis=1
+    )
+    holm_df["significant_holm"] = holm_df["p_holm"].apply(
+        lambda p: p < alpha if pd.notna(p) else False
+    )
+    df["p_holm"] = np.nan
+    df["significant_holm"] = False
+    df.loc[model_mask, "p_holm"] = holm_df["p_holm"].values
+    df.loc[model_mask, "significant_holm"] = holm_df["significant_holm"].values
+    return df
 
 
 # ---------------------------------------------------------------------------

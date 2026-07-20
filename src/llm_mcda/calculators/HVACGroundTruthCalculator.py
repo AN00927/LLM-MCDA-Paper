@@ -13,7 +13,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
+from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores, SENTINEL_VALUE
 
 
 class HVACGroundTruthCalculator:
@@ -478,7 +478,8 @@ class HVACGroundTruthCalculator:
                     if numbers:
                         effective_temp = float(numbers[0])
                     else:
-                        print(f"   Could not parse alternative: {alt}")
+                        print(f"   Could not parse alternative: {alt}; emitting sentinel {SENTINEL_VALUE}")
+                        raw_results[alt] = None
                         continue
             else:
                 effective_temp = float(alt)
@@ -554,7 +555,17 @@ class HVACGroundTruthCalculator:
         utility_budget = float(scenario.get('utility_budget', 0.0))
 
         for alt, raw in raw_results.items():
-
+            if raw is None:
+                final_scores[alt] = {
+                    'energy_cost_score': SENTINEL_VALUE,
+                    'environmental_score': SENTINEL_VALUE,
+                    'comfort_score': SENTINEL_VALUE,
+                    'practicality_score': SENTINEL_VALUE,
+                    'raw_kwh': SENTINEL_VALUE,
+                    'raw_cost': SENTINEL_VALUE,
+                    'raw_emissions': SENTINEL_VALUE,
+                }
+                continue
 
             energy_vf = self.apply_value_function(
                 raw['energy_cost_dollars'],
