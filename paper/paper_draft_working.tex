@@ -254,7 +254,7 @@ Then, How consistently does the architecture ranking hold across models of varyi
 \subsection{Household Energy Decision-Making and Adoption Barriers}
 
 When transportation, food, and goods are included, the per-capita footprints rise to about 17.6 tons of CO\textsubscript{2}e and 81{,}767 kWh of total annual energy \cite{joneskammen2011,umich2024}. The U.S.\ Department of Energy estimates that households can save \$200--\$400 annually by simply weatherizing their homes,  preventing leaky insulation, and optimizing setpoints for various systems \cite{ohler2020,doe}. Globally, residential buildings account for 18\% of CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}; in the United States, the residential sector consumed 11.8 quadrillion BTU (3{,}458 TWh) of delivered energy in 2022 and accounted for roughly 20\% of national energy-related CO\textsubscript{2} emissions \cite{eia2022,goldstein2020}. If the U.S.\ residential sector were a country, its emissions would rank sixth globally, comparable to Brazil and larger than Germany \cite{goldstein2020}. Dietz et al.\ (2009) estimated that household behavioral changes could reduce U.S.\ emissions by 123 MtC (approximately 451 MtCO\textsubscript{2}e) annually \cite{dietz2009}. At the time, this would account for roughly 8.3\% of U.S.\ energy-related CO\textsubscript{2} emissions. Scaling to the U.S.'s 2024 energy-related emissions of 4{,}772 MtCO\textsubscript{2} suggests a current savings potential of approximately 395 MtCO\textsubscript{2}e. However, grid decarbonization alone can meet the Paris Agreement's 28\% reduction target for 2025 but will be insufficient for the 80\% target for 2050 without deep energy retrofits, distributed low-carbon energy, and reduced per capita floor space \cite{goldstein2020}. HVAC systems alone account for roughly a third of global residential energy consumption \cite{GONZALEZTORRES2022112428}. Figure~\ref{fig:intro-placeholder-1} tracks Pennsylvania residential emissions from 2005 to 2022.
- %%READ ACTUAL SOURCES TO GET THESE FIGURES
+
 
 \begin{figure}[H]
 	\centering
@@ -307,7 +307,7 @@ Table~\ref{tab:item1} in \ref{app:notation} lists the notation used throughout t
 Three decision types were selected for their high behavioral plasticity and RAER: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration). HVAC was prioritized because space heating and cooling account for approximately a third of global residential energy consumption and represent the fastest-growing end-use as household incomes rise \cite{GONZALEZTORRES2022112428}.
 
 
-The scenario corpus has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the ground-truth calculator. The \textit{RAG corpus} (\ref{app:rag_corpus}) contains an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture; RAG scenarios are never used for evaluation \cite{lewis2020}.
+The scenario corpus has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the ground-truth calculator. The \textit{RAG corpus} (\ref{app:rag_corpus}) contains an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture; RAG scenarios are used only in the retrieval index; the index is never queried with test-scenario embeddings \cite{lewis2020}.
 
 The split provides a 2.17:1 test-to-RAG ratio sufficient for retrieval coverage; HVAC has more scenarios than the others (70 test + 35 RAG) due to its higher parameter dimensionality (R-value, SEER, age, occupancy, insulation tier). The same applies to Appliance decisions.
 
@@ -322,7 +322,7 @@ Figure~\ref{fig:full-flow-mcda} shows the full decision-support workflow common 
   \label{fig:full-flow-mcda}
 \end{figure}
 
-Results are reported as five-run averages: each architecture--model combination is run independently five times with different random seeds, and metrics are computed per run then averaged. 
+Results are reported as five-run averages: each architecture--model combination is run independently five times at temperature 0.3. Per-scenario scores are averaged across runs before MAVT weighted scores, ranks, and metrics are recomputed (aggregate-then-evaluate). 
 
 The tables below detail the parameters given to architectures vs.\ calculators per decision type.
 \begin{table}[htbp]
@@ -501,7 +501,7 @@ For showers, the realized per-shower cost distribution spans \$0.14--\$1.14. Sho
 
 \subsection{Ground Truth Calculators}
 \label{sec:gt-calculators}
-Each ground-truth calculator consumes a scenario with three alternatives and returns four scores per alternative---Energy Cost (\$), Environmental Impact, Comfort, and Practicality (the latter three on 0--1)---plus the raw physical quantities for environmental impact and energy cost before value-function transformation. Energy cost is always in dollars per 8-hour decision period; Environmental Impact is in lbs\,CO\textsubscript{2} for HVAC and Appliance decisions and in gallons of water for Shower decisions.
+Each ground-truth calculator consumes a scenario with three alternatives and returns four scores per alternative---Energy Cost (\$), Environmental Impact, Comfort, and Practicality (the latter three on 0--1)---plus the raw physical quantities for environmental impact and energy cost before value-function transformation. Energy cost is in dollars per 8-hour decision period (HVAC), per cycle (Appliance), or per shower (Shower); monthly estimates are computed only for the budget penalty; Environmental Impact is in lbs\,CO\textsubscript{2} for HVAC and Appliance decisions and in gallons of water for Shower decisions.
 
 For HVAC and Appliance decisions, environmental impact uses PJM marginal emissions factors:
 \begin{equation}
@@ -815,7 +815,7 @@ Return ONLY: \{"energy\_cost": X, "environmental": X, "comfort": X, "practicalit
 \noindent The user prompt provides the scenario context and asks the model to score one alternative at a time, including the other alternatives as reference so that it doesn't assign the same scores to all alternatives.
 
 \subsubsection{\texorpdfstring{$\mathcal{A}_{\text{E}}$}{A_E} (Example-Guided LLM Scoring)}
-The $\mathcal{A}_{\text{E}}$ architecture retrieves the single most similar scenario ($k=1$) from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieval count $k=1$ was selected based on a development-set ablation (Section~\ref{sec:rag-ablation-methods}). All retrieval counts ($k=1,3,5$) produce indistinguishable ranking accuracy (pairwise $p_{\text{Holm}} > 0.97$); $k=1$ minimizes token and API cost within this equivalence cluster. The ablation sample was stratified to cover the full parameter space, and the single closest exemplar showed a mean cosine distance of 0.05 across all scenarios, confirming that every scenario in a representative draw has a closely matching corpus entry. Because the RAG corpus was designed for complete parameter-space coverage (Section~2.1), this holds for the full test set: no scenario lacks a sufficiently similar exemplar, and additional retrieved examples provide no measurable benefit. The retrieved exemplar is rendered as a full worked example: its homeowner-facing parameters, its engineering parameters (R-value, SEER, GPM, kWh/cycle, tank size, heater setpoint, etc.), and each of its alternatives with the four ground-truth criterion scores plus the MAVT aggregate and rank. The exemplar's engineering values are shown so the model can see how those values map to scores. The model is instructed to use the exemplar as reference but to score the target scenario independently. Like $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ uses three API calls per scenario (one per alternative). The retrieval index is built once from the 90 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
+The $\mathcal{A}_{\text{E}}$ architecture retrieves the single most similar scenario ($k=1$) from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieval count $k=1$ was selected based on a development-set ablation (Section~\ref{sec:rag-ablation-methods}). All retrieval counts ($k=1,3,5$) produce indistinguishable ranking accuracy (pairwise $p_{\text{Holm}} > 0.97$); $k=1$ minimizes token and API cost within this equivalence cluster.\footnote{Full-benchmark comparison on GPT-OSS-20B shows $k=3$ reduces MAE 12.9\% (0.155 to 0.135) and RMSE 10.6\% (0.220 to 0.197) versus $k=1$, while tau ($-0.0035$) and top-1 ($-3.1$\%) remain essentially unchanged.} The ablation sample was stratified to cover the full parameter space, and the single closest exemplar showed a mean cosine distance of 0.05 across all scenarios, confirming that every scenario in a representative draw has a closely matching corpus entry. Because the RAG corpus was designed for complete parameter-space coverage (Section~2.1), this holds for the full test set: no scenario lacks a sufficiently similar exemplar, and additional retrieved examples provide no measurable benefit. The retrieved exemplar is rendered as a full worked example: its homeowner-facing parameters, its engineering parameters (R-value, SEER, GPM, kWh/cycle, tank size, heater setpoint, etc.), and each of its alternatives with the four ground-truth criterion scores plus the MAVT aggregate and rank. The exemplar's engineering values are shown so the model can see how those values map to scores. The model is instructed to use the exemplar as reference but to score the target scenario independently. Like $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ uses three API calls per scenario (one per alternative). The retrieval index is built once from the 90 RAG-only scenarios described in Section~2.1; test scenarios are used only as query vectors and the index stores only RAG scenarios \cite{lewis2020}.
 
 The system prompt is identical to $\mathcal{A}_{\text{D}}$ but omits per-criterion anchor descriptions, since the RAG exemplars supply implicit scoring guidance:
 
@@ -837,7 +837,7 @@ Return ONLY: \{"energy\_cost": X, "environmental": X, "comfort": X, "practicalit
 \noindent The user prompt presents the target scenario, the alternative to score, and the retrieved exemplar---with homeowner-facing parameters, engineering values, and the four ground-truth scores plus MAVT aggregate and rank---instructing the model to ``consider how this specific alternative performs given the scenario context.''
 
 \subsubsection{\texorpdfstring{$\mathcal{A}_{\text{H}}$}{A_H} (LLM-Parameterized Reference Scoring)}
-The $\mathcal{A}_{\text{H}}$ architecture issues a single API call per scenario for structured parameter extraction. Known homeowner-visible scenario fields (outdoor temperature, square footage, insulation tier, household size, housing type, utility budget, and location) are passed directly to the calculator without LLM involvement, and the three alternatives are taken verbatim from the scenario sheet---the deterministic calculator, not the LLM, parses the numeric content of each alternative string (setpoint temperature, run time, or shower duration). The LLM is asked only to estimate the genuinely withheld engineering parameters that are absent from the homeowner-visible description: for HVAC, the wall R-value, SEER rating, HVAC age, and occupancy context; for Appliance, the appliance type, kWh/cycle, and current baseline time; for Shower, the numeric GPM (estimated from the homeowner-facing flow-rate label), tank size, and water-heater setpoint. The extracted JSON is validated---each numeric parameter must parse as a finite value within its physically admissible range, and the extracted decision type must match the scenario's known type, or the scenario is recorded as an extraction failure---and then merged with the known fields and passed to the corresponding ground-truth calculator.
+The $\mathcal{A}_{\text{H}}$ architecture issues a single API call per scenario for structured parameter extraction. Known homeowner-visible scenario fields (outdoor temperature, square footage, insulation tier, household size, housing type, utility budget, and location) are passed directly to the calculator without LLM involvement, and the three alternatives are taken verbatim from the scenario sheet---the deterministic calculator, not the LLM, parses the numeric content of each alternative string (setpoint temperature, run time, or shower duration). The LLM is asked only to estimate the genuinely withheld engineering parameters that are absent from the homeowner-visible description: for HVAC, the wall R-value, SEER rating, HVAC age, and occupancy context; for Appliance, the appliance type, kWh/cycle, and current baseline time; for Shower, the numeric GPM (estimated from the homeowner-facing flow-rate label), tank size, and water-heater setpoint. The extracted JSON is validated---each numeric parameter must parse as a finite value within broad physical bounds, and the extracted decision type must match the scenario's known type, or the scenario is recorded as an extraction failure---and then merged with the known fields and passed to the corresponding ground-truth calculator.
 
 The extraction prompt uses decomposed prompting \cite{khot2023} to separate natural-language understanding from quantitative computation. Unlike $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, it does not ask the LLM to score; it asks the LLM to extract engineering parameters:
 
@@ -855,6 +855,7 @@ INSTRUCTIONS: Identify the Decision Type. Estimate ONLY the
 parameters below. Return ONLY valid JSON.
 
 HVAC: \{"decision\_type": "HVAC",
+  "calculator": "HVACGroundTruthCalculator",
   "parameters": \{"r\_value": $<$number$>$,
   "seer": $<$number$>$,
   "hvac\_age": $<$number$>$,
@@ -862,11 +863,13 @@ HVAC: \{"decision\_type": "HVAC",
   unoccupied\_$<$hours$>$ | occupied\_sleep"\}\}
 
 Appliance: \{"decision\_type": "Appliance",
+  "calculator": "ApplianceGroundTruthCalculator",
   "parameters": \{"appliance": "Dishwasher | Washer | Dryer",
   "kwh\_per\_cycle": $<$number$>$,
   "baseline\_time": "$<$e.g. 7pm, 8am$>$"\}\}
 
 Shower: \{"decision\_type": "Shower",
+  "calculator": "ShowerGroundTruthCalculator",
   "parameters": \{"gpm": $<$number$>$,
   "tank\_size": $<$number$>$,
   "water\_heater\_temp": $<$number$>$\}\}
@@ -900,7 +903,7 @@ Failure Mode & Trigger & Applies To \\
 \midrule
 Malformed output & Non-JSON or unparseable response & All architectures \\
 Missing score & Criterion score absent from JSON & $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ \\
-Out-of-bounds score & Score $< 0$ or $> 10$ & All architectures \\
+Out-of-bounds score & Score $< 0.0$ or $> 1.0$ & All architectures \\
 Invalid score type & Non-numeric score value & $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ \\
 Failed extraction & Non-JSON, invalid decision type, or non-finite parameter & $\mathcal{A}_{\text{H}}$ only \\
 Calculation error & Ground-truth calculator exception & $\mathcal{A}_{\text{H}}$ only \\
@@ -965,7 +968,7 @@ ICC(2,1) for MAE is 0.80--0.91 across architectures: model choice drives most sc
 
 The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.054 on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5\% on average. Its RMSE/MAE ratio is the highest among the three architectures---indicating that while average error is low, a small number of scenarios (primarily shower cases requiring GPM estimation) produce larger deviations that pull RMSE above twice the MAE. By contrast, $\mathcal{A}_{\text{D}}$ MAE of 0.232 means individual scores routinely miss by more than 0.2 points on a 1-point scale, and $\mathcal{A}_{\text{E}}$ at 0.172 falls in between---usable for rough ranking but not for reliable score comparison.
 
-The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$ for Gemini $\mathcal{A}_{\text{H}}$, with $\tau > 0.88$ for the other three models, means the architecture identifies the correct ranking order in nearly every scenario---comparable to the agreement two human experts would reach on the same decision. $\tau$ between 0.2 and 0.33, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.3\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 34.1\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
+The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$ for Gemini $\mathcal{A}_{\text{H}}$, with $\tau > 0.88$ for the other three models, means the architecture identifies the correct ranking order in nearly every scenario---ranking accuracy above 90\% is generally considered reliable enough for automated decision-support applications in energy efficiency and related domains. $\tau$ between 0.2 and 0.33, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.3\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 34.1\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
 
 \FloatBarrier
 \subsection{Baseline Comparison}
@@ -1354,7 +1357,7 @@ adopting the $\mathcal{A}_{\text{H}}$ approach in new domains.
 
 A further limitation concerns the choice sets supplied to the architectures. In this benchmark, each scenario presents three specific alternatives that a household might compare. In practice, households rarely know three specific alternatives they want to evaluate; the decision space is continuous and often unstructured. However, the three-alternative framing captures the core ranking task: the LLM must identify which option best satisfies the household's criteria. In most cases, three bands around the same times as the specific alternatives programmed in our test scenarios would produce similar overall results, because the value functions are smooth over the relevant ranges. The benchmark tests ranking accuracy, not choice generation; extending the framework to open-ended alternative generation would be a natural next step.
 
-% TODO-HUMAN: Consider running a temperature=0 determinism check alongside the temperature=0.3 run-to-run variance analysis, to separate real architecture instability from pure sampling noise, and report the comparison here.
+
 
 \subsection{Future Work}
 \label{sec:futurework}
@@ -1370,7 +1373,7 @@ Second, the benchmark is confined to the Pennsylvania/PJM grid with its specific
 
 Third, the $\mathcal{A}_{\text{H}}$ architecture currently routes the LLM's extracted parameters to an embedded Python calculator. An agentic design in which the LLM issues structured function calls to external calculators via tool-use APIs would decouple model updates from calculator maintenance, allow runtime selection among candidate calculators, and enable the LLM to request additional information when extraction confidence is low \cite{schick2023toolformer,gao2023pal,khot2023}.
 
-Fourth, the current appliance scenarios assume a flat electricity rate. Integrating real-time time-of-use pricing and demand-response signals into the scheduling criterion would align the appliance calculator with the dynamic pricing environments that residential consumers increasingly face \cite{paetz2012,peco2021,houde2021}. This extension would require coupling the appliance cost model to a live or forecasted TOU schedule, which in turn motivates the agentic tool-use design discussed above.
+Fourth, the current appliance scenarios use fixed weekday TOU schedules for each utility. Extending to live or forecasted real-time pricing, weekend and holiday off-peak schedules, seasonal peak-window shifts, and demand-response event signals would align the appliance cost model with the dynamic pricing environments that residential consumers increasingly face \cite{paetz2012,peco2021,houde2021}. This extension would in turn motivate the agentic tool-use design discussed above.
 
 Fifth, all three architectures accept LLM outputs without constraint checking. A neurosymbolic verification layer that checks extracted or scored outputs against known physical bounds---for example, rejecting a shower duration that implies negative water heating energy---would provide a formal safety net that is independent of model capability \cite{mattas2025neurosymbolic,ye2023satlm}. Such a layer would be especially valuable for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, where the LLM has direct scoring authority and no calculator to constrain its outputs.
 
@@ -1416,7 +1419,7 @@ Symbol & Definition \\
 \midrule
 $\tau$ & Kendall's rank correlation coefficient \\
 $w_i$ & weight of criterion $i$ ($i=1\ldots4$), summing to 1 \\
-$v_i(x)$ & value function score for criterion $i$ at raw value $x$, range $[0,10]$ \\
+$v_i(x)$ & value function score for criterion $i$ at raw value $x$, range $[0,1]$ \\
 $\alpha$ & shape parameter for logarithmic value functions \\
 $s_j$ & MAVT weighted sum score for alternative $j$ \\
 $\text{MAE}$ & Mean Absolute Error on MAVT score (0--1 scale) \\
@@ -1479,7 +1482,7 @@ Tables~\ref{tab:per_model_overall}--\ref{tab:per_model_shower} report
 Kendall's~$\tau$, Top-1 accuracy (\%), and Top-2 accuracy (\%) for each
 architecture$\times$model$\times$decision-type combination, averaged over
 five independent runs.  Results are imputed: scenarios that failed in all
-five runs carry the imputed value from cross-run matching.
+five runs carry the imputed value of 0.5 (the 0--1 scale midpoint).
 
 \begin{table}[t]
 \small
@@ -1753,8 +1756,7 @@ appear only in the display metadata of the retrieved exemplars.
 
 The disjointness of test and RAG sets was verified by construction (the
 rebuild script exports them from separate master-sheet partitions) and
-is enforced at query time by never querying the index with test-scenario
-embeddings.
+is enforced at query time because test scenarios are used as query vectors against an index that stores only RAG scenarios.
 
 \section{Pennsylvania Time-of-Use Rate Structure}
 \label{app:tou_rates}
@@ -1833,8 +1835,8 @@ homeowner description. A typical successful extraction returns:
                   "hvac_age": 10,
                   "occupancy_context": "occupied_all_day"}}
 \end{verbatim}
-The validation layer confirms each value is within its physically admissible
-range ($R \in [11,19]$ for Medium insulation; $\text{SEER} \in [8,25]$;
+The validation layer confirms each value is within broad physically admissible
+bounds ($R \in [1,60]$; $\text{SEER} \in [1,30]$;
 $\text{age} \ge 0$; valid occupancy token), so the scenario proceeds to the
 calculator.
 

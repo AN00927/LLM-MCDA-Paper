@@ -93,7 +93,7 @@ LLM-Parameterized_Reference_Scoring dominates across all four models. RAG-Enhanc
 
 ### Imputation Robustness Test
 
-`--impute-failures` retains failed scenarios by replacing sentinel scores (1928) with a configurable value (default 5.0, the 0-10 scale midpoint). `--impute-value` controls the replacement. Sentinels occur when an LLM call produces no valid scores for an alternative. Non-imputed mode drops the entire scenario. Imputed mode assigns the neutral score, then runs weighted scoring and ranking normally.
+`--impute-failures` retains failed scenarios by replacing sentinel scores (1928) with a configurable value (default 0.5, the 0-1 scale midpoint). `--impute-value` controls the replacement. Sentinels occur when an LLM call produces no valid scores for an alternative. Non-imputed mode drops the entire scenario. Imputed mode assigns the neutral score, then runs weighted scoring and ranking normally.
 
 We ran all 4 models across all 3 architectures with `--impute-failures --impute-value 5.0`. Results matched non-imputed output exactly for every model and architecture. The single scenario retaining all-run sentinels (GPT-OSS Hybrid SID 14) carries alternatives `"Alternative 1 (extraction failed)"` — placeholders that match no ground-truth alternative, so the scenario is dropped at the content-matching stage before the sentinel filter runs. No scenario that passed matching contained sentinel scores. The feature is wired and correct on this dataset; it matters for single-run runs or models where extraction fails on scenarios whose alternatives match ground truth.
 
@@ -177,7 +177,7 @@ LLM-MCDA-Paper/
 
 ### 1. Pure Prompting (`Direct_LLM_Scoring.py`)
 
-LLM scores all four criteria directly via calibrated system prompts with per-decision-type rubric guidance. Input is a natural language scenario description with structured context fields. Outputs four 0-10 scores per alternative, then ranks by MAVT.
+LLM scores all four criteria directly via calibrated system prompts with per-decision-type rubric guidance. Input is a natural language scenario description with structured context fields. Outputs four 0-1 scores per alternative, then ranks by MAVT.
 
 - **API calls per scenario:** 3 (one per alternative)
 - **API calls per run (195 scenarios):** 585
@@ -234,7 +234,7 @@ The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle 
 s_j = sum(w_i * v_i(x_ij))   for i in {energy_cost, environmental, comfort, practicality}
 ```
 
-All four criterion scores are on a 0-10 scale before weighting.
+All four criterion scores are on a 0-1 scale before weighting.
 
 ### Reference Ranges (5th-95th percentile of scenario distributions)
 
@@ -242,8 +242,8 @@ All four criterion scores are on a 0-10 scale before weighting.
 | --- | --- | --- | --- |
 | Energy Cost ($) | $0.38 - $3.29 | $0.025 - $0.71 | $0.14 - $1.14 |
 | Environmental Impact | 1.96 - 18.04 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
-| Comfort | 0.0 - 10.0 | 0.0 - 10.0 | 0.0 - 10.0 |
-| Practicality | 0.5 - 10.0 | 0.5 - 10.0 | 0.5 - 10.0 |
+| Comfort | 0.0 - 1.0 | 0.0 - 1.0 | 0.0 - 1.0 |
+| Practicality | 0.05 - 1.0 | 0.05 - 1.0 | 0.05 - 1.0 |
 
 Shower environmental impact is water volume (gallons). HVAC and Appliance environmental impact is lbs CO2 using PJM marginal emissions factors (peak 1.041 / off-peak 0.976 lbs CO2/kWh).
 
@@ -266,7 +266,7 @@ Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-cont
 
 ## Ground Truth Calculators
 
-Each calculator takes a scenario with three alternatives and returns four scores per alternative (Energy Cost, Environmental, Comfort 0-10, Practicality 0-10) plus raw physical quantities before value-function transformation.
+Each calculator takes a scenario with three alternatives and returns four scores per alternative (Energy Cost, Environmental, Comfort, Practicality) on a 0-1 scale, plus raw physical quantities before value-function transformation
 
 ### Emissions Factors
 
@@ -355,7 +355,7 @@ Two scripts independently validate the subjective MAVT weights against the groun
 | [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Computes Shannon entropy weights from ground-truth score distributions overall and by decision type. Outputs entropy_weights.xlsx. |
 | [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Outputs merec_weights_summary.xlsx. |
 | [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers implied weights from ground-truth ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Outputs implied_weights_summary.xlsx. |
-| [RunBaselines.py](Miscellaneous Scripts/RunBaselines.py) | Computes 5 non-LLM baselines + Oracle upper bound: Random (1000 seeds), Uniform (all scores = 0.5), Fixed-Default (GT calculators with fixed default params), Nearest-Neighbor (k=3 retrieval from RAG), Oracle (true GT scores). Outputs to Output Files/Baselines/. |
+| [RunBaselines.py](Miscellaneous Scripts/RunBaselines.py) | Computes 5 non-LLM baselines + Oracle upper bound: Random (20 seeds), Uniform (all scores = 0.5), Fixed-Default (GT calculators with fixed default params), Nearest-Neighbor (k=3 retrieval from RAG), Oracle (true GT scores). Outputs to Output Files/Baselines/. |
 | [RunRAGAblations.py](Miscellaneous Scripts/RunRAGAblations.py) | Runs 9 RAG retrieval/exemplar ablations on stratified sample (default 15 scenarios x 3 types): Control (k=3, scores+ranks+hidden params), Random exemplars, No exemplars, Descriptions without scores/ranks, Exemplars without hidden params, Retrieval k=1/k=5, Alternate embedding, Nearest-neighbor. Outputs summary tables, plots, and Markdown report. |
 | [EvaluateHybridExtraction.py](Miscellaneous Scripts/EvaluateHybridExtraction.py) | Evaluates LLM-Parameterized_Reference_Scoring parameter extraction accuracy vs ground truth: numeric params (MAE/RMSE/percentiles), categorical params (accuracy), counterfactual top-1 sensitivity. Outputs LLM-Parameterized_Reference_Scoring_parameter_evaluation.md. |
 | [GenerateBaselineTable.py](Miscellaneous Scripts/GenerateBaselineTable.py) | Reads metrics_summary_{MODEL_KEY}.xlsx and generates incremental contribution table comparing all 8 systems (5 baselines + 3 LLM architectures). Outputs console table, LaTeX, and CSV. Default baseline for deltas: FixedDefault. |
