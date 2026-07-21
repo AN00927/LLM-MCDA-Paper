@@ -759,14 +759,16 @@ def compute_criterion_metrics(merged_df):
 
 
 def compute_ranking_metrics(merged_df):
-    """Kendall tau, Top-1 - per-scenario then averaged.
+    """Kendall tau, Spearman rho, Top-1, Top-2 - per-scenario then averaged.
 
     Scenarios where any rank value is NaN (genuinely missing) are skipped
     entirely so a single bad row does not turn the whole scenario's tau
     into NaN.
     """
     taus = []
+    rhos = []
     top1_ok = 0
+    top2_ok = 0
     n = 0
 
     for sid in merged_df["arch_scenario_id"].unique():
@@ -790,15 +792,31 @@ def compute_ranking_metrics(merged_df):
         else:
             taus.append(1.0 if np.array_equal(gt_r, ar_r) else 0.0)
 
+        # Spearman
+        if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+            rho, _ = stats.spearmanr(gt_r, ar_r)
+            rhos.append(rho if not np.isnan(rho) else 0.0)
+        else:
+            rhos.append(1.0 if np.array_equal(gt_r, ar_r) else 0.0)
+
         # top-1
         gt_top1 = sc.loc[sc["gt_rank"].astype(float).idxmin(), "norm_alternative"]
         ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
         if gt_top1 == ar_top1:
             top1_ok += 1
 
+        # top-2
+        gt_top1_val = sc["gt_rank"].astype(float).min()
+        gt_top2 = set(sc.loc[sc["gt_rank"].astype(float).nsmallest(2).index, "norm_alternative"])
+        ar_top2 = set(sc.loc[sc["arch_rank"].astype(float).nsmallest(2).index, "norm_alternative"])
+        if gt_top2 & ar_top2:
+            top2_ok += 1
+
     return {
         "kendall_tau": round(np.mean(taus), 4) if taus else np.nan,
+        "spearman_rho": round(np.mean(rhos), 4) if rhos else np.nan,
         "top1_accuracy": round(top1_ok / n, 4) if n else np.nan,
+        "top2_accuracy": round(top2_ok / n, 4) if n else np.nan,
         "n_scenarios_evaluated": n,
     }
 
