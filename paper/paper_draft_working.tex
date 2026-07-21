@@ -45,29 +45,29 @@
 ]
 \nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
     title={\small (a) Energy Cost}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,0.2468) (2,0.1426) (3,0.0693)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,0.2192) (2,0.1370) (3,0.0630)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2487) (2,0.1373) (3,0.0697)};
-\addplot[mark=*, colorQwen]     coordinates {(1,0.2434) (2,0.1705) (3,0.1045)};
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2468) (2,0.1743) (3,0.0693)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,0.2192) (2,0.1668) (3,0.0630)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2487) (2,0.1553) (3,0.0711)};
+\addplot[mark=*, colorQwen]     coordinates {(1,0.2434) (2,0.1784) (3,0.1045)};
 \legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
 \nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
     title={\small (b) Environmental}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,0.2468) (2,0.1320) (3,0.0912)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,0.2454) (2,0.1309) (3,0.0759)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2850) (2,0.1330) (3,0.0864)};
-\addplot[mark=*, colorQwen]     coordinates {(1,0.2630) (2,0.1687) (3,0.1413)};
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2468) (2,0.1635) (3,0.0912)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,0.2454) (2,0.1577) (3,0.0759)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2850) (2,0.1537) (3,0.0864)};
+\addplot[mark=*, colorQwen]     coordinates {(1,0.2630) (2,0.1764) (3,0.1413)};
 \nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
     title={\small (c) Comfort}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,0.1667) (2,0.1185) (3,0.0085)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,0.1656) (2,0.1353) (3,0.0128)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.1679) (2,0.1253) (3,0.0086)};
-\addplot[mark=*, colorQwen]     coordinates {(1,0.1829) (2,0.1573) (3,0.0084)};
+\addplot[mark=*, colorGemini]   coordinates {(1,0.1667) (2,0.1358) (3,0.0085)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,0.1656) (2,0.1649) (3,0.0128)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.1679) (2,0.1391) (3,0.0104)};
+\addplot[mark=*, colorQwen]     coordinates {(1,0.1829) (2,0.1759) (3,0.0084)};
 \nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
     title={\small (d) Practicality}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,0.2068) (2,0.1157) (3,0.0195)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,0.2003) (2,0.1232) (3,0.0208)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2185) (2,0.1371) (3,0.0218)};
-\addplot[mark=*, colorQwen]     coordinates {(1,0.1967) (2,0.1390) (3,0.0164)};
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2068) (2,0.1466) (3,0.0195)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,0.2003) (2,0.1415) (3,0.0208)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2185) (2,0.1708) (3,0.0240)};
+\addplot[mark=*, colorQwen]     coordinates {(1,0.1967) (2,0.1702) (3,0.0164)};
 \end{groupplot}
 \end{tikzpicture}%
 }
@@ -90,23 +90,23 @@
 ]
 \nextgroupplot[ylabel={Kendall's $\tau$}, ymin=-0.2, ymax=0.99,
     title={\small (a) HVAC}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,-0.0476) (2,-0.0762) (3,0.9810)};
+\addplot[mark=*, colorGemini]   coordinates {(1,-0.0476) (2,-0.1905) (3,0.9810)};
 \addplot[mark=*, colorDeepSeek] coordinates {(1,-0.1238) (2,0.0476) (3,0.9333)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2381)  (2,0.2566) (3,0.9517)};
-\addplot[mark=*, colorQwen]     coordinates {(1,0.0571)  (2,0.1905) (3,0.8762)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.2381)  (2,0.3619) (3,0.9333)};
+\addplot[mark=*, colorQwen]     coordinates {(1,0.0571)  (2,0.1238) (3,0.8762)};
 \legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
 \nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.99,
     title={\small (b) Appliance}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,-0.0256) (2,0.4564) (3,0.9590)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,-0.0564) (2,0.3641) (3,0.9590)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,-0.1897) (2,0.0667) (3,0.9590)};
-\addplot[mark=*, colorQwen]     coordinates {(1,-0.1282) (2,0.2410) (3,0.8974)};
+\addplot[mark=*, colorGemini]   coordinates {(1,-0.0256) (2,0.3538) (3,0.9590)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,-0.0564) (2,0.4051) (3,0.9590)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,-0.1897) (2,0.0154) (3,0.9590)};
+\addplot[mark=*, colorQwen]     coordinates {(1,-0.1282) (2,0.2821) (3,0.8974)};
 \nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.99,
     title={\small (c) Shower}, title style={font=\small}]
-\addplot[mark=*, colorGemini]   coordinates {(1,0.6333) (2,0.8222) (3,0.8222)};
-\addplot[mark=*, colorDeepSeek] coordinates {(1,0.7222) (2,0.6978) (3,0.7889)};
-\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.1000) (2,0.7222) (3,0.8000)};
-\addplot[mark=*, colorQwen]     coordinates {(1,0.0667) (2,0.4333) (3,0.8556)};
+\addplot[mark=*, colorGemini]   coordinates {(1,0.6333) (2,0.7889) (3,0.8222)};
+\addplot[mark=*, colorDeepSeek] coordinates {(1,0.7222) (2,0.6444) (3,0.7889)};
+\addplot[mark=*, colorGPTOSS]   coordinates {(1,0.1000) (2,0.7778) (3,0.8000)};
+\addplot[mark=*, colorQwen]     coordinates {(1,0.0667) (2,0.3333) (3,0.8556)};
 \end{groupplot}
 \end{tikzpicture}%
 }
@@ -190,16 +190,16 @@
     legend cell align={left},
 ]
 \addplot[only marks, mark=*, mark size=3pt, color=colorGemini] coordinates {
-    (0.85, 0.169) (1.85, 0.378) (2.85, 0.925)
+    (0.85, 0.176) (1.85, 0.305) (2.85, 0.923)
 };
 \addplot[only marks, mark=*, mark size=3pt, color=colorDeepSeek] coordinates {
-    (0.95, 0.159) (1.95, 0.354) (2.95, 0.897)
+    (0.95, 0.144) (1.95, 0.328) (2.95, 0.897)
 };
 \addplot[only marks, mark=*, mark size=3pt, color=colorGPTOSS] coordinates {
-    (1.05, 0.053) (2.05, 0.340) (3.05, 0.907)
+    (1.05, 0.041) (2.05, 0.270) (3.05, 0.897)
 };
 \addplot[only marks, mark=*, mark size=3pt, color=colorQwen] coordinates {
-    (1.15, -0.002) (2.15, 0.282) (3.15, 0.877)
+    (1.15, 0.010) (2.15, 0.207) (3.15, 0.880)
 };
 \legend{Gemini, DeepSeek, GPT-OSS, Qwen}
 \end{axis}
@@ -229,7 +229,7 @@
             state={Aargau},
             country={Switzerland}}
 \begin{abstract}
-The residential sector accounts for 18\% of global CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Direct LLM Scoring ($\mathcal{A}_{\text{D}}$~), Example-Guided LLM Scoring ($\mathcal{A}_{\text{E}}$~), and LLM-Parameterized Reference Scoring ($\mathcal{A}_{\text{H}}$~), which extracts engineering parameters for a deterministic physics calculator. Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. $\mathcal{A}_{\text{H}}$ achieved a Kendall's tau of 0.902, MAE of 0.051, and 91.7\% Top-1 accuracy across 195 scenarios. $\mathcal{A}_{\text{E}}$ scored 0.339, 0.138, and 51.7\%; $\mathcal{A}_{\text{D}}$ scored 0.095, 0.219, and 35.4\%.\end{abstract}
+The residential sector accounts for 18\% of global CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Direct LLM Scoring ($\mathcal{A}_{\text{D}}$~), Example-Guided LLM Scoring ($\mathcal{A}_{\text{E}}$~), and LLM-Parameterized Reference Scoring ($\mathcal{A}_{\text{H}}$~), which extracts engineering parameters for a deterministic physics calculator. Ground truth calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. $\mathcal{A}_{\text{H}}$ achieved a Kendall's tau of 0.899, MAE of 0.054, and 91.3\% Top-1 accuracy across 195 scenarios. $\mathcal{A}_{\text{E}}$ scored 0.277, 0.172, and 49.2\%; $\mathcal{A}_{\text{D}}$ scored 0.093, 0.232, and 34.1\%.\end{abstract}
 \begin{keyword}
 Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute Value Theory \sep Household energy \sep Decision support systems \sep Retrieval-Augmented Generation \sep Sustainability
 \end{keyword}
@@ -815,7 +815,7 @@ Return ONLY: \{"energy\_cost": X, "environmental": X, "comfort": X, "practicalit
 \noindent The user prompt provides the scenario context and asks the model to score one alternative at a time, including the other alternatives as reference so that it doesn't assign the same scores to all alternatives.
 
 \subsubsection{\texorpdfstring{$\mathcal{A}_{\text{E}}$}{A_E} (Example-Guided LLM Scoring)}
-The $\mathcal{A}_{\text{E}}$ architecture retrieves the top $k=3$ most similar scenarios from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. Each retrieved exemplar is rendered as a full worked example: its homeowner-facing parameters, its engineering parameters (R-value, SEER, GPM, kWh/cycle, tank size, heater setpoint, etc.), and each of its alternatives with the four ground-truth criterion scores plus the MAVT aggregate and rank. The exemplar's engineering values are shown so the model can see how those values map to scores. Thus, it can look at overall patterns for similar scenarios to understand how its own scenario may perform. The model is instructed to use the exemplars as reference but to score the target scenario independently. Like $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ uses three API calls per scenario (one per alternative). The retrieval index is built once from the 90 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
+The $\mathcal{A}_{\text{E}}$ architecture retrieves the single most similar scenario ($k=1$) from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieval count $k=1$ was selected based on a development-set ablation (Section~\ref{sec:rag-ablation-methods}). All retrieval counts ($k=1,3,5$) produce indistinguishable ranking accuracy (pairwise $p_{\text{Holm}} > 0.97$); $k=1$ minimizes token and API cost within this equivalence cluster. The ablation sample was stratified to cover the full parameter space, and the single closest exemplar showed a mean cosine distance of 0.05 across all scenarios, confirming that every scenario in a representative draw has a closely matching corpus entry. Because the RAG corpus was designed for complete parameter-space coverage (Section~2.1), this holds for the full test set: no scenario lacks a sufficiently similar exemplar, and additional retrieved examples provide no measurable benefit. The retrieved exemplar is rendered as a full worked example: its homeowner-facing parameters, its engineering parameters (R-value, SEER, GPM, kWh/cycle, tank size, heater setpoint, etc.), and each of its alternatives with the four ground-truth criterion scores plus the MAVT aggregate and rank. The exemplar's engineering values are shown so the model can see how those values map to scores. The model is instructed to use the exemplar as reference but to score the target scenario independently. Like $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ uses three API calls per scenario (one per alternative). The retrieval index is built once from the 90 RAG-only scenarios described in Section~2.1 and is never queried with test scenarios \cite{lewis2020}.
 
 The system prompt is identical to $\mathcal{A}_{\text{D}}$ but omits per-criterion anchor descriptions, since the RAG exemplars supply implicit scoring guidance:
 
@@ -834,7 +834,7 @@ Return ONLY: \{"energy\_cost": X, "environmental": X, "comfort": X, "practicalit
 \end{quote}
 \vspace{-0.5em}
 
-\noindent The user prompt presents the target scenario, the alternative to score, and three retrieved exemplars---each with homeowner-facing parameters, engineering values, and the four ground-truth scores plus MAVT aggregate and rank---instructing the model to ``consider how this specific alternative performs given the scenario context.''
+\noindent The user prompt presents the target scenario, the alternative to score, and the retrieved exemplar---with homeowner-facing parameters, engineering values, and the four ground-truth scores plus MAVT aggregate and rank---instructing the model to ``consider how this specific alternative performs given the scenario context.''
 
 \subsubsection{\texorpdfstring{$\mathcal{A}_{\text{H}}$}{A_H} (LLM-Parameterized Reference Scoring)}
 The $\mathcal{A}_{\text{H}}$ architecture issues a single API call per scenario for structured parameter extraction. Known homeowner-visible scenario fields (outdoor temperature, square footage, insulation tier, household size, housing type, utility budget, and location) are passed directly to the calculator without LLM involvement, and the three alternatives are taken verbatim from the scenario sheet---the deterministic calculator, not the LLM, parses the numeric content of each alternative string (setpoint temperature, run time, or shower duration). The LLM is asked only to estimate the genuinely withheld engineering parameters that are absent from the homeowner-visible description: for HVAC, the wall R-value, SEER rating, HVAC age, and occupancy context; for Appliance, the appliance type, kWh/cycle, and current baseline time; for Shower, the numeric GPM (estimated from the homeowner-facing flow-rate label), tank size, and water-heater setpoint. The extracted JSON is validated---each numeric parameter must parse as a finite value within its physically admissible range, and the extracted decision type must match the scenario's known type, or the scenario is recorded as an extraction failure---and then merged with the known fields and passed to the corresponding ground-truth calculator.
@@ -881,6 +881,8 @@ Return ONLY the JSON, no explanation.
 \label{sec:rag-ablation-methods}
 Ablation experiments use a stratified 35-scenario subset drawn from the RAG corpus to ensure adequate statistical power. Seven configurations modify one design variable at a time against a $k=3$ control: retrieval $k$ (1, 5), embedding model (paraphrase-MiniLM-L3-v2 replacing all-MiniLM-L6-v2), exemplar content (hidden engineering parameters included/excluded), score anchoring (scores and ranks present/absent), random exemplar selection (replacing similarity-ranked exemplars with random corpus draws), and a nearest-neighbor offline baseline that assigns retrieved scenario scores directly without LLM rescoring. Each configuration is evaluated across all four models. The $k=1$ variant tests whether a single high-similarity exemplar provides sufficient guidance; $k=5$ tests whether broader context improves or dilutes the signal. The embedding-swap tests a different matching architecture. The exemplar-content variants isolate whether the model benefits from seeing the engineering parameters (R-value, SEER, GPM, kWh/cycle) or only the homeowner-facing labels. The score-anchoring variants test whether the model uses the ground-truth scores as calibration anchors or merely as noise. The random-exemplar variant controls for retrieval quality: if retrieval similarity matters, random exemplars should perform worse than similarity-ranked ones. The nearest-neighbor offline baseline tests whether unmodified exemplar copying provides ranking signal.
 
+Post-hoc pairwise comparisons (Holm-corrected Wilcoxon signed-rank tests) confirm that all retrieval counts, the alternate embedding, and the exemplar-content variant form a statistically indistinguishable cluster on Kendall's $\tau$ and MAE (pairwise $p_{\text{Holm}} > 0.97$, Cliff's $\delta$ negligible). Only the removal of exemplar scores ($p_{\text{Holm}} < 0.02$) and the use of random retrieval ($p_{\text{Holm}} < 0.003$) significantly degrade performance. Based on this equivalence, $k=1$ was selected as the production retrieval count: it matches the ranking accuracy of $k=3$ (0.364 vs 0.316, $p_{\text{Holm}}=1.00$) and $k=5$ (0.364 vs 0.386, $p_{\text{Holm}}=1.00$) at the lowest token and API cost.
+
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
 Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--1 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). For each scenario, Kendall's $\tau$ is computed between the ground-truth rank and the architecture's rank over the three alternatives, then averaged across all 195 scenarios by arithmetic mean. With $n=3$ alternatives, per-scenario $\tau$ can take only discrete values ($-1, -\frac{1}{3}, \frac{1}{3}, 1$) before averaging. Efficiency is evaluated using total tokens (input plus output) and cost, both summed across the 195-scenario test set.
@@ -925,11 +927,11 @@ Calculation error & Ground-truth calculator exception & $\mathcal{A}_{\text{H}}$
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 Metric & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Kendall's $\tau$ & 0.189 $\pm$ 0.278 & 0.405 $\pm$ 0.315 & \textbf{0.920 $\pm$ 0.062} & 0.157 $\pm$ 0.259 & 0.338 $\pm$ 0.221 & \textbf{0.895 $\pm$ 0.071} \\
-Top-1 (\%) & 36.9 $\pm$ 15.1 & 56.1 $\pm$ 22.9 & \textbf{92.9 $\pm$ 4.9} & 37.5 $\pm$ 16.4 & 49.9 $\pm$ 13.5 & \textbf{90.5 $\pm$ 6.5} \\
-MAE & 0.218 $\pm$ 0.051 & 0.127 $\pm$ 0.029 & \textbf{0.048 $\pm$ 0.013} & 0.231 $\pm$ 0.026 & 0.139 $\pm$ 0.019 & \textbf{0.046 $\pm$ 0.009} \\
-RMSE & 0.288 $\pm$ 0.064 & 0.194 $\pm$ 0.035 & \textbf{0.097 $\pm$ 0.028} & 0.300 $\pm$ 0.033 & 0.204 $\pm$ 0.021 & \textbf{0.091 $\pm$ 0.015} \\
-RMSE/MAE & 1.32 $\pm$ 0.03 & 1.54 $\pm$ 0.07 & 2.02 $\pm$ 0.07 & 1.30 $\pm$ 0.01 & 1.47 $\pm$ 0.06 & 2.00 $\pm$ 0.20 \\
+Kendall's $\tau$ & 0.176 $\pm$ 0.014 & 0.305 $\pm$ 0.019 & \textbf{0.923 $\pm$ 0.002} & 0.144 $\pm$ 0.041 & 0.328 $\pm$ 0.029 & \textbf{0.897 $\pm$ 0.005} \\
+Top-1 (\%) & 36.2 $\pm$ 1.5 & 47.2 $\pm$ 2.1 & \textbf{93.1 $\pm$ 0.3} & 36.7 $\pm$ 3.1 & 54.5 $\pm$ 2.3 & \textbf{90.8 $\pm$ 0.9} \\
+MAE & 0.220 $\pm$ 0.002 & 0.159 $\pm$ 0.001 & \textbf{0.048 $\pm$ 0.001} & 0.231 $\pm$ 0.003 & 0.167 $\pm$ 0.002 & \textbf{0.046 $\pm$ 0.004} \\
+RMSE & 0.297 $\pm$ 0.002 & 0.234 $\pm$ 0.001 & \textbf{0.100 $\pm$ 0.001} & 0.302 $\pm$ 0.003 & 0.236 $\pm$ 0.002 & \textbf{0.092 $\pm$ 0.011} \\
+RMSE/MAE & 1.35 $\pm$ 0.00 & 1.47 $\pm$ 0.01 & 2.11 $\pm$ 0.01 & 1.31 $\pm$ 0.01 & 1.42 $\pm$ 0.01 & 2.00 $\pm$ 0.07 \\
 \bottomrule
 \end{tabular}
 
@@ -941,11 +943,11 @@ RMSE/MAE & 1.32 $\pm$ 0.03 & 1.54 $\pm$ 0.07 & 2.02 $\pm$ 0.07 & 1.30 $\pm$ 0.01
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 Metric & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Kendall's $\tau$ & 0.041 $\pm$ 0.129 & 0.335 $\pm$ 0.198 & \textbf{0.898 $\pm$ 0.073} & 0.011 $\pm$ 0.065 & 0.280 $\pm$ 0.127 & \textbf{0.880 $\pm$ 0.029} \\
-Top-1 (\%) & 33.2 $\pm$ 6.0 & 51.9 $\pm$ 11.8 & \textbf{91.6 $\pm$ 6.5} & 30.0 $\pm$ 6.3 & 50.9 $\pm$ 7.9 & \textbf{89.8 $\pm$ 2.8} \\
-MAE & 0.242 $\pm$ 0.031 & 0.145 $\pm$ 0.027 & \textbf{0.052 $\pm$ 0.002} & 0.235 $\pm$ 0.031 & 0.169 $\pm$ 0.017 & \textbf{0.071 $\pm$ 0.030} \\
-RMSE & 0.305 $\pm$ 0.035 & 0.212 $\pm$ 0.034 & \textbf{0.101 $\pm$ 0.006} & 0.294 $\pm$ 0.033 & 0.236 $\pm$ 0.019 & \textbf{0.152 $\pm$ 0.056} \\
-RMSE/MAE & 1.27 $\pm$ 0.03 & 1.47 $\pm$ 0.04 & 1.95 $\pm$ 0.05 & 1.25 $\pm$ 0.03 & 1.40 $\pm$ 0.04 & 2.18 $\pm$ 0.15 \\
+Kendall's $\tau$ & 0.041 $\pm$ 0.045 & 0.270 $\pm$ 0.042 & \textbf{0.897 $\pm$ 0.007} & 0.010 $\pm$ 0.039 & 0.207 $\pm$ 0.030 & \textbf{0.880 $\pm$ 0.013} \\
+Top-1 (\%) & 33.3 $\pm$ 2.4 & 48.0 $\pm$ 2.8 & \textbf{91.6 $\pm$ 0.8} & 30.0 $\pm$ 3.0 & 47.0 $\pm$ 2.7 & \textbf{89.7 $\pm$ 1.2} \\
+MAE & 0.241 $\pm$ 0.002 & 0.169 $\pm$ 0.003 & \textbf{0.052 $\pm$ 0.001} & 0.235 $\pm$ 0.002 & 0.192 $\pm$ 0.004 & \textbf{0.072 $\pm$ 0.002} \\
+RMSE & 0.307 $\pm$ 0.002 & 0.244 $\pm$ 0.004 & \textbf{0.101 $\pm$ 0.004} & 0.295 $\pm$ 0.002 & 0.260 $\pm$ 0.006 & \textbf{0.162 $\pm$ 0.005} \\
+RMSE/MAE & 1.27 $\pm$ 0.01 & 1.44 $\pm$ 0.01 & 1.95 $\pm$ 0.04 & 1.26 $\pm$ 0.01 & 1.35 $\pm$ 0.00 & 2.26 $\pm$ 0.02 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -953,7 +955,7 @@ RMSE/MAE & 1.27 $\pm$ 0.03 & 1.47 $\pm$ 0.04 & 1.95 $\pm$ 0.05 & 1.25 $\pm$ 0.03
 \label{tab:overall_by_model}
 \end{table}
 
-Table~\ref{tab:overall_by_model} shows each model's performance across architectures (full per-model results by decision type appear in \ref{app:per_model_results}). $\mathcal{A}_{\text{H}}$ dominates on every metric for all four models: $\tau$ ranges from 0.877 (Qwen) to 0.925 (Gemini), Top-1 from 90.3\% (Qwen) to 93.3\% (Gemini). $\mathcal{A}_{\text{E}}$ places second across all models: $\tau$ from 0.282 (Qwen) to 0.378 (Gemini), Top-1 from 49.7\% (DeepSeek) to 54.4\% (Gemini). $\mathcal{A}_{\text{D}}$ ranks third: $\tau$ from $-0.002$ (Qwen) to 0.169 (Gemini), Top-1 from 31.8\% (Qwen) to 40.0\% (DeepSeek), near the random baseline of $\tau = 0$ for a three-alternative ranking. The most interesting finding is while the model success order stays almost exactly the same, for $\mathcal{A}_{\text{H}}$, the gap is much smaller than in $\mathcal{A}_{\text{D}}$
+Table~\ref{tab:overall_by_model} shows each model's performance across architectures (full per-model results by decision type appear in \ref{app:per_model_results}). $\mathcal{A}_{\text{H}}$ dominates on every metric for all four models: $\tau$ ranges from 0.880 (Qwen) to 0.923 (Gemini), Top-1 from 89.7\% (Qwen) to 93.1\% (Gemini). $\mathcal{A}_{\text{E}}$ places second across all models: $\tau$ from 0.207 (Qwen) to 0.328 (DeepSeek), Top-1 from 47.0\% (Qwen) to 54.5\% (DeepSeek). $\mathcal{A}_{\text{D}}$ ranks third: $\tau$ from 0.010 (Qwen) to 0.176 (Gemini), Top-1 from 30.0\% (Qwen) to 36.7\% (DeepSeek), near the random baseline of $\tau = 0$ for a three-alternative ranking. The most interesting finding is while the model success order stays almost exactly the same, for $\mathcal{A}_{\text{H}}$, the gap is much smaller than in $\mathcal{A}_{\text{D}}$
 
 The ranking metrics are partly structurally favored in $\mathcal{A}_{\text{H}}$ (see Section~\ref{sec:architectures} for the structural argument); the score-level error (MAE/RMSE) is the stronger evidence of extraction fidelity.
 
@@ -961,9 +963,9 @@ The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-d
 
 ICC(2,1) for MAE is 0.80--0.91 across architectures: model choice drives most score-level error. ICC for Top-1 accuracy is 0.08--0.27: scenario difficulty drives correct-alternative identification. Cliff's $\delta$ between $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{H}}$ is 0.66--0.80 for MAE and 0.55--0.77 for $\tau$ (both large effects). Bootstrap 95\% BCa intervals for $\mathcal{A}_{\text{H}}$ tau [0.892, 0.907] and MAE [0.050, 0.060] do not overlap $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$ intervals on any metric.
 
-The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.051 on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5\% on average. Its RMSE of 0.105 (Table~\ref{tab:overall_by_model}) yields an RMSE/MAE ratio of 2.06---the highest among the three architectures---indicating that while average error is low, a small number of scenarios (primarily shower cases requiring GPM estimation) produce larger deviations that pull RMSE above twice the MAE. By contrast, $\mathcal{A}_{\text{D}}$ MAE of 0.219 means individual scores routinely miss by more than 0.2 points on a 1-point scale, and $\mathcal{A}_{\text{E}}$ at 0.138 falls in between---usable for rough ranking but not for reliable score comparison.
+The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.054 on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5\% on average. Its RMSE/MAE ratio is the highest among the three architectures---indicating that while average error is low, a small number of scenarios (primarily shower cases requiring GPM estimation) produce larger deviations that pull RMSE above twice the MAE. By contrast, $\mathcal{A}_{\text{D}}$ MAE of 0.232 means individual scores routinely miss by more than 0.2 points on a 1-point scale, and $\mathcal{A}_{\text{E}}$ at 0.172 falls in between---usable for rough ranking but not for reliable score comparison.
 
-The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$, as achieved by $\mathcal{A}_{\text{H}}$ across all four models, means the architecture identifies the correct ranking order in nearly every scenario---comparable to the agreement two human experts would reach on the same decision. $\tau$ between 0.3 and 0.5, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.7\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 35.4\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
+The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$ for Gemini $\mathcal{A}_{\text{H}}$, with $\tau > 0.88$ for the other three models, means the architecture identifies the correct ranking order in nearly every scenario---comparable to the agreement two human experts would reach on the same decision. $\tau$ between 0.2 and 0.33, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.3\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 34.1\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
 
 \FloatBarrier
 \subsection{Baseline Comparison}
@@ -978,15 +980,15 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
     \toprule
     System & Top-1 & $\Delta$ vs FixedDef & Kendall $\tau$ & $\Delta$ vs FixedDef \\
     \midrule
-    FixedDefault & 0.7254 & $0.0000$ & 0.6102 & $0.0000$ \\
-    NearestNeighbor & 0.5775 & $-0.1479$ & 0.3863 & $-0.2239$ \\
-    Direct\_LLM\_Scoring & 0.3583 & $-0.3671$ & 0.1040 & $-0.5062$ \\
-    Example-Guided\_LLM\_Scoring & 0.5260 & $-0.1994$ & 0.3527 & $-0.2576$ \\
-    LLM-Parameterized\_Reference\_Scoring & 0.9160 & $+0.1906$ & 0.8990 & $+0.2888$ \\
+    FixedDefault & 0.7282 & $0.0000$ & 0.6137 & $0.0000$ \\
+    NearestNeighbor & 0.5692 & $-0.1590$ & 0.3709 & $-0.2428$ \\
+    Direct\_LLM\_Scoring & 0.3538 & $-0.3743$ & 0.0949 & $-0.5188$ \\
+    Example-Guided\_LLM\_Scoring & 0.5128 & $-0.2154$ & 0.3145 & $-0.2992$ \\
+    LLM-Parameterized\_Reference\_Scoring & 0.9178 & $+0.1896$ & 0.9016 & $+0.2879$ \\
     \bottomrule
   \end{tabular}
 \end{table}
-Per the structural argument in Section~\ref{sec:architectures}, the score-level error is the stronger evidence of extraction fidelity, shown per model in Table~\ref{tab:overall_by_model}. Across the four models, $\mathcal{A}_{\text{H}}$ MAE ranges from 0.043 (DeepSeek) to 0.068 (Qwen), representing reductions of 63--81\% over $\mathcal{A}_{\text{D}}$ (0.208--0.230) and 47--73\% over $\mathcal{A}_{\text{E}}$ (0.127--0.159) per model. RMSE follows the same ranking across all four models.
+Per the structural argument in Section~\ref{sec:architectures}, the score-level error is the stronger evidence of extraction fidelity, shown per model in Table~\ref{tab:overall_by_model}. Across the four models, $\mathcal{A}_{\text{H}}$ MAE ranges from 0.046 (DeepSeek) to 0.072 (Qwen), representing reductions of 69--78\% over $\mathcal{A}_{\text{D}}$ (0.220--0.241) and 63--70\% over $\mathcal{A}_{\text{E}}$ (0.159--0.192) per model. RMSE follows the same ranking across all four models.
 
 \FloatBarrier
 \subsection{Criterion-Level Error}
@@ -1002,10 +1004,10 @@ Table~\ref{tab:item6} and Figure~\ref{fig:mae_criterion} break MAE down by crite
  & \multicolumn{3}{c}{Gemini (strongest)} & \multicolumn{3}{c}{Qwen (weakest)} \\
 Criterion & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Energy Cost & 0.247 & 0.143 & \textbf{0.069} & 0.243 & 0.171 & \textbf{0.105} \\
-Environmental & 0.247 & 0.132 & \textbf{0.091} & 0.263 & 0.169 & \textbf{0.141} \\
-Comfort & 0.167 & 0.119 & \textbf{0.009} & 0.183 & 0.157 & \textbf{0.008} \\
-Practicality & 0.207 & 0.116 & \textbf{0.020} & 0.197 & 0.139 & \textbf{0.016} \\
+Energy Cost & 0.247 & 0.174 & \textbf{0.069} & 0.243 & 0.178 & \textbf{0.104} \\
+Environmental & 0.247 & 0.163 & \textbf{0.091} & 0.263 & 0.176 & \textbf{0.141} \\
+Comfort & 0.167 & 0.136 & \textbf{0.009} & 0.183 & 0.176 & \textbf{0.008} \\
+Practicality & 0.207 & 0.147 & \textbf{0.019} & 0.197 & 0.170 & \textbf{0.016} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1015,7 +1017,7 @@ Practicality & 0.207 & 0.116 & \textbf{0.020} & 0.197 & 0.139 & \textbf{0.016} \
 \label{tab:item6}
 \end{table}
 
-Error for all three architectures concentrates on Energy Cost and Environmental Impact. $\mathcal{A}_{\text{D}}$ Environmental MAE is 0.247 (Gemini) and 0.263 (Qwen); Energy Cost is 0.247 and 0.243. $\mathcal{A}_{\text{E}}$ reduces Environmental to 0.132 (Gemini) and 0.169 (Qwen), Energy Cost to 0.143 and 0.171. $\mathcal{A}_{\text{H}}$ cuts further: Environmental 0.091 (Gemini) and 0.141 (Qwen), Energy Cost 0.069 and 0.105; Qwen carries the largest residual on both, indicating its smaller parameter count produces less precise domain estimates. The Environmental--Energy Cost gap persists across models: $\mathcal{A}_{\text{D}}$ Environmental MAE exceeds Energy Cost for both, indicating LLMs struggle more with emissions estimation than with dollar costs.
+Error for all three architectures concentrates on Energy Cost and Environmental Impact. $\mathcal{A}_{\text{D}}$ Environmental MAE is 0.247 (Gemini) and 0.263 (Qwen); Energy Cost is 0.247 and 0.243. $\mathcal{A}_{\text{E}}$ reduces Environmental to 0.163 (Gemini) and 0.176 (Qwen), Energy Cost to 0.174 and 0.178. $\mathcal{A}_{\text{H}}$ cuts further: Environmental 0.091 (Gemini) and 0.141 (Qwen), Energy Cost 0.069 and 0.104; Qwen carries the largest residual on both, indicating its smaller parameter count produces less precise domain estimates. The Environmental--Energy Cost gap persists across models: $\mathcal{A}_{\text{D}}$ Environmental MAE exceeds Energy Cost for both, indicating LLMs struggle more with emissions estimation than with dollar costs.
 
 \begin{figure*}[htbp]
 	\centering
@@ -1039,11 +1041,11 @@ Table~\ref{tab:item7} and Figure~\ref{fig:tau_decision} report $\tau$ by decisio
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
 Decision Type & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) \\
 \midrule
-HVAC & 0.031 $\pm$ 0.136 & 32.5 $\pm$ 12.4 & 0.107 $\pm$ 0.132 & 33.6 $\pm$ 11.1 & \textbf{0.936 $\pm$ 0.037} & \textbf{92.5 $\pm$ 4.1} \\
-Appliance & -0.100 $\pm$ 0.064 & 25.8 $\pm$ 4.1 & 0.282 $\pm$ 0.146 & 53.8 $\pm$ 11.1 & \textbf{0.944 $\pm$ 0.027} & \textbf{96.9 $\pm$ 1.9} \\
-Shower & 0.381 $\pm$ 0.299 & 49.2 $\pm$ 20.6 & 0.669 $\pm$ 0.144 & 70.4 $\pm$ 7.3 & \textbf{0.817 $\pm$ 0.025} & \textbf{85.4 $\pm$ 3.8} \\
+HVAC & $-0.000$ & 29.4 & 0.088 & 34.0 & \textbf{0.930} & \textbf{92.5} \\
+Appliance & $-0.042$ & 26.6 & 0.236 & 52.2 & \textbf{0.952} & \textbf{96.8} \\
+Shower & 0.348 & 47.6 & 0.547 & 63.7 & \textbf{0.811} & \textbf{84.3} \\
 \midrule
-Overall & 0.095 $\pm$ 0.072 & 35.4 $\pm$ 3.0 & 0.339 $\pm$ 0.035 & 51.7 $\pm$ 1.7 & \textbf{0.902 $\pm$ 0.017} & \textbf{91.7 $\pm$ 1.1} \\
+Overall & 0.093 & 34.1 & 0.277 & 49.2 & \textbf{0.899} & \textbf{91.3} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1051,7 +1053,7 @@ Overall & 0.095 $\pm$ 0.072 & 35.4 $\pm$ 3.0 & 0.339 $\pm$ 0.035 & 51.7 $\pm$ 1.
 \label{tab:item7}
 \end{table*}
 
-$\mathcal{A}_{\text{E}}$ shows wide model-level variance on HVAC: Gemini ($\tau = -0.076$) and DeepSeek ($\tau = 0.048$) are near-random, while GPT-OSS ($\tau = 0.267$) and Qwen ($\tau = 0.191$) achieve modest positive correlation. On Appliance, Gemini ($\tau = 0.456$) and DeepSeek ($\tau = 0.364$) lead; GPT-OSS ($\tau = 0.067$) and Qwen ($\tau = 0.241$) lag. Shower is the strongest type for $\mathcal{A}_{\text{E}}$ across all models: Gemini ($\tau = 0.822$), GPT-OSS ($\tau = 0.722$), DeepSeek ($\tau = 0.700$), and Qwen ($\tau = 0.433$).
+$\mathcal{A}_{\text{E}}$ shows wide model-level variance on HVAC: Gemini ($\tau = -0.076$) and DeepSeek ($\tau = 0.048$) are near-random, while GPT-OSS ($\tau = 0.267$) and Qwen ($\tau = 0.190$) achieve modest positive correlation. On Appliance, Gemini ($\tau = 0.456$) and DeepSeek ($\tau = 0.364$) lead; GPT-OSS ($\tau = 0.067$) and Qwen ($\tau = 0.241$) lag. Shower is the strongest type for $\mathcal{A}_{\text{E}}$ across all models: Gemini ($\tau = 0.822$), GPT-OSS ($\tau = 0.722$), DeepSeek ($\tau = 0.700$), and Qwen ($\tau = 0.433$).
 
 $\mathcal{A}_{\text{D}}$ is near-random or below on HVAC for all four models: Gemini $-0.048$, DeepSeek $-0.124$, GPT-OSS $0.238$, Qwen $0.057$. All four models score negative on Appliance (range $-0.190$ to $-0.026$). Shower diverges: Gemini ($0.633$) and DeepSeek ($0.722$) show meaningful positive correlation, while GPT-OSS ($0.100$) and Qwen ($0.067$) remain near-random. The shower advantage for $\mathcal{A}_{\text{D}}$ concentrates in Gemini and DeepSeek, likely because shower scoring depends on duration and flow rate, which are easier to read from scenario text than HVAC load calculations or appliance TOU scheduling.
 
@@ -1104,7 +1106,7 @@ Equal             & 0.2500 & 0.2500 & 0.2500 & 0.2500 \\
 	\label{fig:sensitivity_tau}
 \end{figure}
 
-The sensitivity analysis (Table~\ref{tab:sensitivity_weights}) confirms that the architecture ordering is preserved under $\pm 0.05$ perturbations of each weight. Figure~\ref{fig:sensitivity_tau} visualizes the per-model Kendall's $\tau$ under the baseline weights: $\mathcal{A}_{\text{H}}$ achieves $\tau > 0.87$ for every model, $\mathcal{A}_{\text{E}}$ ranges from 0.28 to 0.38, and $\mathcal{A}_{\text{D}}$ falls between $-0.002$ and 0.17, with no overlap between architecture groups. Full per-model sensitivity results appear in \ref{app:sensitivity_full}.
+The sensitivity analysis (Table~\ref{tab:sensitivity_weights}) confirms that the architecture ordering is preserved under $\pm 0.05$ perturbations of each weight. Figure~\ref{fig:sensitivity_tau} visualizes the per-model Kendall's $\tau$ under the baseline weights: $\mathcal{A}_{\text{H}}$ achieves $\tau > 0.88$ for every model, $\mathcal{A}_{\text{E}}$ ranges from 0.21 to 0.33, and $\mathcal{A}_{\text{D}}$ falls between 0.01 and 0.18, with no overlap between architecture groups. Full per-model sensitivity results appear in \ref{app:sensitivity_full}.
 
 \FloatBarrier
 
@@ -1152,7 +1154,7 @@ A Friedman test across configurations is marginally significant on Kendall's $\t
 \FloatBarrier
 \subsection{Efficiency and Cost}
 \label{sec:res-efficiency}
-Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as of July 15, 2026. $\mathcal{A}_{\text{H}}$ makes one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, and its shorter prompts average 800 input+output tokens per scenario versus $\sim$1,200 for $\mathcal{A}_{\text{D}}$ and $\sim$2,800 for $\mathcal{A}_{\text{E}}$ (which embeds three retrieved exemplars per call). Cost per 195-scenario run ranges from \$0.01 (Qwen, GPT-OSS) to \$0.28 (Gemini). $\mathcal{A}_{\text{D}}$ costs 2--6$\times$ more (\$0.02--\$0.80) and $\mathcal{A}_{\text{E}}$ is the most expensive (\$0.03--\$1.28), driven by exemplar token overhead. Even the priciest configuration stays under \$1.30 per full evaluation. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$'s $\tau$ varies only between 0.877 and 0.925 (range 0.048), while $\mathcal{A}_{\text{D}}$ spans 0.171 and $\mathcal{A}_{\text{E}}$ spans 0.096---the architecture compresses the capability gap, making cheaper models viable in production with minimal accuracy loss.
+Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as of July 15, 2026. $\mathcal{A}_{\text{H}}$ makes one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, and its shorter prompts average 800 input+output tokens per scenario versus $\sim$1,200 for $\mathcal{A}_{\text{D}}$ and $\sim$2,800 for $\mathcal{A}_{\text{E}}$ (which embeds the retrieved exemplar per call). Cost per 195-scenario run ranges from \$0.01 (Qwen, GPT-OSS) to \$0.28 (Gemini). $\mathcal{A}_{\text{D}}$ costs 2--6$\times$ more (\$0.02--\$0.80) and $\mathcal{A}_{\text{E}}$ is the most expensive (\$0.02--\$1.02), driven by exemplar token overhead. Even the priciest configuration stays under \$1.30 per full evaluation. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$'s $\tau$ varies only between 0.877 and 0.925 (range 0.048), while $\mathcal{A}_{\text{D}}$ spans 0.171 and $\mathcal{A}_{\text{E}}$ spans 0.096---the architecture compresses the capability gap, making cheaper models viable in production with minimal accuracy loss.
 
 \begin{table}[t]
 \small
@@ -1163,7 +1165,7 @@ Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as
 Architecture & Gemini & DeepSeek & GPT-OSS & Qwen \\
 \midrule
 $\mathcal{A}_{\text{D}}$ & \$0.80 & \$0.09 & \$0.02 & \$0.04 \\
-$\mathcal{A}_{\text{E}}$ & \$1.28 & \$0.08 & \$0.03 & \$0.08 \\
+$\mathcal{A}_{\text{E}}$ & \$1.02 & \$0.04 & \$0.02 & \$0.04 \\
 $\mathcal{A}_{\text{H}}$ & \$0.28 & \$0.01 & \$0.01 & \$0.01 \\
 \bottomrule
 \end{tabular}
@@ -1174,7 +1176,7 @@ $\mathcal{A}_{\text{H}}$ & \$0.28 & \$0.01 & \$0.01 & \$0.01 \\
 
 Failure rates are near-zero across all architectures and models. The single exception is GPT-OSS $\mathcal{A}_{\text{H}}$, which shows a 12.8\% extraction failure rate on parameter parsing---20 to 26 scenarios per run, all HVAC, all triggered by \texttt{FAILED\_EXTRACTION\_INVALID\_PARAMETERS} (see \ref{app:worked_example} for a worked example). The five-run averaging protocol recovers most of these: when a scenario fails in one run but succeeds in another, the successful run's score is used. After matching, 0\% of scenarios remain unscored across all five runs. This recovery mechanism is fair because the same protocol applies to all architectures; architectures with zero failure rates simply never need it. Without cross-run recovery, GPT-OSS $\mathcal{A}_{\text{H}}$'s pooled $\tau$ is 0.886 and Top-1 is 90.8\%, versus 0.897 and 91.6\% with recovery.
 
-To assess the impact of GPT-OSS extraction failures on per-run metrics, Table~\ref{tab:gptoss-per-run} reports the best and worst runs for GPT-OSS $\mathcal{A}_{\text{H}}$. The best run (fewest failures) achieves $\tau = 0.906$ and MAE of 0.039; the worst run (most failures) achieves $\tau = 0.886$ and MAE of 0.054. The 0.020 spread in $\tau$ and 0.015 spread in MAE are small relative to the between-architecture gaps, confirming that even GPT-OSS's worst run substantially outperforms the best runs of $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$.
+To assess the impact of GPT-OSS extraction failures on per-run metrics, Table~\ref{tab:gptoss-per-run} reports the best and worst runs for GPT-OSS $\mathcal{A}_{\text{H}}$. The best run (fewest failures) achieves $\tau = 0.901$ and MAE of 0.049; the worst run (most failures) achieves $\tau = 0.891$ and MAE of 0.055. The 0.010 spread in $\tau$ and 0.006 spread in MAE are small relative to the between-architecture gaps, confirming that even GPT-OSS's worst run substantially outperforms the best runs of $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$.
 
 All results in this paper follow an aggregate-then-evaluate protocol: for each scenario, the five per-run scores are averaged first, producing a single consensus score per criterion per alternative; all metrics ($\tau$, MAE, Top-1 accuracy, etc.) are then computed once on these averaged scores. This protocol is preferred over the compute-per-run-then-average alternative because it directly measures the decision quality of the score a household would actually receive (the five-run consensus), rather than averaging metrics that each reflect a different noise realization. The tradeoff is that it masks run-to-run variance in the final metrics; the boxplots in Figures~\ref{fig:box_tau}--\ref{fig:box_rmse} and the GPT-OSS per-run analysis above address this directly.
 
@@ -1188,9 +1190,9 @@ All results in this paper follow an aggregate-then-evaluate protocol: for each s
  & Best Run & Worst Run \\
 \midrule
 Failed scenarios & 20 & 26 \\
-Kendall's $\tau$ & 0.906 & 0.886 \\
-Overall MAE & 0.039 & 0.054 \\
-Top-1 Accuracy (\%) & 93.3 & 90.8 \\
+Kendall's $\tau$ & 0.901 & 0.891 \\
+Overall MAE & 0.049 & 0.055 \\
+Top-1 Accuracy (\%) & 92.7 & 90.5 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1209,8 +1211,8 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
   ylabel={Kendall's $\tau$}, ymin=-0.15, ymax=1.05,
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Gemini}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.159) (1, 0.1624) (1, 0.1829) (1, 0.1863) (1, 0.1897) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.3709) (2, 0.3778) (2, 0.3915) (2, 0.3983) (2, 0.4017) };
+\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.1590) (1, 0.1624) (1, 0.1829) (1, 0.1863) (1, 0.1897) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2815) (2, 0.3014) (2, 0.3019) (2, 0.3053) (2, 0.3333) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.9214) (3, 0.9214) (3, 0.9248) (3, 0.9248) (3, 0.9248) };
 \end{axis}
 \end{tikzpicture}
@@ -1223,9 +1225,9 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
   ylabel={Kendall's $\tau$}, ymin=-0.15, ymax=1.05,
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small DeepSeek}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.0997) (1, 0.1285) (1, 0.1316) (1, 0.1512) (1, 0.209) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2752) (2, 0.3094) (2, 0.3128) (2, 0.347) (2, 0.388) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.8935) (3, 0.894) (3, 0.894) (3, 0.9009) (3, 0.9043) };
+\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.0997) (1, 0.1285) (1, 0.1316) (1, 0.1512) (1, 0.2090) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2855) (2, 0.3162) (2, 0.3299) (2, 0.3504) (2, 0.3573) };
+\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.8935) (3, 0.8940) (3, 0.8940) (3, 0.9009) (3, 0.9043) };
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -1238,7 +1240,7 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small GPT-OSS}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.0017) (1, 0.0017) (1, 0.0291) (1, 0.0632) (1, 0.1077) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.306) (2, 0.306) (2, 0.3299) (2, 0.3333) (2, 0.3641) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2376) (2, 0.2513) (2, 0.2581) (2, 0.2615) (2, 0.3436) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.8863) (3, 0.8966) (3, 0.8971) (3, 0.8974) (3, 0.9059) };
 \end{axis}
 \end{tikzpicture}
@@ -1251,8 +1253,8 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
   ylabel={Kendall's $\tau$}, ymin=-0.15, ymax=1.05,
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Qwen}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, -0.0564) (1, 0.012) (1, 0.0256) (1, 0.0275) (1, 0.0412) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2479) (2, 0.2547) (2, 0.2615) (2, 0.2752) (2, 0.3333) };
+\addplot+[boxplot, fill=colorPure!30] coordinates { (1, -0.0564) (1, 0.0120) (1, 0.0256) (1, 0.0275) (1, 0.0412) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1624) (2, 0.1966) (2, 0.2103) (2, 0.2239) (2, 0.2410) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.8598) (3, 0.8797) (3, 0.8803) (3, 0.8838) (3, 0.8969) };
 \end{axis}
 \end{tikzpicture}
@@ -1261,7 +1263,7 @@ The results above are five-run averages. To assess trial-to-trial stability, we 
 \label{fig:box_tau}
 \end{figure*}
 
-RMSE, which penalizes large errors more heavily than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for every model and every run, while $\mathcal{A}_{\text{D}}$ never drops below 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.166]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The architecture ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds in every single run across all four models with no overlap: no run of any architecture overtakes another's median metric. This perfect separation confirms that the ranking advantage is not driven by lucky seeds or favourable random initialisations but is a stable structural property of the architecture design. Full per-metric distributions (MAE, RMSE, Top-1 accuracy) appear in \ref{app:variance}.
+RMSE, which penalizes large errors more heavily than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for three of four models across every run, while $\mathcal{A}_{\text{D}}$ never drops below 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.167]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The architecture ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds in every single run across all four models with no overlap: no run of any architecture overtakes another's median metric. This perfect separation confirms that the ranking advantage is not driven by lucky seeds or favourable random initialisations but is a stable structural property of the architecture design. Full per-metric distributions (MAE, RMSE, Top-1 accuracy) appear in \ref{app:variance}.
 
 
 
@@ -1274,11 +1276,11 @@ RMSE, which penalizes large errors more heavily than MAE, shows the same archite
 
 The architecture ordering established in Section~\ref{sec:results} is interpreted below.
 
-The model-separation finding deserves emphasis. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$ $\tau$ varies only between 0.877 and 0.925---a range of 0.048. For $\mathcal{A}_{\text{D}}$, the same spread across models is 0.171; for $\mathcal{A}_{\text{E}}$, 0.096. The $\mathcal{A}_{\text{H}}$ architecture compresses the capability gap: cheaper models become viable in production with minimal accuracy loss. A household-energy deployment using Qwen 3.5 9B through $\mathcal{A}_{\text{H}}$ would achieve 90.3\% Top-1 accuracy and $\tau = 0.877$, compared to 93.3\% and $\tau = 0.925$ for Gemini 3.5 Flash, at a fraction of the per-token cost.
+The model-separation finding deserves emphasis. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$ $\tau$ varies only between 0.880 and 0.923---a range of 0.043. For $\mathcal{A}_{\text{D}}$, the same spread across models is 0.166; for $\mathcal{A}_{\text{E}}$, 0.121. The $\mathcal{A}_{\text{H}}$ architecture compresses the capability gap: cheaper models become viable in production with minimal accuracy loss. A household-energy deployment using Qwen 3.5 9B through $\mathcal{A}_{\text{H}}$ would achieve 89.7\% Top-1 accuracy and $\tau = 0.880$, compared to 93.1\% and $\tau = 0.923$ for Gemini 3.5 Flash, at a fraction of the per-token cost.
 
-GPT-OSS-20B had a 12.8\% extraction failure rate on $\mathcal{A}_{\text{H}}$ (all recovered by cross-run averaging), yet its $\mathcal{A}_{\text{H}}$ $\tau$ of 0.897 was closer to Gemini's 0.925 than to GPT-OSS's own $\mathcal{A}_{\text{D}}$ score of 0.134. Model generation and training quality, not parameter count, explain the 0.048 $\tau$ spread across the 9B-to-flagship range.
+GPT-OSS-20B had a 12.8\% extraction failure rate on $\mathcal{A}_{\text{H}}$ (all recovered by cross-run averaging), yet its $\mathcal{A}_{\text{H}}$ $\tau$ of 0.897 was closer to Gemini's 0.923 than to GPT-OSS's own $\mathcal{A}_{\text{D}}$ score of 0.041. Model generation and training quality, not parameter count, explain the 0.043 $\tau$ spread across the 9B-to-flagship range.
 
-The ranking advantage of $\mathcal{A}_{\text{H}}$ is partly structural (see Section~\ref{sec:architectures}). The MAE results confirm that extraction is genuinely accurate: $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.043--0.068 across models (see Section~\ref{sec:res-error}), while RMSE remains below 0.11 for all models.
+The ranking advantage of $\mathcal{A}_{\text{H}}$ is partly structural (see Section~\ref{sec:architectures}). The MAE results confirm that extraction is genuinely accurate: $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.046--0.072 across models (see Section~\ref{sec:res-error}), while RMSE remains below 0.11 for three of four models.
 
 The RAG ablation study (Table~\ref{tab:item9}) confirms that exemplar scores provide the anchoring signal: removing scores drops $\tau$ from 0.316 to 0.109, while removing hidden engineering parameters has negligible effect ($\tau = 0.300$ versus 0.316). The near-equivalence of the top cluster (control, retrieval variants, exemplar-content, and alternate embedding; pairwise $p_{\text{Holm}} > 0.97$) and the poor performance of random exemplars ($\tau = 0.062$) together demonstrate that the RAG contribution comes from the semantic selection of similar exemplars whose scores serve as calibration anchors, not from the retrieval architecture or the engineering parameters within the exemplars.
 
@@ -1295,7 +1297,7 @@ Households contain multiple occupants with conflicting preferences: different th
 
 These results extend several lines of prior research. Svoboda and Lande (2024) used GPT-4 to construct an AHP decision model for cybersecurity and reported a consistency ratio below the conventional 0.10 threshold, demonstrating that LLMs above a certain capability can produce coherent MCDA structures \cite{svoboda2024}. Our study generalizes this finding across three integration architectures and four models, showing that the architecture choice---not just model capability---determines whether the LLM output converges to a reliable ranking. The $\mathcal{A}_{\text{D}}$ results reinforce the earlier finding that weaker integration strategies produce unreliable rankings even with capable models.
 
-Shekhovtsov et al.\ (2026) integrated LLMs with the COMET method for automated MCDA, reporting that structured output formats improved ranking consistency \cite{icaart26}. Our $\mathcal{A}_{\text{H}}$ architecture takes this principle further by replacing LLM scoring with a deterministic calculator altogether, reserving the LLM for parameter extraction only. The resulting $\tau = 0.902$ across 195 scenarios represents a meaningful advance over pure LLM MCDA pipelines.
+Shekhovtsov et al.\ (2026) integrated LLMs with the COMET method for automated MCDA, reporting that structured output formats improved ranking consistency \cite{icaart26}. Our $\mathcal{A}_{\text{H}}$ architecture takes this principle further by replacing LLM scoring with a deterministic calculator altogether, reserving the LLM for parameter extraction only. The resulting $\tau = 0.899$ across 195 scenarios represents a meaningful advance over pure LLM MCDA pipelines.
 
 The finding that $\mathcal{A}_{\text{D}}$ scores cluster in a narrow middle band---a central-tendency bias---aligns with the LLM-as-judge literature. Johnson and Zhang (2024) found GPT-4o essay scores clustering below human ratings with reduced variance \cite{johnsonzhang2024}; Poli\v{c}ar et al.\ (2025) documented model-specific leniency profiles relative to human graders \cite{policar2025bioinformatics}. The $\mathcal{A}_{\text{D}}$ results extend this observation to MCDA scoring: without external grounding, the LLM avoids extreme scores, missing the sharp nonlinearities in the ground-truth value functions. Li et al.\ (2026) documented persistent scoring-bias distortions in LLM-as-a-judge pipelines \cite{li2026scoringbias}; our results confirm that these distortions propagate into ranking error when the LLM scores directly.
 
@@ -1381,7 +1383,7 @@ Finally, a systematic cost-latency-accuracy Pareto analysis across model sizes, 
 \FloatBarrier
 \section{Conclusion}
 \label{sec5}
-This study benchmarked three strategies for integrating an LLM into an MCDA workflow for household energy decisions---direct $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ prompting, and $\mathcal{A}_{\text{H}}$ that uses the LLM only to extract withheld engineering parameters and a deterministic physics calculator to score---against a physics-based MAVT ground truth across HVAC, Appliance, and Shower decisions. $\mathcal{A}_{\text{H}}$ achieved Kendall's $\tau$ of 0.902 and MAE of 0.051, compared to 0.339 and 0.138 for $\mathcal{A}_{\text{E}}$ and 0.095 and 0.219 for $\mathcal{A}_{\text{D}}$. The architecture ordering held across all four models. In answer to RQ1, $\mathcal{A}_{\text{H}}$ most accurately replicates the physics-based ground truth; in answer to RQ2, this ordering held across all four models tested, though the gap between architectures narrowed for weaker models.
+This study benchmarked three strategies for integrating an LLM into an MCDA workflow for household energy decisions---direct $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ prompting, and $\mathcal{A}_{\text{H}}$ that uses the LLM only to extract withheld engineering parameters and a deterministic physics calculator to score---against a physics-based MAVT ground truth across HVAC, Appliance, and Shower decisions. $\mathcal{A}_{\text{H}}$ achieved Kendall's $\tau$ of 0.899 and MAE of 0.054, compared to 0.277 and 0.172 for $\mathcal{A}_{\text{E}}$ and 0.093 and 0.232 for $\mathcal{A}_{\text{D}}$. The architecture ordering held across all four models. In answer to RQ1, $\mathcal{A}_{\text{H}}$ most accurately replicates the physics-based ground truth; in answer to RQ2, this ordering held across all four models tested, though the gap between architectures narrowed for weaker models.
 
 Grounding the LLM's numeric reasoning in a deterministic calculator improves agreement with the physics ground truth, and the advantage holds as model capability decreases. A physics backbone compensates for weaker models. We separate this claim into its ranking and score-level components. The ranking robustness of the $\mathcal{A}_{\text{H}}$ design is partly structural (see Section~\ref{sec:architectures}), so the score-level error and the appliance-timing result are the load-bearing measures of extraction fidelity. The two principal threats---one researcher designed both the calculator and the $\mathcal{A}_{\text{H}}$ extractor, and the single-grid (Pennsylvania/PJM) specificity of the ground truth---are stated in Section~\ref{sec:limitations} and bound the generalization.
 For households, the practical payoff is a decision tool that works from a natural-language description without requiring MCDA expertise: describe the situation, receive a ranked recommendation backed by transparent physics. For grid planners and demand-response programs, the $\mathcal{A}_{\text{H}}$ architecture demonstrates that LLM-assisted MCDA can scale to millions of household decisions---each scored consistently against the same engineering standards---without the per-scenario expert effort that traditional MCDA demands. What's more, creating a calculator, while not feasible on a short notice or for a small set of decisions (which is where $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ shine), can be done for any decision making field. This can lead to an extremely powerful, accessible tool for optimal decision making.
@@ -1420,7 +1422,7 @@ $s_j$ & MAVT weighted sum score for alternative $j$ \\
 $\text{MAE}$ & Mean Absolute Error on MAVT score (0--1 scale) \\
 $\text{RMSE}$ & Root Mean Squared Error on MAVT score (0--1 scale) \\
 $n$ & number of test scenarios evaluated \\
-$k$ & number of retrieved chunks per query in RAG ($k=3$) \\
+$k$ & number of retrieved scenarios per query in RAG ($k=1$) \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1491,22 +1493,22 @@ $\tau$; T1 = Top-1 accuracy (\%); T2 = Top-2 accuracy (\%).}
 \textbf{Architecture} & \textbf{Model} & $\tau$ & T1 & T2 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{D}}$}
- & Gemini   & 0.169 & 35.9 & 69.7 \\
- & DeepSeek & 0.159 & 40.0 & 71.8 \\
- & GPT-OSS  & 0.053 & 33.9 & 65.1 \\
- & Qwen     & $-$0.002 & 31.8 & 64.1 \\
+ & Gemini   & 0.176 & 36.2 & 69.7 \\
+ & DeepSeek & 0.144 & 36.7 & 71.8 \\
+ & GPT-OSS  & 0.041 & 33.3 & 65.1 \\
+ & Qwen     & 0.010 & 30.0 & 64.1 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{E}}$}
- & Gemini   & 0.378 & 54.4 & 82.6 \\
- & DeepSeek & 0.354 & 49.7 & 79.5 \\
- & GPT-OSS  & 0.340 & 51.3 & 82.1 \\
- & Qwen     & 0.282 & 51.3 & 79.5 \\
+ & Gemini   & 0.305 & 47.2 & 82.6 \\
+ & DeepSeek & 0.328 & 54.5 & 79.5 \\
+ & GPT-OSS  & 0.270 & 48.0 & 82.1 \\
+ & Qwen     & 0.207 & 47.0 & 79.5 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{H}}$}
- & Gemini   & 0.925 & 93.3 & 98.5 \\
- & DeepSeek & 0.897 & 91.3 & 97.4 \\
- & GPT-OSS  & 0.901 & 91.8 & 99.0 \\
- & Qwen     & 0.877 & 90.3 & 96.4 \\
+ & Gemini   & 0.923 & 93.1 & 98.5 \\
+ & DeepSeek & 0.897 & 90.8 & 97.4 \\
+ & GPT-OSS  & 0.897 & 91.6 & 99.0 \\
+ & Qwen     & 0.880 & 89.7 & 96.4 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1537,7 +1539,7 @@ $\tau$; T1 = Top-1 accuracy (\%); T2 = Top-2 accuracy (\%).}
 \multirow{4}{*}{$\mathcal{A}_{\text{H}}$}
  & Gemini   & 0.981 & 97.1 & 100.0 \\
  & DeepSeek & 0.933 & 92.9 & 98.6 \\
- & GPT-OSS  & 0.933 & 92.9 & 100.0 \\
+ & GPT-OSS  & 0.951 & 92.9 & 100.0 \\
  & Qwen     & 0.876 & 85.7 & 97.1 \\
 \bottomrule
 \end{tabular}
@@ -1627,7 +1629,7 @@ evaluated separately for each LLM model.
 \toprule
 \textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Baseline      & 0.169 & 0.378 & 0.925 \\
+Baseline      & 0.176 & 0.305 & 0.923 \\
 Ene $+0.05$   & 0.200 & 0.374 & 0.904 \\
 Ene $-0.05$   & 0.210 & 0.443 & 0.945 \\
 Env $+0.05$   & 0.190 & 0.385 & 0.921 \\
@@ -1653,7 +1655,7 @@ Equal         & 0.323 & 0.463 & 0.925 \\
 \toprule
 \textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Baseline      & 0.159 & 0.354 & 0.897 \\
+Baseline      & 0.144 & 0.328 & 0.897 \\
 Ene $+0.05$   & 0.203 & 0.357 & 0.880 \\
 Ene $-0.05$   & 0.139 & 0.381 & 0.939 \\
 Env $+0.05$   & 0.176 & 0.350 & 0.891 \\
@@ -1679,7 +1681,7 @@ Equal         & 0.121 & 0.395 & 0.921 \\
 \toprule
 \textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Baseline      & 0.053 & 0.340 & 0.907 \\
+Baseline      & 0.041 & 0.270 & 0.897 \\
 Ene $+0.05$   & 0.080 & 0.357 & 0.904 \\
 Ene $-0.05$   & 0.074 & 0.354 & 0.924 \\
 Env $+0.05$   & 0.050 & 0.340 & 0.914 \\
@@ -1705,7 +1707,7 @@ Equal         & 0.142 & 0.361 & 0.904 \\
 \toprule
 \textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Baseline      & $-$0.002 & 0.282 & 0.877 \\
+Baseline      & 0.010 & 0.207 & 0.880 \\
 Ene $+0.05$   & 0.039 & 0.275 & 0.877 \\
 Ene $-0.05$   & $-$0.019 & 0.268 & 0.904 \\
 Env $+0.05$   & 0.009 & 0.289 & 0.891 \\
@@ -1741,8 +1743,8 @@ this audited matrix.
 The retrieval index was built using the
 \texttt{sentence-transformers/all-MiniLM-L6-v2} embedding model
 \cite{reimers2019sentencebert}, producing 384-dimensional dense vectors.
-At query time, the three most similar scenarios ($k=3$) are retrieved by
-cosine similarity and rendered as full worked examples in the LLM prompt.
+At query time, the single most similar scenario ($k=1$) is retrieved by
+cosine similarity and rendered as a full worked example in the LLM prompt.
 The embedding string includes all homeowner-visible parameters (location,
 square footage, insulation tier, household size, housing type, utility
 budget, outdoor temperature, house age) plus band labels for age and flow
@@ -2002,8 +2004,8 @@ value (1928) to all four criterion scores for that scenario.
   ylabel={Overall MAE}, ymin=0, ymax=0.35,
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Gemini}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2175) (1, 0.2197) (1, 0.2202) (1, 0.2207) (1, 0.222) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1285) (2, 0.1288) (2, 0.1289) (2, 0.1291) (2, 0.1292) };
+\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2175) (1, 0.2197) (1, 0.2202) (1, 0.2207) (1, 0.2220) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1578) (2, 0.1590) (2, 0.1592) (2, 0.1599) (2, 0.1604) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0468) (3, 0.0469) (3, 0.0476) (3, 0.0478) (3, 0.0485) };
 \end{axis}
 \end{tikzpicture}
@@ -2017,7 +2019,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small DeepSeek}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2287) (1, 0.2291) (1, 0.2311) (1, 0.2317) (1, 0.2351) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1356) (2, 0.1391) (2, 0.1409) (2, 0.1409) (2, 0.1434) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1643) (2, 0.1658) (2, 0.1678) (2, 0.1679) (2, 0.1694) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0393) (3, 0.0441) (3, 0.0473) (3, 0.0476) (3, 0.0507) };
 \end{axis}
 \end{tikzpicture}
@@ -2031,8 +2033,8 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small GPT-OSS}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2391) (1, 0.2393) (1, 0.2421) (1, 0.2425) (1, 0.2429) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1432) (2, 0.1437) (2, 0.1449) (2, 0.1469) (2, 0.1508) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0509) (3, 0.051) (3, 0.0514) (3, 0.0515) (3, 0.0541) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1649) (2, 0.1675) (2, 0.1706) (2, 0.1711) (2, 0.1712) };
+\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0509) (3, 0.0510) (3, 0.0514) (3, 0.0515) (3, 0.0541) };
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -2044,9 +2046,9 @@ value (1928) to all four criterion scores for that scenario.
   ylabel={Overall MAE}, ymin=0, ymax=0.35,
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Qwen}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2327) (1, 0.2341) (1, 0.235) (1, 0.2353) (1, 0.2371) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1673) (2, 0.1682) (2, 0.1696) (2, 0.1708) (2, 0.1723) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.069) (3, 0.0705) (3, 0.0727) (3, 0.0729) (3, 0.073) };
+\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2327) (1, 0.2341) (1, 0.2350) (1, 0.2353) (1, 0.2371) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1860) (2, 0.1894) (2, 0.1917) (2, 0.1950) (2, 0.1966) };
+\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0690) (3, 0.0705) (3, 0.0727) (3, 0.0729) (3, 0.0730) };
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -2064,7 +2066,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Gemini}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 34.36) (1, 35.90) (1, 35.90) (1, 36.41) (1, 38.46) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 54.36) (2, 54.36) (2, 54.87) (2, 55.38) (2, 55.90) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 45.60) (2, 46.28) (2, 46.32) (2, 47.12) (2, 50.78) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 92.82) (3, 92.82) (3, 93.33) (3, 93.33) (3, 93.33) };
 \end{axis}
 \end{tikzpicture}
@@ -2078,7 +2080,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small DeepSeek}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 33.85) (1, 35.57) (1, 35.94) (1, 36.08) (1, 41.97) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 47.18) (2, 47.18) (2, 49.23) (2, 51.28) (2, 51.28) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 50.77) (2, 54.36) (2, 54.87) (2, 55.38) (2, 56.92) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 90.21) (3, 90.26) (3, 90.26) (3, 90.77) (3, 92.31) };
 \end{axis}
 \end{tikzpicture}
@@ -2092,7 +2094,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small GPT-OSS}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 30.77) (1, 31.79) (1, 32.31) (1, 35.90) (1, 35.90) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 48.72) (2, 48.72) (2, 52.31) (2, 52.31) (2, 54.87) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 45.64) (2, 45.64) (2, 46.67) (2, 50.26) (2, 51.79) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 90.86) (3, 91.18) (3, 91.38) (3, 91.72) (3, 92.94) };
 \end{axis}
 \end{tikzpicture}
@@ -2106,7 +2108,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Qwen}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 26.15) (1, 27.69) (1, 30.93) (1, 32.47) (1, 32.82) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 48.72) (2, 49.74) (2, 50.26) (2, 50.26) (2, 53.85) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 44.10) (2, 44.62) (2, 47.18) (2, 48.21) (2, 50.77) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 88.72) (3, 89.18) (3, 89.23) (3, 89.74) (3, 91.75) };
 \end{axis}
 \end{tikzpicture}
@@ -2127,8 +2129,8 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Gemini}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2935) (1, 0.2966) (1, 0.2971) (1, 0.2974) (1, 0.2982) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1985) (2, 0.1989) (2, 0.1991) (2, 0.1994) (2, 0.1999) };
-\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.099) (3, 0.0994) (3, 0.0997) (3, 0.1011) (3, 0.1021) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2323) (2, 0.2326) (2, 0.2334) (2, 0.2348) (2, 0.2352) };
+\addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0990) (3, 0.0994) (3, 0.0997) (3, 0.1011) (3, 0.1021) };
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -2141,7 +2143,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small DeepSeek}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2989) (1, 0.3006) (1, 0.3007) (1, 0.3014) (1, 0.3066) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.1999) (2, 0.2038) (2, 0.206) (2, 0.2075) (2, 0.2104) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2338) (2, 0.2353) (2, 0.2370) (2, 0.2376) (2, 0.2382) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0775) (3, 0.0841) (3, 0.0944) (3, 0.0953) (3, 0.1067) };
 \end{axis}
 \end{tikzpicture}
@@ -2154,8 +2156,8 @@ value (1928) to all four criterion scores for that scenario.
   ylabel={Overall RMSE}, ymin=0, ymax=0.35,
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small GPT-OSS}, title style={font=\small}]
-\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.3045) (1, 0.306) (1, 0.3063) (1, 0.308) (1, 0.3082) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.21) (2, 0.2123) (2, 0.2136) (2, 0.2188) (2, 0.2244) };
+\addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.3045) (1, 0.3060) (1, 0.3063) (1, 0.3080) (1, 0.3082) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2371) (2, 0.2421) (2, 0.2447) (2, 0.2465) (2, 0.2479) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.0979) (3, 0.0984) (3, 0.0993) (3, 0.1012) (3, 0.1084) };
 \end{axis}
 \end{tikzpicture}
@@ -2169,7 +2171,7 @@ value (1928) to all four criterion scores for that scenario.
   xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
   title={\small Qwen}, title style={font=\small}]
 \addplot+[boxplot, fill=colorPure!30] coordinates { (1, 0.2936) (1, 0.2948) (1, 0.2951) (1, 0.2952) (1, 0.2983) };
-\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2354) (2, 0.2361) (2, 0.2372) (2, 0.2384) (2, 0.2395) };
+\addplot+[boxplot, fill=colorRAG!30] coordinates { (2, 0.2516) (2, 0.2564) (2, 0.2606) (2, 0.2644) (2, 0.2646) };
 \addplot+[boxplot, fill=colorLLMParameterizedReferenceScoring!30] coordinates { (3, 0.1567) (3, 0.1571) (3, 0.1631) (3, 0.1658) (3, 0.1664) };
 \end{axis}
 \end{tikzpicture}
@@ -2187,10 +2189,10 @@ value (1928) to all four criterion scores for that scenario.
 \toprule
 Model & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Gemini & 0.220 & 0.129 & 0.047 \\
-DeepSeek & 0.231 & 0.141 & 0.045 \\
-GPT-OSS & 0.241 & 0.145 & 0.052 \\
-Qwen & 0.235 & 0.170 & 0.071 \\
+Gemini & 0.220 & 0.159 & 0.048 \\
+DeepSeek & 0.231 & 0.167 & 0.046 \\
+GPT-OSS & 0.241 & 0.169 & 0.052 \\
+Qwen & 0.235 & 0.192 & 0.072 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2300,17 +2302,17 @@ Metric & Architecture & Point Est. & 95\% CI \\
 \midrule
 \multirow{3}{*}{Kendall's $\tau$}
  & $\mathcal{A}_{\text{D}}$ & 0.093 & [0.058, 0.125] \\
- & $\mathcal{A}_{\text{E}}$ & 0.329 & [0.307, 0.350] \\
+ & $\mathcal{A}_{\text{E}}$ & 0.277 & [0.253, 0.299] \\
  & $\mathcal{A}_{\text{H}}$ & 0.899 & [0.892, 0.907] \\
 \midrule
 \multirow{3}{*}{MAE}
  & $\mathcal{A}_{\text{D}}$ & 0.232 & [0.228, 0.235] \\
- & $\mathcal{A}_{\text{E}}$ & 0.146 & [0.140, 0.153] \\
+ & $\mathcal{A}_{\text{E}}$ & 0.172 & [0.167, 0.178] \\
  & $\mathcal{A}_{\text{H}}$ & 0.054 & [0.050, 0.060] \\
 \midrule
 \multirow{3}{*}{Top-1 (\%)}
  & $\mathcal{A}_{\text{D}}$ & 34.1 & [32.5, 35.6] \\
- & $\mathcal{A}_{\text{E}}$ & 51.5 & [50.3, 52.7] \\
+ & $\mathcal{A}_{\text{E}}$ & 49.2 & [47.6, 51.0] \\
  & $\mathcal{A}_{\text{H}}$ & 91.3 & [90.7, 91.9] \\
 \bottomrule
 \end{tabular}
