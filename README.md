@@ -46,48 +46,48 @@ LLM-Parameterized_Reference_Scoring dominates across all four models. RAG-Enhanc
 
 | Model | Architecture | Kendall's tau | Spearman rho | Top-1 Acc | Top-2 Acc | Overall MAE |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Gemini 3.5 Flash** | LLM-Parameterized_Reference_Scoring | **0.925** | **0.936** | **0.933** | **0.985** | **0.047** |
-| | RAG-Enhanced | 0.378 | 0.408 | 0.544 | 0.826 | 0.127 |
-| | Pure Prompting | 0.169 | 0.159 | 0.359 | 0.697 | 0.217 |
-| **DeepSeek V4 Flash** | LLM-Parameterized_Reference_Scoring | **0.897** | **0.910** | **0.913** | **0.974** | **0.043** |
-| | RAG-Enhanced | 0.354 | 0.369 | 0.497 | 0.795 | 0.132 |
-| | Pure Prompting | 0.159 | 0.167 | 0.400 | 0.718 | 0.208 |
-| **GPT-OSS 20B** | LLM-Parameterized_Reference_Scoring | **0.907** | **0.920** | **0.923** | **0.990** | **0.046** |
-| | RAG-Enhanced | 0.340 | 0.374 | 0.513 | 0.821 | 0.133 |
-| | Pure Prompting | 0.053 | 0.059 | 0.338 | 0.651 | 0.230 |
-| **Qwen 3.5 9B** | LLM-Parameterized_Reference_Scoring | **0.877** | **0.887** | **0.903** | **0.964** | **0.068** |
-| | RAG-Enhanced | 0.282 | 0.323 | 0.513 | 0.795 | 0.159 |
-| | Pure Prompting | -0.002 | 0.005 | 0.318 | 0.641 | 0.222 |
+| **Gemini 3.5 Flash** | LLM-Parameterized_Reference_Scoring | **0.923** | **0.935** | **0.931** | **0.985** | **0.048** |
+| | RAG-Enhanced | 0.305 | 0.320 | 0.472 | 0.794 | 0.159 |
+| | Pure Prompting | 0.176 | 0.173 | 0.362 | 0.697 | 0.220 |
+| **DeepSeek V4 Flash** | LLM-Parameterized_Reference_Scoring | **0.897** | **0.910** | **0.908** | **0.977** | **0.046** |
+| | RAG-Enhanced | 0.328 | 0.354 | 0.545 | 0.815 | 0.167 |
+| | Pure Prompting | 0.144 | 0.145 | 0.367 | 0.722 | 0.231 |
+| **GPT-OSS 20B** | LLM-Parameterized_Reference_Scoring | **0.897** | **0.911** | **0.916** | **0.981** | **0.052** |
+| | RAG-Enhanced | 0.270 | 0.290 | 0.480 | 0.769 | 0.169 |
+| | Pure Prompting | 0.041 | 0.038 | 0.333 | 0.665 | 0.241 |
+| **Qwen 3.5 9B** | LLM-Parameterized_Reference_Scoring | **0.880** | **0.890** | **0.897** | **0.969** | **0.072** |
+| | RAG-Enhanced | 0.207 | 0.222 | 0.470 | 0.768 | 0.192 |
+| | Pure Prompting | 0.010 | 0.008 | 0.300 | 0.677 | 0.235 |
 
 ### By Decision Type (Gemini 3.5 Flash)
 
 | Decision | Architecture | Kendall's tau | Spearman rho | Top-1 Acc | Overall MAE |
 | --- | --- | --- | --- | --- | --- |
-| **HVAC** | LLM-Parameterized_Reference_Scoring | **0.981** | **0.986** | **0.971** | **0.029** |
-| | RAG-Enhanced | -0.076 | -0.050 | 0.186 | 0.167 |
-| | Pure Prompting | -0.048 | -0.057 | 0.243 | 0.238 |
-| **Appliance** | LLM-Parameterized_Reference_Scoring | **0.959** | **0.969** | **0.969** | **0.066** |
-| | RAG-Enhanced | 0.456 | 0.492 | 0.692 | 0.119 |
-| | Pure Prompting | -0.026 | -0.085 | 0.231 | 0.268 |
+| **HVAC** | LLM-Parameterized_Reference_Scoring | **0.977** | **0.983** | **0.966** | **0.030** |
+| | RAG-Enhanced | -0.116 | -0.094 | 0.153 | 0.203 |
+| | Pure Prompting | -0.032 | -0.037 | 0.254 | 0.241 |
+| **Appliance** | LLM-Parameterized_Reference_Scoring | **0.959** | **0.969** | **0.969** | **0.067** |
+| | RAG-Enhanced | 0.344 | 0.335 | 0.563 | 0.159 |
+| | Pure Prompting | -0.022 | -0.075 | 0.249 | 0.272 |
 | **Shower** | LLM-Parameterized_Reference_Scoring | **0.822** | **0.842** | **0.850** | **0.048** |
-| | RAG-Enhanced | 0.822 | 0.850 | 0.800 | 0.090 |
-| | Pure Prompting | 0.633 | 0.675 | 0.633 | 0.137 |
+| | RAG-Enhanced | 0.766 | 0.800 | 0.755 | 0.107 |
+| | Pure Prompting | 0.633 | 0.688 | 0.610 | 0.139 |
 
 ### Key Findings
 
 - **LLM-Parameterized_Reference_Scoring achieves near-perfect ranking on HVAC (tau=0.98) and Appliance (tau=0.96)** where its inferred parameters (R-value, SEER, kWh/cycle) map deterministically through physics formulas. Shower is lower (tau=0.82) because GPM estimation from flow-rate labels has inherent precision limits.
-- **Pure Prompting performs at or below random on HVAC and Appliance** (HVAC tau: -0.05 to 0.24; Appliance tau: -0.19 to -0.03). It only works on Shower (tau: 0.10-0.72), where the decision space is simpler.
-- **RAG-Enhanced provides a meaningful boost over Pure Prompting** on Appliance (tau: 0.07-0.46) and Shower (tau: 0.43-0.82) but fails on HVAC (tau: -0.08 to 0.27). The HVAC decision space has high scenario diversity that the 35-example RAG corpus cannot adequately cover.
+- **Pure Prompting performs at or below random on HVAC and Appliance** (HVAC tau: -0.03 to 0.24; Appliance tau: -0.19 to -0.02). It only works on Shower (tau: 0.10-0.63), where the decision space is simpler.
+- **RAG-Enhanced provides a modest boost over Pure Prompting** on Appliance (tau: 0.07-0.34) and Shower (tau: 0.43-0.82) but fails on HVAC (tau: -0.12 to 0.27). The HVAC decision space has high scenario diversity that the 35-example RAG corpus cannot adequately cover.
 - **Model capability correlates weakly with architecture ranking.** The cheapest model (GPT-OSS 20B at $0.029/M tokens) achieves comparable LLM-Parameterized_Reference_Scoring performance to the most expensive (Gemini 3.5 Flash at $1.50/M). Architecture design dominates model choice.
-- **Failure rates are negligible** across all architectures and models (0-1.2%), except GPT-OSS 20B on LLM-Parameterized_Reference_Scoring (12.8% extraction failure rate, 0.5% overall scenario failure after multi-run averaging).
+- **Failure rates are negligible** across all architectures and models (0-0.5%), except GPT-OSS 20B on LLM-Parameterized_Reference_Scoring (12.8% extraction failure rate, 0.5% overall scenario failure after multi-run averaging).
 
 ### API Costs (per 5-run benchmark)
 
 | Architecture | Calls/run | Gemini | DeepSeek | GPT-OSS | Qwen |
 | --- | --- | --- | --- | --- | --- |
-| Pure Prompting | 585 | ~$4.00 | ~$2.50 | ~$0.25 | ~$0.30 |
-| RAG-Enhanced | 585 | ~$6.40 | ~$5.00 | ~$0.50 | ~$0.40 |
-| LLM-Parameterized_Reference_Scoring | 195 | ~$1.40 | ~$0.30 | ~$0.10 | ~$0.10 |
+| Pure Prompting | 585 | ~$4.00 | ~$0.45 | ~$0.12 | ~$0.22 |
+| RAG-Enhanced | 585 | ~$5.10 | ~$0.20 | ~$0.12 | ~$0.21 |
+| LLM-Parameterized_Reference_Scoring | 195 | ~$1.40 | ~$0.06 | ~$0.03 | ~$0.06 |
 
 ---
 
@@ -110,7 +110,7 @@ Set `MODEL_KEY` and `N_RUNS` in [model_config.py](model_config.py) to control mo
 | `deepseek` | Medium - DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | non-reasoning | `Output Files DeepSeek V4 Flash` |
 | `gemini` | Large - Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
 
-Model pricing (as of benchmark date): GPT-OSS $0.029/M in / $0.14/M out; Qwen $0.04/M / $0.15/M; DeepSeek $0.0983/M / $0.1966/M; Gemini $1.50/M / $9/M.
+Model pricing (as of benchmark date): GPT-OSS $0.029/M in / $0.14/M out; Qwen $0.10/M / $0.15/M; DeepSeek $0.09/M / $0.18/M; Gemini $1.50/M / $9/M.
 
 ---
 
@@ -185,7 +185,7 @@ LLM scores all four criteria directly via calibrated system prompts with per-dec
 
 ### 2. RAG-Enhanced (`Example-Guided_LLM_Scoring.py`)
 
-Semantic retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios) provides calibration examples before the LLM scores each alternative. Uses sentence-transformers (all-MiniLM-L6-v2) embeddings.
+Semantic retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios) provides a calibration exemplar before the LLM scores each alternative. Uses sentence-transformers (all-MiniLM-L6-v2) embeddings with k=1 retrieval (selected via ablation: k=1,3,5 are statistically indistinguishable on ranking accuracy, and k=1 minimizes cost).
 
 - **API calls per scenario:** 3
 - **API calls per run (195 scenarios):** 585
