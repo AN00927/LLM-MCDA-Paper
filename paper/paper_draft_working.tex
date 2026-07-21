@@ -962,13 +962,13 @@ Table~\ref{tab:overall_by_model} shows each model's performance across architect
 
 The ranking metrics are partly structurally favored in $\mathcal{A}_{\text{H}}$ (see Section~\ref{sec:architectures} for the structural argument); the score-level error (MAE/RMSE) is the stronger evidence of extraction fidelity.
 
-The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-design}). Pairwise differences between architectures are significant under Wilcoxon signed-rank testing ($p < 0.001$ for each adjacent pair), applied to per-scenario Kendall's $\tau$ within each model and combined across models using Stouffer's method (see \ref{app:significance} for full results).
+The ordering holds across all nine weight perturbations (Section~\ref{sec:mavt-design}). Pairwise differences between architectures are significant under Wilcoxon signed-rank testing (Stouffer-combined $p < 0.001$ for each adjacent pair on all metrics; see \ref{app:significance} for full results).
 
-ICC(2,1) for MAE is 0.80--0.91 across architectures: model choice drives most score-level error. ICC for Top-1 accuracy is 0.08--0.27: scenario difficulty drives correct-alternative identification. Cliff's $\delta$ between $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{H}}$ is 0.66--0.80 for MAE and 0.55--0.77 for $\tau$ (both large effects). Bootstrap 95\% BCa intervals for $\mathcal{A}_{\text{H}}$ tau [0.892, 0.907] and MAE [0.050, 0.060] do not overlap $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$ intervals on any metric.
+ICC(2,1) for MAE is 0.80--0.83 across architectures: model choice drives most score-level error. ICC for Top-1 accuracy is 0.08--0.27: scenario difficulty drives correct-alternative identification. Cliff's $\delta$ between $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{H}}$ is large across all models: MAE ranges from 0.738 (Qwen) to 0.875 (DeepSeek), $\tau$ from $-$0.592 (Gemini) to $-$0.829 (Qwen). Per-model bootstrap 95\% BCa intervals for $\mathcal{A}_{\text{H}}$ show no overlap with $\mathcal{A}_{\text{E}}$ or $\mathcal{A}_{\text{D}}$ on any metric (Table~\ref{tab:bootstrap_ci}).
 
-The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. $\mathcal{A}_{\text{H}}$ achieves overall MAE of 0.054 on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5\% on average. Its RMSE/MAE ratio is the highest among the three architectures---indicating that while average error is low, a small number of scenarios (primarily shower cases requiring GPM estimation) produce larger deviations that pull RMSE above twice the MAE. By contrast, $\mathcal{A}_{\text{D}}$ MAE of 0.232 means individual scores routinely miss by more than 0.2 points on a 1-point scale, and $\mathcal{A}_{\text{E}}$ at 0.172 falls in between---usable for rough ranking but not for reliable score comparison.
+The MAE and RMSE values quantify how closely each architecture's scores match the ground truth. Model-level MAE for $\mathcal{A}_{\text{H}}$ ranges from 0.046 (DeepSeek) to 0.072 (Qwen) on the 0--1 MAVT scale, meaning score predictions deviate from the true value by roughly 5--7\% on average. Its RMSE/MAE ratio is the highest among the three architectures---indicating that while average error is low, a small number of scenarios (primarily shower cases requiring GPM estimation) produce larger deviations that pull RMSE above twice the MAE. By contrast, $\mathcal{A}_{\text{D}}$ MAE ranges from 0.220 to 0.241 across models---individual scores routinely miss by more than 0.2 points on a 1-point scale---and $\mathcal{A}_{\text{E}}$ at 0.159 to 0.192 falls in between, usable for rough ranking but not for reliable score comparison.
 
-The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$ for Gemini $\mathcal{A}_{\text{H}}$, with $\tau > 0.88$ for the other three models, means the architecture identifies the correct ranking order in nearly every scenario---ranking accuracy above 90\% is generally considered reliable enough for automated decision-support applications in energy efficiency and related domains. $\tau$ between 0.2 and 0.33, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, 91.3\% accuracy ($\mathcal{A}_{\text{H}}$) means the recommended alternative is genuinely the best option nine times out of ten; 34.1\% ($\mathcal{A}_{\text{D}}$) is worse than a coin flip for two alternatives.
+The ranking metrics translate these score errors into decision quality. Kendall's $\tau > 0.9$ for Gemini $\mathcal{A}_{\text{H}}$, with $\tau > 0.88$ for the other three models, means the architecture identifies the correct ranking order in nearly every scenario---ranking accuracy above 90\% is generally considered reliable enough for automated decision-support applications in energy efficiency and related domains. $\tau$ between 0.2 and 0.33, as in $\mathcal{A}_{\text{E}}$, provides a weak but non-random signal: the tool is better than chance but unreliable for any single decision. $\tau$ near zero, as in $\mathcal{A}_{\text{D}}$, offers no actionable ranking information. At the Top-1 level, $\mathcal{A}_{\text{H}}$ accuracy ranges from 89.7\% (Qwen) to 93.1\% (Gemini)---the recommended alternative is genuinely the best option roughly nine times out of ten---while $\mathcal{A}_{\text{D}}$ ranges from 30.0\% (Qwen) to 36.7\% (DeepSeek), worse than a coin flip for three alternatives.
 
 \FloatBarrier
 \subsection{Baseline Comparison}
@@ -977,7 +977,7 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
 
 \begin{table}[htbp]
   \centering
-  \caption{Incremental contribution of each system over Fixed-Default baseline (per-type arithmetic means of Top-1 accuracy and Kendall's~$\tau$).}
+  \caption{Incremental contribution of each system over Fixed-Default baseline (per-type arithmetic means of Top-1 accuracy and Kendall's~$\tau$). Best and worst model shown for LLM architectures.}
   \label{tab:incremental-contribution}
   \begin{tabular}{lcccc}
     \toprule
@@ -985,9 +985,15 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
     \midrule
     FixedDefault & 0.7282 & $0.0000$ & 0.6137 & $0.0000$ \\
     NearestNeighbor & 0.5692 & $-0.1590$ & 0.3709 & $-0.2428$ \\
-    Direct\_LLM\_Scoring & 0.3538 & $-0.3743$ & 0.0949 & $-0.5188$ \\
-    Example-Guided\_LLM\_Scoring & 0.5128 & $-0.2154$ & 0.3145 & $-0.2992$ \\
-    LLM-Parameterized\_Reference\_Scoring & 0.9178 & $+0.1896$ & 0.9016 & $+0.2879$ \\
+    \addlinespace
+    $\mathcal{A}_{\text{D}}$ (best: Gemini) & 0.371 & $-0.357$ & 0.193 & $-0.421$ \\
+    $\mathcal{A}_{\text{D}}$ (worst: Qwen)   & 0.301 & $-0.428$ & 0.012 & $-0.602$ \\
+    \addlinespace
+    $\mathcal{A}_{\text{E}}$ (best: DeepSeek) & 0.552 & $-0.176$ & 0.341 & $-0.272$ \\
+    $\mathcal{A}_{\text{E}}$ (worst: Qwen)    & 0.472 & $-0.257$ & 0.209 & $-0.405$ \\
+    \addlinespace
+    $\mathcal{A}_{\text{H}}$ (best: Gemini) & 0.928 & $+0.200$ & 0.920 & $+0.306$ \\
+    $\mathcal{A}_{\text{H}}$ (worst: Qwen)  & 0.898 & $+0.169$ & 0.879 & $+0.266$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1044,15 +1050,19 @@ Table~\ref{tab:item7} and Figure~\ref{fig:tau_decision} report $\tau$ by decisio
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
 Decision Type & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) \\
 \midrule
-HVAC & $-0.000$ & 29.4 & 0.088 & 34.0 & \textbf{0.930} & \textbf{92.5} \\
-Appliance & $-0.042$ & 26.6 & 0.236 & 52.2 & \textbf{0.952} & \textbf{96.8} \\
-Shower & 0.348 & 47.6 & 0.547 & 63.7 & \textbf{0.811} & \textbf{84.3} \\
-\midrule
-Overall & 0.093 & 34.1 & 0.277 & 49.2 & \textbf{0.899} & \textbf{91.3} \\
+HVAC & & & & & & \\
+\quad Best & 0.135 (O) & 37.1 (O) & 0.265 (O) & 40.9 (O) & \textbf{0.977 (G)} & \textbf{96.3 (G)} \\
+\quad Worst & $-0.102$ (D) & 20.6 (D) & $-0.116$ (G) & 16.0 (G) & \textbf{0.881 (Q)} & \textbf{87.1 (Q)} \\
+Appliance & & & & & & \\
+\quad Best & 0.029 (D) & 35.4 (D) & 0.417 (D) & 65.2 (D) & \textbf{0.975 (D)} & \textbf{98.2 (D)} \\
+\quad Worst & $-0.147$ (O) & 22.8 (Q) & $-0.048$ (O) & 35.1 (O) & \textbf{0.906 (Q)} & \textbf{93.5 (Q)} \\
+Shower & & & & & & \\
+\quad Best & 0.633 (G) & 61.7 (G) & 0.766 (G) & 73.3 (G) & \textbf{0.851 (Q)} & \textbf{89.3 (Q)} \\
+\quad Worst & 0.069 (Q) & 26.7 (O) & 0.236 (Q) & 40.0 (Q) & \textbf{0.784 (O)} & \textbf{81.7 (O)} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\caption{Ranking accuracy by decision type (pooled across 4 models, 5 runs each, 195 scenarios). Top-2 accuracy appears in \ref{app:variance}.}
+\caption{Ranking accuracy by decision type, showing best and worst model per cell (G = Gemini, D = DeepSeek, O = GPT-OSS, Q = Qwen). Per-model results by decision type appear in \ref{app:per_model_results}.}
 \label{tab:item7}
 \end{table*}
 
@@ -1121,19 +1131,19 @@ Table~\ref{tab:item9} summarizes a RAG ablation study conducted on a 35-scenario
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-Configuration & Overall $\tau$ & 95\% CI & Overall MAE \\
+Configuration & Overall $\tau$ & 95\% CI & Model $\tau$ range & Overall MAE \\
 \midrule
-Retrieval $k=5$ & 0.386 & $[0.285,\, 0.486]$ & 0.079 \\
-Retrieval $k=1$ & 0.364 & $[0.250,\, 0.474]$ & 0.093 \\
-Alt.\ embedding (paraphrase-MiniLM-L3-v2) & 0.326 & $[0.208,\, 0.443]$ & 0.081 \\
-Control ($k=3$, all-MiniLM-L6-v2) & 0.316 & $[0.203,\, 0.426]$ & 0.086 \\
-Exemplars w/o hidden params & 0.300 & $[0.181,\, 0.413]$ & 0.085 \\
-Descriptions w/o scores or ranks & 0.109 & $[-0.008,\, 0.219]$ & 0.142 \\
-Random exemplars ($k=3$) & 0.062 & $[-0.058,\, 0.183]$ & 0.152 \\
+Retrieval $k=5$ & 0.386 & $[0.285,\, 0.486]$ & [0.167, 0.570] & 0.079 \\
+Retrieval $k=1$ & 0.364 & $[0.250,\, 0.474]$ & [0.268, 0.461] & 0.093 \\
+Alt.\ embedding & 0.326 & $[0.208,\, 0.443]$ & [0.219, 0.447] & 0.081 \\
+Control ($k=3$, all-MiniLM-L6-v2) & 0.316 & $[0.203,\, 0.426]$ & [0.200, 0.377] & 0.086 \\
+Exemplars w/o hidden params & 0.300 & $[0.181,\, 0.413]$ & [0.200, 0.459] & 0.085 \\
+Descriptions w/o scores or ranks & 0.109 & $[-0.008,\, 0.219]$ & [$-0.065$, 0.316] & 0.142 \\
+Random exemplars ($k=3$) & 0.062 & $[-0.058,\, 0.183]$ & [$-0.034$, 0.228] & 0.152 \\
 \midrule
-Nearest-neighbor (offline) & $-0.039$ & $[-0.333,\, 0.261]$ & 0.096 \\
+Nearest-neighbor (offline) & $-0.039$ & $[-0.333,\, 0.261]$ & --- & 0.096 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -2275,14 +2285,23 @@ Table~\ref{tab:effect_sizes} reports Cliff's $\delta$ for each pairwise comparis
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
-\caption{Cliff's $\delta$ effect sizes for pairwise architecture comparisons (mean across four models).}
+\caption{Cliff's $\delta$ effect sizes for pairwise architecture comparisons, shown per model.}
 \label{tab:effect_sizes}
-\begin{tabular}{@{}l ccc@{}}
+\begin{tabular}{@{}l l ccc@{}}
 \toprule
-Comparison & $\tau$ & MAE & Top-1 \\
+Comparison & Model & $\tau$ & MAE & Top-1 \\
 \midrule
-$\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ & $-$0.26 (small) & 0.58 (large) & $-$0.25 (small) \\
-$\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$ & $-$0.69 (large) & 0.73 (large) & $-$0.58 (large) \\
+\multirow{4}{*}{$\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$}
+ & DeepSeek & $-$0.182 (small) & 0.500 (large) & $-$0.270 (small) \\
+ & Gemini & $-$0.128 (negligible) & 0.402 (medium) & $-$0.143 (negligible) \\
+ & GPT-OSS & $-$0.275 (small) & 0.482 (large) & $-$0.217 (small) \\
+ & Qwen & $-$0.244 (small) & 0.334 (medium) & $-$0.317 (small) \\
+\midrule
+\multirow{4}{*}{$\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$}
+ & DeepSeek & $-$0.737 (large) & 0.875 (large) & $-$0.589 (large) \\
+ & Gemini & $-$0.592 (large) & 0.769 (large) & $-$0.510 (large) \\
+ & GPT-OSS & $-$0.788 (large) & 0.834 (large) & $-$0.666 (large) \\
+ & Qwen & $-$0.829 (large) & 0.738 (large) & $-$0.725 (large) \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -2296,26 +2315,29 @@ Table~\ref{tab:bootstrap_ci} reports 95\% bias-corrected and accelerated (BCa) b
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
-\caption{Bootstrap 95\% BCa confidence intervals for primary metrics (all models pooled, 10,000 resamples).}
+\caption{Bootstrap 95\% BCa confidence intervals for primary metrics per model (10,000 resamples).}
 \label{tab:bootstrap_ci}
-\begin{tabular}{@{}l l cc@{}}
+\begin{tabular}{@{}l l c cc@{}}
 \toprule
-Metric & Architecture & Point Est. & 95\% CI \\
+Metric & Model & $\mathcal{A}_{\text{D}}$ (95\% CI) & $\mathcal{A}_{\text{E}}$ (95\% CI) & $\mathcal{A}_{\text{H}}$ (95\% CI) \\
 \midrule
-\multirow{3}{*}{Kendall's $\tau$}
- & $\mathcal{A}_{\text{D}}$ & 0.093 & [0.058, 0.125] \\
- & $\mathcal{A}_{\text{E}}$ & 0.277 & [0.253, 0.299] \\
- & $\mathcal{A}_{\text{H}}$ & 0.899 & [0.892, 0.907] \\
+\multirow{4}{*}{Kendall's $\tau$}
+ & DeepSeek & 0.144 [0.119, 0.182] & 0.328 [0.301, 0.348] & \textbf{0.897 [0.894, 0.902]} \\
+ & Gemini & 0.176 [0.165, 0.186] & 0.305 [0.294, 0.321] & \textbf{0.923 [0.921, 0.925]} \\
+ & GPT-OSS & 0.041 [0.013, 0.083] & 0.270 [0.248, 0.325] & \textbf{0.897 [0.891, 0.901]} \\
+ & Qwen & 0.010 [-0.029, 0.032] & 0.207 [0.182, 0.227] & \textbf{0.880 [0.868, 0.888]} \\
 \midrule
-\multirow{3}{*}{MAE}
- & $\mathcal{A}_{\text{D}}$ & 0.232 & [0.228, 0.235] \\
- & $\mathcal{A}_{\text{E}}$ & 0.172 & [0.167, 0.178] \\
- & $\mathcal{A}_{\text{H}}$ & 0.054 & [0.050, 0.060] \\
+\multirow{4}{*}{MAE}
+ & DeepSeek & 0.231 [0.230, 0.234] & 0.167 [0.165, 0.169] & \textbf{0.046 [0.042, 0.049]} \\
+ & Gemini & 0.220 [0.219, 0.221] & 0.159 [0.158, 0.160] & \textbf{0.048 [0.047, 0.048]} \\
+ & GPT-OSS & 0.241 [0.240, 0.243] & 0.169 [0.167, 0.171] & \textbf{0.052 [0.051, 0.054]} \\
+ & Qwen & 0.235 [0.234, 0.236] & 0.192 [0.188, 0.195] & \textbf{0.072 [0.070, 0.073]} \\
 \midrule
-\multirow{3}{*}{Top-1 (\%)}
- & $\mathcal{A}_{\text{D}}$ & 34.1 & [32.5, 35.6] \\
- & $\mathcal{A}_{\text{E}}$ & 49.2 & [47.6, 51.0] \\
- & $\mathcal{A}_{\text{H}}$ & 91.3 & [90.7, 91.9] \\
+\multirow{4}{*}{Top-1 (\%)}
+ & DeepSeek & 36.7 [35.0, 40.4] & 54.5 [52.3, 55.8] & \textbf{90.8 [90.3, 91.9]} \\
+ & Gemini & 36.2 [35.4, 37.6] & 47.2 [46.2, 49.9] & \textbf{93.1 [92.9, 93.3]} \\
+ & GPT-OSS & 33.3 [31.7, 35.2] & 48.0 [46.1, 50.6] & \textbf{91.6 [91.2, 92.5]} \\
+ & Qwen & 30.0 [27.4, 32.0] & 47.0 [45.0, 49.0] & \textbf{89.7 [89.1, 91.2]} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
