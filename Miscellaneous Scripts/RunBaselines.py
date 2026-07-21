@@ -47,9 +47,6 @@ from RunRAGAblations import (
 
 warnings.filterwarnings("default")
 
-# =============================================================================
-# FIXED DEFAULT PARAMETER VALUES (from implementation plan)
-# =============================================================================
 HVAC_DEFAULT_R_VALUE = 15
 HVAC_DEFAULT_SEER = 13
 HVAC_DEFAULT_HVAC_AGE = 13
@@ -375,9 +372,90 @@ def run_nearest_neighbor_baseline(test_df, k=3):
     finally:
         shutil.rmtree(temp_path, ignore_errors=True)
 
+def _rank_with_weights_and_tiebreak(group):
+    """Rank alternatives within a group by mavt_score desc with deterministic tie-break."""
+    tiebreak_cols = [f"{c}_score" for c in TIE_BREAK_PRIORITY]
+    sort_cols = ['mavt_score'] + tiebreak_cols
+    group_sorted = group.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
+    group_sorted['rank'] = range(1, len(group_sorted) + 1)
+    return group_sorted
+
+def run_random_baseline(test_df, n_seeds=20, rng_seed=42):
+    """Random baseline: random scores for every alternative."""
+    rng = np.random.default_rng(rng_seed)
+    weights = CRITERION_WEIGHTS
+    criteria = list(weights.keys())
+    all_rows = []
+    for idx, row in test_df.iterrows():
+        dtype = row['decision_type']
+        alternatives = []
+        for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
+            if not pd.isna(row.get(alt_col)) and str(row.get(alt_col)).strip().lower() not in ('', 'nan'):
+                val = float(row[alt_col]) if dtype == "Shower" else str(row[alt_col]).strip()
+                alternatives.append(val)
+        for seed in range(n_seeds):
+            rng = np.random.default_rng(rng_seed + seed + idx * 7)
+            group_rows = []
+            for alt in alternatives:
+                scores = {c: rng.uniform(0, 100) for c in criteria}
+                mavt = sum(weights[c] * scores[c] for c in criteria)
+                group_rows.append({
+                    'scenario_id': idx, 'seed': seed,
+                    'question': str(row['question']).strip(),
+                    'location': str(row['location']).strip(),
+                    'decision_type': dtype,
+                    'alternative': str(alt),
+                    'energy_cost_score': scores['energy_cost'],
+                    'environmental_score': scores['environmental'],
+                    'comfort_score': scores['comfort'],
+                    'practicality_score': scores['practicality'],
+                    'mavt_score': mavt,
+                })
+            group_df = pd.DataFrame(group_rows)
+            ranked = _rank_with_weights_and_tiebreak(group_df)
+            all_rows.append(ranked)
+    return pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
+
+def run_uniform_baseline(test_df):
+    """Uniform baseline: all alternatives get identical scores."""
+    weights = CRITERION_WEIGHTS
+    criteria = list(weights.keys())
+    uniform_scores = {c: 50.0 for c in criteria}
+    uniform_mavt = sum(weights[c] * uniform_scores[c] for c in criteria)
+    all_rows = []
+    for idx, row in test_df.iterrows():
+        dtype = row['decision_type']
+        alternatives = []
+        for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
+            if not pd.isna(row.get(alt_col)) and str(row.get(alt_col)).strip().lower() not in ('', 'nan'):
+                val = float(row[alt_col]) if dtype == "Shower" else str(row[alt_col]).strip()
+                alternatives.append(val)
+        group_rows = []
+        for alt in alternatives:
+            group_rows.append({
+                'scenario_id': idx,
+                'question': str(row['question']).strip(),
+                'location': str(row['location']).strip(),
+                'decision_type': dtype,
+                'alternative': str(alt),
+                'energy_cost_score': uniform_scores['energy_cost'],
+                'environmental_score': uniform_scores['environmental'],
+                'comfort_score': uniform_scores['comfort'],
+                'practicality_score': uniform_scores['practicality'],
+                'mavt_score': uniform_mavt,
+            })
+        group_df = pd.DataFrame(group_rows)
+        ranked = _rank_with_weights_and_tiebreak(group_df)
+        all_rows.append(ranked)
+    return pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
+
 def run_all_baselines(test_df, baselines=None, k=3):
-    if baselines is None: baselines = ['fixed_default', 'nearest_neighbor']
+    if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
     results = {}
+    if 'random' in baselines:
+        print("Running Random baseline..."); results['Random'] = run_random_baseline(test_df)
+    if 'uniform' in baselines:
+        print("Running Uniform baseline..."); results['Uniform'] = run_uniform_baseline(test_df)
     if 'fixed_default' in baselines:
         print("Running Fixed-Default baseline..."); results['FixedDefault'] = run_fixed_default_baseline(test_df)
     if 'nearest_neighbor' in baselines:
