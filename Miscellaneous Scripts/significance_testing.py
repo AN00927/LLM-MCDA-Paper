@@ -38,8 +38,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score
-from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
+from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
 from CalculateMetrics import filter_failed_scenarios
 
 # ---------------------------------------------------------------------------
@@ -65,12 +65,7 @@ ARCH_SHORT = {
     "LLM-Parameterized_Reference_Scoring": "AH",
 }
 
-MODEL_FOLDERS = {
-    "gemini": "Output Files Gemini 3.5 Flash",
-    "deepseek": "Output Files DeepSeek V4 Flash",
-    "gptoss": "Output Files GPT-OSS 20B",
-    "qwen": "Output Files Qwen3.5 9B",
-}
+MODEL_FOLDERS = {k: spec["output_folder"] for k, spec in MODEL_SPECS.items()}
 
 ARCHITECTURES = [
     "Direct_LLM_Scoring",
@@ -82,8 +77,6 @@ PAIRS = [
     ("Direct_LLM_Scoring", "Example-Guided_LLM_Scoring"),
     ("Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"),
 ]
-
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 
 GT_SCORE_COLS = {
     "energy_cost": "energy_cost_score",

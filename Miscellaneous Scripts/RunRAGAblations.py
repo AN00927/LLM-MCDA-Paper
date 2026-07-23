@@ -3,7 +3,6 @@ import json
 import logging
 import math
 import os
-import shutil
 import sys
 import tempfile
 import time
@@ -11,12 +10,12 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
-import pandas as pd
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+import numpy as np
+import pandas as pd
 
 from model_config import (
     CRITERION_WEIGHTS,
@@ -30,9 +29,9 @@ from model_config import (
     get_reasoning_payload,
     MODEL_SPECS,
 )
-import importlib.util
 
 from sentinel_utils import (
+    CRITERIA,
     appliance_age_to_band_label,
     format_embedding_text,
     gpm_to_flow_rate_label,
@@ -41,13 +40,10 @@ from sentinel_utils import (
 )
 
 from CreateRepresentativeSample import stratified_sample_by_features as stratified_sample
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 SENTINEL = 1928.0
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 ALTERNATE_EMBEDDING_MODEL = "sentence-transformers/paraphrase-MiniLM-L3-v2"
@@ -1217,11 +1213,6 @@ def _format_md_table(df: pd.DataFrame, float_cols=None, max_rows: Optional[int] 
     return "\n".join(lines)
 
 
-def make_plots(summary_df: pd.DataFrame, output_dir: Path) -> List[Path]:
-    """No-op: PNG plots removed. Returns empty list for report compatibility."""
-    return []
-
-
 def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs: OrderedDict, summary_df: pd.DataFrame, dtype_summary_df: pd.DataFrame, rows_df: pd.DataFrame, plot_paths: List[Path], friedman_results: Optional[pd.DataFrame] = None, posthoc_df: Optional[pd.DataFrame] = None, bootstrap_df: Optional[pd.DataFrame] = None) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sections = []
@@ -1348,8 +1339,7 @@ def run(args) -> Dict:
     bootstrap_path = output_dir / "rag_ablation_bootstrap_ci.xlsx"
     _atomic_write_xlsx(bootstrap_df, bootstrap_path)
 
-    plot_paths = make_plots(summary_df, output_dir)
-    write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, plot_paths,
+    write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, [],
                  friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
 
     print("\nRAG ABLATION COMPLETE")
