@@ -63,6 +63,19 @@ paper/incremental_contribution_table.tex
 # Paper pipeline outputs
 paper_draft_working.spl
 paper/numbers_master.csv
+
+# Paper build artifacts
+paper/paper_draft_working.pdf
+paper/failure_analysis.csv
+paper/failure_analysis_tables.tex
+paper/pipeline_plan.md
+
+# Pipeline scripts (generated/derivative)
+paper_pipeline/failure_analysis.py
+paper_pipeline/generate_method_c_consensus.py
+
+# Documentation artifacts
+docs/metrics_calculation_pipeline.md
 paper_pipeline/calculate_per_run_metrics.py
 paper_pipeline/generate_boxplot_tex.py
 paper_pipeline/generate_violin_tex.py

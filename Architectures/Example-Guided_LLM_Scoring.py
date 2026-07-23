@@ -523,7 +523,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
 
 def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
     """Retrieve exemplars, build the RAG prompt, query the model, and parse +
-    validate the returned scores — all in one function (mirrors Direct_LLM_Prompting's
+    validate the returned scores — all in one function (mirrors Direct_LLM_Scoring's
     score_alternative).
 
     retrieved/rag_context are locals here so the RAG diagnostics at the end

@@ -14,7 +14,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 ## Layout
 
-- `Architectures/` — `Direct_LLM_Prompting.py`, `Example-Guided_LLM_Scoring.py`, `LLM-Parameterized_Reference_Scoring.py`. Each
+- `Architectures/` — `Direct_LLM_Scoring.py`, `Example-Guided_LLM_Scoring.py`, `LLM-Parameterized_Reference_Scoring.py`. Each
   runs the benchmark via `run_multi_and_aggregate` and writes to the model's output
   folder.
 - `Ground Truth Calculators/` — `{HVAC,Appliance,Shower}GroundTruthCalculator.py`. The
@@ -36,7 +36,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 - Set `OPENROUTER_API_KEY` in `.env`. Pick the model with `MODEL_KEY` and runs with
   `N_RUNS` in [model_config.py](model_config.py); output routes to that model's folder.
-- Run an architecture: `python Architectures/Direct_LLM_Prompting.py` (resp. RAG / LLM-Parameterized_Reference_Scoring).
+- Run an architecture: `python Architectures/Direct_LLM_Scoring.py` (resp. RAG / LLM-Parameterized_Reference_Scoring).
   Runs are resume-aware (a complete per-run xlsx is skipped).
 - RAG requires a current Chroma index — run `BuildRAG.py` first.
 

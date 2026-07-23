@@ -43,7 +43,7 @@ from model_config import (
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
-from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT
+from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',
@@ -86,7 +86,6 @@ def _build_config(model_key: str) -> dict:
 # Default CONFIG uses the MODEL_KEY from model_config (for import compatibility)
 CONFIG = _build_config(MODEL_KEY)
 
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 FAIL_SENTINEL = SENTINEL_VALUE
 PLACEHOLDER_ALT_RE = re.compile(
     r"^Alternative\s+(\d+)\s+\(extraction failed\)$", re.IGNORECASE
@@ -100,8 +99,6 @@ PLACEHOLDER_ALT_RE = re.compile(
 # Architecture *_results files are not used here. This script
 # re-aggregates per-run outputs via aggregate_run_files and serves as the
 # source for reported metrics.
-
-_STRICT_ID_MATCH_ENABLED = False
 
 # Secondary criterion priority used when weighted scores tie is imported from
 # model_config so the ground-truth calculators and this script break ties
@@ -1042,24 +1039,6 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
             dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
             print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
 
-    # Load baselines if requested
-    if include_baselines:
-        print("\n[2b] Loading baselines...")
-        from RunBaselines import run_all_baselines
-        test_path = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
-        test_df = read_table_clean(test_path)
-        baseline_results = run_all_baselines(test_df)
-        for name, df in baseline_results.items():
-            if name == 'Random':
-                # For random, use the first seed for metrics computation
-                # (CalculateMetrics will average over seeds in verification)
-                seed_df = df[df['seed'] == 0].drop(columns=['seed']) if 'seed' in df.columns else df
-                arch_dfs[name] = load_architecture(seed_df, name)
-            else:
-                arch_dfs[name] = load_architecture(df, name)
-            dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
-            print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
-
     # Load architecture diagnostics JSONs for failure-mode breakdown
     print("\n[2c] Loading architecture diagnostics...")
     arch_diagnostics = {}
@@ -1087,11 +1066,7 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
 
     all_metrics = []
 
-    # Determine architecture list based on whether baselines are included
-    if include_baselines:
-        arch_list = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
-    else:
-        arch_list = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
+    arch_list = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
     for arch_name in arch_list:
         merged = merged_dfs[arch_name]
@@ -1255,10 +1230,7 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
             return f"{'N/A':>10}"
         return f"{int(val):>10}" if is_int else f"{val:>10.4f}"
 
-    if include_baselines:
-        archs = ["Random", "Uniform", "FixedDefault", "NearestNeighbor", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
-    else:
-        archs = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
+    archs = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
     for mode_label in ("filtered", "imputed"):
         print(f"\n{'='*60}")
