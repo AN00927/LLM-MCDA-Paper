@@ -14,9 +14,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, get_output_folder
-from sentinel_utils import read_table_clean, SENTINEL_FLOAT
+from sentinel_utils import read_table_clean, SENTINEL_FLOAT, CRITERIA
 
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 SENTINEL = SENTINEL_FLOAT
 
 PARAMETER_MAP = {
