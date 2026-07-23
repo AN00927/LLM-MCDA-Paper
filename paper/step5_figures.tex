@@ -1,0 +1,81 @@
+\newcommand{\plotCriterionMAEByModel}{%
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=2 by 2, horizontal sep=1.9cm, vertical sep=1.6cm},
+    width=0.46\textwidth, height=4.3cm,
+    symbolic x coords={Pure,RAG,Hybrid},
+    xtick=data,
+    xticklabel style={font=\small},
+    enlarge x limits=0.25,
+    grid=major, grid style={gray!30}, ymajorgrids=true,
+    legend style={font=\scriptsize, at={(1.05,1.4)}, anchor=south, legend columns=4},
+    legend cell align={left},
+    mark size=2pt,
+    every axis plot/.append style={thick},
+]
+\nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
+    title={\small (a) Energy Cost}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.2477) (RAG,0.1782) (Hybrid,0.0698)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2407) (RAG,0.1748) (Hybrid,0.0683)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2581) (RAG,0.1725) (Hybrid,0.0783)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2554) (RAG,0.1950) (Hybrid,0.1115)};
+\legend{{Gemini 3.5 Flash} & {DeepSeek V4 Flash} & {GPT-OSS 20B} & {Qwen 3.5 9B}}
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
+    title={\small (b) Environmental}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.2484) (RAG,0.1667) (Hybrid,0.0921)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2652) (RAG,0.1644) (Hybrid,0.0812)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2924) (RAG,0.1665) (Hybrid,0.0978)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2739) (RAG,0.1919) (Hybrid,0.1498)};
+\nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
+    title={\small (c) Comfort}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.1724) (RAG,0.1398) (Hybrid,0.0085)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.1963) (RAG,0.1759) (Hybrid,0.0128)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1836) (RAG,0.1543) (Hybrid,0.0097)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.1942) (RAG,0.1943) (Hybrid,0.0084)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
+    title={\small (d) Practicality}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.2116) (RAG,0.1523) (Hybrid,0.0197)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2224) (RAG,0.1531) (Hybrid,0.0208)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2307) (RAG,0.1830) (Hybrid,0.0213)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2159) (RAG,0.1858) (Hybrid,0.0168)};
+\end{groupplot}
+\end{tikzpicture}%
+}
+
+\newcommand{\plotDecisionTypeByModel}{%
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=3 by 1, vertical sep=1.6cm},
+    width=0.31\textwidth, height=4.3cm,
+    symbolic x coords={Pure,RAG,Hybrid},
+    xtick=data,
+    xticklabel style={font=\small},
+    enlarge x limits=0.25,
+    grid=major, grid style={gray!30}, ymajorgrids=true,
+    legend style={font=\scriptsize, at={(0.5,1.25)}, anchor=south, legend columns=4},
+    legend cell align={left},
+    mark size=2pt,
+    every axis plot/.append style={thick},
+]
+\nextgroupplot[ylabel={Kendall's tau}, ymin=-0.2, ymax=0.98,
+    title={\small (a) HVAC}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,-0.0324) (RAG,-0.1162) (Hybrid,0.9772)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,-0.1021) (RAG,0.0419) (Hybrid,0.9197)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1352) (RAG,0.2647) (Hybrid,0.9428)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,-0.0027) (RAG,0.1600) (Hybrid,0.8813)};
+\legend{{Gemini 3.5 Flash} & {DeepSeek V4 Flash} & {GPT-OSS 20B} & {Qwen 3.5 9B}}
+\nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.98,
+    title={\small (b) Appliance}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,-0.0215) (RAG,0.3441) (Hybrid,0.9590)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.0293) (RAG,0.4174) (Hybrid,0.9754)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,-0.1467) (RAG,-0.0482) (Hybrid,0.9672)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,-0.0309) (RAG,0.2308) (Hybrid,0.9056)};
+\nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.98,
+    title={\small (c) Shower}, title style={font=\small}]
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.6333) (RAG,0.7655) (Hybrid,0.8222)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.5576) (RAG,0.5645) (Hybrid,0.7867)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1333) (RAG,0.6222) (Hybrid,0.7845)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.0689) (RAG,0.2355) (Hybrid,0.8511)};
+\end{groupplot}
+\end{tikzpicture}%
+}

@@ -1073,7 +1073,7 @@ HVAC & & & & & & \\
 \quad Best & 0.135 (O) & 39.7 (O) & 0.265 (O) & 46.9 (O) & \textbf{0.977 (G)} & \textbf{96.6 (G)} \\
 \quad Worst & $-0.102$ (D) & 19.8 (D) & $-0.116$ (G) & 15.3 (G) & \textbf{0.881 (Q)} & \textbf{87.4 (Q)} \\
 Appliance & & & & & & \\
-\quad Best & 0.029 (D) & 31.7 (D) & 0.417 (D) & 70.1 (D) & \textbf{0.975 (D)} & \textbf{98.5 (D)} \\
+\quad Best & 0.029 (D) & 31.7 (D) & 0.417 (D) & 70.2 (D) & \textbf{0.975 (D)} & \textbf{98.5 (D)} \\
 \quad Worst & $-0.147$ (O) & 26.8 (O) & $-0.048$ (O) & 30.5 (O) & \textbf{0.906 (Q)} & \textbf{92.9 (Q)} \\
 Shower & & & & & & \\
 \quad Best & 0.633 (G) & 61.0 (G) & 0.766 (G) & 75.5 (G) & \textbf{0.851 (Q)} & \textbf{89.0 (Q)} \\
@@ -1157,11 +1157,11 @@ Configuration & Overall $\tau$ & 95\% CI & Model $\tau$ range & Overall MAE \\
 \midrule
 Retrieval $k=5$ & 0.386 & $[0.285,\, 0.486]$ & [0.167, 0.570] & 0.079 \\
 Retrieval $k=1$ & 0.364 & $[0.250,\, 0.474]$ & [0.268, 0.461] & 0.093 \\
-Alt.\ embedding & 0.326 & $[0.208,\, 0.443]$ & [0.219, 0.447] & 0.081 \\
-Control ($k=3$, all-MiniLM-L6-v2) & 0.316 & $[0.203,\, 0.426]$ & [0.200, 0.377] & 0.086 \\
+Alt.\ embedding & 0.325 & $[0.208,\, 0.443]$ & [0.219, 0.447] & 0.081 \\
+Control ($k=3$, all-MiniLM-L6-v2) & 0.317 & $[0.203,\, 0.426]$ & [0.200, 0.377] & 0.086 \\
 Exemplars w/o hidden params & 0.300 & $[0.181,\, 0.413]$ & [0.200, 0.459] & 0.085 \\
 Descriptions w/o scores or ranks & 0.109 & $[-0.008,\, 0.219]$ & [$-0.065$, 0.316] & 0.142 \\
-Random exemplars ($k=3$) & 0.062 & $[-0.058,\, 0.183]$ & [$-0.034$, 0.228] & 0.152 \\
+Random exemplars ($k=3$) & 0.063 & $[-0.058,\, 0.183]$ & [$-0.034$, 0.228] & 0.152 \\
 \midrule
 Nearest-neighbor (offline) & $-0.039$ & $[-0.333,\, 0.261]$ & --- & 0.096 \\
 \bottomrule
@@ -1189,7 +1189,7 @@ A Friedman test across configurations is marginally significant on Kendall's $\t
 \FloatBarrier
 \subsection{Efficiency and Cost}
 \label{sec:res-efficiency}
-Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as of July 15, 2026. $\mathcal{A}_{\text{H}}$ makes one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, and its shorter prompts average 800 input+output tokens per scenario versus $\sim$1,200 for $\mathcal{A}_{\text{D}}$ and $\sim$2,800 for $\mathcal{A}_{\text{E}}$ (which embeds the retrieved exemplar per call). Cost per 195-scenario run ranges from \$0.01 (Qwen, GPT-OSS) to \$0.28 (Gemini). $\mathcal{A}_{\text{D}}$ costs 2--6$\times$ more (\$0.02--\$0.80) and $\mathcal{A}_{\text{E}}$ is the most expensive (\$0.02--\$1.02), driven by exemplar token overhead. The priciest configuration stays under \$1.30 per full evaluation. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$'s $\tau$ varies between 0.877 and 0.925 (range 0.048), while $\mathcal{A}_{\text{D}}$ spans 0.171 and $\mathcal{A}_{\text{E}}$ spans 0.096. The architecture compresses the capability gap, making cheaper models viable in production with minimal accuracy loss.
+Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as of July 15, 2026. $\mathcal{A}_{\text{H}}$ makes one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, and its shorter prompts average 800 input+output tokens per scenario versus $\sim$1,200 for $\mathcal{A}_{\text{D}}$ and $\sim$2,800 for $\mathcal{A}_{\text{E}}$ (which embeds the retrieved exemplar per call). Cost per 195-scenario run ranges from \$0.01 (DeepSeek, GPT-OSS, Qwen) to \$1.28 (Gemini $\mathcal{A}_{\text{E}}$). $\mathcal{A}_{\text{D}}$ costs 2--6$\times$ more (\$0.02--\$0.80) and $\mathcal{A}_{\text{E}}$ is the most expensive (\$0.03--\$1.28), driven by exemplar token overhead. The priciest configuration stays under \$1.30 per full evaluation. Across four models spanning two orders of magnitude in parameter count and API cost, $\mathcal{A}_{\text{H}}$'s $\tau$ varies between 0.880 and 0.923 (range 0.043), while $\mathcal{A}_{\text{D}}$ spans 0.166 and $\mathcal{A}_{\text{E}}$ spans 0.121. The architecture compresses the capability gap, making cheaper models viable in production with minimal accuracy loss.
 
 \begin{table}[t]
 \small
@@ -1199,8 +1199,8 @@ Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as
 \toprule
 Architecture & Gemini & DeepSeek & GPT-OSS & Qwen \\
 \midrule
-$\mathcal{A}_{\text{D}}$ & \$0.80 & \$0.09 & \$0.02 & \$0.04 \\
-$\mathcal{A}_{\text{E}}$ & \$1.02 & \$0.04 & \$0.02 & \$0.04 \\
+$\mathcal{A}_{\text{D}}$ & \$0.80 & \$0.10 & \$0.02 & \$0.02 \\
+$\mathcal{A}_{\text{E}}$ & \$1.28 & \$0.09 & \$0.03 & \$0.03 \\
 $\mathcal{A}_{\text{H}}$ & \$0.28 & \$0.01 & \$0.01 & \$0.01 \\
 \bottomrule
 \end{tabular}
@@ -1545,21 +1545,21 @@ $\tau$; T1 = Top-1 accuracy (\%); T2 = Top-2 accuracy (\%).}
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{D}}$}
  & Gemini   & 0.176 & 36.2 & 69.7 \\
- & DeepSeek & 0.144 & 36.7 & 71.8 \\
- & GPT-OSS  & 0.041 & 33.3 & 65.1 \\
- & Qwen     & 0.010 & 30.0 & 64.1 \\
+ & DeepSeek & 0.144 & 36.7 & 72.2 \\
+ & GPT-OSS  & 0.041 & 33.3 & 66.5 \\
+ & Qwen     & 0.010 & 30.0 & 67.7 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{E}}$}
- & Gemini   & 0.305 & 47.2 & 82.6 \\
- & DeepSeek & 0.328 & 54.5 & 79.5 \\
- & GPT-OSS  & 0.270 & 48.0 & 82.1 \\
- & Qwen     & 0.207 & 47.0 & 79.5 \\
+ & Gemini   & 0.305 & 47.2 & 79.4 \\
+ & DeepSeek & 0.328 & 54.5 & 81.5 \\
+ & GPT-OSS  & 0.270 & 48.0 & 76.9 \\
+ & Qwen     & 0.207 & 47.0 & 76.8 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{H}}$}
  & Gemini   & 0.923 & 93.1 & 98.5 \\
- & DeepSeek & 0.897 & 90.8 & 97.4 \\
- & GPT-OSS  & 0.897 & 91.6 & 99.0 \\
- & Qwen     & 0.880 & 89.7 & 96.4 \\
+ & DeepSeek & 0.897 & 90.8 & 97.7 \\
+ & GPT-OSS  & 0.897 & 91.6 & 98.1 \\
+ & Qwen     & 0.880 & 89.7 & 96.9 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1576,22 +1576,22 @@ $\tau$; T1 = Top-1 accuracy (\%); T2 = Top-2 accuracy (\%).}
 \textbf{Architecture} & \textbf{Model} & $\tau$ & T1 & T2 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{D}}$}
- & Gemini   & $-$0.048 & 24.3 & 62.9 \\
- & DeepSeek & $-$0.124 & 17.1 & 67.1 \\
- & GPT-OSS  & 0.238 & 48.6 & 78.6 \\
- & Qwen     & 0.057 & 40.0 & 67.1 \\
+ & Gemini   & $-$0.032 & 25.4 & 61.4 \\
+ & DeepSeek & $-$0.102 & 19.8 & 63.9 \\
+ & GPT-OSS  & 0.135 & 39.7 & 75.7 \\
+ & Qwen     & $-$0.003 & 32.7 & 67.3 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{E}}$}
- & Gemini   & $-$0.076 & 18.6 & 67.1 \\
- & DeepSeek & 0.048 & 27.1 & 61.4 \\
- & GPT-OSS  & 0.267 & 44.3 & 80.0 \\
- & Qwen     & 0.190 & 44.3 & 72.9 \\
+ & Gemini   & $-$0.116 & 15.3 & 66.6 \\
+ & DeepSeek & 0.042 & 32.9 & 66.3 \\
+ & GPT-OSS  & 0.265 & 46.9 & 77.4 \\
+ & Qwen     & 0.160 & 41.1 & 77.1 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{H}}$}
- & Gemini   & 0.981 & 97.1 & 100.0 \\
- & DeepSeek & 0.933 & 92.9 & 98.6 \\
- & GPT-OSS  & 0.951 & 92.9 & 100.0 \\
- & Qwen     & 0.876 & 85.7 & 97.1 \\
+ & Gemini   & 0.977 & 96.6 & 100.0 \\
+ & DeepSeek & 0.920 & 92.0 & 98.9 \\
+ & GPT-OSS  & 0.943 & 94.0 & 100.0 \\
+ & Qwen     & 0.881 & 87.4 & 97.1 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1608,22 +1608,22 @@ $\tau$; T1 = Top-1 accuracy (\%); T2 = Top-2 accuracy (\%).}
 \textbf{Architecture} & \textbf{Model} & $\tau$ & T1 & T2 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{D}}$}
- & Gemini   & $-$0.026 & 23.1 & 58.5 \\
- & DeepSeek & $-$0.056 & 32.3 & 55.4 \\
- & GPT-OSS  & $-$0.190 & 26.2 & 49.2 \\
- & Qwen     & $-$0.128 & 21.5 & 58.5 \\
+ & Gemini   & $-$0.022 & 24.9 & 57.5 \\
+ & DeepSeek & 0.029 & 31.7 & 63.1 \\
+ & GPT-OSS  & $-$0.147 & 26.8 & 55.7 \\
+ & Qwen     & $-$0.031 & 23.1 & 67.6 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{E}}$}
- & Gemini   & 0.456 & 69.2 & 84.6 \\
- & DeepSeek & 0.364 & 56.9 & 83.1 \\
- & GPT-OSS  & 0.067 & 38.5 & 72.3 \\
- & Qwen     & 0.241 & 50.8 & 83.1 \\
+ & Gemini   & 0.344 & 56.3 & 76.1 \\
+ & DeepSeek & 0.417 & 70.2 & 90.2 \\
+ & GPT-OSS  & $-$0.048 & 30.5 & 59.4 \\
+ & Qwen     & 0.231 & 52.0 & 80.9 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{H}}$}
  & Gemini   & 0.959 & 96.9 & 100.0 \\
- & DeepSeek & 0.959 & 98.5 & 100.0 \\
- & GPT-OSS  & 0.959 & 98.5 & 100.0 \\
- & Qwen     & 0.897 & 93.9 & 96.9 \\
+ & DeepSeek & 0.975 & 98.5 & 100.0 \\
+ & GPT-OSS  & 0.967 & 98.8 & 100.0 \\
+ & Qwen     & 0.906 & 92.9 & 98.2 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1640,22 +1640,22 @@ $\tau$; T1 = Top-1 accuracy (\%); T2 = Top-2 accuracy (\%).}
 \textbf{Architecture} & \textbf{Model} & $\tau$ & T1 & T2 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{D}}$}
- & Gemini   & 0.633 & 63.3 & 90.0 \\
- & DeepSeek & 0.722 & 75.0 & 95.0 \\
- & GPT-OSS  & 0.100 & 25.0 & 66.7 \\
- & Qwen     & 0.067 & 33.3 & 66.7 \\
+ & Gemini   & 0.633 & 61.0 & 92.7 \\
+ & DeepSeek & 0.558 & 61.9 & 91.9 \\
+ & GPT-OSS  & 0.133 & 33.0 & 67.3 \\
+ & Qwen     & 0.069 & 34.3 & 68.3 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{E}}$}
- & Gemini   & 0.822 & 80.0 & 98.3 \\
- & DeepSeek & 0.700 & 68.3 & 96.7 \\
- & GPT-OSS  & 0.722 & 73.3 & 95.0 \\
- & Qwen     & 0.433 & 60.0 & 83.3 \\
+ & Gemini   & 0.766 & 75.5 & 98.3 \\
+ & DeepSeek & 0.564 & 62.7 & 90.0 \\
+ & GPT-OSS  & 0.622 & 68.3 & 95.3 \\
+ & Qwen     & 0.236 & 48.3 & 72.0 \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{H}}$}
  & Gemini   & 0.822 & 85.0 & 95.0 \\
- & DeepSeek & 0.789 & 81.7 & 93.3 \\
- & GPT-OSS  & 0.800 & 83.3 & 96.7 \\
- & Qwen     & 0.856 & 91.7 & 95.0 \\
+ & DeepSeek & 0.787 & 81.0 & 94.0 \\
+ & GPT-OSS  & 0.784 & 82.0 & 94.7 \\
+ & Qwen     & 0.851 & 89.0 & 95.3 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -2272,9 +2272,9 @@ Architecture & Metric & $\sigma^2_{\text{model}}$ & $\sigma^2_{\text{residual}}$
  & Top-1 & 0.081 & 0.919 \\
 \midrule
 \multirow{3}{*}{$\mathcal{A}_{\text{E}}$}
- & Kendall's $\tau$ & 0.205 & 0.795 \\
- & MAE & 0.914 & 0.086 \\
- & Top-1 & 0.101 & 0.899 \\
+ & Kendall's $\tau$ & 0.276 & 0.724 \\
+ & MAE & 0.829 & 0.171 \\
+ & Top-1 & 0.171 & 0.829 \\
 \midrule
 \multirow{3}{*}{$\mathcal{A}_{\text{H}}$}
  & Kendall's $\tau$ & 0.448 & 0.552 \\
