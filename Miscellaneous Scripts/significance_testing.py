@@ -10,13 +10,23 @@ Input:  Raw per-run xlsx files from each model's output folder, plus
         ground truth xlsx files from Ground Truth/.
 Output: significance_tests.xlsx (four sheets) + stdout tables.
 
-Wilcoxon signed-rank tests operate on per-scenario metrics (n=195 paired
-observations per model). For each of the 4 models x 3 architectures x 5
-runs, the raw run file is loaded and compared to ground truth to produce
-195 scenario-level metric values. The 5 runs are averaged to produce a
-single per-scenario-per-model metric vector. Wilcoxon tests then compare
-architecture pairs on these 195-element vectors, giving substantial
-statistical power.
+Aggregation method (Method A):
+    Per-scenario metrics are computed independently for each of the 5 runs,
+    then averaged across runs. This gives one (scenario, model, architecture)
+    metric value. The headline results in the paper use the identical pipeline
+    (calculate_per_run_metrics.py -> generate_numbers_master.py), so the point
+    estimate being significance-tested IS the number reported in results tables.
+    CalculateMetrics.py's standalone evaluate_all() uses a different aggregation
+    (Method C: average raw scores across 5 runs -> recompute rank -> compute
+    metric once); generate_method_c_consensus.py tracks this discrepancy.
+
+Wilcoxon notes:
+    The normal approximation omits the tie-correction term in std_T. This is
+    conservative (wider CIs, fewer false positives) — standard in scipy's
+    legacy implementation and a deliberate choice here. Holm-Bonferroni
+    correction pools all 40 tests (2 pairs x 5 metrics x 4 models) into one
+    family: a single correction step across all metrics and models within
+    each architecture pair comparison.
 
 ICC is computed on per-run aggregate metrics (the per_run_metrics_all.csv
 file) because it is a variance decomposition, not a pairwise test.
@@ -25,8 +35,6 @@ file) because it is a variance decomposition, not a pairwise test.
 import sys
 import warnings
 from pathlib import Path
-from collections import defaultdict
-
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -40,7 +48,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
-from CalculateMetrics import filter_failed_scenarios
+from CalculateMetrics import filter_failed_scenarios, normalize_alternative, build_gt_lookup
 
 # ---------------------------------------------------------------------------
 # Paths and constants
@@ -53,7 +61,9 @@ OUTPUT_XLSX = PROJECT_ROOT / "paper" / "per_run_metrics" / "significance_tests.x
 
 METRICS = [
     "kendall_tau",
+    "spearman_rho",
     "top1_accuracy",
+    "top2_accuracy",
     "overall_mae",
     "overall_rmse",
     "overall_rmse_mae_ratio",
@@ -130,77 +140,7 @@ def load_ground_truth():
 # Architecture run file loading and matching
 # ---------------------------------------------------------------------------
 
-def _normalize_alternative(alt, decision_type):
-    """Normalize alternative strings for matching between arch and GT.
 
-    Mirrors the normalize_alternative logic in CalculateMetrics.py.
-    """
-    import re
-    alt = str(alt).strip()
-    if decision_type == "Appliance":
-        # Extract time pattern
-        match = re.search(r'(\d{1,2}:\d{2}\s*[AaPp][Mm])', alt)
-        if match:
-            return match.group(1).strip().upper()
-        match = re.search(r'(\d{1,2})\s*([AaPp][Mm])', alt)
-        if match:
-            hour = match.group(1)
-            ampm = match.group(2).upper()
-            return f"{hour}:00 {ampm}"
-        return alt.strip().upper()
-    if decision_type == "HVAC":
-        alt_lower = alt.lower()
-        if "off" in alt_lower:
-            match = re.search(r'(\d+(?:\.\d+)?)', alt_lower)
-            if match:
-                return f"off_{match.group(1)}"
-            return "off"
-        try:
-            return str(int(float(alt)))
-        except ValueError:
-            return alt
-    if decision_type == "Shower":
-        try:
-            value = float(alt)
-            if value.is_integer():
-                return str(int(value))
-            return str(value)
-        except ValueError:
-            return alt
-    return alt
-
-
-def build_gt_lookup(gt_by_type):
-    """Build (question, location) -> list of GT scenario entries lookup.
-
-    Each entry contains decision_type, alt_map (normalized alt -> GT row),
-    and disambiguation fields for Shower scenarios.
-    """
-    lookup = defaultdict(list)
-    for dtype, gt_df in gt_by_type.items():
-        if gt_df.empty or "scenario_id" not in gt_df.columns:
-            continue
-        for sid in gt_df["scenario_id"].unique():
-            sub = gt_df[gt_df["scenario_id"] == sid]
-            q = sub["question"].iloc[0]
-            loc = sub["location"].iloc[0]
-            alt_map = {}
-            for _, row in sub.iterrows():
-                norm_alt = _normalize_alternative(row["alternative"], dtype)
-                alt_map[norm_alt] = row
-            lookup[(q, loc)].append({
-                "gt_sid": sid,
-                "decision_type": dtype,
-                "alt_map": alt_map,
-                "used": False,
-                "outdoor_temp": str(sub["outdoor_temp"].iloc[0]).strip() if "outdoor_temp" in sub.columns else "",
-                "appliance_age": str(sub["appliance_age"].iloc[0]).strip() if "appliance_age" in sub.columns else "",
-                "gpm": str(sub["gpm"].iloc[0]).strip() if "gpm" in sub.columns else "",
-                "household_size": str(sub["household_size"].iloc[0]).strip() if "household_size" in sub.columns else "",
-                "utility_budget": str(sub["utility_budget"].iloc[0]).strip() if "utility_budget" in sub.columns else "",
-                "housing_type": str(sub["housing_type"].iloc[0]).strip() if "housing_type" in sub.columns else "",
-            })
-    return lookup
 
 
 def match_arch_to_gt(arch_df, arch_name, gt_lookup):
@@ -224,7 +164,7 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
 
         arch_norm_alts = {}
         for _, row in arch_sub.iterrows():
-            norm_alt = _normalize_alternative(row["alternative"], arch_dtype)
+            norm_alt = normalize_alternative(row["alternative"], arch_dtype)
             arch_norm_alts[norm_alt] = row
 
         # Build parameter pairs for disambiguation
@@ -270,10 +210,12 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
 
         best_match["used"] = True
 
+        matched_alts = 0
         for norm_alt, arch_row in arch_norm_alts.items():
             gt_row = best_match["alt_map"].get(norm_alt)
             if gt_row is None:
                 continue
+            matched_alts += 1
             merged = {
                 "arch_scenario_id": arch_sid,
                 "gt_scenario_id": best_match["gt_sid"],
@@ -292,6 +234,14 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
             merged["arch_weighted_score"] = arch_row.get("weighted_score", np.nan)
             merged["gt_mavt_score"] = gt_row.get("mavt_score", np.nan)
             matched_rows.append(merged)
+
+        if 0 < matched_alts < 3:
+            warnings.warn(
+                f"[match_arch_to_gt] only {matched_alts}/3 alternatives matched "
+                f"for sid={arch_sid} ({arch_dtype}) "
+                f"— ranking metrics may be unreliable",
+                stacklevel=2,
+            )
 
     # Reset used flags
     for entries in gt_lookup.values():
@@ -324,7 +274,9 @@ def compute_scenario_metrics(matched_df):
 
     For each scenario (arch_scenario_id), computes:
     - kendall_tau: Kendall's tau between arch rank and GT rank (3 alternatives)
+    - spearman_rho: Spearman rank correlation between arch rank and GT rank
     - top1_accuracy: 1 if arch best alternative matches GT best, else 0
+    - top2_accuracy: 1 if GT best alternative is in arch's top 2, else 0
     - overall_mae: mean absolute error across 4 criteria, 3 alternatives
     - overall_rmse: root mean squared error across 4 criteria, 3 alternatives
     - overall_rmse_mae_ratio: RMSE / MAE for this scenario
@@ -339,24 +291,35 @@ def compute_scenario_metrics(matched_df):
         gt_r = pd.to_numeric(group["gt_rank"], errors="coerce").values
         ar_r = pd.to_numeric(group["arch_rank"], errors="coerce").values
 
-        # Kendall tau
-        if np.isnan(gt_r).any() or np.isnan(ar_r).any() or (gt_r == SENTINEL_VALUE).any() or (ar_r == SENTINEL_VALUE).any():
+        # Kendall tau and Spearman rho
+        has_sentinel = np.isnan(gt_r).any() or np.isnan(ar_r).any() or (gt_r == SENTINEL_VALUE).any() or (ar_r == SENTINEL_VALUE).any()
+        if has_sentinel:
             kendall_tau = np.nan
-        elif len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
-            tau, _ = stats.kendalltau(gt_r, ar_r)
-            kendall_tau = tau if not np.isnan(tau) else 0.0
+            spearman_rho = np.nan
         else:
-            kendall_tau = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
+            if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+                tau, _ = stats.kendalltau(gt_r, ar_r)
+                kendall_tau = tau if not np.isnan(tau) else 0.0
+            else:
+                kendall_tau = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
+            if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+                rho, _ = stats.spearmanr(gt_r, ar_r)
+                spearman_rho = rho if not np.isnan(rho) else 0.0
+            else:
+                spearman_rho = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
 
-        # Top-1 accuracy
-        if np.isnan(gt_r).any() or np.isnan(ar_r).any() or (gt_r == SENTINEL_VALUE).any() or (ar_r == SENTINEL_VALUE).any():
+        # Top-1 and Top-2 accuracy
+        if has_sentinel:
             top1 = np.nan
+            top2 = np.nan
         else:
             gt_best_idx = np.nanargmin(gt_r)
             ar_best_idx = np.nanargmin(ar_r)
             gt_best_alt = group.iloc[gt_best_idx]["alternative"]
             ar_best_alt = group.iloc[ar_best_idx]["alternative"]
             top1 = 1.0 if gt_best_alt == ar_best_alt else 0.0
+            ar_top2 = set(group.nsmallest(2, "arch_rank")["alternative"].values)
+            top2 = 1.0 if gt_best_alt in ar_top2 else 0.0
 
         # MAE and RMSE across all alternatives and criteria
         abs_errors = []
@@ -384,7 +347,9 @@ def compute_scenario_metrics(matched_df):
             "scenario_id": sid,
             "decision_type": group["decision_type"].iloc[0],
             "kendall_tau": kendall_tau,
+            "spearman_rho": spearman_rho,
             "top1_accuracy": top1,
+            "top2_accuracy": top2,
             "overall_mae": overall_mae,
             "overall_rmse": overall_rmse,
             "overall_rmse_mae_ratio": rmse_mae_ratio,
@@ -398,15 +363,18 @@ def compute_scenario_metrics(matched_df):
 # ---------------------------------------------------------------------------
 
 def compute_per_scenario_metrics_from_raw():
-    """Load raw run files and compute per-scenario metrics for all model x arch x run.
+    """Load raw run files and compute per-scenario metrics for all model x arch x run (Method A).
 
     For each of the 4 models and 3 architectures, loads 5 run xlsx files,
     matches each run to ground truth by (question, location) content keys,
-    and computes per-scenario metrics (Kendall tau, Top-1, MAE, RMSE,
-    RMSE/MAE ratio).
+    and computes per-scenario metrics (Kendall tau, Spearman rho, Top-1,
+    Top-2, MAE, RMSE, RMSE/MAE ratio).
 
     The 5 runs are averaged to produce a single per-scenario-per-model
-    metric vector (195 scenarios per model).
+    metric vector (195 scenarios per model). This is Method A (per-run
+    metrics averaged). The same method feeds generate_numbers_master.py,
+    so significance tests here test the same point estimate as the paper's
+    results tables.
 
     Returns
     -------
@@ -516,6 +484,7 @@ def compute_icc(df, metric):
     model_means = groups.mean()
     model_vars = groups.var(ddof=1)
     k = groups.count().iloc[0]
+    assert (groups.count() == k).all(), f"Unbalanced groups in ICC: counts={dict(groups.count())}"
 
     n_models = len(model_means)
     grand_mean = df[metric].mean()
@@ -715,8 +684,9 @@ def stouffer_combine(z_scores, ns):
     if mask.sum() == 0:
         return np.nan, np.nan
     z_valid = z_arr[mask]
-    k = len(z_valid)
-    z_combined = z_valid.sum() / np.sqrt(k)
+    ns_arr = np.array(ns, dtype=float)
+    w = np.sqrt(ns_arr[mask])
+    z_combined = np.sum(w * z_valid) / np.sqrt(np.sum(w ** 2))
     p_combined = 2 * (1 - stats.norm.cdf(abs(z_combined)))
     return z_combined, p_combined
 

@@ -1086,6 +1086,10 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
                 "metric": f"match_{k}", "value": v,
             })
 
+        # Scenario funnel reconciliation: total arch scenarios → matched → failed
+        n_arch_total = merged["arch_scenario_id"].nunique() if len(merged) > 0 else 0
+        print(f"  Matched: {n_arch_total} scenarios in merged set")
+
         # Diagnostics-based failure-mode counters
         diag = arch_diagnostics.get(arch_name, {})
         for k, v in diag.items():
@@ -1109,10 +1113,19 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
 
         # Failure rate (all architectures via 1928 sentinel detection)
         fail = compute_failure_rate(arch_dfs[arch_name])
-        if fail["n_failed_scenarios"] > 0:
-            print(f"\n  Failures: {fail['n_failed_scenarios']}"
-                  f"/{fail['n_total_arch_scenarios']} "
+        n_failed = fail["n_failed_scenarios"]
+        n_total_arch = fail["n_total_arch_scenarios"]
+        n_matched_arch = merged["arch_scenario_id"].nunique() if len(merged) > 0 else 0
+        n_unmatched_arch = n_total_arch - n_matched_arch
+        if n_failed > 0 or n_unmatched_arch > 0:
+            print(f"\n  Scenario funnel: {n_total_arch} total → {n_matched_arch} matched "
+                  f"({n_unmatched_arch} unmatched) → {n_failed} sentinel-failed "
+                  f"({n_matched_arch - n_failed} clean)")
+            print(f"    Failures: {n_failed}/{n_total_arch} "
                   f"({fail['total_failure_rate']*100:.1f}%)")
+            if n_unmatched_arch > 0:
+                print(f"    Unmatched: {n_unmatched_arch} scenarios had no GT match "
+                      f"(not counted as failures, not included in ranking metrics)")
             if "n_extraction_failures" in fail:
                 print(f"    extraction={fail['n_extraction_failures']}, "
                       f"calc={fail['n_calculation_failures']}")
