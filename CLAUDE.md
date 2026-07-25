@@ -34,6 +34,10 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 ## Running
 
+- **Compilation happens in Overleaf, by the user** — not in this repo/sandbox. The
+  agent should edit `.tex` source and let the user compile in Overleaf. A local
+  `pdflatex` build may be used purely as a diagnostic step (e.g. Phase 0 audits)
+  but its output is never the source of truth; the Overleaf-compiled PDF is.
 - Set `OPENROUTER_API_KEY` in `.env`. Pick the model with `MODEL_KEY` and runs with
   `N_RUNS` in [model_config.py](model_config.py); output routes to that model's folder.
 - Run an architecture: `python Architectures/Direct_LLM_Scoring.py` (resp. RAG / LLM-Parameterized_Reference_Scoring).
