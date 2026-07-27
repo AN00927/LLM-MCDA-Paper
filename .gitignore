@@ -112,3 +112,6 @@ TinyTeX\texmf.cnf
 TinyTeX\texmfcnf.lua
 TinyTeX\tl-tray-menu.exe
 docs/EXECUTION_PLAN.md
+.opencode/agents/citation-auditor.md
+.opencode/agents/citation-orchestrator-1.md
+.opencode/agents/citation-orchestrator-2.md
