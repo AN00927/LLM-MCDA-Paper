@@ -34,7 +34,7 @@ MODEL_SPECS = {
         "label": "Input Price: $0.10/M, Output Price: $0.15/M",
         "openrouter_id": "qwen/qwen3.5-9b:exacto",
         "output_folder": "Output Files Qwen3.5 9B",
-        "reasoning_effort": "non-reasoning",
+        "reasoning_effort": "none",
     },
     "deepseek": {
         "label": "Input Price: $0.09/M, Output Price: $0.18/M",
