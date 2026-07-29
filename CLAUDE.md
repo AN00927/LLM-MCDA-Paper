@@ -154,6 +154,14 @@ satisfy the request:
 5. **When in doubt, do less.** Every character changed beyond what the
    task requires is excess.
 
+### Paper reading protocol
+
+When first reading `paper/paper_draft_working.tex`, always dispatch an explore
+agent to map the full section structure (section/subsection line ranges, labels,
+TODO markers, figure/table references) before dispatching section-specific agents.
+This avoids redundant exploration and gives each section agent a pre-built
+navigation map.
+
 ## Communication conventions
 
 - **"Explain X to me" means explain in conversation.** When the user asks you to
