@@ -115,3 +115,8 @@ docs/EXECUTION_PLAN.md
 .opencode/agents/citation-auditor.md
 .opencode/agents/citation-orchestrator-1.md
 .opencode/agents/citation-orchestrator-2.md
+AGENT-HANDOFF.md
+CLAUDE.md
+reviewer-response-plan.md
+paper/cas-refs.bib
+paper/paper_draft_working.tex
