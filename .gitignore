@@ -48,6 +48,20 @@ chroma_rag_db/
 Output Files/
 Analysis/
 
+# Agent / session working artifacts (never tracked)
+HANDOFF.md
+AGENT-HANDOFF.md
+AGENT-REPORT.md
+PAPER-EDIT-BRIEF.md
+reviewer-response-plan.md
+*_ablation_results.md
+docs/EXECUTION_PLAN.md
+docs/REVISION_PLAN.md
+docs/cleanuprepo.txt
+
+# Superpowers planning artifacts (ephemeral by convention, see CLAUDE.md)
+docs/superpowers/
+
 # Scenario Files
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
 Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
@@ -62,7 +76,6 @@ paper/incremental_contribution_table.tex
 
 # Paper pipeline outputs
 paper_draft_working.spl
-paper/numbers_master.csv
 
 # Paper build artifacts
 paper/paper_draft_working.pdf
@@ -73,50 +86,16 @@ paper/pipeline_plan.md
 # Pipeline scripts (generated/derivative)
 paper_pipeline/failure_analysis.py
 paper_pipeline/generate_method_c_consensus.py
-
-# Documentation artifacts
-docs/metrics_calculation_pipeline.md
 paper_pipeline/calculate_per_run_metrics.py
 paper_pipeline/generate_boxplot_tex.py
 paper_pipeline/generate_violin_tex.py
 paper_pipeline/run_all.py
 paper_pipeline/generate_variance_snippet.py
 paper_pipeline/generate_figures.py
-paper_pipeline/generate_numbers_master.py
+# generate_numbers_master.py is deliberately NOT ignored: it computes the paper's
+# cost table from measured token diagnostics rather than hardcoding it, so it is a
+# source of record for numbers in the paper. Likewise paper/numbers_master.csv.
 
-# Documentation (gitignored local references)
-XLSX_Schema_Map.md
-PROVENANCE_AUDIT_PROMPT.md
-docs/REVISION_PLAN.md
-docs/cleanuprepo.txt
-
-# Superpowers planning artifacts
-docs/superpowers/plans/
-docs/superpowers/specs/
-
-
-TinyTeX
-
-TinyTeX\bin
-TinyTeX\bin\windows
-TinyTeX\texmf-config
-TinyTeX\texmf-dist
-TinyTeX\texmf-local
-TinyTeX\texmf-var
-TinyTeX\tlpkg
-TinyTeX\.tinytex
-TinyTeX\LICENSE.CTAN
-TinyTeX\LICENSE.TL
-TinyTeX\release-texlive.txt
-TinyTeX\texmf.cnf
-TinyTeX\texmfcnf.lua
-TinyTeX\tl-tray-menu.exe
-docs/EXECUTION_PLAN.md
-.opencode/agents/citation-auditor.md
-.opencode/agents/citation-orchestrator-1.md
-.opencode/agents/citation-orchestrator-2.md
-AGENT-HANDOFF.md
-CLAUDE.md
-reviewer-response-plan.md
-paper/cas-refs.bib
-paper/paper_draft_working.tex
+# LaTeX distribution (vendored locally, never tracked)
+TinyTeX/
+.opencode/

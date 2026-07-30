@@ -364,6 +364,8 @@ Two scripts independently validate the subjective MAVT weights against the groun
 
 ## Documentation
 
+[Codebase Guide](docs/CODEBASE_GUIDE.md) | [Ablation Experiments](docs/EXPERIMENTS.md) | [Metrics Pipeline](docs/metrics_calculation_pipeline.md) | [XLSX Schema Map](XLSX_Schema_Map.md) | [Provenance Audit](docs/PROVENANCE_AUDIT_PROMPT.md)
+
 [Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [Budget Penalties](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
 
 ---
