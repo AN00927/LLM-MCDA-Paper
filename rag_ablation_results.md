@@ -2,11 +2,11 @@
 
 ## Overview
 
-- Sample size: 35
+- Sample size: all
 - Random seed: 13
-- Scenarios evaluated: 35
-- Result rows: 3045
-- Output plots: `C:\Users\Ahaan\LLM-MCDA Paper\rag_ablation_top1_accuracy.png`, `C:\Users\Ahaan\LLM-MCDA Paper\rag_ablation_score_mae.png`, `C:\Users\Ahaan\LLM-MCDA Paper\rag_ablation_retrieval_distance.png`
+- Scenarios evaluated: 90
+- Result rows: 5940
+- Output plots: None
 
 ## Ablation Configurations
 
@@ -25,152 +25,124 @@
 
 | model_key | ablation_id | ablation_label | n_scenarios | score_mae | score_rmse | kendall_tau | spearman_rho | top1_accuracy | top2_accuracy | mean_retrieval_distance | retrieval_count | api_calls | successful_calls | failed_calls | success_rate |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 35 | 0.0722 | 0.0837 | 0.4052 | 0.4181 | 0.6571 | 0.8857 | 1.1626 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| deepseek | control_k3 | Control k=3 standard | 35 | 0.0827 | 0.0900 | 0.3481 | 0.3753 | 0.6286 | 0.8000 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | 35 | 0.1401 | 0.1543 | 0.0809 | 0.1127 | 0.3714 | 0.7714 | 0.0675 | 105.0000 | 105.0000 | 104.0000 | 1.0000 | 0.9905 |
-| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | 35 | 0.0742 | 0.0817 | 0.4588 | 0.4989 | 0.6286 | 0.8286 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| deepseek | random_exemplars_k3 | Random exemplars k=3 | 35 | 0.1466 | 0.1592 | 0.2279 | 0.2303 | 0.5143 | 0.6571 | 0.4370 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| deepseek | retrieval_k1 | Retrieval k=1 | 35 | 0.0869 | 0.0994 | 0.4614 | 0.4676 | 0.6286 | 0.8286 | 0.0503 | 35.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| deepseek | retrieval_k5 | Retrieval k=5 | 35 | 0.0699 | 0.0767 | 0.5695 | 0.6133 | 0.5714 | 0.8857 | 0.0788 | 175.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gemini | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 35 | 0.0612 | 0.0716 | 0.4467 | 0.4638 | 0.6571 | 0.8571 | 1.1626 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gemini | control_k3 | Control k=3 standard | 35 | 0.0711 | 0.0826 | 0.3419 | 0.3495 | 0.6286 | 0.7714 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gemini | descriptions_no_scores_ranks | Descriptions without scores or ranks | 35 | 0.1427 | 0.1626 | 0.1048 | 0.1000 | 0.4286 | 0.7429 | 0.0675 | 105.0000 | 105.0000 | 104.0000 | 1.0000 | 0.9905 |
-| gemini | exemplars_no_hidden_params | Exemplars without hidden parameters | 35 | 0.0725 | 0.0840 | 0.3090 | 0.3105 | 0.6286 | 0.7429 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gemini | random_exemplars_k3 | Random exemplars k=3 | 35 | 0.1512 | 0.1688 | -0.0233 | -0.0390 | 0.3143 | 0.6286 | 0.4268 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gemini | retrieval_k1 | Retrieval k=1 | 35 | 0.0831 | 0.0962 | 0.3529 | 0.3382 | 0.5143 | 0.7429 | 0.0503 | 35.0000 | 105.0000 | 101.0000 | 4.0000 | 0.9619 |
-| gemini | retrieval_k5 | Retrieval k=5 | 35 | 0.0605 | 0.0687 | 0.4805 | 0.5247 | 0.6857 | 0.8857 | 0.0788 | 175.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 35 | 0.0933 | 0.1085 | 0.2190 | 0.2143 | 0.4857 | 0.7143 | 1.1626 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | control_k3 | Control k=3 standard | 35 | 0.0870 | 0.1004 | 0.2000 | 0.2429 | 0.4857 | 0.7143 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | 35 | 0.1430 | 0.1638 | -0.0651 | -0.0868 | 0.3143 | 0.6286 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | 35 | 0.0934 | 0.1081 | 0.2000 | 0.2286 | 0.4571 | 0.7429 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | random_exemplars_k3 | Random exemplars k=3 | 35 | 0.1732 | 0.1931 | -0.0338 | -0.0467 | 0.2857 | 0.7143 | 0.4337 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | retrieval_k1 | Retrieval k=1 | 35 | 0.0987 | 0.1121 | 0.2676 | 0.2934 | 0.5714 | 0.7714 | 0.0503 | 35.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| gptoss | retrieval_k5 | Retrieval k=5 | 35 | 0.0923 | 0.1050 | 0.3281 | 0.3390 | 0.5143 | 0.8286 | 0.0788 | 175.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 35 | 0.0960 | 0.1074 | -0.0389 | -0.0412 | 0.4571 | 0.6857 | 0.0675 | 105.0000 | 0.0000 | 0.0000 | 0.0000 | N/A |
-| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 35 | 0.0959 | 0.1112 | 0.2289 | 0.2676 | 0.4571 | 0.6857 | 1.1626 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| qwen | control_k3 | Control k=3 standard | 35 | 0.1029 | 0.1195 | 0.3773 | 0.3818 | 0.5714 | 0.7714 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | 35 | 0.1414 | 0.1567 | 0.3156 | 0.3282 | 0.5714 | 0.8286 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | 35 | 0.1014 | 0.1212 | 0.2323 | 0.2273 | 0.4571 | 0.8286 | 0.0675 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| qwen | random_exemplars_k3 | Random exemplars k=3 | 35 | 0.1363 | 0.1528 | 0.0818 | 0.0990 | 0.5143 | 0.6571 | 0.4364 | 105.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| qwen | retrieval_k1 | Retrieval k=1 | 35 | 0.1023 | 0.1168 | 0.3725 | 0.4265 | 0.6286 | 0.8571 | 0.0503 | 35.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
-| qwen | retrieval_k5 | Retrieval k=5 | 35 | 0.0916 | 0.1069 | 0.1667 | 0.1618 | 0.4286 | 0.6857 | 0.0788 | 175.0000 | 105.0000 | 105.0000 | 0.0000 | 1.0000 |
+| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 90 | 0.0876 | 0.0984 | 0.3463 | 0.3749 | 0.4889 | 0.8333 | 1.2152 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| deepseek | control_k3 | Control k=3 standard | 90 | 0.0884 | 0.0984 | 0.4887 | 0.5187 | 0.6333 | 0.8889 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | 90 | 0.1312 | 0.1465 | 0.0733 | 0.0841 | 0.4111 | 0.7000 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | 90 | 0.0874 | 0.0965 | 0.3911 | 0.4128 | 0.5889 | 0.8444 | 0.0723 | 270.0000 | 270.0000 | 269.0000 | 1.0000 | 0.9963 |
+| deepseek | random_exemplars_k3 | Random exemplars k=3 | 90 | 0.1267 | 0.1432 | 0.0632 | 0.0675 | 0.3889 | 0.7444 | 0.4477 | 270.0000 | 270.0000 | 269.0000 | 1.0000 | 0.9963 |
+| deepseek | retrieval_k1 | Retrieval k=1 | 90 | 0.0981 | 0.1114 | 0.1822 | 0.1782 | 0.4778 | 0.7778 | 0.0561 | 90.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| deepseek | retrieval_k5 | Retrieval k=5 | 90 | 0.0842 | 0.0941 | 0.3421 | 0.3663 | 0.5222 | 0.8111 | 0.0847 | 450.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 90 | 0.1127 | 0.1247 | 0.2268 | 0.2426 | 0.4444 | 0.7778 | 1.2152 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | control_k3 | Control k=3 standard | 90 | 0.1045 | 0.1209 | 0.1872 | 0.1682 | 0.4444 | 0.6667 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | 90 | 0.1577 | 0.1770 | 0.0609 | 0.0652 | 0.3333 | 0.7111 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | 90 | 0.1058 | 0.1212 | 0.1754 | 0.1844 | 0.4444 | 0.7111 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | random_exemplars_k3 | Random exemplars k=3 | 90 | 0.1634 | 0.1841 | 0.0222 | 0.0222 | 0.3444 | 0.6889 | 0.4469 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | retrieval_k1 | Retrieval k=1 | 90 | 0.1182 | 0.1377 | 0.2367 | 0.2304 | 0.4667 | 0.7556 | 0.0561 | 90.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| gptoss | retrieval_k5 | Retrieval k=5 | 90 | 0.1016 | 0.1162 | 0.1124 | 0.1180 | 0.3889 | 0.7000 | 0.0847 | 450.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 90 | 0.1009 | 0.1159 | 0.0011 | 0.0173 | 0.4444 | 0.7222 | 0.0723 | 270.0000 | 0.0000 | 0.0000 | 0.0000 | N/A |
+| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 90 | 0.1039 | 0.1163 | 0.1651 | 0.1640 | 0.4778 | 0.7333 | 1.2152 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| qwen | control_k3 | Control k=3 standard | 90 | 0.1019 | 0.1200 | 0.1535 | 0.1541 | 0.4333 | 0.7444 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | 90 | 0.1511 | 0.1683 | 0.0711 | 0.0763 | 0.4222 | 0.7556 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | 90 | 0.0988 | 0.1136 | 0.2730 | 0.2779 | 0.4667 | 0.7444 | 0.0723 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| qwen | random_exemplars_k3 | Random exemplars k=3 | 90 | 0.1407 | 0.1568 | 0.2756 | 0.2969 | 0.5778 | 0.8444 | 0.4558 | 270.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| qwen | retrieval_k1 | Retrieval k=1 | 90 | 0.0968 | 0.1128 | 0.3056 | 0.2969 | 0.5222 | 0.8222 | 0.0561 | 90.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
+| qwen | retrieval_k5 | Retrieval k=5 | 90 | 0.0880 | 0.1002 | 0.2343 | 0.2708 | 0.4889 | 0.7667 | 0.0847 | 450.0000 | 270.0000 | 270.0000 | 0.0000 | 1.0000 |
 
 ## Summary by Decision Type
 
 | model_key | ablation_id | ablation_label | decision_type | n_scenarios | score_mae | score_rmse | kendall_tau | spearman_rho | top1_accuracy | top2_accuracy |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 12 | 0.0725 | 0.0910 | 0.6264 | 0.6778 | 0.8333 | 1.0000 |
-| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 12 | 0.1022 | 0.1124 | 0.1389 | 0.1250 | 0.4167 | 0.9167 |
-| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 11 | 0.0393 | 0.0445 | 0.4545 | 0.4545 | 0.7273 | 0.7273 |
-| deepseek | control_k3 | Control k=3 standard | Appliance | 12 | 0.0902 | 0.1005 | 0.5000 | 0.5417 | 0.8333 | 0.8333 |
-| deepseek | control_k3 | Control k=3 standard | HVAC | 12 | 0.1179 | 0.1273 | -0.0680 | -0.0722 | 0.3333 | 0.6667 |
-| deepseek | control_k3 | Control k=3 standard | Shower | 11 | 0.0361 | 0.0380 | 0.6364 | 0.6818 | 0.7273 | 0.9091 |
-| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 12 | 0.1825 | 0.1986 | 0.2750 | 0.3527 | 0.6667 | 0.9167 |
-| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 12 | 0.1396 | 0.1542 | -0.1076 | -0.1485 | 0.0833 | 0.5833 |
-| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 11 | 0.0944 | 0.1061 | 0.0575 | 0.1120 | 0.3636 | 0.8182 |
-| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 12 | 0.0728 | 0.0822 | 0.6514 | 0.6555 | 0.8333 | 0.9167 |
-| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 12 | 0.1110 | 0.1188 | 0.1924 | 0.2362 | 0.3333 | 0.6667 |
-| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 11 | 0.0355 | 0.0408 | 0.5152 | 0.5909 | 0.7273 | 0.9091 |
-| deepseek | random_exemplars_k3 | Random exemplars k=3 | Appliance | 12 | 0.1856 | 0.2033 | 0.1916 | 0.1860 | 0.5833 | 0.5833 |
-| deepseek | random_exemplars_k3 | Random exemplars k=3 | HVAC | 12 | 0.1518 | 0.1609 | 0.3430 | 0.3415 | 0.5000 | 0.6667 |
-| deepseek | random_exemplars_k3 | Random exemplars k=3 | Shower | 11 | 0.0985 | 0.1093 | 0.1333 | 0.1500 | 0.4545 | 0.7273 |
-| deepseek | retrieval_k1 | Retrieval k=1 | Appliance | 12 | 0.1097 | 0.1309 | 0.5000 | 0.5000 | 0.6667 | 0.8333 |
-| deepseek | retrieval_k1 | Retrieval k=1 | HVAC | 12 | 0.1043 | 0.1117 | 0.2222 | 0.2083 | 0.4167 | 0.7500 |
-| deepseek | retrieval_k1 | Retrieval k=1 | Shower | 11 | 0.0430 | 0.0518 | 0.6803 | 0.7151 | 0.8182 | 0.9091 |
-| deepseek | retrieval_k5 | Retrieval k=5 | Appliance | 12 | 0.0679 | 0.0775 | 0.7069 | 0.7805 | 0.7500 | 1.0000 |
-| deepseek | retrieval_k5 | Retrieval k=5 | HVAC | 12 | 0.1030 | 0.1092 | 0.4263 | 0.4248 | 0.3333 | 0.7500 |
-| deepseek | retrieval_k5 | Retrieval k=5 | Shower | 11 | 0.0361 | 0.0404 | 0.5758 | 0.6364 | 0.6364 | 0.9091 |
-| gemini | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 12 | 0.0605 | 0.0663 | 0.7222 | 0.7917 | 0.9167 | 1.0000 |
-| gemini | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 12 | 0.0932 | 0.1151 | 0.0125 | -0.0112 | 0.4167 | 0.7500 |
-| gemini | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 11 | 0.0270 | 0.0298 | 0.6197 | 0.6242 | 0.6364 | 0.8182 |
-| gemini | control_k3 | Control k=3 standard | Appliance | 12 | 0.0705 | 0.0763 | 0.7472 | 0.7693 | 0.9167 | 0.9167 |
-| gemini | control_k3 | Control k=3 standard | HVAC | 12 | 0.1095 | 0.1330 | -0.3180 | -0.3222 | 0.2500 | 0.5833 |
-| gemini | control_k3 | Control k=3 standard | Shower | 11 | 0.0298 | 0.0343 | 0.6197 | 0.6242 | 0.7273 | 0.8182 |
-| gemini | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 12 | 0.1874 | 0.2121 | 0.1111 | 0.1250 | 0.5000 | 0.7500 |
-| gemini | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 12 | 0.1785 | 0.2062 | -0.0556 | -0.0833 | 0.4167 | 0.7500 |
-| gemini | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 11 | 0.0549 | 0.0610 | 0.2727 | 0.2727 | 0.3636 | 0.7273 |
-| gemini | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 12 | 0.0703 | 0.0753 | 0.8027 | 0.8110 | 0.9167 | 0.9167 |
-| gemini | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 12 | 0.1148 | 0.1396 | -0.2778 | -0.2917 | 0.2500 | 0.5833 |
-| gemini | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 11 | 0.0287 | 0.0328 | 0.4106 | 0.4213 | 0.7273 | 0.7273 |
-| gemini | random_exemplars_k3 | Random exemplars k=3 | Appliance | 12 | 0.1948 | 0.2223 | 0.0000 | -0.0417 | 0.2500 | 0.7500 |
-| gemini | random_exemplars_k3 | Random exemplars k=3 | HVAC | 12 | 0.1914 | 0.2095 | -0.1514 | -0.1555 | 0.2500 | 0.5833 |
-| gemini | random_exemplars_k3 | Random exemplars k=3 | Shower | 11 | 0.0597 | 0.0659 | 0.0909 | 0.0909 | 0.4545 | 0.5455 |
-| gemini | retrieval_k1 | Retrieval k=1 | Appliance | 12 | 0.0858 | 0.0975 | 0.6514 | 0.6555 | 0.6667 | 0.8333 |
-| gemini | retrieval_k1 | Retrieval k=1 | HVAC | 12 | 0.1299 | 0.1520 | -0.2560 | -0.3060 | 0.1667 | 0.5833 |
-| gemini | retrieval_k1 | Retrieval k=1 | Shower | 11 | 0.0291 | 0.0338 | 0.6364 | 0.6364 | 0.7273 | 0.8182 |
-| gemini | retrieval_k5 | Retrieval k=5 | Appliance | 12 | 0.0697 | 0.0763 | 0.6667 | 0.7083 | 0.9167 | 0.9167 |
-| gemini | retrieval_k5 | Retrieval k=5 | HVAC | 12 | 0.0832 | 0.0964 | 0.2069 | 0.2388 | 0.5000 | 0.8333 |
-| gemini | retrieval_k5 | Retrieval k=5 | Shower | 11 | 0.0256 | 0.0301 | 0.5758 | 0.6364 | 0.6364 | 0.9091 |
-| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 12 | 0.1216 | 0.1428 | -0.0000 | -0.0417 | 0.3333 | 0.5000 |
-| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 12 | 0.1134 | 0.1298 | 0.3333 | 0.3750 | 0.5833 | 0.8333 |
-| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 11 | 0.0406 | 0.0478 | 0.3333 | 0.3182 | 0.5455 | 0.8182 |
-| gptoss | control_k3 | Control k=3 standard | Appliance | 12 | 0.1189 | 0.1336 | 0.2778 | 0.2917 | 0.5000 | 0.6667 |
-| gptoss | control_k3 | Control k=3 standard | HVAC | 12 | 0.0941 | 0.1119 | 0.1111 | 0.1667 | 0.4167 | 0.7500 |
-| gptoss | control_k3 | Control k=3 standard | Shower | 11 | 0.0443 | 0.0516 | 0.2121 | 0.2727 | 0.5455 | 0.7273 |
-| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 12 | 0.2147 | 0.2466 | -0.1348 | -0.1696 | 0.2500 | 0.5833 |
-| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 12 | 0.1475 | 0.1668 | -0.4545 | -0.5000 | 0.0833 | 0.4167 |
-| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 11 | 0.0600 | 0.0702 | 0.3939 | 0.4091 | 0.6364 | 0.9091 |
-| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 12 | 0.1199 | 0.1370 | 0.1667 | 0.2083 | 0.4167 | 0.6667 |
-| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 12 | 0.1095 | 0.1302 | -0.0556 | -0.0417 | 0.3333 | 0.7500 |
-| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 11 | 0.0471 | 0.0524 | 0.5152 | 0.5455 | 0.6364 | 0.8182 |
-| gptoss | random_exemplars_k3 | Random exemplars k=3 | Appliance | 12 | 0.2954 | 0.3252 | -0.2931 | -0.3445 | 0.0833 | 0.5833 |
-| gptoss | random_exemplars_k3 | Random exemplars k=3 | HVAC | 12 | 0.1409 | 0.1517 | 0.0000 | 0.0000 | 0.1667 | 0.8333 |
-| gptoss | random_exemplars_k3 | Random exemplars k=3 | Shower | 11 | 0.0751 | 0.0943 | 0.2121 | 0.2273 | 0.6364 | 0.7273 |
-| gptoss | retrieval_k1 | Retrieval k=1 | Appliance | 12 | 0.1411 | 0.1642 | 0.2375 | 0.3028 | 0.5833 | 0.8333 |
-| gptoss | retrieval_k1 | Retrieval k=1 | HVAC | 12 | 0.1144 | 0.1247 | 0.2778 | 0.2917 | 0.5833 | 0.8333 |
-| gptoss | retrieval_k1 | Retrieval k=1 | Shower | 11 | 0.0353 | 0.0415 | 0.2894 | 0.2849 | 0.5455 | 0.6364 |
-| gptoss | retrieval_k5 | Retrieval k=5 | Appliance | 12 | 0.1132 | 0.1327 | 0.2778 | 0.3333 | 0.4167 | 0.9167 |
-| gptoss | retrieval_k5 | Retrieval k=5 | HVAC | 12 | 0.1100 | 0.1226 | 0.3889 | 0.3750 | 0.5833 | 0.8333 |
-| gptoss | retrieval_k5 | Retrieval k=5 | Shower | 11 | 0.0501 | 0.0556 | 0.3167 | 0.3060 | 0.5455 | 0.7273 |
-| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | Appliance | 12 | 0.1140 | 0.1297 | -0.1954 | -0.2151 | 0.3333 | 0.5833 |
-| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | HVAC | 12 | 0.1141 | 0.1261 | 0.1333 | 0.1500 | 0.4167 | 0.7500 |
-| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | Shower | 11 | 0.0565 | 0.0625 | N/A | N/A | 0.6364 | 0.7273 |
-| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 12 | 0.1153 | 0.1272 | 0.5000 | 0.5417 | 0.5833 | 0.8333 |
-| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 12 | 0.1179 | 0.1383 | 0.1182 | 0.1575 | 0.3333 | 0.5833 |
-| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 11 | 0.0510 | 0.0641 | 0.0439 | 0.0787 | 0.4545 | 0.6364 |
-| qwen | control_k3 | Control k=3 standard | Appliance | 12 | 0.1054 | 0.1256 | 0.5652 | 0.5915 | 0.7500 | 0.9167 |
-| qwen | control_k3 | Control k=3 standard | HVAC | 12 | 0.1283 | 0.1373 | 0.1212 | 0.0909 | 0.4167 | 0.6667 |
-| qwen | control_k3 | Control k=3 standard | Shower | 11 | 0.0726 | 0.0936 | 0.4333 | 0.4500 | 0.5455 | 0.7273 |
-| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 12 | 0.1803 | 0.1980 | 0.6361 | 0.6860 | 0.8333 | 1.0000 |
-| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 12 | 0.1441 | 0.1637 | -0.0773 | -0.1031 | 0.2500 | 0.6667 |
-| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 11 | 0.0960 | 0.1040 | 0.3633 | 0.3732 | 0.6364 | 0.8182 |
-| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 12 | 0.1250 | 0.1487 | 0.4545 | 0.4091 | 0.6667 | 0.9167 |
-| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 12 | 0.1276 | 0.1521 | -0.1212 | -0.1364 | 0.1667 | 0.7500 |
-| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 11 | 0.0471 | 0.0574 | 0.3636 | 0.4091 | 0.5455 | 0.8182 |
-| qwen | random_exemplars_k3 | Random exemplars k=3 | Appliance | 12 | 0.1688 | 0.1906 | 0.3583 | 0.3943 | 0.7500 | 0.7500 |
-| qwen | random_exemplars_k3 | Random exemplars k=3 | HVAC | 12 | 0.1594 | 0.1771 | 0.0556 | 0.0417 | 0.3333 | 0.5000 |
-| qwen | random_exemplars_k3 | Random exemplars k=3 | Shower | 11 | 0.0756 | 0.0851 | -0.2518 | -0.2182 | 0.4545 | 0.7273 |
-| qwen | retrieval_k1 | Retrieval k=1 | Appliance | 12 | 0.1084 | 0.1170 | 0.5556 | 0.6250 | 0.6667 | 1.0000 |
-| qwen | retrieval_k1 | Retrieval k=1 | HVAC | 12 | 0.1345 | 0.1602 | 0.2931 | 0.3862 | 0.6667 | 0.8333 |
-| qwen | retrieval_k1 | Retrieval k=1 | Shower | 11 | 0.0605 | 0.0694 | 0.2483 | 0.2366 | 0.5455 | 0.7273 |
-| qwen | retrieval_k5 | Retrieval k=5 | Appliance | 12 | 0.0921 | 0.1073 | 0.3736 | 0.3638 | 0.5000 | 0.7500 |
-| qwen | retrieval_k5 | Retrieval k=5 | HVAC | 12 | 0.1341 | 0.1543 | -0.2091 | -0.2029 | 0.3333 | 0.5833 |
-| qwen | retrieval_k5 | Retrieval k=5 | Shower | 11 | 0.0448 | 0.0548 | 0.3167 | 0.3060 | 0.4545 | 0.7273 |
+| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 35 | 0.0881 | 0.1026 | 0.4667 | 0.5143 | 0.6286 | 0.8857 |
+| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 35 | 0.1179 | 0.1289 | 0.0926 | 0.0990 | 0.2286 | 0.7714 |
+| deepseek | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 20 | 0.0340 | 0.0380 | 0.5667 | 0.6000 | 0.7000 | 0.8500 |
+| deepseek | control_k3 | Control k=3 standard | Appliance | 35 | 0.0842 | 0.0978 | 0.5333 | 0.5714 | 0.6857 | 0.9714 |
+| deepseek | control_k3 | Control k=3 standard | HVAC | 35 | 0.1216 | 0.1294 | 0.3436 | 0.3616 | 0.4571 | 0.8000 |
+| deepseek | control_k3 | Control k=3 standard | Shower | 20 | 0.0379 | 0.0453 | 0.6575 | 0.6933 | 0.8500 | 0.9000 |
+| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 35 | 0.1717 | 0.1934 | 0.1038 | 0.1352 | 0.4571 | 0.7429 |
+| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 35 | 0.1237 | 0.1361 | 0.0202 | 0.0152 | 0.3429 | 0.6286 |
+| deepseek | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 20 | 0.0733 | 0.0828 | 0.1111 | 0.1111 | 0.4500 | 0.7500 |
+| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 35 | 0.0890 | 0.1010 | 0.3922 | 0.4265 | 0.5143 | 0.9143 |
+| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 35 | 0.1161 | 0.1240 | 0.2279 | 0.2450 | 0.5714 | 0.7714 |
+| deepseek | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 20 | 0.0346 | 0.0407 | 0.6667 | 0.6750 | 0.7500 | 0.8500 |
+| deepseek | random_exemplars_k3 | Random exemplars k=3 | Appliance | 35 | 0.1513 | 0.1747 | 0.0216 | 0.0305 | 0.4000 | 0.8000 |
+| deepseek | random_exemplars_k3 | Random exemplars k=3 | HVAC | 35 | 0.1263 | 0.1406 | 0.0672 | 0.0576 | 0.3143 | 0.6857 |
+| deepseek | random_exemplars_k3 | Random exemplars k=3 | Shower | 20 | 0.0845 | 0.0925 | 0.1307 | 0.1508 | 0.5000 | 0.7500 |
+| deepseek | retrieval_k1 | Retrieval k=1 | Appliance | 35 | 0.1016 | 0.1203 | 0.3333 | 0.3286 | 0.5429 | 0.9143 |
+| deepseek | retrieval_k1 | Retrieval k=1 | HVAC | 35 | 0.1260 | 0.1376 | -0.0900 | -0.1105 | 0.3429 | 0.5714 |
+| deepseek | retrieval_k1 | Retrieval k=1 | Shower | 20 | 0.0433 | 0.0498 | 0.3942 | 0.4201 | 0.6000 | 0.9000 |
+| deepseek | retrieval_k5 | Retrieval k=5 | Appliance | 35 | 0.0865 | 0.1000 | 0.3714 | 0.4000 | 0.6000 | 0.8286 |
+| deepseek | retrieval_k5 | Retrieval k=5 | HVAC | 35 | 0.1115 | 0.1211 | 0.0818 | 0.0911 | 0.2857 | 0.7143 |
+| deepseek | retrieval_k5 | Retrieval k=5 | Shower | 20 | 0.0326 | 0.0366 | 0.7333 | 0.7750 | 0.8000 | 0.9500 |
+| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 35 | 0.1315 | 0.1480 | 0.1757 | 0.1962 | 0.3714 | 0.6857 |
+| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 35 | 0.1393 | 0.1512 | 0.1790 | 0.1847 | 0.4571 | 0.8000 |
+| gptoss | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 20 | 0.0334 | 0.0373 | 0.4000 | 0.4250 | 0.5500 | 0.9000 |
+| gptoss | control_k3 | Control k=3 standard | Appliance | 35 | 0.1225 | 0.1424 | 0.1238 | 0.0857 | 0.3714 | 0.6571 |
+| gptoss | control_k3 | Control k=3 standard | HVAC | 35 | 0.1252 | 0.1433 | 0.1481 | 0.1324 | 0.4571 | 0.6000 |
+| gptoss | control_k3 | Control k=3 standard | Shower | 20 | 0.0369 | 0.0442 | 0.3667 | 0.3750 | 0.5500 | 0.8000 |
+| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 35 | 0.2265 | 0.2595 | -0.1376 | -0.1533 | 0.2000 | 0.6571 |
+| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 35 | 0.1365 | 0.1466 | 0.1143 | 0.1286 | 0.3429 | 0.7143 |
+| gptoss | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 20 | 0.0743 | 0.0860 | 0.3150 | 0.3366 | 0.5500 | 0.8000 |
+| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 35 | 0.1271 | 0.1474 | 0.1186 | 0.1247 | 0.3714 | 0.7143 |
+| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 35 | 0.1246 | 0.1415 | 0.0414 | 0.0457 | 0.3714 | 0.6571 |
+| gptoss | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 20 | 0.0357 | 0.0398 | 0.5092 | 0.5317 | 0.7000 | 0.8000 |
+| gptoss | random_exemplars_k3 | Random exemplars k=3 | Appliance | 35 | 0.2308 | 0.2670 | -0.0476 | -0.0571 | 0.2857 | 0.6286 |
+| gptoss | random_exemplars_k3 | Random exemplars k=3 | HVAC | 35 | 0.1446 | 0.1560 | 0.0857 | 0.0714 | 0.4000 | 0.7143 |
+| gptoss | random_exemplars_k3 | Random exemplars k=3 | Shower | 20 | 0.0785 | 0.0882 | 0.0333 | 0.0750 | 0.3500 | 0.7500 |
+| gptoss | retrieval_k1 | Retrieval k=1 | Appliance | 35 | 0.1480 | 0.1781 | 0.1948 | 0.1819 | 0.4286 | 0.7714 |
+| gptoss | retrieval_k1 | Retrieval k=1 | HVAC | 35 | 0.1312 | 0.1464 | 0.0762 | 0.0571 | 0.3714 | 0.6286 |
+| gptoss | retrieval_k1 | Retrieval k=1 | Shower | 20 | 0.0435 | 0.0520 | 0.5908 | 0.6183 | 0.7000 | 0.9500 |
+| gptoss | retrieval_k5 | Retrieval k=5 | Appliance | 35 | 0.1213 | 0.1384 | 0.0719 | 0.0895 | 0.3429 | 0.7143 |
+| gptoss | retrieval_k5 | Retrieval k=5 | HVAC | 35 | 0.1220 | 0.1389 | -0.0152 | -0.0186 | 0.3143 | 0.6286 |
+| gptoss | retrieval_k5 | Retrieval k=5 | Shower | 20 | 0.0315 | 0.0377 | 0.4000 | 0.4000 | 0.6000 | 0.8000 |
+| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | Appliance | 35 | 0.1023 | 0.1176 | 0.0323 | 0.0552 | 0.4000 | 0.7429 |
+| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | HVAC | 35 | 0.1269 | 0.1466 | -0.0345 | -0.0261 | 0.3429 | 0.6571 |
+| offline | nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | Shower | 20 | 0.0532 | 0.0592 | N/A | N/A | 0.7000 | 0.8000 |
+| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Appliance | 35 | 0.1143 | 0.1292 | 0.4348 | 0.4588 | 0.6000 | 0.8286 |
+| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | HVAC | 35 | 0.1282 | 0.1398 | -0.1237 | -0.1615 | 0.2857 | 0.6286 |
+| qwen | alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | Shower | 20 | 0.0433 | 0.0528 | 0.1833 | 0.2000 | 0.6000 | 0.7500 |
+| qwen | control_k3 | Control k=3 standard | Appliance | 35 | 0.1105 | 0.1310 | 0.3429 | 0.3571 | 0.5429 | 0.8571 |
+| qwen | control_k3 | Control k=3 standard | HVAC | 35 | 0.1185 | 0.1353 | -0.0867 | -0.0934 | 0.2571 | 0.6000 |
+| qwen | control_k3 | Control k=3 standard | Shower | 20 | 0.0579 | 0.0738 | 0.2425 | 0.2317 | 0.5500 | 0.8000 |
+| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | Appliance | 35 | 0.1907 | 0.2123 | 0.2939 | 0.3263 | 0.5429 | 0.8857 |
+| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | HVAC | 35 | 0.1437 | 0.1615 | -0.1905 | -0.2143 | 0.2857 | 0.5714 |
+| qwen | descriptions_no_scores_ranks | Descriptions without scores or ranks | Shower | 20 | 0.0946 | 0.1033 | 0.1658 | 0.1772 | 0.4500 | 0.8500 |
+| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | Appliance | 35 | 0.1164 | 0.1336 | 0.3705 | 0.3781 | 0.5714 | 0.8286 |
+| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | HVAC | 35 | 0.1121 | 0.1285 | 0.1907 | 0.2019 | 0.4000 | 0.6571 |
+| qwen | exemplars_no_hidden_params | Exemplars without hidden parameters | Shower | 20 | 0.0446 | 0.0523 | 0.2425 | 0.2317 | 0.4000 | 0.7500 |
+| qwen | random_exemplars_k3 | Random exemplars k=3 | Appliance | 35 | 0.1822 | 0.1982 | 0.4605 | 0.5028 | 0.7429 | 0.9714 |
+| qwen | random_exemplars_k3 | Random exemplars k=3 | HVAC | 35 | 0.1331 | 0.1534 | 0.1376 | 0.1390 | 0.4286 | 0.7429 |
+| qwen | random_exemplars_k3 | Random exemplars k=3 | Shower | 20 | 0.0814 | 0.0906 | 0.1894 | 0.2086 | 0.5500 | 0.8000 |
+| qwen | retrieval_k1 | Retrieval k=1 | Appliance | 35 | 0.1027 | 0.1221 | 0.3567 | 0.3390 | 0.5429 | 0.8571 |
+| qwen | retrieval_k1 | Retrieval k=1 | HVAC | 35 | 0.1154 | 0.1316 | 0.2605 | 0.2457 | 0.4571 | 0.7714 |
+| qwen | retrieval_k1 | Retrieval k=1 | Shower | 20 | 0.0541 | 0.0636 | 0.2947 | 0.3139 | 0.6000 | 0.8500 |
+| qwen | retrieval_k5 | Retrieval k=5 | Appliance | 35 | 0.0939 | 0.1092 | 0.3505 | 0.3990 | 0.5429 | 0.8286 |
+| qwen | retrieval_k5 | Retrieval k=5 | HVAC | 35 | 0.1079 | 0.1203 | 0.1146 | 0.1250 | 0.4000 | 0.6857 |
+| qwen | retrieval_k5 | Retrieval k=5 | Shower | 20 | 0.0426 | 0.0492 | 0.2225 | 0.2799 | 0.5500 | 0.8000 |
 
 ## Highest Score-MAE Cases
 
 | model_key | ablation_id | decision_type | source_scenario_id | question | alternative | score_mae | kendall_tau | gt_top1 | pred_top1 | error |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| gptoss | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 PM | 0.5420 | -0.3333 | 2:00 PM | 9:00 PM |  |
-| gptoss | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 9:00 PM | 0.5420 | -0.3333 | 2:00 PM | 9:00 PM |  |
-| gptoss | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 AM | 0.5420 | -0.3333 | 2:00 PM | 9:00 PM |  |
-| qwen | descriptions_no_scores_ranks | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 AM | 0.5087 | 1.0000 | 2:00 PM | 2:00 PM |  |
-| qwen | descriptions_no_scores_ranks | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 PM | 0.5087 | 1.0000 | 2:00 PM | 2:00 PM |  |
-| qwen | descriptions_no_scores_ranks | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 9:00 PM | 0.5087 | 1.0000 | 2:00 PM | 2:00 PM |  |
-| qwen | descriptions_no_scores_ranks | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 3:00 PM | 0.4467 | 0.0000 | 8:00 AM | 8:00 AM |  |
-| qwen | descriptions_no_scores_ranks | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 8:00 AM | 0.4467 | 0.0000 | 8:00 AM | 8:00 AM |  |
-| qwen | descriptions_no_scores_ranks | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 11:00 PM | 0.4467 | 0.0000 | 8:00 AM | 8:00 AM |  |
-| gemini | random_exemplars_k3 | HVAC | hvac_22 | We're done for the day, what heat temperature should I set overnight? | 68 | 0.4452 | 0.3333 | 68 | 68 |  |
-| gemini | random_exemplars_k3 | HVAC | hvac_22 | We're done for the day, what heat temperature should I set overnight? | 64 | 0.4452 | 0.3333 | 68 | 68 |  |
-| gemini | random_exemplars_k3 | HVAC | hvac_22 | We're done for the day, what heat temperature should I set overnight? | 72 | 0.4452 | 0.3333 | 68 | 68 |  |
-| deepseek | control_k3 | HVAC | hvac_25 | With 1 person home, what AC temperature should I set? | 81 | 0.4270 | -0.8165 | 77 | 74 |  |
-| deepseek | control_k3 | HVAC | hvac_25 | With 1 person home, what AC temperature should I set? | 77 | 0.4270 | -0.8165 | 77 | 74 |  |
-| deepseek | control_k3 | HVAC | hvac_25 | With 1 person home, what AC temperature should I set? | 74 | 0.4270 | -0.8165 | 77 | 74 |  |
-| gemini | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 9:00 PM | 0.4153 | -0.3333 | 2:00 PM | 9:00 PM |  |
-| gemini | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 PM | 0.4153 | -0.3333 | 2:00 PM | 9:00 PM |  |
-| gemini | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 AM | 0.4153 | -0.3333 | 2:00 PM | 9:00 PM |  |
-| qwen | random_exemplars_k3 | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 8:00 AM | 0.4017 | -1.0000 | 8:00 AM | 3:00 PM |  |
-| qwen | random_exemplars_k3 | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 11:00 PM | 0.4017 | -1.0000 | 8:00 AM | 3:00 PM |  |
+| qwen | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 9:00 PM | 0.5112 | 1.0000 | 2:00 PM | 2:00 PM |  |
+| qwen | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 PM | 0.5112 | 1.0000 | 2:00 PM | 2:00 PM |  |
+| qwen | random_exemplars_k3 | Appliance | appliance_24 | It's around 2 in the afternoon and I need to run the dryer. When should I start it? | 2:00 AM | 0.5112 | 1.0000 | 2:00 PM | 2:00 PM |  |
+| deepseek | control_k3 | HVAC | hvac_25 | With 1 person home, what AC temperature should I set? | 81 | 0.4853 | 0.8165 | 77 | 74 |  |
+| deepseek | control_k3 | HVAC | hvac_25 | With 1 person home, what AC temperature should I set? | 74 | 0.4853 | 0.8165 | 77 | 74 |  |
+| deepseek | control_k3 | HVAC | hvac_25 | With 1 person home, what AC temperature should I set? | 77 | 0.4853 | 0.8165 | 77 | 74 |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_28 | It's just past 9 AM and I need to run the dryer. When should I start it? | 10:00 PM | 0.4763 | 0.3333 | 9:00 AM | 9:00 AM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_28 | It's just past 9 AM and I need to run the dryer. When should I start it? | 2:00 PM | 0.4763 | 0.3333 | 9:00 AM | 9:00 AM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_28 | It's just past 9 AM and I need to run the dryer. When should I start it? | 9:00 AM | 0.4763 | 0.3333 | 9:00 AM | 9:00 AM |  |
+| qwen | alternate_embedding_k3 | HVAC | hvac_20 | With 3 people home, what heat temperature should I set? | 65 | 0.4538 | -1.0000 | 70 | 65 |  |
+| qwen | alternate_embedding_k3 | HVAC | hvac_20 | With 3 people home, what heat temperature should I set? | 68 | 0.4538 | -1.0000 | 70 | 65 |  |
+| qwen | alternate_embedding_k3 | HVAC | hvac_20 | With 3 people home, what heat temperature should I set? | 70 | 0.4538 | -1.0000 | 70 | 65 |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 8:00 AM | 0.4433 | 0.3333 | 8:00 AM | 8:00 AM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 11:00 PM | 0.4433 | 0.3333 | 8:00 AM | 8:00 AM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_31 | It's around 8 in the morning and I need to run the dryer. When should I start it? | 3:00 PM | 0.4433 | 0.3333 | 8:00 AM | 8:00 AM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_2 | It's just past 9 AM, when should I run the dryer? | 5:00 PM | 0.4368 | 0.3333 | 9:00 AM | 9:00 AM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_2 | It's just past 9 AM, when should I run the dryer? | 1:00 PM | 0.4368 | 0.3333 | 9:00 AM | 9:00 AM |  |
+| qwen | random_exemplars_k3 | Appliance | appliance_2 | It's just past 9 AM, when should I run the dryer? | 5:00 PM | 0.4368 | 0.3333 | 9:00 AM | 1:00 PM |  |
+| qwen | random_exemplars_k3 | Appliance | appliance_2 | It's just past 9 AM, when should I run the dryer? | 1:00 PM | 0.4368 | 0.3333 | 9:00 AM | 1:00 PM |  |
+| qwen | descriptions_no_scores_ranks | Appliance | appliance_2 | It's just past 9 AM, when should I run the dryer? | 9:00 AM | 0.4368 | 0.3333 | 9:00 AM | 9:00 AM |  |
 
 ## Friedman Tests (non-parametric omnibus)
 
@@ -178,10 +150,10 @@ Chi-squared statistic for each metric across all ablation configurations.
 
 | metric | chi2 | p_value | df | n_scenarios | n_configs |
 | --- | --- | --- | --- | --- | --- |
-| kendall_tau | 12.4477 | 0.0868 | 7 | 21 | 8 |
-| score_mae | 37.5314 | 0.0000 | 7 | 35 | 8 |
-| score_rmse | 36.6743 | 0.0000 | 7 | 35 | 8 |
-| top1_accuracy | 12.2267 | 0.0933 | 7 | 35 | 8 |
+| kendall_tau | 9.8964 | 0.1945 | 7 | 60 | 8 |
+| score_mae | 79.9668 | 0.0000 | 7 | 90 | 8 |
+| score_rmse | 78.9963 | 0.0000 | 7 | 90 | 8 |
+| top1_accuracy | 8.6667 | 0.2775 | 7 | 90 | 8 |
 
 ## Post-hoc Pairwise Wilcoxon Tests (Holm-corrected)
 
@@ -189,62 +161,62 @@ Significant pairwise differences after Holm-Bonferroni correction.
 
 | config_i | config_j | statistic | p_value | cliff_delta | cliff_delta_interpretation | n_pairs | p_holm | significant_holm |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| control_k3 | random_exemplars_k3 | 51.0000 | 0.0000 | -0.4645 | medium | 35 | 0.0001 | True |
-| exemplars_no_hidden_params | random_exemplars_k3 | 73.0000 | 0.0000 | -0.4220 | medium | 35 | 0.0006 | True |
-| random_exemplars_k3 | retrieval_k5 | 83.0000 | 0.0001 | 0.4367 | medium | 35 | 0.0014 | True |
-| alternate_embedding_k3 | random_exemplars_k3 | 86.0000 | 0.0001 | -0.4220 | medium | 35 | 0.0018 | True |
-| nearest_neighbor_k3 | random_exemplars_k3 | 91.0000 | 0.0001 | -0.4139 | medium | 35 | 0.0026 | True |
-| random_exemplars_k3 | retrieval_k1 | 92.0000 | 0.0001 | 0.3943 | medium | 35 | 0.0027 | True |
-| alternate_embedding_k3 | descriptions_no_scores_ranks | 116.0000 | 0.0007 | -0.3061 | small | 35 | 0.0161 | True |
-| control_k3 | descriptions_no_scores_ranks | 121.0000 | 0.0010 | -0.3584 | medium | 35 | 0.0216 | True |
-| descriptions_no_scores_ranks | retrieval_k5 | 129.0000 | 0.0017 | 0.2914 | small | 35 | 0.0346 | True |
-| descriptions_no_scores_ranks | exemplars_no_hidden_params | 141.0000 | 0.0036 | 0.2980 | small | 35 | 0.0682 | False |
-| descriptions_no_scores_ranks | nearest_neighbor_k3 | 155.0000 | 0.0078 | 0.2424 | small | 35 | 0.1406 | False |
-| descriptions_no_scores_ranks | retrieval_k1 | 156.0000 | 0.0082 | 0.2800 | small | 35 | 0.1400 | False |
-| descriptions_no_scores_ranks | random_exemplars_k3 | 211.0000 | 0.0902 | -0.1641 | small | 35 | 1.0000 | False |
-| nearest_neighbor_k3 | retrieval_k5 | 229.0000 | 0.1633 | 0.0580 | negligible | 35 | 1.0000 | False |
-| control_k3 | retrieval_k1 | 236.0000 | 0.2012 | -0.0661 | negligible | 35 | 1.0000 | False |
-| control_k3 | nearest_neighbor_k3 | 263.0000 | 0.4036 | -0.0776 | negligible | 35 | 1.0000 | False |
-| exemplars_no_hidden_params | retrieval_k1 | 267.5000 | 0.4366 | 0.0073 | negligible | 35 | 1.0000 | False |
-| control_k3 | exemplars_no_hidden_params | 240.0000 | 0.4693 | -0.0539 | negligible | 35 | 1.0000 | False |
-| retrieval_k1 | retrieval_k5 | 272.0000 | 0.4911 | 0.0171 | negligible | 35 | 1.0000 | False |
-| exemplars_no_hidden_params | nearest_neighbor_k3 | 281.0000 | 0.5876 | -0.0563 | negligible | 35 | 1.0000 | False |
-| exemplars_no_hidden_params | retrieval_k5 | 280.5000 | 0.7713 | -0.0033 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | control_k3 | 297.0000 | 0.7771 | 0.0588 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | nearest_neighbor_k3 | 298.0000 | 0.7896 | -0.0596 | negligible | 35 | 1.0000 | False |
-| control_k3 | retrieval_k5 | 275.0000 | 0.9217 | -0.0310 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | retrieval_k5 | 312.0000 | 0.9678 | -0.0286 | negligible | 35 | 1.0000 | False |
-| nearest_neighbor_k3 | retrieval_k1 | 312.0000 | 0.9678 | 0.0335 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | exemplars_no_hidden_params | 313.0000 | 0.9806 | -0.0204 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | retrieval_k1 | 313.0000 | 0.9806 | 0.0057 | negligible | 35 | 0.9806 | False |
-| control_k3 | random_exemplars_k3 | 51.0000 | 0.0000 | -0.4841 | large | 35 | 0.0001 | True |
-| random_exemplars_k3 | retrieval_k5 | 74.0000 | 0.0000 | 0.4302 | medium | 35 | 0.0006 | True |
-| exemplars_no_hidden_params | random_exemplars_k3 | 76.0000 | 0.0000 | -0.4302 | medium | 35 | 0.0007 | True |
-| nearest_neighbor_k3 | random_exemplars_k3 | 77.0000 | 0.0000 | -0.4335 | medium | 35 | 0.0008 | True |
-| random_exemplars_k3 | retrieval_k1 | 80.0000 | 0.0000 | 0.4253 | medium | 35 | 0.0010 | True |
-| alternate_embedding_k3 | random_exemplars_k3 | 81.0000 | 0.0000 | -0.4204 | medium | 35 | 0.0010 | True |
-| control_k3 | descriptions_no_scores_ranks | 108.0000 | 0.0004 | -0.3780 | medium | 35 | 0.0091 | True |
-| descriptions_no_scores_ranks | retrieval_k5 | 123.0000 | 0.0012 | 0.2947 | small | 35 | 0.0246 | True |
-| alternate_embedding_k3 | descriptions_no_scores_ranks | 124.0000 | 0.0013 | -0.2980 | small | 35 | 0.0251 | True |
-| descriptions_no_scores_ranks | exemplars_no_hidden_params | 134.0000 | 0.0024 | 0.3094 | small | 35 | 0.0449 | True |
-| descriptions_no_scores_ranks | retrieval_k1 | 137.0000 | 0.0028 | 0.2996 | small | 35 | 0.0510 | False |
-| descriptions_no_scores_ranks | nearest_neighbor_k3 | 143.0000 | 0.0040 | 0.2718 | small | 35 | 0.0685 | False |
-| nearest_neighbor_k3 | retrieval_k5 | 231.0000 | 0.1736 | 0.0645 | negligible | 35 | 1.0000 | False |
-| descriptions_no_scores_ranks | random_exemplars_k3 | 235.0000 | 0.1954 | -0.1380 | negligible | 35 | 1.0000 | False |
-| control_k3 | retrieval_k1 | 246.0000 | 0.2655 | -0.0351 | negligible | 35 | 1.0000 | False |
-| control_k3 | nearest_neighbor_k3 | 272.0000 | 0.4911 | -0.0792 | negligible | 35 | 1.0000 | False |
-| exemplars_no_hidden_params | nearest_neighbor_k3 | 272.0000 | 0.4911 | -0.0531 | negligible | 35 | 1.0000 | False |
-| retrieval_k1 | retrieval_k5 | 283.0000 | 0.6101 | 0.0204 | negligible | 35 | 1.0000 | False |
-| exemplars_no_hidden_params | retrieval_k1 | 285.0000 | 0.6330 | 0.0155 | negligible | 35 | 1.0000 | False |
-| control_k3 | exemplars_no_hidden_params | 273.0000 | 0.6753 | -0.0490 | negligible | 35 | 1.0000 | False |
-| exemplars_no_hidden_params | retrieval_k5 | 274.0000 | 0.6879 | 0.0016 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | control_k3 | 299.0000 | 0.8020 | 0.0629 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | retrieval_k1 | 306.0000 | 0.8907 | 0.0220 | negligible | 35 | 1.0000 | False |
-| nearest_neighbor_k3 | retrieval_k1 | 308.0000 | 0.9163 | 0.0302 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | nearest_neighbor_k3 | 310.0000 | 0.9420 | -0.0400 | negligible | 35 | 1.0000 | False |
-| control_k3 | retrieval_k5 | 278.0000 | 0.9644 | -0.0465 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | exemplars_no_hidden_params | 313.0000 | 0.9806 | -0.0155 | negligible | 35 | 1.0000 | False |
-| alternate_embedding_k3 | retrieval_k5 | 314.0000 | 0.9935 | -0.0106 | negligible | 35 | 0.9935 | False |
+| random_exemplars_k3 | retrieval_k5 | 659.0000 | 0.0000 | 0.3464 | medium | 90 | 0.0000 | True |
+| descriptions_no_scores_ranks | nearest_neighbor_k3 | 701.0000 | 0.0000 | 0.3509 | medium | 90 | 0.0000 | True |
+| descriptions_no_scores_ranks | retrieval_k5 | 719.0000 | 0.0000 | 0.3502 | medium | 90 | 0.0000 | True |
+| nearest_neighbor_k3 | random_exemplars_k3 | 724.0000 | 0.0000 | -0.3462 | medium | 90 | 0.0000 | True |
+| control_k3 | random_exemplars_k3 | 744.0000 | 0.0000 | -0.3263 | small | 90 | 0.0000 | True |
+| control_k3 | descriptions_no_scores_ranks | 754.0000 | 0.0000 | -0.3264 | small | 90 | 0.0000 | True |
+| exemplars_no_hidden_params | random_exemplars_k3 | 821.0000 | 0.0000 | -0.3217 | small | 90 | 0.0000 | True |
+| descriptions_no_scores_ranks | exemplars_no_hidden_params | 827.0000 | 0.0000 | 0.3173 | small | 90 | 0.0000 | True |
+| alternate_embedding_k3 | random_exemplars_k3 | 951.5000 | 0.0000 | -0.3020 | small | 90 | 0.0002 | True |
+| random_exemplars_k3 | retrieval_k1 | 966.0000 | 0.0000 | 0.2733 | small | 90 | 0.0003 | True |
+| alternate_embedding_k3 | descriptions_no_scores_ranks | 1103.0000 | 0.0001 | -0.2820 | small | 90 | 0.0026 | True |
+| descriptions_no_scores_ranks | retrieval_k1 | 1166.0000 | 0.0004 | 0.2527 | small | 90 | 0.0066 | True |
+| retrieval_k1 | retrieval_k5 | 1540.0000 | 0.0411 | 0.1152 | negligible | 90 | 0.6584 | False |
+| nearest_neighbor_k3 | retrieval_k1 | 1571.0000 | 0.0552 | -0.1007 | negligible | 90 | 0.8280 | False |
+| control_k3 | retrieval_k1 | 1615.5000 | 0.1541 | -0.0886 | negligible | 90 | 1.0000 | False |
+| exemplars_no_hidden_params | retrieval_k5 | 1629.0000 | 0.1710 | 0.0451 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | nearest_neighbor_k3 | 1751.0000 | 0.2329 | 0.0544 | negligible | 90 | 1.0000 | False |
+| exemplars_no_hidden_params | retrieval_k1 | 1754.0000 | 0.2376 | -0.0757 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | retrieval_k5 | 1754.0000 | 0.3093 | 0.0680 | negligible | 90 | 1.0000 | False |
+| exemplars_no_hidden_params | nearest_neighbor_k3 | 1834.0000 | 0.3903 | 0.0252 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | exemplars_no_hidden_params | 1760.5000 | 0.4112 | 0.0247 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | control_k3 | 1687.0000 | 0.4294 | 0.0474 | negligible | 90 | 1.0000 | False |
+| control_k3 | retrieval_k5 | 1733.0000 | 0.4436 | 0.0219 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | retrieval_k1 | 1858.5000 | 0.4470 | -0.0549 | negligible | 90 | 1.0000 | False |
+| descriptions_no_scores_ranks | random_exemplars_k3 | 1902.0000 | 0.6809 | -0.0127 | negligible | 90 | 1.0000 | False |
+| nearest_neighbor_k3 | retrieval_k5 | 1949.0000 | 0.6919 | 0.0043 | negligible | 90 | 1.0000 | False |
+| control_k3 | exemplars_no_hidden_params | 1854.0000 | 0.7995 | -0.0163 | negligible | 90 | 1.0000 | False |
+| control_k3 | nearest_neighbor_k3 | 2006.0000 | 0.8674 | 0.0168 | negligible | 90 | 0.8674 | False |
+| random_exemplars_k3 | retrieval_k5 | 715.0000 | 0.0000 | 0.3422 | medium | 90 | 0.0000 | True |
+| control_k3 | random_exemplars_k3 | 769.0000 | 0.0000 | -0.3183 | small | 90 | 0.0000 | True |
+| nearest_neighbor_k3 | random_exemplars_k3 | 786.0000 | 0.0000 | -0.3420 | medium | 90 | 0.0000 | True |
+| descriptions_no_scores_ranks | retrieval_k5 | 791.0000 | 0.0000 | 0.3351 | medium | 90 | 0.0000 | True |
+| descriptions_no_scores_ranks | nearest_neighbor_k3 | 796.0000 | 0.0000 | 0.3351 | medium | 90 | 0.0000 | True |
+| exemplars_no_hidden_params | random_exemplars_k3 | 814.0000 | 0.0000 | -0.3106 | small | 90 | 0.0000 | True |
+| descriptions_no_scores_ranks | exemplars_no_hidden_params | 842.0000 | 0.0000 | 0.3007 | small | 90 | 0.0000 | True |
+| control_k3 | descriptions_no_scores_ranks | 859.0000 | 0.0000 | -0.2993 | small | 90 | 0.0000 | True |
+| alternate_embedding_k3 | random_exemplars_k3 | 870.0000 | 0.0000 | -0.3158 | small | 90 | 0.0000 | True |
+| random_exemplars_k3 | retrieval_k1 | 1018.0000 | 0.0000 | 0.2509 | small | 90 | 0.0007 | True |
+| alternate_embedding_k3 | descriptions_no_scores_ranks | 1039.0000 | 0.0000 | -0.2894 | small | 90 | 0.0009 | True |
+| descriptions_no_scores_ranks | retrieval_k1 | 1212.0000 | 0.0008 | 0.2267 | small | 90 | 0.0132 | True |
+| retrieval_k1 | retrieval_k5 | 1534.0000 | 0.0388 | 0.1138 | negligible | 90 | 0.6210 | False |
+| nearest_neighbor_k3 | retrieval_k1 | 1565.0000 | 0.0522 | -0.1049 | negligible | 90 | 0.7831 | False |
+| exemplars_no_hidden_params | retrieval_k5 | 1618.0000 | 0.1572 | 0.0468 | negligible | 90 | 1.0000 | False |
+| control_k3 | retrieval_k1 | 1710.0000 | 0.1745 | -0.0881 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | retrieval_k1 | 1721.0000 | 0.1889 | -0.0746 | negligible | 90 | 1.0000 | False |
+| control_k3 | retrieval_k5 | 1613.0000 | 0.2027 | 0.0284 | negligible | 90 | 1.0000 | False |
+| exemplars_no_hidden_params | retrieval_k1 | 1734.0000 | 0.2072 | -0.0765 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | nearest_neighbor_k3 | 1836.0000 | 0.3948 | 0.0427 | negligible | 90 | 1.0000 | False |
+| exemplars_no_hidden_params | nearest_neighbor_k3 | 1838.0000 | 0.3992 | 0.0291 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | retrieval_k5 | 1819.0000 | 0.4528 | 0.0530 | negligible | 90 | 1.0000 | False |
+| nearest_neighbor_k3 | retrieval_k5 | 1919.0000 | 0.6051 | 0.0069 | negligible | 90 | 1.0000 | False |
+| descriptions_no_scores_ranks | random_exemplars_k3 | 1926.0000 | 0.6249 | -0.0175 | negligible | 90 | 1.0000 | False |
+| control_k3 | nearest_neighbor_k3 | 1958.0000 | 0.7188 | 0.0331 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | exemplars_no_hidden_params | 1874.0000 | 0.7267 | 0.0083 | negligible | 90 | 1.0000 | False |
+| alternate_embedding_k3 | control_k3 | 1820.0000 | 0.8279 | 0.0216 | negligible | 90 | 1.0000 | False |
+| control_k3 | exemplars_no_hidden_params | 1912.0000 | 0.9932 | -0.0098 | negligible | 90 | 0.9932 | False |
 
 ## Bootstrap 95% Confidence Intervals
 
@@ -252,28 +224,28 @@ Percentile-method 95% CIs for each configuration's mean metric value.
 
 | ablation_id | ablation_label | point_estimate | ci_lower | ci_upper | metric |
 | --- | --- | --- | --- | --- | --- |
-| alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 0.3257 | 0.2075 | 0.4432 | kendall_tau |
-| control_k3 | Control k=3 standard | 0.3159 | 0.2029 | 0.4262 | kendall_tau |
-| descriptions_no_scores_ranks | Descriptions without scores or ranks | 0.1088 | -0.0079 | 0.2191 | kendall_tau |
-| exemplars_no_hidden_params | Exemplars without hidden parameters | 0.2999 | 0.1815 | 0.4131 | kendall_tau |
-| nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | -0.0389 | -0.3333 | 0.2611 | kendall_tau |
-| random_exemplars_k3 | Random exemplars k=3 | 0.0617 | -0.0584 | 0.1826 | kendall_tau |
-| retrieval_k1 | Retrieval k=1 | 0.3636 | 0.2495 | 0.4737 | kendall_tau |
-| retrieval_k5 | Retrieval k=5 | 0.3878 | 0.2850 | 0.4861 | kendall_tau |
-| alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 0.0807 | 0.0703 | 0.0917 | score_mae |
-| control_k3 | Control k=3 standard | 0.0859 | 0.0735 | 0.0991 | score_mae |
-| descriptions_no_scores_ranks | Descriptions without scores or ranks | 0.1418 | 0.1263 | 0.1579 | score_mae |
-| exemplars_no_hidden_params | Exemplars without hidden parameters | 0.0854 | 0.0735 | 0.0978 | score_mae |
-| nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 0.0960 | 0.0754 | 0.1178 | score_mae |
-| random_exemplars_k3 | Random exemplars k=3 | 0.1518 | 0.1338 | 0.1701 | score_mae |
-| retrieval_k1 | Retrieval k=1 | 0.0927 | 0.0804 | 0.1057 | score_mae |
-| retrieval_k5 | Retrieval k=5 | 0.0786 | 0.0679 | 0.0899 | score_mae |
-| alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 0.5643 | 0.4786 | 0.6429 | top1_accuracy |
-| control_k3 | Control k=3 standard | 0.5786 | 0.5000 | 0.6571 | top1_accuracy |
-| descriptions_no_scores_ranks | Descriptions without scores or ranks | 0.4214 | 0.3429 | 0.5071 | top1_accuracy |
-| exemplars_no_hidden_params | Exemplars without hidden parameters | 0.5429 | 0.4571 | 0.6286 | top1_accuracy |
-| nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 0.4571 | 0.2857 | 0.6286 | top1_accuracy |
-| random_exemplars_k3 | Random exemplars k=3 | 0.4071 | 0.3286 | 0.4929 | top1_accuracy |
-| retrieval_k1 | Retrieval k=1 | 0.5857 | 0.5000 | 0.6714 | top1_accuracy |
-| retrieval_k5 | Retrieval k=5 | 0.5500 | 0.4643 | 0.6357 | top1_accuracy |
+| alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 0.2466 | 0.1657 | 0.3241 | kendall_tau |
+| control_k3 | Control k=3 standard | 0.2757 | 0.1939 | 0.3561 | kendall_tau |
+| descriptions_no_scores_ranks | Descriptions without scores or ranks | 0.0683 | -0.0105 | 0.1493 | kendall_tau |
+| exemplars_no_hidden_params | Exemplars without hidden parameters | 0.2790 | 0.1995 | 0.3592 | kendall_tau |
+| nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 0.0011 | -0.1753 | 0.1722 | kendall_tau |
+| random_exemplars_k3 | Random exemplars k=3 | 0.1206 | 0.0442 | 0.1961 | kendall_tau |
+| retrieval_k1 | Retrieval k=1 | 0.2413 | 0.1596 | 0.3254 | kendall_tau |
+| retrieval_k5 | Retrieval k=5 | 0.2296 | 0.1464 | 0.3107 | kendall_tau |
+| alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 0.1014 | 0.0928 | 0.1105 | score_mae |
+| control_k3 | Control k=3 standard | 0.0983 | 0.0899 | 0.1072 | score_mae |
+| descriptions_no_scores_ranks | Descriptions without scores or ranks | 0.1466 | 0.1362 | 0.1578 | score_mae |
+| exemplars_no_hidden_params | Exemplars without hidden parameters | 0.0973 | 0.0893 | 0.1057 | score_mae |
+| nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 0.1009 | 0.0877 | 0.1153 | score_mae |
+| random_exemplars_k3 | Random exemplars k=3 | 0.1436 | 0.1329 | 0.1548 | score_mae |
+| retrieval_k1 | Retrieval k=1 | 0.1044 | 0.0958 | 0.1134 | score_mae |
+| retrieval_k5 | Retrieval k=5 | 0.0913 | 0.0838 | 0.0991 | score_mae |
+| alternate_embedding_k3 | Alternate embedding k=3 (sentence-transformers/paraphrase-MiniLM-L3-v2) | 0.4704 | 0.4111 | 0.5296 | top1_accuracy |
+| control_k3 | Control k=3 standard | 0.5037 | 0.4444 | 0.5630 | top1_accuracy |
+| descriptions_no_scores_ranks | Descriptions without scores or ranks | 0.3889 | 0.3296 | 0.4481 | top1_accuracy |
+| exemplars_no_hidden_params | Exemplars without hidden parameters | 0.5000 | 0.4407 | 0.5593 | top1_accuracy |
+| nearest_neighbor_k3 | Nearest-neighbor prediction k=3 | 0.4444 | 0.3444 | 0.5444 | top1_accuracy |
+| random_exemplars_k3 | Random exemplars k=3 | 0.4370 | 0.3778 | 0.4963 | top1_accuracy |
+| retrieval_k1 | Retrieval k=1 | 0.4889 | 0.4296 | 0.5481 | top1_accuracy |
+| retrieval_k5 | Retrieval k=5 | 0.4667 | 0.4074 | 0.5259 | top1_accuracy |
 

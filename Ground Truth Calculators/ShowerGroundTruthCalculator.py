@@ -30,8 +30,9 @@ class ShowerGroundTruthCalculator:
 
     # PA seasonal mains water temperatures.
     # Sources: Hendron & Burch (2008), NREL/TP-550-40874; Maguire et al. (2013), NREL/TP-5500-58756.
+    # Shoulder-season inlet temperature is interpolated between these two anchors
+    # in determine_inlet_temp rather than stored as a third constant.
     INLET_TEMP_WINTER = 45  # F, outdoor <=32F
-    INLET_TEMP_SPRING_FALL = 55  # F, outdoor 32-75F
     INLET_TEMP_SUMMER = 65  # F, outdoor >=75F
 
     # UEF 0.90-0.93 for 40-55 gal electric tank.
@@ -69,13 +70,6 @@ class ShowerGroundTruthCalculator:
     HEATER_TEMP_OPTIMAL = 120  # F, standard delivery setpoint (CDC (2026))
     HEATER_TEMP_SCALD_RISK = 130  # F, scald-risk threshold (~30s to a deep burn; Moritz & Henriques (1947))
     HEATER_TEMP_LEGIONELLA_SAFE = 140  # F, CDC minimum storage temp (CDC (2026))
-     # Behavioral adoption estimates (modeled from REU2016 distribution)
-    PRACTICALITY_SHORT_ADOPTION = 0.30  # ~30% maintain <7 min without intervention
-    PRACTICALITY_MEDIUM_ADOPTION = 0.65  # ~65% maintain 8-10 min (Harris Poll)
-
-    # Tank capacity standards
-    TANK_RECOVERY_ELECTRIC = 21  # GPH at 90F rise (plumbing guides)
-    FIRST_HOUR_RATING_40GAL = 50  # Gallons available in first hour
     # Linear VF for energy cost - equal marginal utility across range
     # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
     # linear utility is appropriate" (Oper. Res. 27(4):810-822)
@@ -166,14 +160,14 @@ class ShowerGroundTruthCalculator:
         elif duration <= optimal_duration:
             # Ramp to the (temperature-adjusted) optimum: 4.0 at 3 min → 10.0 at optimal.
             base_comfort = 4.0 + ((duration - 3.0) / (optimal_duration - 3.0)) * 6.0
-        elif duration <= 15.0:
+        elif duration <= float(ShowerGroundTruthCalculator.COMFORT_DURATION_MAX):
             # Above optimal - diminishing returns, slight waste concern.
-            # Linear decline: 10.0 at optimal → 8.0 at 15 min.
-            base_comfort = 10.0 + ((duration - optimal_duration) / (15.0 - optimal_duration)) * (8.0 - 10.0)
+            # Linear decline: 10.0 at optimal → 8.0 at COMFORT_DURATION_MAX.
+            base_comfort = 10.0 + ((duration - optimal_duration) / (float(ShowerGroundTruthCalculator.COMFORT_DURATION_MAX) - optimal_duration)) * (8.0 - 10.0)
         else:
             # Extreme duration - very wasteful
-            # Continue linear decline: 0.5 per minute beyond 15 min
-            base_comfort = max(1.0, 8.0 - (duration - 15.0) * 0.5)
+            # Continue linear decline: 0.5 per minute beyond COMFORT_DURATION_MAX
+            base_comfort = max(1.0, 8.0 - (duration - float(ShowerGroundTruthCalculator.COMFORT_DURATION_MAX)) * 0.5)
 
         temp_penalty = 0.0
         if water_heater_temp < ShowerGroundTruthCalculator.HEATER_TEMP_MINIMUM:
@@ -193,24 +187,24 @@ class ShowerGroundTruthCalculator:
     def calculate_practicality_score(self, duration: float, occupants: int,
                                      tank_size: float, gpm: float,
                                      water_heater_temp: float, outdoor_temp: float) -> float:
-        if duration <= 5:
+        if duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_MIN:
             # Below dermatologist minimum - very low adoption
             # REUS 2016: well below average, requires significant behavior change
             base_practicality = 2.0 + (duration - 3.0) * 0.5
         elif duration <= 8:
             # Near REUS 2016 average (7.8 min) - high adoption zone
-            base_practicality = 3.0 + (duration - 5.0) * (4.0 / 3.0)
+            base_practicality = 3.0 + (duration - float(ShowerGroundTruthCalculator.COMFORT_DURATION_MIN)) * (4.0 / 3.0)
         elif duration <= 12:
             # Above average but within typical range - moderate adoption
             base_practicality = 7.0 + (duration - 8.0) * 0.5
-        elif duration <= 15:
-            # Declining-adoption tail approaching the 15-min upper bound (Harris Poll (2024)
-            # reports 33% of adults exceed 15 min; this band is just below that).
+        elif duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_MAX:
+            # Declining-adoption tail approaching the COMFORT_DURATION_MAX upper bound
+            # (Harris Poll (2024) reports 33% of adults exceed 15 min; this band is just below that).
             base_practicality = 9.0 - (duration - 12.0) * (1.5 / 3.0)
         else:
             # Harris Poll (2024): 33% self-report >15 min, but DeOreo et al. (2016) metered data implies a
             # much lower true rate, so this tail is modeled conservatively.
-            base_practicality = max(1.5, 7.5 - (duration - 15.0) * 0.35)
+            base_practicality = max(1.5, 7.5 - (duration - float(ShowerGroundTruthCalculator.COMFORT_DURATION_MAX)) * 0.35)
 
         inlet_temp = self.determine_inlet_temp(outdoor_temp)
         hot_fraction = self.calculate_hot_water_fraction(
