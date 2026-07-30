@@ -29,7 +29,8 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - `paper_pipeline/` — `run_all.py` (master pipeline), `generate_figures.py`,
   `generate_numbers_master.py`, per-run metrics + LaTeX snippet generators.
 - `model_config.py`, `sentinel_utils.py` — shared config + shared utilities.
-- `docs/` — `CODEBASE_GUIDE.md`, `PROVENANCE_AUDIT_PROMPT.md`, `REVISION_PLAN.md`.
+- `docs/` — `CODEBASE_GUIDE.md`, `PROVENANCE_AUDIT_PROMPT.md`, `EXPERIMENTS.md`,
+  `metrics_calculation_pipeline.md`.
 - `chroma_rag_db/` — built RAG vector index (gitignored).
 
 ## Running

@@ -1,0 +1,242 @@
+# Ablation Experiments
+
+Supplementary experiments run alongside the main benchmark. Each has a runner script
+in `Miscellaneous Scripts/` and writes its outputs under `Analysis/`. The main
+benchmark itself is described in [README.md](../README.md); the metrics definitions
+are in [metrics_calculation_pipeline.md](metrics_calculation_pipeline.md).
+
+All ablation runners exclude Gemini by default (roughly 50x the output price of the
+other three models). Pass `--models` to override.
+
+---
+
+## 1. Parameter-provenance ablation (LLM-Parameterized Reference Scoring)
+
+**Script:** `Miscellaneous Scripts/RunHybridAblations.py`
+**Outputs:** `Analysis/Hybrid_Ablation/hybrid_ablation_summary.xlsx`
+**Cost:** zero API calls (reads existing run outputs and scenario sheets)
+
+Isolates how much of the LLM-Parameterized architecture's accuracy comes from LLM
+parameter extraction versus from merely having access to the reference calculator.
+Three arms, all scored by the same reference calculators over the same 195 test
+scenarios:
+
+| Arm | Hidden parameters sourced from | Interpretation |
+| --- | --- | --- |
+| `true_params` | scenario source sheets (these *are* the reference) | ceiling |
+| `extracted` | `extracted_*` columns of `LLM-Parameterized_Reference_Scoring_results.xlsx` | actual |
+| `default_params` | corpus median (numeric) / mode (categorical), one constant per parameter | floor |
+
+### Results
+
+| model | arm | n_scored | success_rate | kendall_tau | top1_accuracy | mae |
+| --- | --- | --- | --- | --- | --- | --- |
+| gptoss | true_params | 195 | 1.0000 | 1.0000 | 1.0000 | 0.0000 |
+| gptoss | extracted | 194 | 0.9949 | 0.9210 | 0.9433 | 0.0463 |
+| gptoss | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1222 |
+| qwen | true_params | 195 | 1.0000 | 1.0000 | 1.0000 | 0.0000 |
+| qwen | extracted | 195 | 1.0000 | 0.8974 | 0.9128 | 0.0659 |
+| qwen | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1222 |
+| deepseek | true_params | 195 | 1.0000 | 1.0000 | 1.0000 | 0.0000 |
+| deepseek | extracted | 195 | 1.0000 | 0.9043 | 0.9128 | 0.0411 |
+| deepseek | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1222 |
+
+**Finding.** With no per-scenario inference at all, calculator access alone reaches
+tau = 0.641 / Top-1 = 76.9%. LLM extraction lifts that to tau ~= 0.90 / Top-1 ~= 92%.
+Extraction therefore contributes roughly 0.26 tau *beyond* having the calculator; the
+architecture's accuracy is not an artifact of errors cancelling inside a deterministic
+scorer. `default_params` is identical across models because it consumes no model output.
+
+**Validity checks.** `true_params` returns exactly tau = 1.0 / MAE = 0.0, which is
+correct by construction. `extracted` tau (0.897-0.921) tracks the published
+LLM-Parameterized tau (0.880-0.897), validating the harness against known numbers.
+
+### Implementation notes
+
+- The three calculators return three different result shapes. HVAC and Appliance
+  return `{alt_label: {"<criterion>_score": v}}`; Shower returns
+  `{"alternatives": [{"alternative": label, "transformed_values": {criterion: v}}]}`.
+  `score_scenario` normalizes both.
+- Calculators print per-alternative progress; this is suppressed via
+  `contextlib.redirect_stdout` across roughly 1,700 scoring calls.
+- `pandas.to_markdown` requires `tabulate`, which is not a repo dependency. The script
+  uses a hand-rolled `_md()` helper instead.
+- Sentinel-safe: a failed extraction is excluded from its arm rather than replaced by a
+  neutral default. Per-arm `n_scored` makes exclusions visible (gptoss `extracted` = 194).
+
+---
+
+## 2. RAG ablation (Example-Guided Scoring)
+
+**Script:** `Miscellaneous Scripts/RunRAGAblations.py`
+**Outputs:** `Analysis/RAG_Ablation/rag_ablation_{results,summary,summary_by_decision_type,friedman_tests,posthoc_tests,bootstrap_ci}.xlsx`
+
+Evaluated on the **90-scenario RAG corpus**, not the 195 test scenarios. `load_source_df`
+reads `RAG_FILES`, and each target is excluded from its own retrieval, making this a
+leave-one-out design: the RAG scenarios are simultaneously the queries and the index.
+This is a different experiment from the main benchmark, where Example-Guided Scoring
+retrieves from the RAG corpus to score the disjoint test set. Do not repoint this script
+at the test set without treating it as a new experiment.
+
+### Configurations
+
+| ablation_id | k | retrieval | embedding model | hidden params | scores | ranks | LLM |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `control_k3` | 3 | similarity | all-MiniLM-L6-v2 | yes | yes | yes | yes |
+| `random_exemplars_k3` | 3 | random | all-MiniLM-L6-v2 | yes | yes | yes | yes |
+| `descriptions_no_scores_ranks` | 3 | similarity | all-MiniLM-L6-v2 | yes | no | no | yes |
+| `exemplars_no_hidden_params` | 3 | similarity | all-MiniLM-L6-v2 | no | yes | yes | yes |
+| `retrieval_k1` | 1 | similarity | all-MiniLM-L6-v2 | yes | yes | yes | yes |
+| `retrieval_k5` | 5 | similarity | all-MiniLM-L6-v2 | yes | yes | yes | yes |
+| `alternate_embedding_k3` | 3 | similarity | paraphrase-MiniLM-L3-v2 | yes | yes | yes | yes |
+| `nearest_neighbor_k3` | 3 | similarity | all-MiniLM-L6-v2 | yes | yes | yes | no (offline) |
+
+### Overall results (90 scenarios, seed 13)
+
+| model | ablation | MAE | RMSE | tau | rho | Top-1 | Top-2 | mean retr. dist. |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| deepseek | control_k3 | 0.0884 | 0.0984 | 0.4887 | 0.5187 | 0.6333 | 0.8889 | 0.0723 |
+| deepseek | exemplars_no_hidden_params | 0.0874 | 0.0965 | 0.3911 | 0.4128 | 0.5889 | 0.8444 | 0.0723 |
+| deepseek | alternate_embedding_k3 | 0.0876 | 0.0984 | 0.3463 | 0.3749 | 0.4889 | 0.8333 | 1.2152 |
+| deepseek | retrieval_k5 | 0.0842 | 0.0941 | 0.3421 | 0.3663 | 0.5222 | 0.8111 | 0.0847 |
+| deepseek | retrieval_k1 | 0.0981 | 0.1114 | 0.1822 | 0.1782 | 0.4778 | 0.7778 | 0.0561 |
+| deepseek | descriptions_no_scores_ranks | 0.1312 | 0.1465 | 0.0733 | 0.0841 | 0.4111 | 0.7000 | 0.0723 |
+| deepseek | random_exemplars_k3 | 0.1267 | 0.1432 | 0.0632 | 0.0675 | 0.3889 | 0.7444 | 0.4477 |
+| gptoss | retrieval_k1 | 0.1182 | 0.1377 | 0.2367 | 0.2304 | 0.4667 | 0.7556 | 0.0561 |
+| gptoss | alternate_embedding_k3 | 0.1127 | 0.1247 | 0.2268 | 0.2426 | 0.4444 | 0.7778 | 1.2152 |
+| gptoss | control_k3 | 0.1045 | 0.1209 | 0.1872 | 0.1682 | 0.4444 | 0.6667 | 0.0723 |
+| gptoss | exemplars_no_hidden_params | 0.1058 | 0.1212 | 0.1754 | 0.1844 | 0.4444 | 0.7111 | 0.0723 |
+| gptoss | retrieval_k5 | 0.1016 | 0.1162 | 0.1124 | 0.1180 | 0.3889 | 0.7000 | 0.0847 |
+| gptoss | descriptions_no_scores_ranks | 0.1577 | 0.1770 | 0.0609 | 0.0652 | 0.3333 | 0.7111 | 0.0723 |
+| gptoss | random_exemplars_k3 | 0.1634 | 0.1841 | 0.0222 | 0.0222 | 0.3444 | 0.6889 | 0.4469 |
+| qwen | retrieval_k1 | 0.0968 | 0.1128 | 0.3056 | 0.2969 | 0.5222 | 0.8222 | 0.0561 |
+| qwen | random_exemplars_k3 | 0.1407 | 0.1568 | 0.2756 | 0.2969 | 0.5778 | 0.8444 | 0.4558 |
+| qwen | exemplars_no_hidden_params | 0.0988 | 0.1136 | 0.2730 | 0.2779 | 0.4667 | 0.7444 | 0.0723 |
+| qwen | retrieval_k5 | 0.0880 | 0.1002 | 0.2343 | 0.2708 | 0.4889 | 0.7667 | 0.0847 |
+| qwen | alternate_embedding_k3 | 0.1039 | 0.1163 | 0.1651 | 0.1640 | 0.4778 | 0.7333 | 1.2152 |
+| qwen | control_k3 | 0.1019 | 0.1200 | 0.1535 | 0.1541 | 0.4333 | 0.7444 | 0.0723 |
+| qwen | descriptions_no_scores_ranks | 0.1511 | 0.1683 | 0.0711 | 0.0763 | 0.4222 | 0.7556 | 0.0723 |
+| offline | nearest_neighbor_k3 | 0.1009 | 0.1159 | 0.0011 | 0.0173 | 0.4444 | 0.7222 | 0.0723 |
+
+Per-decision-type breakdowns and the Friedman / Holm-corrected post-hoc Wilcoxon tests
+are in the `Analysis/RAG_Ablation/` workbooks.
+
+**Findings.** Stripping numeric scores and ranks from the retrieved exemplars
+(`descriptions_no_scores_ranks`) is the single most damaging change for every model
+(tau collapses to 0.06-0.07), so the exemplars carry their value through their scores
+rather than through their prose. Random rather than similarity-based retrieval is
+comparably damaging for deepseek and gptoss. Retrieval quality dominates retrieval
+quantity: k=5 does not consistently beat k=3, and the weaker alternate embedding
+(mean retrieval distance 1.2152 vs 0.0723) still performs near control. The offline
+nearest-neighbor arm sits near tau = 0 overall, so the LLM is doing more than copying
+its nearest exemplar.
+
+---
+
+## 3. Prompt ablation (Direct and Example-Guided Scoring)
+
+**Script:** `Miscellaneous Scripts/RunPromptAblations.py`
+**Outputs:** `Analysis/Prompt_Ablation/`
+
+Four prompt variants across Direct and Example-Guided Scoring, over the full 195-scenario
+test set:
+
+| Variant | Change vs shipped prompt |
+| --- | --- |
+| `control` | unmodified; must reproduce main-text tau within run-to-run SD |
+| `no_anchors` | per-criterion good/moderate/poor anchors stripped, leaving criterion names and the scale |
+| `cot_scaffold` | explicit reasoning scaffold before the JSON response |
+| `scale_0_10` | response scale 0-1 changed to 0-10, rescaled post hoc |
+
+The harness overrides the system prompt at call time; it does not edit the architecture
+modules, so the committed architectures keep producing the main-text results unchanged.
+The Direct system prompt is inline in `score_alternative()`
+(`Architectures/Direct_LLM_Scoring.py`); the Example-Guided equivalent is in
+`score_alternative_with_rag()` (`Architectures/Example-Guided_LLM_Scoring.py`).
+
+Note for interpreting the `scale_0_10` and anchor results: the shipped Direct system
+prompt already ends with an explicit anti-clustering instruction ("do not assign the
+same score to all 4 criteria... unless performance is actually identical"). Any
+central-tendency behavior observed therefore occurs despite active mitigation.
+
+---
+
+## Reproduction
+
+```bash
+# Parameter-provenance ablation (free, zero API calls)
+python "Miscellaneous Scripts/RunHybridAblations.py"
+
+# RAG ablation, full 90-scenario corpus, Gemini excluded by default
+python "Miscellaneous Scripts/RunRAGAblations.py"
+
+# Prompt ablation
+python "Miscellaneous Scripts/RunPromptAblations.py"
+
+# Extraction accuracy per model (free, reads existing outputs).
+# --output must be an ABSOLUTE path; a relative path resolves against the
+# shell cwd and can raise PermissionError. Expect "Matched scenarios: 195/195".
+python "Miscellaneous Scripts/EvaluateHybridExtraction.py" \
+  --results "Output Files GPT-OSS 20B/LLM-Parameterized_Reference_Scoring_results.xlsx" \
+  --output "/absolute/path/extraction_gptoss.md"
+
+# Regenerate paper/numbers_master.csv, including token-derived cost table
+python paper_pipeline/generate_numbers_master.py
+```
+
+None of the ablation runners has any parallelism. Wall clock, not cost, is the binding
+constraint: a full 195-scenario Direct run against DeepSeek averages 7,412 ms/call and
+takes about 72 minutes. Any parallelism added later must preserve `MAX_RETRIES = 10`
+with backoff, per-run resume-awareness, and `latency_ms` measured around the successful
+POST only.
+
+---
+
+## Cost derivation
+
+`paper_pipeline/generate_numbers_master.py` computes per-run API costs from measured
+token totals in each architecture's `*_results_diagnostics_run_*.json`, priced with
+rates parsed from `model_config.MODEL_SPECS[...]["label"]`, so a price edit propagates
+rather than being duplicated. It is the source of record for the paper's cost table and
+is deliberately tracked in git while the rest of `paper_pipeline/` is not.
+
+Measured per-run cost in USD (5-run mean tokens x list price):
+
+| Architecture | Gemini | DeepSeek | GPT-OSS | Qwen |
+| --- | --- | --- | --- | --- |
+| Direct | 0.8017 | 0.0867 | 0.0234 | 0.0435 |
+| Example-Guided | 1.0243 | 0.0365 | 0.0235 | 0.0419 |
+| LLM-Parameterized | 0.2798 | 0.0110 | 0.0062 | 0.0119 |
+
+The cost table must be reported to **three decimal places**. Rounded to cents, the
+LLM-Parameterized row collapses to 0.28 / 0.01 / 0.01 / 0.01, and the capability-
+compression ratio a reader can derive from it changes from 45x to 28x.
+
+DeepSeek is the cost outlier: it emits roughly 295,000 output tokens per Direct run but
+only about 21,000 per Example-Guided run, consistently across all five runs. It is a
+hybrid-reasoning model that spontaneously reasons on the scoring task, so variants that
+encourage reasoning (such as `cot_scaffold`) can exceed a naive token projection.
+
+---
+
+## Known issues
+
+- `Ground Truth/ground_truth_shower.xlsx` can drift out of date relative to
+  `Ground Truth Calculators/ShowerGroundTruthCalculator.py`. After changing any
+  calculator, run it to regenerate its `Ground Truth/ground_truth_*.xlsx`, then
+  `Miscellaneous Scripts/SyncRAGGroundTruth.py`, then `Miscellaneous Scripts/BuildRAG.py`
+  — in that order. `BuildRAG.py` must always run last, or the Chroma source hash will
+  not match the re-exported RAG sheets.
+- `Scenario Files/ConsolidatedforSimaltaneousediting.xlsx`, referenced in `CLAUDE.md` and
+  in the README repository tree as the master workbook that
+  `Scenario Files/rebuild_consolidated.py` derives the Test and RAG sheets from, is not
+  present in this repository. The derived standalone sheets (`TestScenarios.xlsx`, the
+  three `*RAGScenarios.xlsx`, and the three `*Scenarios.xlsx` masters) are present and
+  are what every script actually reads.
+- `Miscellaneous Scripts/EvaluateHybridExtraction.py` matches results to ground truth by
+  progressive narrowing on the descriptor columns in `MATCH_KEYS`. An earlier
+  positional tie-break compared indices from two different coordinate systems (position
+  within the Test sheet vs position within the combined Test+RAG master) and silently
+  dropped 14 of 195 Shower scenarios, a contiguous tail block containing the only Condo
+  and Rowhouse housing types. Any change to the matching logic should be verified to
+  resolve all 195 scenarios uniquely for every decision type.

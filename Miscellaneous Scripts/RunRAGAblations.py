@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -1097,26 +1098,42 @@ def bootstrap_ci_per_config(scenario_df: pd.DataFrame, metric: str,
     return pd.DataFrame(results)
 
 
-def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator) -> List[Dict]:
+def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator, model_keys: Optional[List[str]] = None, workers: int = 1) -> List[Dict]:
+    """Run every (ablation x model x scenario) cell and flatten to per-alternative rows.
+
+    Two phases per (ablation, model). Retrieval runs serially because Chroma
+    collections and SentenceTransformer models are not documented thread-safe,
+    and because `retrieve_random` draws from a shared `rng` -- parallel draws
+    would make the `--seed` unreproducible. Retrieval is CPU-local and cheap.
+
+    LLM scoring is then dispatched across `workers` threads. Only the network
+    wait is parallelised, which is where all the wall clock actually goes. Each
+    worker calls `query_openrouter` independently, so `MAX_RETRIES`, the backoff
+    schedule, and the per-call `latency_ms` measurement are untouched: latency is
+    still measured around a single successful POST, not around queue time.
+    """
     rows = []
     for ablation_id, spec in specs.items():
         temp_path, collection, model, groups_by_type = collections[spec["embedding_model"]]
         logging.info("Running ablation: %s", ablation_id)
-        
+
         # Determine models to evaluate for this ablation
         if spec["llm"]:
-            # Evaluate all models defined in MODEL_SPECS
-            eval_models = [(k, info["openrouter_id"]) for k, info in MODEL_SPECS.items()]
+            # Evaluate the selected models (default: every model in MODEL_SPECS)
+            selected = model_keys if model_keys else list(MODEL_SPECS.keys())
+            eval_models = [(k, MODEL_SPECS[k]["openrouter_id"]) for k in selected]
         else:
             # Offline evaluations do not use LLMs, so we run them once
             eval_models = [("offline", "none")]
-            
+
         for model_key, model_id in eval_models:
             if spec["llm"]:
                 logging.info("  Evaluating model: %s (%s)", model_key, model_id)
             else:
                 logging.info("  Evaluating offline NN prediction")
-                
+
+            # Phase 1: serial retrieval, preserving rng draw order.
+            retrieved_by_scenario = []
             for scenario in sample:
                 decision_type = scenario["decision_type"]
                 candidates = groups_by_type[decision_type]
@@ -1126,12 +1143,35 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                     retrieved = retrieve_random(model, scenario, candidates, spec["k"], rng)
                 else:
                     retrieved = retrieve_similar(collection, model, scenario, spec["k"])
-                    
-                if spec["llm"]:
-                    result = llm_prediction(scenario, spec, retrieved, model_id)
-                else:
-                    result = nearest_neighbor_prediction(scenario, retrieved)
-                    
+                retrieved_by_scenario.append(retrieved)
+
+            # Phase 2: score. Parallel only for LLM arms with workers > 1.
+            n_workers = max(1, int(workers)) if spec["llm"] else 1
+            if n_workers > 1:
+                results = [None] * len(sample)
+                with ThreadPoolExecutor(max_workers=n_workers) as pool:
+                    futures = {
+                        pool.submit(llm_prediction, scenario, spec,
+                                    retrieved_by_scenario[i], model_id): i
+                        for i, scenario in enumerate(sample)
+                    }
+                    done = 0
+                    for future in as_completed(futures):
+                        i = futures[future]
+                        results[i] = future.result()
+                        done += 1
+                        if done % 25 == 0 or done == len(sample):
+                            logging.info("    %s/%s scenarios scored", done, len(sample))
+            else:
+                results = []
+                for i, scenario in enumerate(sample):
+                    if spec["llm"]:
+                        results.append(llm_prediction(scenario, spec, retrieved_by_scenario[i], model_id))
+                    else:
+                        results.append(nearest_neighbor_prediction(scenario, retrieved_by_scenario[i]))
+
+            for scenario, retrieved, result in zip(sample, retrieved_by_scenario, results):
+                decision_type = scenario["decision_type"]
                 predictions = result["predictions"]
                 diag = result["diagnostics"]
                 metrics = scenario_metrics(predictions, scenario)
@@ -1297,7 +1337,8 @@ def run(args) -> Dict:
         collections[embedding_model_name] = build_collection(embedding_model_name, temp_root)
 
     rng = np.random.default_rng(args.seed)
-    rows = build_result_rows(sample, specs, collections, rng)
+    rows = build_result_rows(sample, specs, collections, rng, getattr(args, "models", None),
+                             workers=getattr(args, "workers", 1))
     rows_df = pd.DataFrame(rows)
     rows_df["top1_accuracy"] = rows_df["top1_correct"].astype(float)
     rows_df["top2_accuracy"] = rows_df["top2_correct"].astype(float)
@@ -1371,10 +1412,27 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run RAG retrieval and exemplar ablations.")
     parser.add_argument(
         "--sample-size",
-        default="15",
-        help="Number of source scenarios to sample, stratified by decision type. Use 'all' for the full RAG source set.",
+        default="all",
+        help="Number of source scenarios to sample, stratified by decision type. Default 'all' "
+             "runs the complete 90-scenario RAG source set. Pass an integer for a stratified subset.",
     )
     parser.add_argument("--seed", type=int, default=13)
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        default=[k for k in MODEL_SPECS if k != "gemini"],
+        choices=list(MODEL_SPECS.keys()),
+        help="Model keys to evaluate. Default excludes gemini (roughly 50x the output price "
+             "of the other models). Pass explicit keys to override.",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="Concurrent scenario-scoring threads. Retrieval stays serial and "
+             "deterministic; only the OpenRouter calls are parallelised. Set 1 to "
+             "run fully serially.",
+    )
     parser.add_argument(
         "--ablations",
         nargs="+",

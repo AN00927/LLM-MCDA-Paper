@@ -281,7 +281,22 @@ def _load_ground_truth(decision_type: str, scenario_dir: Path) -> pd.DataFrame:
     return df
 
 
-def _match_ground_truth(test_row: pd.Series, gt_df: pd.DataFrame) -> Optional[pd.Series]:
+# Descriptor columns used to disambiguate when question+location is not unique.
+# Position cannot be used: _dtype_position indexes the Test sheet (1..n_test) while
+# _source_position indexes the combined Test+RAG master (1..n_master), so the two
+# coordinate systems do not correspond and the comparison silently drops rows.
+MATCH_KEYS = {
+    "HVAC": ["square_footage", "household_size", "outdoor_temp", "utility_budget",
+             "housing_type", "alternative_1", "alternative_2", "alternative_3"],
+    "Appliance": ["household_size", "outdoor_temp", "utility_budget", "housing_type",
+                  "alternative_1", "alternative_2", "alternative_3"],
+    "Shower": ["household_size", "outdoor_temp", "utility_budget", "housing_type",
+               "alternative_1", "alternative_2", "alternative_3"],
+}
+
+
+def _match_ground_truth(test_row: pd.Series, gt_df: pd.DataFrame,
+                        decision_type: Optional[str] = None) -> Optional[pd.Series]:
     question = _clean_text(test_row.get("question"))
     location = _clean_text(test_row.get("location"))
     candidates = gt_df[
@@ -291,10 +306,17 @@ def _match_ground_truth(test_row: pd.Series, gt_df: pd.DataFrame) -> Optional[pd
     if len(candidates) == 1:
         return candidates.iloc[0]
     if len(candidates) > 1:
-        position = test_row.get("_dtype_position")
-        matched = candidates[candidates["_source_position"].astype(int) == int(position)]
-        if len(matched) == 1:
-            return matched.iloc[0]
+        for key in MATCH_KEYS.get(decision_type or "", []):
+            if len(candidates) == 1:
+                break
+            if key not in candidates.columns or key not in test_row.index:
+                continue
+            target = _clean_text(str(test_row.get(key)))
+            narrowed = candidates[candidates[key].map(lambda v: _clean_text(str(v))) == target]
+            if not narrowed.empty:
+                candidates = narrowed
+        if len(candidates) == 1:
+            return candidates.iloc[0]
     return None
 
 
@@ -373,8 +395,8 @@ def _summarize_numeric(rows: List[Dict]) -> Dict:
         "p25_abs_error": float(np.percentile(errors, 25)),
         "p75_abs_error": float(np.percentile(errors, 75)),
         "p90_abs_error": float(np.percentile(errors, 90)),
-        "n_missing_gt": sum(row.get("missing_gt") for row in rows),
-        "n_missing_extracted": sum(row.get("missing_extracted") for row in rows),
+        "n_missing_gt": sum(row.get("missing_gt") is True for row in rows),
+        "n_missing_extracted": sum(row.get("missing_extracted") is True for row in rows),
     }
 
 
@@ -386,8 +408,8 @@ def _summarize_categorical(rows: List[Dict]) -> Dict:
         "accuracy": float(np.mean([row["correct"] for row in valid])) if valid else np.nan,
         "n_correct": int(sum(row.get("correct") for row in valid)),
         "n_incorrect": int(len(valid) - sum(row.get("correct") for row in valid)),
-        "n_missing_gt": sum(row.get("missing_gt") for row in rows),
-        "n_missing_extracted": sum(row.get("missing_extracted") for row in rows),
+        "n_missing_gt": sum(row.get("missing_gt") is True for row in rows),
+        "n_missing_extracted": sum(row.get("missing_extracted") is True for row in rows),
     }
 
 
@@ -456,7 +478,7 @@ def evaluate(args) -> Dict:
         test_row = test_match.iloc[0]
         decision_type = _clean_text(LLM_Parameterized_Reference_Scoring_row.get("decision_type")) or _clean_text(test_row.get("decision_type"))
         gt_df = _load_ground_truth(decision_type, scenario_dir)
-        gt_row = _match_ground_truth(test_row, gt_df)
+        gt_row = _match_ground_truth(test_row, gt_df, decision_type)
         if gt_row is None:
             unmatched += 1
             continue
