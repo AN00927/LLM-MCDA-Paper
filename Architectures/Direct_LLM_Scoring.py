@@ -79,7 +79,6 @@ load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 
-# Allow debug level to be controlled via environment variable
 DEBUG_API = os.getenv("DEBUG_API", "false").lower() == "true"
 DEBUG_LEVEL = logging.DEBUG if DEBUG_API else logging.INFO
 
@@ -90,7 +89,6 @@ logging.basicConfig(
 
 MODEL_ID = get_model_id()
 
-# Log startup config
 logger = logging.getLogger(__name__)
 if DEBUG_API:
     logger.debug(f"DEBUG_API mode enabled - will log full API responses")
@@ -188,7 +186,6 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
             if response.status_code == 200:
                 data = response.json()
                 
-                # DEBUG: Log full response structure (always log reasoning/thinking data)
                 logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
                 logger.debug(f"Full response keys: {list(data.keys())}")
                 logger.debug(f"Usage: {data.get('usage', {})}")
@@ -200,18 +197,15 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
                         logger.debug(f"Message keys: {list(msg.keys())}")
                         logger.debug(f"Message role: {msg.get('role')}")
                         logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                        # Check for reasoning/thinking fields
                         for key in msg.keys():
                             if key not in ['role', 'content']:
                                 logger.debug(f"Message extra field '{key}': {msg.get(key)}")
 
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-                # Grab token counts if the API sent them
                 usage = data.get("usage", {})
                 reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
                 finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
-                # Always-on progress log: shows pipeline is alive + catches surprise reasoning
                 logger.info(
                     f"  [call ok] attempt={attempt} latency={latency/1000:.1f}s "
                     f"prompt={usage.get('prompt_tokens', 0)} "
@@ -264,7 +258,6 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
             time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
-    # Retries exhausted — mark API exhaustion explicitly
     diagnostics["failure_types"] = [FAILED_API_EXHAUSTED]
     return None, diagnostics
 
@@ -273,7 +266,6 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
 def build_user_prompt(scenario: Dict, alternative: str) -> str:
     decision_type = scenario.get('decision_type', 'N/A')
     
-    # Get other alternatives in the scenario to show the LLM the comparative set
     all_alts = [
         scenario.get("alternative_1", ""),
         scenario.get("alternative_2", ""),
@@ -625,7 +617,6 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
     cumulative_diagnostics["avg_latency_ms"] = avg_latency
     cumulative_diagnostics["scenario_success_rate"] = scenario_success_rate
 
-    # Build a rows list and write via pandas to preserve Excel output semantics
     rows = []
     for result in all_results:
         scenario_id = result["scenario_id"]
@@ -759,7 +750,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "outdoor_temp", "appliance_age", "flow_rate",
     ]
 
-    # Count how many runs contributed a non-NaN value per (scenario, alternative)
     n_valid_runs = combined.groupby(GROUP_KEYS)[CRITERIA_COLS[0]].apply(
         lambda s: s.notna().sum()
     ).reset_index(name="n_successful_runs")
@@ -790,7 +780,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL)
 
-    # Re-rank each scenario using the averaged scores
     avg["rank"] = int(SENTINEL)
     avg["weighted_score"] = float(SENTINEL)
 
@@ -809,7 +798,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws
             sort_cols = ["weighted_score"] + TIE_BREAK_PRIORITY
-            # Stable sort descending on all sorting columns
             sub_sorted = sub.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
             avg.loc[sub_sorted.index, "rank"] = list(range(1, len(sub_sorted) + 1))
 

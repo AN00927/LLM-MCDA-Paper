@@ -306,7 +306,6 @@ class ShowerGroundTruthCalculator:
             # Higher raw value = higher score (e.g., comfort, practicality)
             x_normalized = (x - x_min) / (x_max - x_min)
 
-        # Apply transformation based on value function type
         if vf_type == 'linear':
             u_x = x_normalized
 
@@ -376,7 +375,6 @@ class ShowerGroundTruthCalculator:
         for alt in alternatives:
             duration = alt['duration']
 
-            # Calculate raw values
             kwh = self.calculate_shower_energy(
                 duration, gpm, water_heater_temp, outdoor_temp
             )
@@ -429,28 +427,23 @@ class ShowerGroundTruthCalculator:
                 'practicality'
             )
 
-            # Apply budget penalty to energy cost score if budget constraint exists
             if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
                 occupants = scenario.get('household_size', 2)
 
-                # Calculate monthly cost
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost'],
                     occupants,
                     showers_per_person_per_day=0.9  # Q21: REU2016 average
                 )
 
-                # Calculate and apply penalty
                 budget_penalty = self.calculate_budget_penalty(
                     monthly_cost,
                     scenario['utility_budget']
                 )
 
-                # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
                 energy_vf = energy_vf_penalized
 
-            # Store final scores
             result['transformed_values'] = {
                 'energy_cost': round(energy_vf, 2),
                 'environmental': round(env_vf, 2),

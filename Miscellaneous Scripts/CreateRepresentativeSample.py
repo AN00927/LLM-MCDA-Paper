@@ -148,7 +148,6 @@ def stratified_sample_by_features(
     """
     rng = np.random.default_rng(seed)
 
-    # --- full pass-through when sample_size is None or >= total ---
     total_available = sum(len(groups_by_type[dt]) for dt in DECISION_TYPES)
     if sample_size is None or sample_size >= total_available:
         sampled = []
@@ -175,7 +174,6 @@ def stratified_sample_by_features(
         n_strata = len(set(stratum_fn(s) for s in groups_by_type[dt]))
         if allocations[dt] < n_strata:
             deficit = n_strata - allocations[dt]
-            # Steal from types with surplus
             for donor in ordered:
                 if donor == dt:
                     continue

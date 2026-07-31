@@ -295,7 +295,6 @@ def print_implied_result(label: str, res: dict, var_df: pd.DataFrame) -> None:
           f"R² (pairwise): {r2:.4f}   "
           f"Converged: {res['converged']}")
 
-    # Pull relevant within-scenario variance rows
     if label == "Overall":
         scope_var = var_df.groupby("criterion")[["mean_within_std", "pct_zero"]].mean()
     else:
@@ -332,7 +331,6 @@ def main():
 
     gt = load_ground_truth()
 
-    # Variance summary (used for interpretation)
     print("Computing within-scenario criterion variance...")
     var_df = criterion_variance_summary(gt)
 
