@@ -964,6 +964,74 @@ def friedman_test_per_metric(scenario_df: pd.DataFrame, metric_cols: List[str],
     return pd.DataFrame(results)
 
 
+def holm_correct(p_values, alpha: float = 0.05):
+    """Holm-Bonferroni step-down correction for an arbitrary family of p-values.
+
+    This is the single implementation of the Holm procedure used everywhere in
+    the codebase that needs to correct more than one p-value drawn from the
+    same family of hypotheses -- both the pairwise post-hoc tables (via
+    `posthoc_wilcoxon_holm` below) and the cross-stratum Friedman omnibus
+    tables in `RunRAGAblations.py`, `PromptAblationSignificance.py`, and
+    `HybridAblationSignificance.py`. Centralising it means a correction fix
+    only has to happen once.
+
+    Holm controls the family-wise error rate: sort p-values ascending, test
+    the smallest against alpha/m, the next against alpha/(m-1), and so on;
+    once one comparison fails to reject, every larger p-value in the family
+    is also not rejected (step-down monotonicity), regardless of whether its
+    own per-step threshold would have been cleared in isolation.
+
+    Args:
+        p_values: array-like of raw p-values (NaNs allowed; excluded from the
+            family and returned as NaN).
+        alpha: family-wise significance level (default 0.05).
+
+    Returns:
+        (p_holm, significant_holm): two numpy arrays, same length and order as
+        the input, with NaN preserved wherever the input was NaN.
+    """
+    p_arr = np.asarray(p_values, dtype=float)
+    n = len(p_arr)
+    p_holm = np.full(n, np.nan)
+    significant_holm = np.zeros(n, dtype=bool)
+
+    valid_mask = ~np.isnan(p_arr)
+    valid_idx = np.where(valid_mask)[0]
+    m = len(valid_idx)
+    if m == 0:
+        return p_holm, significant_holm
+
+    # Order the valid p-values ascending; ties keep their original relative
+    # order (stable sort), which only affects which of two identical
+    # p-values is nominally "first" and has no effect on the resulting
+    # p_holm values or significance calls.
+    order = valid_idx[np.argsort(p_arr[valid_idx], kind="stable")]
+
+    sig_in_rank_order = np.zeros(m, dtype=bool)
+    for rank in range(m):
+        idx = order[rank]
+        raw_p = p_arr[idx]
+        multiplier = m - rank
+        p_holm[idx] = min(raw_p * multiplier, 1.0)
+        threshold = alpha / multiplier
+        sig_in_rank_order[rank] = raw_p < threshold
+
+    # Enforce Holm step-down monotonicity: once the sequential procedure
+    # encounters a non-rejection, all remaining (larger) p-values in the
+    # family must also be treated as not rejected, regardless of whether
+    # their individual p-value clears their own threshold. Without this pass
+    # significance calls can have a False followed by a True at a larger
+    # p-value, which violates the family-wise error rate guarantee.
+    for rank in range(1, m):
+        if not sig_in_rank_order[rank - 1]:
+            sig_in_rank_order[rank] = False
+
+    for rank in range(m):
+        significant_holm[order[rank]] = sig_in_rank_order[rank]
+
+    return p_holm, significant_holm
+
+
 def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
                            config_col: str = 'ablation_id',
                            scenario_col: str = 'source_scenario_id',
@@ -1027,23 +1095,7 @@ def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
         ])
 
     pairs_df = pd.DataFrame(pairs).sort_values('p_value').reset_index(drop=True)
-    m = len(pairs_df)
-    p_holm = np.ones(m, dtype=float)
-    significant_holm = np.zeros(m, dtype=bool)
-    for rank in range(m):
-        threshold = alpha / (m - rank)
-        p_holm[rank] = min(float(pairs_df.iloc[rank]['p_value']) * (m - rank), 1.0)
-        significant_holm[rank] = float(pairs_df.iloc[rank]['p_value']) < threshold
-
-    # Enforce Holm step-down monotonicity: once the sequential procedure
-    # encounters a non-rejection, all remaining pairs (which have equal or
-    # larger p-values) must also be not rejected, regardless of whether their
-    # individual p-value falls below their threshold.  Without this pass the
-    # significant_holm array can have a False followed by a True, which
-    # violates the family-wise error rate guarantee of the Holm procedure.
-    for rank in range(1, m):
-        if not significant_holm[rank - 1]:
-            significant_holm[rank] = False
+    p_holm, significant_holm = holm_correct(pairs_df['p_value'].values, alpha=alpha)
 
     pairs_df['p_holm'] = p_holm
     pairs_df['significant_holm'] = significant_holm
@@ -1117,13 +1169,10 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
         temp_path, collection, model, groups_by_type = collections[spec["embedding_model"]]
         logging.info("Running ablation: %s", ablation_id)
 
-        # Determine models to evaluate for this ablation
         if spec["llm"]:
-            # Evaluate the selected models (default: every model in MODEL_SPECS)
             selected = model_keys if model_keys else list(MODEL_SPECS.keys())
             eval_models = [(k, MODEL_SPECS[k]["openrouter_id"]) for k in selected]
         else:
-            # Offline evaluations do not use LLMs, so we run them once
             eval_models = [("offline", "none")]
 
         for model_key, model_id in eval_models:
@@ -1132,7 +1181,7 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
             else:
                 logging.info("  Evaluating offline NN prediction")
 
-            # Phase 1: serial retrieval, preserving rng draw order.
+            # Serial retrieval, preserving rng draw order.
             retrieved_by_scenario = []
             for scenario in sample:
                 decision_type = scenario["decision_type"]
@@ -1145,7 +1194,7 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                     retrieved = retrieve_similar(collection, model, scenario, spec["k"])
                 retrieved_by_scenario.append(retrieved)
 
-            # Phase 2: score. Parallel only for LLM arms with workers > 1.
+            # Parallel only for LLM arms with workers > 1.
             n_workers = max(1, int(workers)) if spec["llm"] else 1
             if n_workers > 1:
                 results = [None] * len(sample)
@@ -1359,14 +1408,93 @@ def run(args) -> Dict:
     scenario_df = scenario_level_df(rows_df)
     stat_metrics = ['kendall_tau', 'score_mae', 'score_rmse', 'top1_accuracy']
 
+    friedman_results, posthoc_df, bootstrap_df, paths = run_significance_suite(
+        scenario_df, stat_metrics, output_dir)
+
+    write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, [],
+                 friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
+
+    print("\nRAG ABLATION COMPLETE")
+    print(f"Sample size: {'all' if sample_size is None else sample_size}")
+    print(f"Scenarios: {rows_df['source_scenario_id'].nunique()}")
+    print(f"Rows: {len(rows_df)}")
+    print(_format_md_table(summary_df, float_cols=[c for c in summary_df.columns if c not in {"model_key", "ablation_id", "ablation_label", "n_scenarios"}]))
+    print(f"\nResults saved to: {results_path}")
+    print(f"Report saved to: {report_path}")
+    print(f"Friedman tests saved to: {paths['friedman_path']}")
+    print(f"Post-hoc tests saved to: {paths['posthoc_path']}")
+    print(f"Bootstrap CIs saved to: {paths['bootstrap_path']}")
+    if not friedman_results.empty:
+        sig = friedman_results[friedman_results['significant_holm']]
+        if not sig.empty:
+            print(f"\nSignificant Friedman results (Holm-corrected across the "
+                  f"{friedman_results['p_value'].notna().sum()}-test family, p_holm < 0.05):")
+            print(_format_md_table(sig))
+
+    return {
+        "rows": rows_df,
+        "summary": summary_df,
+        "by_decision_type": dtype_summary_df,
+        "results_path": results_path,
+        "report_path": report_path,
+    }
+
+
+def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
+                            output_dir: Path):
+    """Friedman -> Holm-corrected family -> gated post-hoc -> bootstrap CI pipeline.
+
+    This is the single significance-testing entry point for the RAG ablation,
+    factored out of `run()` so it can be re-invoked directly against an
+    existing `rag_ablation_results.xlsx` (via `--recompute-significance-only`)
+    without repeating the retrieval/LLM-querying work above it.
+
+    Two correction layers are applied, matching the convention used
+    throughout the rest of the paper's significance testing
+    (`significance_testing.py`) and mirrored identically in
+    `PromptAblationSignificance.py` and `HybridAblationSignificance.py`:
+
+    1. Cross-stratum family correction on the Friedman omnibus tests
+       themselves. This script runs one Friedman test per metric in
+       `stat_metrics` (4 metrics here, since the RAG ablation pools all
+       models into a single stratum rather than testing per-model). Reporting
+       4 omnibus p-values side by side and gating each independently at
+       nominal alpha=0.05 inflates the family-wise false-positive rate across
+       that set of tests, the same way reporting 40+ uncorrected pairwise
+       tests would. Holm-Bonferroni is applied across the whole Friedman
+       table before it is used for anything downstream, and `p_holm` /
+       `significant_holm` are the columns that should be read and cited, not
+       the raw `p_value` column (kept for transparency/audit only).
+    2. Post-hoc pairwise Wilcoxon+Holm, but only for metrics whose Friedman
+       omnibus is significant AFTER the family correction above
+       (`significant_holm`, not raw `p_value < 0.05`). Running post-hoc
+       comparisons for a metric whose omnibus did not survive correction
+       would test pairwise differences the omnibus test itself could not
+       support finding.
+
+    Bootstrap CIs are left ungated and computed for every metric regardless
+    of Friedman outcome: a bootstrap CI describes one configuration's own
+    sampling uncertainty, not a pairwise comparison, so it is not a multiple-
+    comparisons question in the same sense and gating it on the omnibus
+    would withhold a purely descriptive quantity from configurations that
+    otherwise didn't reach significance.
+    """
     friedman_results = friedman_test_per_metric(scenario_df, stat_metrics)
+    if not friedman_results.empty:
+        p_holm, significant_holm = holm_correct(friedman_results['p_value'].values)
+        friedman_results['p_holm'] = p_holm
+        friedman_results['significant_holm'] = significant_holm
+    else:
+        friedman_results['p_holm'] = pd.Series(dtype=float)
+        friedman_results['significant_holm'] = pd.Series(dtype=bool)
     friedman_path = output_dir / "rag_ablation_friedman_tests.xlsx"
     _atomic_write_xlsx(friedman_results, friedman_path)
 
     posthoc_parts = []
     for _, frow in friedman_results.iterrows():
-        if frow['p_value'] < 0.05:
+        if bool(frow['significant_holm']):
             ph = posthoc_wilcoxon_holm(scenario_df, frow['metric'])
+            ph.insert(0, 'metric', frow['metric'])
             posthoc_parts.append(ph)
     posthoc_df = pd.concat(posthoc_parts, ignore_index=True) if posthoc_parts else pd.DataFrame()
     posthoc_path = output_dir / "rag_ablation_posthoc_tests.xlsx"
@@ -1380,31 +1508,59 @@ def run(args) -> Dict:
     bootstrap_path = output_dir / "rag_ablation_bootstrap_ci.xlsx"
     _atomic_write_xlsx(bootstrap_df, bootstrap_path)
 
-    write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, [],
+    paths = {
+        "friedman_path": friedman_path,
+        "posthoc_path": posthoc_path,
+        "bootstrap_path": bootstrap_path,
+    }
+    return friedman_results, posthoc_df, bootstrap_df, paths
+
+
+def recompute_significance_only(output_dir: Path, report_path: Path):
+    """Recompute the Friedman/post-hoc/bootstrap suite from a saved results file.
+
+    Loads `rag_ablation_results.xlsx` (already-collected scenario-level rows
+    from a prior full run) and reruns only the statistics, making zero API
+    calls. Use this after a change to the significance-testing code itself
+    (e.g. adding the Holm family correction) when the underlying scenario
+    data has not changed and re-querying the models would be pure cost with
+    no new information.
+    """
+    results_path = output_dir / "rag_ablation_results.xlsx"
+    if not results_path.exists():
+        raise SystemExit(f"Missing {results_path}. Run a full ablation first.")
+    rows_df = pd.read_excel(results_path)
+    scenario_df = scenario_level_df(rows_df)
+    stat_metrics = ['kendall_tau', 'score_mae', 'score_rmse', 'top1_accuracy']
+
+    friedman_results, posthoc_df, bootstrap_df, paths = run_significance_suite(
+        scenario_df, stat_metrics, output_dir)
+
+    summary_path = output_dir / "rag_ablation_summary.xlsx"
+    dtype_summary_path = output_dir / "rag_ablation_summary_by_decision_type.xlsx"
+    summary_df = pd.read_excel(summary_path) if summary_path.exists() else pd.DataFrame()
+    dtype_summary_df = pd.read_excel(dtype_summary_path) if dtype_summary_path.exists() else pd.DataFrame()
+
+    write_report(report_path, None, None, OrderedDict(), summary_df, dtype_summary_df, rows_df, [],
                  friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
 
-    print("\nRAG ABLATION COMPLETE")
-    print(f"Sample size: {'all' if sample_size is None else sample_size}")
-    print(f"Scenarios: {rows_df['source_scenario_id'].nunique()}")
-    print(f"Rows: {len(rows_df)}")
-    print(_format_md_table(summary_df, float_cols=[c for c in summary_df.columns if c not in {"model_key", "ablation_id", "ablation_label", "n_scenarios"}]))
-    print(f"\nResults saved to: {results_path}")
-    print(f"Report saved to: {report_path}")
-    print(f"Friedman tests saved to: {friedman_path}")
-    print(f"Post-hoc tests saved to: {posthoc_path}")
-    print(f"Bootstrap CIs saved to: {bootstrap_path}")
+    print("RAG ABLATION SIGNIFICANCE RECOMPUTE COMPLETE (no API calls made)")
+    print(f"Rows loaded: {len(rows_df)}")
+    print(f"Friedman tests saved to: {paths['friedman_path']}")
+    print(f"Post-hoc tests saved to: {paths['posthoc_path']}")
+    print(f"Bootstrap CIs saved to: {paths['bootstrap_path']}")
     if not friedman_results.empty:
-        sig = friedman_results[friedman_results['p_value'] < 0.05]
+        print("\n=== FRIEDMAN (Holm-corrected across the full family) ===")
+        show = friedman_results[['metric', 'chi2', 'p_value', 'p_holm', 'significant_holm', 'df', 'n_scenarios', 'n_configs']]
+        print(show.to_string(index=False))
+        sig = friedman_results[friedman_results['significant_holm']]
         if not sig.empty:
-            print(f"\nSignificant Friedman results (p < 0.05):")
+            print(f"\nSignificant Friedman results (Holm-corrected, p_holm < 0.05):")
             print(_format_md_table(sig))
-
     return {
-        "rows": rows_df,
-        "summary": summary_df,
-        "by_decision_type": dtype_summary_df,
-        "results_path": results_path,
-        "report_path": report_path,
+        "friedman_results": friedman_results,
+        "posthoc_df": posthoc_df,
+        "bootstrap_df": bootstrap_df,
     }
 
 
@@ -1450,8 +1606,21 @@ def parse_args():
         default=str(PROJECT_ROOT / "rag_ablation_results.md"),
         help="Markdown report output path.",
     )
+    parser.add_argument(
+        "--recompute-significance-only",
+        action="store_true",
+        help="Skip retrieval and all API calls; reload the existing "
+             "rag_ablation_results.xlsx in --output-dir and rerun only the "
+             "Friedman/post-hoc/bootstrap significance suite. Use this after "
+             "a change to the significance-testing code (e.g. correction "
+             "policy) when the underlying scenario data has not changed.",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    run(parse_args())
+    args = parse_args()
+    if args.recompute_significance_only:
+        recompute_significance_only(Path(args.output_dir), Path(args.output))
+    else:
+        run(args)

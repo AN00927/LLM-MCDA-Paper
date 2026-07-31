@@ -193,7 +193,6 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     print(f"\nInitializing ChromaDB at: {CHROMA_DB_PATH}")
     client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
 
-    # Delete existing collection if it exists (fresh build)
     try:
         client.delete_collection(COLLECTION_NAME)
         print(f"Deleted existing collection: {COLLECTION_NAME}")
@@ -212,7 +211,6 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     )
     print(f"Created collection: {COLLECTION_NAME}")
 
-    # Process each decision type
     total_scenarios = 0
 
     # HVAC
@@ -223,7 +221,6 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
         hvac_df = load_hvac_data(csv_dir)
         print(f"Loaded {len(hvac_df)} HVAC scenario-alternative combinations")
 
-        # Group by scenario_id to get unique scenarios
         for scenario_id, group in hvac_df.groupby('scenario_id'):
             first_row = group.iloc[0]
             scenario_text = format_scenario_text(first_row, 'HVAC')
@@ -252,7 +249,6 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
         appliance_df = load_appliance_data(csv_dir)
         print(f"Loaded {len(appliance_df)} Appliance scenario-alternative combinations")
 
-        # Group by scenario_id
         for scenario_id, group in appliance_df.groupby('scenario_id'):
             first_row = group.iloc[0]
             scenario_text = format_scenario_text(first_row, 'Appliance')
@@ -326,24 +322,19 @@ def test_retrieval(test_scenario_text: str, decision_type: str, k: int = 3):
     print(f"Decision type filter: {decision_type}")
     print(f"Retrieving top-{k} similar scenarios...\n")
 
-    # Load database
     client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
     collection = client.get_collection(COLLECTION_NAME)
 
-    # Load embedding model
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
-    # Generate query embedding
     query_embedding = embedding_model.encode(test_scenario_text).tolist()
 
-    # Retrieve similar scenarios (filtered by decision type)
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=k,
         where={"decision_type": decision_type}
     )
 
-    # Display results
     if results['ids'] and len(results['ids'][0]) > 0:
         for i, (doc_id, doc_text, metadata) in enumerate(zip(
                 results['ids'][0],

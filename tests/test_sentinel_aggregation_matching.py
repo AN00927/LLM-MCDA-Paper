@@ -243,7 +243,7 @@ class TestAggregateRunFiles:
 
     def test_mixed_failed_success_averages_valid_only(self, tmp_path):
         """Failed rows are masked to NaN before averaging; only valid rows contribute."""
-        row_ok = dict(VALID_ROW_TEMPLATE)   # energy_cost = 7.0
+        row_ok = dict(VALID_ROW_TEMPLATE)
         row_fail = dict(FAILED_ROW_TEMPLATE)
         p1 = _make_run_xlsx(tmp_path, 1, [row_ok])
         p2 = _make_run_xlsx(tmp_path, 2, [row_fail])
@@ -344,8 +344,8 @@ class TestLoadDiagnosticsJson:
                                   "total_scenarios": 5})
         result = self._cm._load_diagnostics_json(str(results_path), "Direct_LLM_Scoring")
         assert result["diag_files_loaded"] == 2
-        assert result["diag_failed_scenarios"] == 2      # 1+1
-        assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 2  # 1+1
+        assert result["diag_failed_scenarios"] == 2
+        assert result[f"diag_{EXTRACTION_INVALID_JSON}"] == 2
 
 
 # ===========================================================================
@@ -433,7 +433,6 @@ class TestMatchScenarios:
         gt_lookup = self._cm.build_gt_lookup(gt_by_type)
         gt_id_lookup = self._cm.build_gt_id_lookup(gt_by_type)
 
-        # Only provide 1 of 3 alternatives so only 1 matches
         arch_rows = [
             {"scenario_id": 1, "decision_type": "HVAC", "question": "Q HVAC?",
              "location": "Exton, PA", "alternative": "72",
@@ -566,7 +565,6 @@ class TestShowerScenarioMatching:
         gt_lookup = self._cm.build_gt_lookup(gt_by_type)
         gt_id_lookup = self._cm.build_gt_id_lookup(gt_by_type)
 
-        # Arch row matches GT #2 by outdoor_temp + gpm
         arch_rows = self._make_arch_rows(10, q, loc, self._ALTS, outdoor_temp="80", flow_rate="2.5")
         arch_df = self._cm.load_architecture(pd.DataFrame(arch_rows), "Pure")
         merged, _ = self._cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "Pure")
@@ -685,9 +683,8 @@ class TestRAGMetadataFields:
         diagnostic instead.
         """
         meta = self._make_mock_metadata()
-        del meta["alt1_energy_cost"]   # Simulate a missing field
+        del meta["alt1_energy_cost"]
         alts = self._parse_metadata(meta)
-        # Default is 0.0 — this is the documented current behaviour
         assert alts[0]["scores"]["energy_cost"] == 0.0
 
     def test_all_fields_present_no_defaults_used(self):

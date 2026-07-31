@@ -114,8 +114,6 @@ def load_data(csv_path):
     print(f"Loaded {n_rows} Overall rows ({n_arch} architectures x "
           f"{n_models} models x {n_runs.iloc[0]} runs each)")
 
-    # Report NaN counts per metric so the user knows which metrics have
-    # missing data before bootstrapping begins.
     for m in PRIMARY_METRICS:
         n_nan = overall[m].isna().sum()
         if n_nan > 0:
@@ -332,7 +330,6 @@ def save_xlsx(results, output_path):
     """
     out_df = pd.DataFrame(results)
 
-    # Reorder columns for clarity
     out_df = out_df[[
         "Metric", "Architecture", "Model",
         "Point Estimate", "95% CI Lower", "95% CI Upper",

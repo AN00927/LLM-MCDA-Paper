@@ -35,7 +35,6 @@ def load_metrics(metrics_path):
 
 def extract_key_metrics(metrics_df):
     """Extract key ranking metrics for each architecture."""
-    # Filter for Overall decision type and key metrics
     overall = metrics_df[metrics_df['decision_type'] == 'Overall'].copy()
     
     key_metrics = ['top1_accuracy', 'kendall_tau', 'spearman_rho', 'top2_accuracy', 
@@ -45,7 +44,6 @@ def extract_key_metrics(metrics_df):
         index='architecture', columns='metric', values='value', aggfunc='first'
     )
     
-    # Ensure all architectures are present
     expected_archs = ["FixedDefault", "NearestNeighbor", "Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
     for arch in expected_archs:
         if arch not in pivot.index:
@@ -177,7 +175,6 @@ def generate_latex_table(pivot, inc_df):
             sign = "+" if val > 0 else ""
             return f"${sign}{val:.4f}$"
         
-        # Escape underscores for LaTeX
         arch_latex = arch.replace("_", "\\_")
         row = f"    {arch_latex} & {fmt_latex(top1)} & {fmt_delta_latex(top1_delta)} & {fmt_latex(tau)} & {fmt_delta_latex(tau_delta)} \\\\"
         lines.append(row)
@@ -191,7 +188,6 @@ def generate_latex_table(pivot, inc_df):
 
 def save_csv(pivot, inc_df, output_path):
     """Save combined table as CSV."""
-    # Merge pivot and incremental columns
     combined = pivot.copy()
     for col in inc_df.columns:
         if col.endswith('_delta'):
@@ -225,11 +221,9 @@ def main():
     pivot = extract_key_metrics(metrics_df)
     inc_df = compute_incremental(pivot, baseline=args.baseline)
     
-    # Print console table
     console_output = format_console_table(pivot, inc_df)
     print(console_output)
     
-    # Generate LaTeX
     latex_output = generate_latex_table(pivot, inc_df)
     if args.output_latex:
         with open(args.output_latex, 'w') as f:
@@ -239,11 +233,9 @@ def main():
         print("\n--- LaTeX Output ---")
         print(latex_output)
     
-    # Save CSV if requested
     if args.output_csv:
         save_csv(pivot, inc_df, args.output_csv)
     
-    # Also save LaTeX to default location in paper directory
     paper_dir = PROJECT_ROOT / "paper"
     if paper_dir.exists():
         default_latex = paper_dir / "incremental_contribution_table.tex"

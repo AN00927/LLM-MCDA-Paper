@@ -202,7 +202,7 @@ class ApplianceGroundTruthCalculator:
         else:
             size_penalty = 0.0
 
-        size_penalty *= min(delay_hours / max_delay, 1.0)  # Cap scaling at 1.0
+        size_penalty *= min(delay_hours / max_delay, 1.0)
 
         final_comfort = base_comfort - noise_penalty - size_penalty
         return max(0.0, min(1.0, final_comfort / 10.0))
@@ -270,7 +270,6 @@ class ApplianceGroundTruthCalculator:
         hour = int(time_match.group(1))
         am_pm = time_match.group(2).lower()
 
-        # Convert to 24-hour format
         if am_pm == "pm" and hour != 12:
             run_time_hour = hour + 12
         elif am_pm == "am" and hour == 12:
@@ -278,7 +277,6 @@ class ApplianceGroundTruthCalculator:
         else:
             run_time_hour = hour
 
-        # Parse baseline time from scenario
         baseline_str = scenario.get('baseline_time', '7pm')
         baseline_hour = self._parse_time_to_hour(baseline_str)
 
@@ -366,7 +364,6 @@ class ApplianceGroundTruthCalculator:
         else:
             x_normalized = (x - x_min) / (x_max - x_min)
 
-        # Apply transformation
         if vf_type == 'linear':
             u_x = x_normalized
 
@@ -397,14 +394,13 @@ class ApplianceGroundTruthCalculator:
             else:
                 # Handle negative x_normalized (better than best case)
                 if a * x_normalized + 1 <= 0:
-                    u_x = 0.0  # absolutely horrible score
+                    u_x = 0.0
                 else:
                     u_x = math.log(a * x_normalized + 1) / math.log(a + 1)
 
         else:
             u_x = x_normalized
 
-        # Clamp final score to [0, 1]
         return max(0.0, min(1.0, u_x))
 
     def calculate_budget_penalty(self, monthly_cost: float, monthly_budget: float) -> float:
@@ -473,7 +469,6 @@ class ApplianceGroundTruthCalculator:
                 'practicality_raw': practicality
             }
 
-        # Apply value functions to get final 0-10 scores
         final_scores = {}
 
         for alt, raw in raw_results.items():
@@ -505,7 +500,6 @@ class ApplianceGroundTruthCalculator:
                     scenario['utility_budget']
                 )
 
-                # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
                 energy_vf = energy_vf_penalized
 
@@ -588,7 +582,6 @@ def process_appliance_scenarios(
     for idx, row in df.reset_index(drop=True).iterrows():
         print(f"\nProcessing scenario {idx + 1}/{len(df)}: {row['appliance']} in {row['location']}")
 
-        # Collect alternatives
         alternatives = []
         for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
             alt_val = str(row[alt_col]).strip()

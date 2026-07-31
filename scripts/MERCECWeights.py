@@ -190,7 +190,6 @@ def run_merec_all_scenarios(gt: pd.DataFrame) -> dict:
 
             matrix = grp[[SCORE_COLS[c] for c in CRITERIA]].values.astype(float)
 
-            # Check for zero-variance criteria within this scenario
             for ci, c in enumerate(CRITERIA):
                 if matrix[:, ci].std() < 1e-9:
                     zero_variance_counts[c] += 1

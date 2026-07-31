@@ -24,9 +24,19 @@ Wilcoxon notes:
     The normal approximation omits the tie-correction term in std_T. This is
     conservative (wider CIs, fewer false positives) — standard in scipy's
     legacy implementation and a deliberate choice here. Holm-Bonferroni
-    correction pools all 40 tests (2 pairs x 5 metrics x 4 models) into one
-    family: a single correction step across all metrics and models within
-    each architecture pair comparison.
+    correction pools all 56 tests (2 architecture pairs x 7 metrics x 4
+    models) into a SINGLE family: one correction step across both pairwise
+    comparisons, not two separate 28-test families. run_wilcoxon() computes
+    rank/p_holm over the entire non-Stouffer subset of the results table in
+    one pass (no groupby on `comparison` before the Holm step), so this is
+    already the broadest defensible family scope for this test set: every
+    Wilcoxon test run in this script answers a variation of "does this
+    metric differ between adjacent architectures for this model," and all of
+    them compete for the same alpha budget. (An earlier version of this
+    docstring said "40 tests," which undercounted both the metric list
+    length, 7 not 5, and the fact that both architecture pairs share one
+    family rather than each having their own; the code was already correct,
+    only this comment was stale.)
 
 ICC is computed on per-run aggregate metrics (the per_run_metrics_all.csv
 file) because it is a variance decomposition, not a pairwise test.
@@ -167,7 +177,6 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
             norm_alt = normalize_alternative(row["alternative"], arch_dtype)
             arch_norm_alts[norm_alt] = row
 
-        # Build parameter pairs for disambiguation
         param_pairs = []
         if arch_dtype == "HVAC":
             _pairs = [("outdoor_temp", "outdoor_temp")]
@@ -243,7 +252,6 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
                 stacklevel=2,
             )
 
-    # Reset used flags
     for entries in gt_lookup.values():
         for e in entries:
             e["used"] = False
@@ -291,7 +299,6 @@ def compute_scenario_metrics(matched_df):
         gt_r = pd.to_numeric(group["gt_rank"], errors="coerce").values
         ar_r = pd.to_numeric(group["arch_rank"], errors="coerce").values
 
-        # Kendall tau and Spearman rho
         has_sentinel = np.isnan(gt_r).any() or np.isnan(ar_r).any() or (gt_r == SENTINEL_VALUE).any() or (ar_r == SENTINEL_VALUE).any()
         if has_sentinel:
             kendall_tau = np.nan
@@ -308,7 +315,6 @@ def compute_scenario_metrics(matched_df):
             else:
                 spearman_rho = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
 
-        # Top-1 and Top-2 accuracy
         if has_sentinel:
             top1 = np.nan
             top2 = np.nan
@@ -321,7 +327,6 @@ def compute_scenario_metrics(matched_df):
             ar_top2 = set(group.nsmallest(2, "arch_rank")["alternative"].values)
             top2 = 1.0 if gt_best_alt in ar_top2 else 0.0
 
-        # MAE and RMSE across all alternatives and criteria
         abs_errors = []
         sq_errors = []
         for c in CRITERIA:
@@ -393,18 +398,15 @@ def compute_per_scenario_metrics_from_raw():
         print(f"  Processing model: {model_key} ({folder_name})")
 
         for arch_name in ARCHITECTURES:
-            # Discover run files
             run_pattern = f"{arch_name}_results_run_*.xlsx"
             run_files = sorted(output_dir.glob(run_pattern))
             if not run_files:
                 print(f"    [{arch_name}] No run files found, skipping")
                 continue
 
-            # Collect per-run scenario metrics
             run_scenario_dfs = []
             for rf in run_files:
                 arch_df = read_table_clean(rf)
-                # Coerce score columns to numeric
                 for c in CRITERIA:
                     col = ARCH_SCORE_COLS[c]
                     if col in arch_df.columns:
@@ -425,8 +427,6 @@ def compute_per_scenario_metrics_from_raw():
                 print(f"    [{arch_name}] No matched scenarios across all runs")
                 continue
 
-            # Average across runs per scenario
-            # Concatenate all run DataFrames, group by scenario_id, take mean
             all_runs = pd.concat(run_scenario_dfs, ignore_index=True)
             metric_cols = [m for m in METRICS if m in all_runs.columns]
             averaged = all_runs.groupby(["scenario_id", "decision_type"], as_index=False)[metric_cols].mean()
@@ -638,7 +638,6 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
     if n == 0:
         return 0.0, 1.0, len(common)
 
-    # Compute signed ranks
     abs_diffs = np.abs(nonzero_diffs)
     ranks = stats.rankdata(abs_diffs)
     signed_ranks = ranks * np.sign(nonzero_diffs)
@@ -658,7 +657,6 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
     # Two-sided p-value from Z
     pval = 2 * (1 - stats.norm.cdf(abs(z)))
 
-    # Determine sign: which architecture has higher sum?
     if a_vals.sum() < b_vals.sum():
         z = -z
 
