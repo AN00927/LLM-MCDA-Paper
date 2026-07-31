@@ -85,7 +85,6 @@ except Exception as e:
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
-# Allow debug level to be controlled via environment variable
 DEBUG_API = os.getenv("DEBUG_API", "false").lower() == "true"
 
 import logging
@@ -114,7 +113,6 @@ API_CONFIG = {
 }
 logger.info(f"Reasoning payload: {API_CONFIG['reasoning']}")
 
-# Log startup config
 if DEBUG_API:
     logger.debug(f"DEBUG_API mode enabled - will log full API responses")
     logger.debug(f"Model: {MODEL_ID}")
@@ -343,7 +341,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
                         logger.debug(f"Message keys: {list(msg.keys())}")
                         logger.debug(f"Message role: {msg.get('role')}")
                         logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                        # Check for reasoning/thinking fields
                         for key in msg.keys():
                             if key not in ['role', 'content']:
                                 logger.debug(f"Message extra field '{key}': {msg.get(key)}")
@@ -404,7 +401,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
             time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
-    # We're out of retries at this point.
     raise Exception(f"{FAILED_API_EXHAUSTED}: Failed to get response after {MAX_RETRIES} attempts")
 
 def format_scenario_for_extraction(scenario: Dict) -> str:
@@ -457,7 +453,6 @@ def extract_all_with_ai(scenario: Dict,
             'latency_ms': api_diagnostics.get('latency_ms', 0)
         })
         
-        # DEBUG: Log the raw extraction response (always log reasoning/thinking data)
         logger.debug(f"=== EXTRACTION RESPONSE ===")
         logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
         logger.debug(f"Response length: {len(response_text)} chars")
@@ -637,7 +632,7 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
                     'practicality': alt_data['transformed_values']['practicality']
                 }
             })
-    else:  # HVAC and Appliance — identical return structure
+    else:
         for alt_key, alt_data in result.items():
             alternatives_scores.append({
                 'alternative': str(alt_key),
@@ -684,7 +679,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             'weighted_scores': [SENTINEL_FLOAT] * len(alternatives)
         }
 
-    # Deterministic tiebreaking based on TIE_BREAK_PRIORITY
     def sort_key(pair):
         idx, ws = pair
         scores = alternatives_scores[idx]['scores']
@@ -693,7 +687,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     valid_pairs_sorted = sorted(valid_pairs, key=sort_key, reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
-    # Keep the array positions lined up with the original alternatives
     ranks = [SENTINEL_VALUE] * len(alternatives)
     weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
@@ -912,7 +905,6 @@ def run_test_set(test_path: str, output_path: str,
     print(f" Loaded {len(scenarios)} test scenarios")
     print(f"  Decision types: {set([s.get('decision_type', 'UNKNOWN') for s in scenarios])}\n")
 
-    # Run through every scenario
     all_results = []
     cumulative_diagnostics = {
         'total_scenarios': len(scenarios),
@@ -1177,7 +1169,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         mode = cleaned.mode(dropna=True)
         return mode.iloc[0] if not mode.empty else cleaned.iloc[0]
 
-    # Count how many runs contributed a non-NaN value per (scenario, alternative)
     n_valid_runs = combined.groupby(GROUP_KEYS)[CRITERIA_COLS[0]].apply(
         lambda s: s.notna().sum()
     ).reset_index(name="n_successful_runs")
@@ -1194,7 +1185,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         avg_param_categorical = combined.groupby(GROUP_KEYS)[PARAMETER_CATEGORICAL_COLS].agg(_mode_or_blank).reset_index()
         avg_meta = avg_meta.merge(avg_param_categorical, on=GROUP_KEYS, how="left")
 
-    # decision_type: use the most common non-UNKNOWN value, or UNKNOWN if everything failed
     def _mode_decision_type(series):
         non_unknown = series[series != 'UNKNOWN']
         if len(non_unknown) == 0:
@@ -1240,7 +1230,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL)
 
-    # Re-rank each scenario using the averaged scores
     avg["rank"] = int(SENTINEL)
     avg["weighted_score"] = float(SENTINEL)
 
@@ -1259,7 +1248,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws
             sort_cols = ["weighted_score"] + TIE_BREAK_PRIORITY
-            # Stable sort descending on all sorting columns
             sub_sorted = sub.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
             avg.loc[sub_sorted.index, "rank"] = list(range(1, len(sub_sorted) + 1))
 

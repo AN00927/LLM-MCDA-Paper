@@ -19,6 +19,20 @@ same reviewed code.
 Tests run within each model. Pooling models would confound provenance effects
 with model effects.
 
+Significance-testing methodology (two correction layers, identical in kind to
+RunRAGAblations.py and PromptAblationSignificance.py):
+  1. Friedman omnibus test per (model, metric) -- 3 models x 3 metrics = 9
+     independent tests. Holm-Bonferroni correction is applied ACROSS this
+     whole family before any p-value is used downstream, so the 9 omnibus
+     tests are not each independently exposed to nominal alpha=0.05.
+  2. Post-hoc pairwise Wilcoxon+Holm tests (each model x metric's own
+     pairwise family separately Holm-corrected) are computed ONLY for
+     (model, metric) cells whose Friedman omnibus remains significant after
+     step 1 (significant_holm, not raw p_value < 0.05).
+  Bootstrap CIs are left ungated, computed for every model x metric
+  regardless of the Friedman outcome, since they describe an arm's own
+  sampling uncertainty rather than a pairwise comparison.
+
 Outputs (Analysis/Hybrid_Ablation/):
     hybrid_ablation_friedman_tests.xlsx
     hybrid_ablation_posthoc_tests.xlsx
@@ -62,29 +76,66 @@ def main():
     df = df[~df["failed"].astype(bool)].copy()
 
     friedman_rows = []
-    posthoc_rows = []
     boot_rows = []
+    strata = []
 
     for model, stratum in df.groupby("model"):
         if stratum["arm"].nunique() < 3:
             continue
+        strata.append((model, stratum))
 
         fr = rag.friedman_test_per_metric(
             stratum, METRIC_COLS, config_col="arm", scenario_col="scenario_id")
         for _, r in fr.iterrows():
             friedman_rows.append({"model": model, **r.to_dict()})
 
+        # Bootstrap CIs are left ungated: they describe each arm's own
+        # sampling uncertainty, not a pairwise comparison, so they are
+        # computed for every model x metric regardless of the Friedman
+        # outcome (matching RunRAGAblations.py and PromptAblationSignificance.py).
         for metric in METRIC_COLS:
-            ph = rag.posthoc_wilcoxon_holm(
-                stratum, metric, config_col="arm", scenario_col="scenario_id")
-            for _, r in ph.iterrows():
-                posthoc_rows.append({"model": model, "metric": metric, **r.to_dict()})
-
             bc = rag.bootstrap_ci_per_config(stratum, metric, config_col="arm")
             for _, r in bc.iterrows():
                 boot_rows.append({"model": model, **r.to_dict()})
 
     friedman = pd.DataFrame(friedman_rows)
+
+    # Cross-stratum family correction: 3 models x 3 metrics = up to 9
+    # independent Friedman omnibus tests are run above, one per (model,
+    # metric) pair. Holm-Bonferroni correction is applied ACROSS this whole
+    # family before it is used for anything downstream, for the same reason
+    # and using the same method as RunRAGAblations.py (4-test family) and
+    # PromptAblationSignificance.py (12-test family): reporting several
+    # omnibus tests side by side at nominal alpha=0.05 with no correction
+    # inflates the family-wise false-positive rate across the study.
+    if not friedman.empty:
+        p_holm, significant_holm = rag.holm_correct(friedman["p_value"].values)
+        friedman["p_holm"] = p_holm
+        friedman["significant_holm"] = significant_holm
+    else:
+        friedman["p_holm"] = pd.Series(dtype=float)
+        friedman["significant_holm"] = pd.Series(dtype=bool)
+
+    # Post-hoc pairwise Wilcoxon+Holm tests (each stratum x metric's own
+    # pairwise family separately Holm-corrected) are computed ONLY for
+    # (model, metric) cells whose Friedman omnibus remains significant after
+    # the family correction above (significant_holm, not raw p_value < 0.05).
+    posthoc_rows = []
+    for model, stratum in strata:
+        sig_metrics = set(
+            friedman.loc[
+                (friedman["model"] == model) & (friedman["significant_holm"]),
+                "metric",
+            ]
+        )
+        for metric in METRIC_COLS:
+            if metric not in sig_metrics:
+                continue
+            ph = rag.posthoc_wilcoxon_holm(
+                stratum, metric, config_col="arm", scenario_col="scenario_id")
+            for _, r in ph.iterrows():
+                posthoc_rows.append({"model": model, "metric": metric, **r.to_dict()})
+
     posthoc = pd.DataFrame(posthoc_rows)
     bootstrap = pd.DataFrame(boot_rows)
     if len(bootstrap):
@@ -106,10 +157,17 @@ def main():
 
     print(f"Models tested: {df['model'].nunique()}  |  scenario rows: {len(df)}")
     print()
-    print("=== FRIEDMAN ===")
+    n_friedman = int(friedman["p_value"].notna().sum()) if len(friedman) else 0
+    print(f"=== FRIEDMAN (Holm-corrected across all {n_friedman} tests) ===")
     if len(friedman):
-        print(friedman[["model", "metric", "chi2", "p_value", "df", "n_scenarios", "n_configs"]]
+        print(friedman[["model", "metric", "chi2", "p_value", "p_holm", "significant_holm",
+                        "df", "n_scenarios", "n_configs"]]
               .to_string(index=False, float_format=lambda v: f"{v:.4g}"))
+
+    n_sig_omnibus = int(friedman["significant_holm"].sum()) if len(friedman) else 0
+    print()
+    print(f"=== SIGNIFICANT OMNIBUS TESTS (Holm-corrected): {n_sig_omnibus} of {n_friedman} ===")
+    print("(post-hoc pairwise tests below are only computed for these)")
 
     key = posthoc[
         posthoc.apply(lambda r: {r["config_i"], r["config_j"]} == {"extracted", "default_params"}, axis=1)

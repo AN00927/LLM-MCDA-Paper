@@ -24,7 +24,7 @@ from collections import defaultdict, Counter
 import pandas as pd
 import openpyxl
 
-SEED = 20260602  # determinism anchor (no stochastic step; partition is deterministic)
+SEED = 20260602
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WB_PATH = os.path.join(HERE, "ConsolidatedforSimaltaneousediting.xlsx")
@@ -271,7 +271,7 @@ def main():
     bak = backup()
     print(f"[backup] {os.path.basename(bak)}")
 
-    wb = openpyxl.load_workbook(WB_PATH)  # keeps formulas; workbook has no charts/images
+    wb = openpyxl.load_workbook(WB_PATH)  # keeps formulas
     change_log = []  # (sheet, source_row, column, before, after, reason)
     flags = []       # human-review WARN notes
     info_notes = []  # benign observations
@@ -484,7 +484,6 @@ def main():
     appl_matched,  appl_claimed,  appl_orph  = match_type(appl_master,  appl_cache,  APPL_MKEYS, APPL_RKEYS, "clock", appliance_fix=True)
     show_matched,  show_claimed,  show_orph  = match_type(shower_master,shower_cache,SHOW_MKEYS, SHOW_RKEYS, "int")
 
-    # order matched scenarios by master row, assign 1..N
     hvac_matched.sort(key=lambda t: t[0]["row"])
     appl_matched.sort(key=lambda t: t[0]["row"])
     show_matched.sort(key=lambda t: t[0]["row"])
@@ -517,7 +516,7 @@ def main():
             flags.append(f"HVAC new_sid={new_sid}: non-distinct alternatives {alts_norm}")
         q = clean_text(hvac_cache[old_sid]["rows"][0][1]["question"])
         ranks = recompute_rank([(a, bundles[a]) for a in alts_norm], "HVAC", new_sid)
-        for a in alts_norm:  # master alt-1/2/3 order
+        for a in alts_norm:
             b = bundles[a]
             hvac_rag_rows.append({
                 "scenario_id": new_sid, "question": q, "location": m["location"],
@@ -624,7 +623,6 @@ def main():
     def write_sheet(sheet, cols, rows):
         ws = wb[sheet]
         old_max_r, old_max_c = ws.max_row, ws.max_column
-        # clear everything in the old used range
         for r in range(1, old_max_r + 1):
             for c in range(1, max(old_max_c, len(cols)) + 1):
                 cell = ws.cell(r, c); cell.value = None

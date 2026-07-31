@@ -17,12 +17,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Add the spaced folder directly — bypasses the package import syntax entirely
 GT_CALC_DIR = PROJECT_ROOT / "Ground Truth Calculators"
 if str(GT_CALC_DIR) not in sys.path:
     sys.path.insert(0, str(GT_CALC_DIR))
 
-# FIX: Add this script's own directory so 'from RunRAGAblations import ...' works
 MISC_SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(MISC_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(MISC_SCRIPTS_DIR))
@@ -30,12 +28,10 @@ if str(MISC_SCRIPTS_DIR) not in sys.path:
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores
 
-# FIX 1: Import apply_mavt_ranking alongside the calculator
 from HVACGroundTruthCalculator import HVACGroundTruthCalculator, apply_mavt_ranking
 from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
 from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
 
-# Import nearest-neighbor from RunRAGAblations
 from RunRAGAblations import (
     nearest_neighbor_prediction,
     build_collection,
@@ -168,7 +164,6 @@ def build_scenario_from_test(row, decision_type):
         try:
             appliance_age_val = int(float(raw_age))
         except (ValueError, TypeError):
-            # Try to extract the first digit or number, or fallback
             import re
             m = re.search(r'(\d+)', str(raw_age))
             if m:
@@ -190,7 +185,6 @@ def build_scenario_from_test(row, decision_type):
             'gpm': float(row.get('gpm', SHOWER_DEFAULT_GPM)),
             'tank_size': float(row.get('tank_size', SHOWER_DEFAULT_TANK_SIZE)),
             'water_heater_temp': float(row.get('water_heater_temp', SHOWER_DEFAULT_WATER_HEATER_TEMP)),
-            # FIX 4: Use row value instead of hardcoded default
             'outdoor_temp': float(row.get('outdoor_temp', SHOWER_DEFAULT_OUTDOOR_TEMP)),
             'alternative_1': str(row.get('alternative_1', '')),
             'alternative_2': str(row.get('alternative_2', '')),
@@ -215,7 +209,6 @@ def run_calculator_on_scenarios(decision_type, scenarios, calculator_class, id_o
         try:
             raw_scores = calculator.calculate_scenario_scores(scenario)
 
-            # FIX 2: Normalize Shower's different return structure
             if decision_type == "Shower":
                 scores = {}
                 for alt_data in raw_scores["alternatives"]:
@@ -257,7 +250,6 @@ def run_calculator_on_scenarios(decision_type, scenarios, calculator_class, id_o
                     'mavt_score': ranking_result["weighted_scores"][alt_idx],
                     'rank': ranking_result["ranks"][alt_idx],
                 }
-                # Add decision-type specific fields
                 if decision_type == "HVAC":
                     result_row.update({
                         'square_footage': scenario['square_footage'],

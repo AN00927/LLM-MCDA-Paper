@@ -146,7 +146,6 @@ def _norm_numeric(value: object) -> str:
         return ""
     try:
         f = float(s)
-        # If it is a whole number represent it without decimal for comparison.
         return str(int(f)) if f == int(f) else f"{f:.10g}"
     except ValueError:
         return _norm_str(s)

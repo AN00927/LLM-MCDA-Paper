@@ -50,7 +50,6 @@ TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
-# Allow debug level to be controlled via environment variable
 DEBUG_API = os.getenv("DEBUG_API", "false").lower() == "true"
 DEBUG_LEVEL = logging.DEBUG if DEBUG_API else logging.INFO
 
@@ -78,7 +77,6 @@ API_CONFIG = {
 }
 logger.info(f"Reasoning payload: {API_CONFIG['reasoning']}")
 
-# Log startup config
 if DEBUG_API:
     logger.debug(f"DEBUG_API mode enabled - will log full API responses")
     logger.debug(f"Model: {MODEL_ID}")
@@ -214,7 +212,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
             if response.status_code == 200:
                 data = response.json()
                 
-                # DEBUG: Log full response structure (always log reasoning/thinking data)
                 logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
                 logger.debug(f"Full response keys: {list(data.keys())}")
                 logger.debug(f"Usage: {data.get('usage', {})}")
@@ -226,7 +223,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
                         logger.debug(f"Message keys: {list(msg.keys())}")
                         logger.debug(f"Message role: {msg.get('role')}")
                         logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                        # Check for reasoning/thinking fields
                         for key in msg.keys():
                             if key not in ['role', 'content']:
                                 logger.debug(f"Message extra field '{key}': {msg.get(key)}")
@@ -236,7 +232,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
                 usage = data.get('usage', {})
                 reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
                 finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
-                # Always-on progress log: shows pipeline is alive + catches surprise reasoning
                 logger.info(
                     f"  [call ok] attempt={attempt} latency={latency_ms/1000:.1f}s "
                     f"prompt={usage.get('prompt_tokens', 0)} "
@@ -291,7 +286,6 @@ def query_openrouter(messages: List[Dict], model: str = None,
             time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
             continue
 
-    # Retries exhausted — raise so caller can map to failed_api_exhausted.
     raise Exception(f"{FAILED_API_EXHAUSTED}: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
@@ -328,10 +322,8 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
         logger.info("   RAG database not available, skipping retrieval")
         return []
 
-    # Turn the scenario into plain text
     scenario_text, decision_type = format_scenario_text_for_retrieval(scenario)
 
-    # Make the embedding
     query_embedding = embedding_model.encode(scenario_text).tolist()
 
     # Pull matches from the database, filtered by decision type. Narrow the
@@ -468,7 +460,6 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
     return context
 
 def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: str) -> str:
-    # Get other alternatives in the scenario to show the LLM the comparative set
     all_alts = [
         scenario.get("alternative_1", ""),
         scenario.get("alternative_2", ""),
@@ -515,7 +506,6 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
     prompt += "\nProvide scores (0-1) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n\n"
     
-    # RAG context goes after the prompt
     if rag_context:
         prompt += rag_context
 
@@ -555,7 +545,6 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         logger.debug(f"Response length: {len(response_text)} chars")
     except Exception as e:
         logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
-        # Distinguish API/network exhaustion from genuine code/parse errors.
         error_text = str(e).lower()
         failure_type = FAILED_API_EXHAUSTED if FAILED_API_EXHAUSTED.lower() in error_text else FAILED_UNKNOWN
         diagnostics = {
@@ -572,7 +561,6 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         }
         return dict(sentinel_scores), diagnostics
 
-    # Parse + validate the model's JSON in-line (single source of truth).
     validation_failed = False
     validation_failure_types = set()
     scores: Dict[str, float] = {}
@@ -654,7 +642,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
             'weighted_scores': [SENTINEL_FLOAT] * len(alternatives)
         }
 
-    # Deterministic tiebreaking based on TIE_BREAK_PRIORITY
     def sort_key(pair):
         idx, ws = pair
         scores = alternatives_scores[idx]['scores']
@@ -663,7 +650,6 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
     valid_pairs_sorted = sorted(valid_pairs, key=sort_key, reverse=True)
     ranked_alternatives = [alternatives[idx] for idx, _ in valid_pairs_sorted]
 
-    # Keep the indices lined up with the original alternatives
     ranks = [SENTINEL_VALUE] * len(alternatives)
     weighted_scores = [SENTINEL_FLOAT] * len(alternatives)
     for rank_position, (input_idx, ws) in enumerate(valid_pairs_sorted):
@@ -792,7 +778,6 @@ def run_test_set(test_path: str, output_path: str,
     logger.info(f"OK Loaded {len(scenarios)} test scenarios")
     logger.info(f"  Decision types: {set([s.get('decision_type', 'UNKNOWN') for s in scenarios])}\n")
 
-    # Run through all scenarios
     all_results = []
     cumulative_diagnostics = {
         'total_scenarios': len(scenarios),
@@ -853,7 +838,6 @@ def run_test_set(test_path: str, output_path: str,
 
         all_results.append(result)
 
-        # Roll the diagnostics up together
         diag = result['diagnostics']
         cumulative_diagnostics['total_api_calls'] += diag['api_calls']
         cumulative_diagnostics['total_tokens_input'] += diag['total_tokens_input']
@@ -876,10 +860,8 @@ def run_test_set(test_path: str, output_path: str,
             cumulative_diagnostics['successful_scenarios'] /
             max(cumulative_diagnostics['total_scenarios'], 1)
     )
-    # Write the results to the output file
     logger.info(f"\nSaving results to: {output_csv_path}")
 
-    # Build rows then write to Excel
     rows = []
     for scenario_id, result in enumerate(all_results, 1):
         question = result['scenario']
@@ -1029,7 +1011,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         "outdoor_temp", "appliance_age", "flow_rate",
     ]
 
-    # Count how many runs contributed a non-NaN value per (scenario, alternative)
     n_valid_runs = combined.groupby(GROUP_KEYS)[CRITERIA_COLS[0]].apply(
         lambda s: s.notna().sum()
     ).reset_index(name="n_successful_runs")
@@ -1057,7 +1038,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL_FLOAT)
 
-    # Re-rank each scenario using the averaged scores
     avg["rank"] = int(SENTINEL_VALUE)
     avg["weighted_score"] = float(SENTINEL_FLOAT)
 
@@ -1076,7 +1056,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws
             sort_cols = ["weighted_score"] + TIE_BREAK_PRIORITY
-            # Stable sort descending on all sorting columns
             sub_sorted = sub.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
             avg.loc[sub_sorted.index, "rank"] = list(range(1, len(sub_sorted) + 1))
 

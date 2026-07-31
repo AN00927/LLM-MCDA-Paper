@@ -139,7 +139,6 @@ class HVACGroundTruthCalculator:
         # EER = -0.02 * SEER^2 + 1.12 * SEER  (Source: AHRI Standard 210/240)
         eer_estimated = (-0.02 * seer ** 2) + (1.12 * seer)
 
-        # Calculate power draw
         kw = (load_btu_hr / eer_estimated) / 1000
         occupancy_context = self.normalize_occupancy_context(occupancy_context)
 
@@ -392,7 +391,6 @@ class HVACGroundTruthCalculator:
         else:
             x_normalized = (x - x_min) / (x_max - x_min)
 
-        # Apply transformation
         if vf_type == 'linear':
             u_x = x_normalized
 
@@ -430,7 +428,6 @@ class HVACGroundTruthCalculator:
         else:
             u_x = x_normalized
 
-        # Clamp final score to [0, 1]
         return max(0.0, min(1.0, u_x))
 
     def _free_float_temp(self, outdoor_temp: float, cooling_season: bool) -> float:
@@ -591,7 +588,6 @@ class HVACGroundTruthCalculator:
                 'practicality'
             )
 
-            # Apply budget penalty if budget constraint exists
             if utility_budget > 0:
                 # Monthly cost proxy: holding this setpoint across all three 8h periods
                 # per day, every day -> 3 periods/day * 30 days = 90 periods/month.
@@ -605,7 +601,6 @@ class HVACGroundTruthCalculator:
                     utility_budget
                 )
 
-                # Apply penalty to energy cost score
                 energy_vf_penalized = energy_vf * budget_penalty
                 energy_vf = energy_vf_penalized
 

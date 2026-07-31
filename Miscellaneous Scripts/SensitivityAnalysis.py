@@ -50,7 +50,6 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, dic
             for c in others:
                 w[c] = baseline[c] + redistrib
 
-            # Clip and renormalise
             for c in criteria:
                 w[c] = max(0.0, w[c])
             total = sum(w.values())
@@ -169,7 +168,6 @@ def run_sensitivity_analysis() -> pd.DataFrame:
         values="kendall_tau",
         aggfunc="first",
     )
-    # Preserve scenario order
     scen_order = [s for s, _ in weight_scenarios]
     tau_pivot = tau_pivot.reindex(scen_order)
     # Column order

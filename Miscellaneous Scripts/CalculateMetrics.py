@@ -183,11 +183,9 @@ def extract_time_from_alt(alt_str):
     """Extract time pattern from alternative string.
     Handles: '2:00 PM', 'Run dishwasher at 2:00 PM', '4PM', '1AM'."""
     alt_str = str(alt_str).strip()
-    # Try the full time format first: '2:00 PM'
     match = re.search(r'(\d{1,2}:\d{2}\s*[AaPp][Mm])', alt_str)
     if match:
         return match.group(1).strip().upper()
-    # Then try the short version: '4PM', '1AM'\
     match = re.search(r'(\d{1,2})\s*([AaPp][Mm])', alt_str)
     if match:
         hour = match.group(1)
@@ -350,7 +348,6 @@ def aggregate_run_files(run_paths):
         "calculator", "extraction_failed", "gt_calculation_failed"
     ] if c in combined.columns]
 
-    # Count successful (non-NaN) runs per (scenario, alternative)
     n_valid_runs = combined.groupby(group_keys)[score_cols[0]].apply(
         lambda s: s.notna().sum()
     ).reset_index(name="n_successful_runs")
@@ -380,7 +377,6 @@ def aggregate_run_files(run_paths):
     for c in score_cols:
         aggregated[c] = aggregated[c].fillna(FAIL_SENTINEL)
 
-    # Recompute weighted score + rank per scenario_id
     aggregated["weighted_score"] = float(FAIL_SENTINEL)
     aggregated["rank"] = int(FAIL_SENTINEL)
     arch_score_to_col = {
@@ -956,7 +952,6 @@ def _load_diagnostics_json(arch_path_str, arch_name):
         print(f"    [{arch_name}] No diagnostics JSON found next to {base_path.name}")
         return result
 
-    # Aggregate counters across all found files
     import json as _json
     summed = {}
     for dp in all_diag_paths:
@@ -1151,7 +1146,6 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
             print(f"    {dtype}: {xcorr[f'cross_criterion_rho_{dtype}']:.4f} "
                   f"(p={xcorr[f'cross_criterion_rho_{dtype}_pvalue']:.2e})")
 
-        # Run both modes: filtered (drop failures) and imputed (5.0 substitute)
         merged_filtered, n_failed, n_total = filter_failed_scenarios(merged.copy())
         merged_imputed, n_imputed_rows, n_imputed_sids = impute_failed_scores(merged.copy())
         merged_imputed = recompute_arch_ranks(merged_imputed)

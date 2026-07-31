@@ -27,17 +27,14 @@ LLM_ARCHS = list(ARCH_SHORT.keys())
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
 MODEL_LABELS = {"deepseek": "DeepSeek", "gemini": "Gemini", "gptoss": "GPT-OSS", "qwen": "Qwen"}
 
-# ── Load per-run CSVs (4 models) ──
 per_run_frames = []
 for f in MODELS:
     df = pd.read_csv(f"paper/per_run_metrics/per_run_metrics_{f}.csv")
     per_run_frames.append(df)
 per_run = pd.concat(per_run_frames, ignore_index=True)
 
-# ── Load imputed summary (alternative processing pipeline) ──
 imputed = pd.read_excel("Analysis/MetricsSummary/metrics_summary_all_models_imputed.xlsx")
 
-# ── Load RAG ablation ──
 rag = pd.read_excel("Analysis/RAG_Ablation/rag_ablation_summary.xlsx")
 
 # ────────────────────────────────────────────────────────────────
@@ -222,7 +219,6 @@ def per_type_arithmetic_mean(arch, model, metric):
     sub = per_run[(per_run["architecture"] == arch) &
                   (per_run["model"] == model) &
                   (per_run["decision_type"].isin(["HVAC", "Appliance", "Shower"]))]
-    # per-type means: take per-type per-run values, then average across types
     type_means = sub.groupby("run")[metric].mean()
     return type_means.mean()
 
@@ -242,8 +238,6 @@ for name, vals in baseline_data.items():
             add("IncrementalContribution", name, "pooled", "Overall", "Top-1", val)
             add("IncrementalContribution", name, "pooled", "Overall", "Top-1_delta", delta)
 
-# LLM architectures -- compute per-type arithmetic mean for each model,
-# report best/worst model
 for arch in LLM_ARCHS:
     model_means = {}
     for model in MODELS:
@@ -252,7 +246,6 @@ for arch in LLM_ARCHS:
                       (per_run["decision_type"].isin(["HVAC", "Appliance", "Shower"]))]
         if len(sub) == 0:
             continue
-        # Per-type arithmetic mean: average across decision types within each run, then across runs
         run_means = sub.groupby("run")[["kendall_tau", "top1_accuracy"]].mean()
         model_means[model] = {
             "tau": run_means["kendall_tau"].mean(),
@@ -305,7 +298,6 @@ add("GPTOSS_recovery", "AH", "best_single_run", "Overall", "tau", best_tau)
 add("GPTOSS_recovery", "AH", "worst_single_run", "Overall", "MAE", worst_mae)
 add("GPTOSS_recovery", "AH", "best_single_run", "Overall", "MAE", best_mae)
 
-# Per-model means from per-run CSVs
 for arch in LLM_ARCHS:
     for model in MODELS:
         sub = per_run[(per_run["architecture"] == arch) &
@@ -321,7 +313,6 @@ for arch in LLM_ARCHS:
                     np.mean(vals), np.std(vals, ddof=1))
 
 # ────────────────────────────────────────────────────────────────
-# Write CSV
 # ────────────────────────────────────────────────────────────────
 df_out = pd.DataFrame(rows)
 df_out.to_csv(OUT, index=False)
