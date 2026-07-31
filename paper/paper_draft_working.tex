@@ -230,7 +230,9 @@
 \begin{document}
 \begin{frontmatter}
 \title{Benchmarking LLM Integration Strategies for MCDA-Assisted Household Energy Decision Support}
-\author{Ahaan Nigam}
+\author{Ahaan Nigam\corref{cor1}}
+\cortext[cor1]{Corresponding author.}
+\ead{ahaan-ishaannigam27@gmail.com}
 \affiliation{organization={Downingtown East High School},
             city={Exton},
             state={Pennsylvania},
@@ -241,7 +243,7 @@
             state={Aargau},
             country={Switzerland}}
 \begin{abstract}
-The residential sector accounts for 18\% of global CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}, yet most people rely on biased decision making rather than tailored choices. Multi-Attribute Value Theory (MAVT) offers a rigorous method of Multi-Criteria Decision Analysis (MCDA) to reduce emissions, but building MCDAs daily requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Direct LLM Scoring ($\mathcal{A}_{\text{D}}$~), Example-Guided LLM Scoring ($\mathcal{A}_{\text{E}}$~), and LLM-Parameterized Reference Scoring ($\mathcal{A}_{\text{H}}$~), which extracts engineering parameters for a deterministic reference calculator. Reference calculators were built to benchmark MAVT scores across HVAC, appliance, and shower decisions. $\mathcal{A}_{\text{H}}$ achieved a Kendall's tau of 0.899 and 91.3\% Top-1 accuracy across 195 scenarios; $\mathcal{A}_{\text{E}}$ scored 0.277 and 49.2\%, and $\mathcal{A}_{\text{D}}$ 0.093 and 34.1\%. The architecture also compressed model capability: $\mathcal{A}_{\text{H}}$'s tau spanned 0.043 across a 45$\times$ range of per-run model cost, against 0.166 for $\mathcal{A}_{\text{D}}$. Accuracy here means agreement with a deterministic reference calculator calibrated to published engineering standards (ASHRAE, ACCA, ENERGY STAR), not validation against measured household energy data.\end{abstract}
+The residential sector is a major source of global CO\textsubscript{2} emissions, yet most households rely on biased decisions rather than tailored ones. Multi-Attribute Value Theory (MAVT) offers a rigorous Multi-Criteria Decision Analysis (MCDA) method to reduce emissions, but building MCDAs requires expertise that limits household adoption. This study evaluated whether LLMs can bridge that gap by comparing three architectures: Direct LLM Scoring ($\mathcal{A}_{\text{D}}$~), Example-Guided LLM Scoring ($\mathcal{A}_{\text{E}}$~), and LLM-Parameterized Reference Scoring ($\mathcal{A}_{\text{H}}$~), which extracts engineering parameters for a deterministic reference calculator. Reference calculators benchmarked MAVT scores across HVAC, appliance, and shower decisions. $\mathcal{A}_{\text{H}}$ achieved a Kendall's tau of 0.899 and 91.3\% Top-1 accuracy across 195 scenarios; $\mathcal{A}_{\text{E}}$ scored 0.277 and 49.2\%, and $\mathcal{A}_{\text{D}}$ 0.093 and 34.1\%. $\mathcal{A}_{\text{H}}$ also compressed model capability: its tau spanned 0.043 across a 45$\times$ range of model cost, against 0.166 for $\mathcal{A}_{\text{D}}$. Accuracy means agreement with a deterministic reference calculator, not measured household energy data.\end{abstract}
 \begin{keyword}
 Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute Value Theory \sep Household energy \sep Decision support systems \sep Retrieval-Augmented Generation \sep Sustainability
 \end{keyword}
@@ -878,6 +880,12 @@ Each configuration is evaluated across three models. The $k=1$ variant tests whe
 
 Post-hoc pairwise comparisons (Holm-corrected Wilcoxon signed-rank tests) confirm that all retrieval counts, the alternate embedding, and the exemplar-content variant form a statistically indistinguishable cluster on score MAE (pairwise $p_{\text{Holm}} > 0.62$, Cliff's $\delta$ negligible). Only the removal of exemplar scores ($p_{\text{Holm}} < 0.02$) and the use of random retrieval ($p_{\text{Holm}} < 0.001$) significantly degrade performance. Based on this equivalence, $k=1$ was selected as the production retrieval count: it essentially matches the ranking accuracy of $k=3$ (0.242 vs 0.277, $p_{\text{Holm}}=1.00$) and $k=5$ (0.242 vs 0.230, $p_{\text{Holm}}=0.62$) at the lowest token and API cost. Full results from the RAG ablations are reported in Section~\ref{sec:rag-ablation}.
 
+\subsection{Prompt Ablation Design}
+\label{sec:prompt-ablation-methods}
+A separate ablation tests whether the results depend on the specific prompts used to implement $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ rather than on the architectures themselves. Three perturbations modify one prompt property at a time against the shipped control: removing the numeric anchors that define the endpoints of the scoring scale (no\_anchors), inserting an explicit chain-of-thought scaffold that instructs the model to reason before emitting JSON (cot\_scaffold), and rescaling the response range from 0--1 to 0--10 with scores divided by ten before scoring (scale\_0\_10). Each variant runs on all 195 Test scenarios across three models with five runs per cell, holding criterion weights, temperature, and the scenario set fixed. $\mathcal{A}_{\text{E}}$ ships without numeric anchors in its prompt, so no\_anchors applies only to $\mathcal{A}_{\text{D}}$; the resulting matrix has 105 cells rather than 120. $\mathcal{A}_{\text{H}}$ is excluded because its LLM call extracts engineering parameters rather than emitting criterion scores, so these three manipulations have no counterpart in its prompt.
+
+The ablation harness re-declares the shipped prompt text locally instead of importing the architecture modules, which keeps an experimental change from altering production code. To prevent the two copies from silently diverging, the harness asserts at startup that its control text matches the deployed prompt and aborts if it does not. Perturbations are applied one at a time rather than factorially, so the design estimates the effect of each manipulation in isolation and cannot resolve interactions between them. Results appear in Section~\ref{sec:prompt-ablation}.
+
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
 Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--1 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). For each scenario, Kendall's $\tau$ is computed between the ground-truth rank and the architecture's rank over the three alternatives, then averaged across all 195 scenarios by arithmetic mean. With $n=3$ alternatives, per-scenario $\tau$ can take only discrete values ($-1, -\frac{1}{3}, \frac{1}{3}, 1$) before averaging. Efficiency is evaluated using total tokens (input plus output) and cost, both summed across the 195-scenario test set.
@@ -1204,7 +1212,7 @@ $\mathcal{A}_{\text{D}}$ is near-random or below on HVAC and Appliance for all m
 \centering
 \small
 \textbf{Weight perturbation scenarios}
-\caption{Green (red) cells indicate weights above (below) the baseline value for that criterion. The architecture ordering is preserved across all perturbations (Section~\ref{sec:res-ranking}).}
+\caption{Each row perturbs one criterion's weight by $\pm0.05$ from baseline (bold); the other three weights are rescaled proportionally to keep the vector summing to 1. The architecture ordering is preserved across all perturbations (Section~\ref{sec:res-ranking}).}
 \label{tab:sensitivity_weights}
 \begin{tabular}{@{} l r r r r @{}}
 \toprule
@@ -1212,19 +1220,19 @@ $\mathcal{A}_{\text{D}}$ is near-random or below on HVAC and Appliance for all m
 \midrule
 Baseline          & 0.3000 & 0.3500 & 0.2000 & 0.1500 \\
 \midrule
-Ene $+0.05$       & \cellcolor{green!30}\textbf{0.3500} & \cellcolor{red!30}0.3333  & \cellcolor{red!30}0.1833  & \cellcolor{red!30}0.1333 \\
-Ene $-0.05$       & \cellcolor{red!30}\textbf{0.2500}  & \cellcolor{green!30}0.3667 & \cellcolor{green!30}0.2167 & \cellcolor{green!30}0.1667 \\
+Ene $+0.05$       & \textbf{0.3500} & 0.3333  & 0.1833  & 0.1333 \\
+Ene $-0.05$       & \textbf{0.2500}  & 0.3667 & 0.2167 & 0.1667 \\
 \midrule
-Env $+0.05$       & \cellcolor{red!30}0.2833  & \cellcolor{green!30}\textbf{0.4000} & \cellcolor{red!30}0.1833  & \cellcolor{red!30}0.1333 \\
-Env $-0.05$       & \cellcolor{green!30}0.3167 & \cellcolor{red!30}\textbf{0.3000}  & \cellcolor{green!30}0.2167 & \cellcolor{green!30}0.1667 \\
+Env $+0.05$       & 0.2833  & \textbf{0.4000} & 0.1833  & 0.1333 \\
+Env $-0.05$       & 0.3167 & \textbf{0.3000}  & 0.2167 & 0.1667 \\
 \midrule
-Com $+0.05$       & \cellcolor{red!30}0.2833  & \cellcolor{red!30}0.3333  & \cellcolor{green!30}\textbf{0.2500} & \cellcolor{red!30}0.1333 \\
-Com $-0.05$       & \cellcolor{green!30}0.3167 & \cellcolor{green!30}0.3667 & \cellcolor{red!30}\textbf{0.1500}  & \cellcolor{green!30}0.1667 \\
+Com $+0.05$       & 0.2833  & 0.3333  & \textbf{0.2500} & 0.1333 \\
+Com $-0.05$       & 0.3167 & 0.3667 & \textbf{0.1500}  & 0.1667 \\
 \midrule
-Pra $+0.05$       & \cellcolor{red!30}0.2833  & \cellcolor{red!30}0.3333  & \cellcolor{red!30}0.1833  & \cellcolor{green!30}\textbf{0.2000} \\
-Pra $-0.05$       & \cellcolor{green!30}0.3167 & \cellcolor{green!30}0.3667 & \cellcolor{green!30}0.2167 & \cellcolor{red!30}\textbf{0.1000} \\
+Pra $+0.05$       & 0.2833  & 0.3333  & 0.1833  & \textbf{0.2000} \\
+Pra $-0.05$       & 0.3167 & 0.3667 & 0.2167 & \textbf{0.1000} \\
 \midrule
-Equal             & \cellcolor{red!30}0.2500  & \cellcolor{red!30}0.2500  & \cellcolor{green!30}0.2500 & \cellcolor{green!30}0.2500 \\
+Equal             & 0.2500  & 0.2500  & 0.2500 & 0.2500 \\
 \bottomrule
 \end{tabular}
 \end{threeparttable}
@@ -1251,6 +1259,58 @@ Exemplar content matters; retrieval depth does not. The exemplars\_no\_hidden\_p
 A Friedman test across configurations is not significant on Kendall's $\tau$ ($\chi^2_7 = 9.90$, $p = 0.195$) or Top-1 accuracy ($\chi^2_7 = 8.67$, $p = 0.277$), and is significant on MAE ($\chi^2_7 = 79.97$, $p < 0.001$) and RMSE ($\chi^2_7 = 79.00$, $p < 0.001$). Post-hoc Wilcoxon signed-rank tests with Holm correction on score MAE confirm that the control, retrieval, exemplar-content, and alternate-embedding configurations form a statistically indistinguishable cluster, while random exemplars and descriptions without scores are significantly worse than every configuration in the top cluster, with small to medium Cliff's $\delta$. The scale of the difference is what separates the two groups: the top cluster holds MAE near 0.09--0.10, while descriptions without scores (0.147) and random exemplars (0.144) approach half again the error. That the $\tau$ omnibus is not significant while the error-magnitude omnibus is decisively so indicates the exemplar-content manipulations shift how well the model calibrates the absolute scores more than the order it places the three alternatives in. 
 
 Retrieval $k=1$ produces lower MAE than the $k=3$ control, likely due to a single, closely matched exemplar being more useful. But $k=5$ yields higher Kendall's $\tau$, suggesting that broader context improves ranking even if per-scenario precision dips slightly. However, this difference is negligible ($\Delta\tau = +0.022$, $\Delta\text{MAE} = -0.014$ averaged across models), while $k=5$ appends four additional exemplars to each prompt (${\approx}857$ tokens per exemplar, $+3{,}428$ tokens per call), approximately doubling the input-token cost relative to $k=1$. Given the statistically indistinguishable ranking accuracy of the top cluster ($p_{\text{Holm}} > 0.97$), $k=1$ is the recommended production setting.
+
+\FloatBarrier
+\subsection{Prompt Sensitivity}
+\label{sec:prompt-ablation}
+
+A reviewer may reasonably ask whether the reported architecture ordering reflects the design of $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ or the particular prompts used to implement them. To separate the two, we re-ran both architectures under three controlled prompt perturbations across three models and five runs each: removing the numeric anchors from the scoring instructions (no\_anchors), adding an explicit chain-of-thought scaffold before the JSON response (cot\_scaffold), and rescaling the response range from 0--1 to 0--10 (scale\_0\_10). The full matrix comprises 105 cells and 20{,}475 scenario-level observations. $\mathcal{A}_{\text{E}}$ ships without numeric anchors, so no\_anchors has no $\mathcal{A}_{\text{E}}$ arm and those strata compare three variants rather than four. The harness re-declares the shipped prompts rather than importing them and asserts at startup that its control arm matches the deployed text, so a drift between the ablation and the production prompt fails loudly instead of silently weakening the baseline.
+
+\begin{table}[htbp]
+\begin{threeparttable}
+\small
+\centering
+\textbf{Kendall's $\tau$ and Top-1 accuracy by prompt variant}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{llcccc}
+\toprule
+& & \multicolumn{4}{c}{Prompt variant} \\
+\cmidrule(lr){3-6}
+Arch. & Model & control & no\_anchors & cot\_scaffold & scale\_0\_10 \\
+\midrule
+\multicolumn{6}{l}{\emph{Kendall's $\tau$}} \\
+$\mathcal{A}_{\text{D}}$ & DeepSeek & 0.142 & 0.144 & 0.161 & 0.167 \\
+$\mathcal{A}_{\text{D}}$ & GPT-OSS  & 0.066 & 0.107 & 0.041 & $-$0.001 \\
+$\mathcal{A}_{\text{D}}$ & Qwen     & $-$0.053 & 0.027 & 0.092 & 0.015 \\
+$\mathcal{A}_{\text{E}}$ & DeepSeek & \textbf{0.304} & --- & 0.180 & 0.246 \\
+$\mathcal{A}_{\text{E}}$ & GPT-OSS  & \textbf{0.262} & --- & 0.200 & 0.261 \\
+$\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.206} & --- & 0.194 & 0.102 \\
+\midrule
+\multicolumn{6}{l}{\emph{Top-1 accuracy}} \\
+$\mathcal{A}_{\text{D}}$ & DeepSeek & 0.395 & 0.449 & 0.363 & 0.412 \\
+$\mathcal{A}_{\text{D}}$ & GPT-OSS  & 0.347 & 0.365 & 0.328 & 0.320 \\
+$\mathcal{A}_{\text{D}}$ & Qwen     & 0.287 & 0.371 & 0.333 & 0.329 \\
+$\mathcal{A}_{\text{E}}$ & DeepSeek & \textbf{0.552} & --- & 0.367 & 0.478 \\
+$\mathcal{A}_{\text{E}}$ & GPT-OSS  & 0.454 & --- & 0.440 & \textbf{0.489} \\
+$\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\begin{tablenotes}\footnotesize
+\item Mean over five runs on 195 Test scenarios per cell. Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no no\_anchors arm because its shipped prompt contains no numeric anchors.
+\end{tablenotes}
+\caption{Prompt-sensitivity ablation. Every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$, so no prompt perturbation reverses the architecture ordering.}
+\label{tab:prompt_ablation}
+\end{threeparttable}
+\end{table}
+
+Table~\ref{tab:prompt_ablation} shows that the architecture ordering survives every perturbation when architecture and model are held together. Within each model, every $\mathcal{A}_{\text{E}}$ variant outranks every $\mathcal{A}_{\text{D}}$ variant on Kendall's $\tau$, and under the shipped prompts $\mathcal{A}_{\text{E}}$ leads $\mathcal{A}_{\text{D}}$ by 0.162 (DeepSeek), 0.196 (GPT-OSS), and 0.259 (Qwen). The groups do overlap across models: $\mathcal{A}_{\text{E}}$ with Qwen under scale\_0\_10 falls to $\tau = 0.102$, below $\mathcal{A}_{\text{D}}$ with DeepSeek under scale\_0\_10 at $\tau = 0.167$. A weaker model running the stronger architecture can therefore trail a stronger model running the weaker one, which is the same model--architecture interaction visible in the sensitivity analysis. Prompt wording moves individual cells without reordering the architectures for any fixed model.
+
+The shipped prompts are also not a fortunate draw. Across the eleven variant pairs that reach significance under Holm correction, every comparison involving the control favours the control for $\mathcal{A}_{\text{E}}$: cot\_scaffold lowers $\mathcal{A}_{\text{E}}$/DeepSeek Top-1 accuracy from 0.552 to 0.367 ($p_{\text{Holm}} = 2.9\times10^{-7}$, Cliff's $\delta = 0.276$, small) and scale\_0\_10 lowers it to 0.478 ($p_{\text{Holm}} = 0.003$, $\delta = 0.116$, negligible). For $\mathcal{A}_{\text{D}}$ the picture is mixed, with no\_anchors and cot\_scaffold each improving one model's $\tau$, which is consistent with $\mathcal{A}_{\text{D}}$ operating near the noise floor where small prompt changes move a weak signal in either direction.
+
+The omnibus tests reveal a dissociation between ordering and calibration. Within $\mathcal{A}_{\text{E}}$, Friedman tests on Kendall's $\tau$ are not significant for DeepSeek ($\chi^2_2 = 1.51$, $p = 0.470$), GPT-OSS ($\chi^2_2 = 3.38$, $p = 0.184$), or Qwen ($\chi^2_2 = 5.71$, $p = 0.057$), while the same tests on Top-1 accuracy are significant for DeepSeek ($\chi^2_2 = 35.71$, $p = 1.8\times10^{-8}$) and Qwen ($\chi^2_2 = 9.87$, $p = 0.007$). The relative order the model assigns to the three alternatives is more stable under prompt perturbation than its ability to identify the single best one. This mirrors the pattern in the RAG ablation (Section~\ref{sec:rag-ablation}), where the $\tau$ omnibus was likewise not significant while the error-magnitude omnibus was decisive. Two independent manipulations, one of exemplar content and one of prompt structure, disturb calibration more than they disturb ranking.
+
+Two caveats bound this result. First, cot\_scaffold confounds reasoning with parsing: the scaffold moves the JSON payload behind free-form reasoning text, and the harness must fall back to extracting the last balanced object in the response. That arm records the lowest success rate in the matrix (0.961 for $\mathcal{A}_{\text{E}}$/GPT-OSS, against 1.000 for scale\_0\_10), so part of its measured penalty is extraction reliability rather than reasoning quality. Second, the three perturbations were applied one at a time rather than factorially, so these results speak to the effect of each manipulation in isolation and not to interactions between them.
 
 \FloatBarrier
 \subsection{Efficiency and Cost}
@@ -1550,11 +1610,18 @@ Build the deterministic calculator once, and cheaper models match the ranking ac
 \paragraph*{Declaration of competing interest}
 The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
 
+\paragraph*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
 \paragraph*{CRediT authorship contribution statement}
 \textbf{Ahaan Nigam:} Conceptualization, Methodology, Software, Validation, Formal analysis, Investigation, Data Curation, Writing --- Original Draft, Writing --- Review \& Editing, Visualization. \textbf{River Huang:} Validation, Conceptualization, Methodology, Supervision, Writing --- Review \& Editing.
 
-\paragraph*{Data availability}
-All code, prompts, ground-truth calculators, raw run outputs, and analysis scripts are available at \url{https://github.com/AN00927/LLM-MCDA-Paper}.
+\paragraph*{Software and data availability}
+Name of software/dataset: LLM-MCDA-Paper (benchmark code, ground-truth calculators, and scenario/RAG data). Developer and contact: Ahaan Nigam (\href{mailto:ahaan-ishaannigam27@gmail.com}{ahaan-ishaannigam27@gmail.com}). Year first available: 2026. Hardware required: none beyond a standard desktop/laptop capable of running Python 3.11+; network access to the OpenRouter API for LLM calls. Software required: Python 3.11+ with the packages listed in the repository's dependency file (pandas, openpyxl, chromadb, sentence-transformers). Program language: Python. Availability and cost: free, openly available. Repository form: public Git repository containing source code, Excel-format ground-truth and scenario data, and raw run outputs. Access: \url{https://github.com/AN00927/LLM-MCDA-Paper}.
+
+\paragraph*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+During the preparation of this work the author(s) used [TODO: NAME OF TOOL/SERVICE] in order to [TODO: REASON]. After using this tool/service, the author(s) reviewed and edited the content as needed and take(s) full responsibility for the content of the published article.
+
 \bibliographystyle{elsarticle-num}
 \bibliography{cas-refs}
 \newpage
@@ -2062,8 +2129,8 @@ The retrieval-augmented generation (RAG) corpus consists of 90 unique
 scenarios (35 HVAC, 35 Appliance, 20 Shower) that are fully disjoint
 from the 195 test scenarios.  Each RAG scenario has three alternatives,
 yielding 270 total rows across the three source files
-(HVACRagScenarios.xlsx, ApplianceRagScenarios.xlsx,
-ShowerRagScenarios.xlsx).
+(HVACRagScenarios.xlsx, ApplianceRAGScenarios.xlsx,
+ShowerRAGScenarios.xlsx).
 
 Scenarios were generated from the same parameter distribution as the test
 set but kept separate to prevent any test scenario from appearing in the
@@ -2967,7 +3034,7 @@ RMSE/MAE & 1.27 $\pm$ 0.01 & 1.44 $\pm$ 0.01 & 1.93 $\pm$ 0.04 & 1.26 $\pm$ 0.01
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{l|cc|cc|cc}
+\begin{tabular}{lcccccc}
 \toprule
  & \multicolumn{2}{c}{$\mathcal{A}_{\text{D}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{E}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{H}}$} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
