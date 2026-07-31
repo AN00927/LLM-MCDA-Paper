@@ -159,6 +159,42 @@ prompt already ends with an explicit anti-clustering instruction ("do not assign
 same score to all 4 criteria... unless performance is actually identical"). Any
 central-tendency behavior observed therefore occurs despite active mitigation.
 
+### Results (complete matrix, 2026-07-31)
+
+105 cells, 20,475 scenario rows, 5 runs per combo, overall success rate 0.9955.
+Example-Guided has no `no_anchors` arm (its shipped prompt has no anchors), so the
+matrix is 105 cells rather than 120.
+
+Headline: **no variant beats the shipped prompt for Example-Guided.** Every
+Holm-significant pair involving the control favours the control. The shipped
+configuration is not a lucky draw, so no re-run of the main results is warranted.
+
+| Finding | Evidence |
+| --- | --- |
+| Architecture ordering holds within each model | Every Example-Guided variant > every Direct variant on tau, per model |
+| Ordering is robust, calibration is not | Friedman on tau n.s. for all Example-Guided strata (p = 0.470 / 0.184 / 0.057); on Top-1 significant for DeepSeek (p = 1.8e-08) and Qwen (p = 0.007) |
+| Effects are mostly small | 11 of 54 pairs significant; 3 reach "small" by Cliff's delta, rest negligible |
+| Groups overlap across models | Example-Guided/Qwen `scale_0_10` (tau = 0.102) < Direct/DeepSeek `scale_0_10` (tau = 0.167) |
+
+Two caveats carried into the paper: `cot_scaffold` confounds reasoning with parsing
+(it has the lowest success rate in the matrix, 0.961, because the JSON moves behind
+free-form text and the parser falls back to the last balanced object), and the
+perturbations are one-at-a-time rather than factorial, so interactions are out of scope.
+
+### Significance testing
+
+`Miscellaneous Scripts/PromptAblationSignificance.py` and
+`Miscellaneous Scripts/HybridAblationSignificance.py` implement no statistics of their
+own -- they import `friedman_test_per_metric`, `posthoc_wilcoxon_holm`, `cliff_delta`,
+and `bootstrap_ci_per_config` from `RunRAGAblations.py`, so all three ablations are
+tested by the same reviewed code. Tests run within strata (architecture x model for the
+prompt ablation, model for the parameter-provenance ablation); pooling would confound
+the manipulation with model identity.
+
+Parameter-provenance result: `extracted` beats `default_params` on all three models and
+all three metrics, 27 of 27 pairs significant, with medium-to-large Cliff's delta on MAE
+(0.35 to 0.48). Extraction contributes real signal over a corpus-median baseline.
+
 ---
 
 ## Reproduction
@@ -170,8 +206,20 @@ python "Miscellaneous Scripts/RunHybridAblations.py"
 # RAG ablation, full 90-scenario corpus, Gemini excluded by default
 python "Miscellaneous Scripts/RunRAGAblations.py"
 
-# Prompt ablation
+# Prompt ablation. Resume-aware: a completed cell xlsx is skipped, so
+# re-invoking after an interruption costs nothing for work already done.
+# Run ONE process at a time for Example-Guided arms -- concurrent Chroma access
+# across processes corrupts the collection handle and yields zero-API failed cells.
 python "Miscellaneous Scripts/RunPromptAblations.py"
+
+# Rebuild the prompt-ablation summary from every cell file. Needed whenever the
+# matrix ran as several partial jobs, since each job's summary covers only its
+# own slice.
+python "Miscellaneous Scripts/AggregatePromptAblations.py"
+
+# Significance tests (free, read existing outputs)
+python "Miscellaneous Scripts/PromptAblationSignificance.py"
+python "Miscellaneous Scripts/HybridAblationSignificance.py"
 
 # Extraction accuracy per model (free, reads existing outputs).
 # --output must be an ABSOLUTE path; a relative path resolves against the
