@@ -45,7 +45,6 @@ desktop.ini
 chroma_rag_db/
 *.sqlite3
 .rag_ablation_temp/
-Output Files/
 
 # Analysis outputs: raw per-run data stays out of the repo, but the aggregated
 # summaries and significance tests are paper evidence and ARE tracked. Anything
@@ -69,16 +68,28 @@ reviewer-response-plan.md
 docs/EXECUTION_PLAN.md
 docs/REVISION_PLAN.md
 docs/cleanuprepo.txt
+.superpowers/
 
 # Superpowers planning artifacts (ephemeral by convention, see CLAUDE.md)
 docs/superpowers/
+
+# Generated ablation reports (regenerable by RunPromptAblations.py /
+# RunRAGAblations.py; the numbers live in tracked Analysis/*.xlsx)
+prompt_ablation_results.md
+rag_ablation_results.md
 
 # Scenario Files
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
 Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
 
 # Paper build outputs
-paper/Images
+# The four source images the paper \includegraphics'es ARE tracked (the .tex
+# compile depends on them); only generated charts/snippets stay out.
+paper/Images/*
+!paper/Images/FULLFlowMCDA.png
+!paper/Images/LifestyleChangesEmissionImpact.png
+!paper/Images/PA_Residential_Emissions.png
+!paper/Images/ArchitectureFlowcharts.png
 paper/Charts
 paper/per_run_metrics/
 paper/Notebook (text format)
@@ -94,21 +105,7 @@ paper/failure_analysis.csv
 paper/failure_analysis_tables.tex
 paper/pipeline_plan.md
 
-# Pipeline scripts (generated/derivative)
-paper_pipeline/failure_analysis.py
-paper_pipeline/generate_method_c_consensus.py
-paper_pipeline/calculate_per_run_metrics.py
-paper_pipeline/generate_boxplot_tex.py
-paper_pipeline/generate_violin_tex.py
-paper_pipeline/run_all.py
-paper_pipeline/generate_variance_snippet.py
-paper_pipeline/generate_figures.py
-# generate_numbers_master.py is deliberately NOT ignored: it computes the paper's
-# cost table from measured token diagnostics rather than hardcoding it, so it is a
-# source of record for numbers in the paper. Likewise paper/numbers_master.csv.
-
 # LaTeX distribution (vendored locally, never tracked)
 TinyTeX/
 .opencode/
 PAPERRULES.txt
-docs/EXPERIMENTS.md
