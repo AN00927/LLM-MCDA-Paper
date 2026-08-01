@@ -46,19 +46,6 @@ chroma_rag_db/
 *.sqlite3
 .rag_ablation_temp/
 
-# Analysis outputs: raw per-run data stays out of the repo, but the aggregated
-# summaries and significance tests are paper evidence and ARE tracked. Anything
-# a table or claim in the paper rests on must be reproducible from the repo.
-Analysis/*
-!Analysis/MetricsSummary/
-!Analysis/RAG_Ablation/
-!Analysis/Prompt_Ablation/
-!Analysis/Hybrid_Ablation/
-# Per-cell run files: 105 files, ~2 MB, regenerable by RunPromptAblations.py.
-# The aggregated summary carries every number the paper cites.
-Analysis/Prompt_Ablation/cell_*.xlsx
-Analysis/Prompt_Ablation/_stale_preindex_rebuild/
-
 # Agent / session working artifacts (never tracked)
 HANDOFF.md
 AGENT-HANDOFF.md
@@ -73,18 +60,11 @@ docs/cleanuprepo.txt
 # Superpowers planning artifacts (ephemeral by convention, see CLAUDE.md)
 docs/superpowers/
 
-# Generated ablation reports (regenerable by RunPromptAblations.py /
-# RunRAGAblations.py; the numbers live in tracked Analysis/*.xlsx)
-prompt_ablation_results.md
-rag_ablation_results.md
-
 # Scenario Files
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
 Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
 
 # Paper build outputs
-# The four source images the paper \includegraphics'es ARE tracked (the .tex
-# compile depends on them); only generated charts/snippets stay out.
 paper/Images/*
 !paper/Images/FULLFlowMCDA.png
 !paper/Images/LifestyleChangesEmissionImpact.png
@@ -109,3 +89,8 @@ paper/pipeline_plan.md
 TinyTeX/
 .opencode/
 PAPERRULES.txt
+
+#template
+els-cas-templates
+paper/cas-common.sty
+paper/cas-dc.cls
