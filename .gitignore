@@ -78,9 +78,12 @@ paper/incremental_contribution_table.tex
 
 # Paper pipeline outputs
 paper_draft_working.spl
+paper_draft_singlecolumn.spl
 
 # Paper build artifacts
 paper/paper_draft_working.pdf
+paper/paper_draft_working.abs
+paper/paper_draft_singlecolumn.pdf
 paper/failure_analysis.csv
 paper/failure_analysis_tables.tex
 paper/pipeline_plan.md
@@ -94,3 +97,9 @@ PAPERRULES.txt
 els-cas-templates
 paper/cas-common.sty
 paper/cas-dc.cls
+paper/thumbnails/cas-email.jpeg
+paper/thumbnails/cas-facebook.jpeg
+paper/thumbnails/cas-gplus.jpeg
+paper/thumbnails/cas-linkedin.jpeg
+paper/thumbnails/cas-twitter.jpeg
+paper/thumbnails/cas-url.jpeg
