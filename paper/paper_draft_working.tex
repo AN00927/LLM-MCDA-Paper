@@ -223,13 +223,13 @@
 \definecolor{colorGPTOSS}{HTML}{009E73}
 \definecolor{colorQwen}{HTML}{D55E00}
 \begin{document}
-\shorttitle{LLM Integration Strategies for MCDA Energy Decisions}
+\shorttitle{LLM Integration for MCDA Energy Decisions}
 \shortauthors{Nigam and Huang}
 \title[mode=title]{Benchmarking LLM Integration Strategies for MCDA-Assisted Household Energy Decision Support}
 
 \author[1]{Ahaan Nigam}
 \cormark[1]
-\ead{ahaan-ishaannigam27@gmail.com}
+\ead{ishaannigam27@gmail.com}
 \affiliation[1]{organization={Downingtown East High School},
             city={Exton},
             state={Pennsylvania},
@@ -277,7 +277,7 @@ Globally, residential buildings account for 18\% of CO\textsubscript{2} emission
 \begin{figure*}[H]
 	\centering
 	\includegraphics[width=1\textwidth]{PA_Residential_Emissions.png}
-  \caption{Residential emissions, 2005--2022 \citet{eia2022,goldstein2020}.}
+  \caption{Residential emissions, 2005--2022 \citep{eia2022,goldstein2020}.}
 \label{fig:pa_residential_emissions}
 \end{figure*}
 
@@ -340,13 +340,11 @@ Failed outputs are marked with a reserved sentinel value and excluded from metri
 Results are reported as five-run means $\pm$ standard deviations. Each architecture--model combination is run independently five times at temperature 0.3. Metrics (Kendall's $\tau$, MAE, RMSE, Top-1 accuracy) are computed independently for each run, then averaged across the five runs. This per-run-then-average protocol measures the expected performance of a single deployment; the per-run standard deviation quantifies run-to-run stability: a low standard deviation means the architecture behaves consistently regardless of the random seed, which matters for production deployment where only one run is available. Supplementary Material S2 reports mean-aggregate consensus results.
 
 Table~\ref{tab:parameter_comparison} details the parameters given to architectures vs.\ calculators, shown for HVAC as the illustrative case.
-\begin{table}[H]
+\begin{table*}[t]
 \begin{threeparttable}
 \centering
 \footnotesize
 \renewcommand{\arraystretch}{0.88}
-\caption{Scenario parameters available to LLM architectures vs.\ ground-truth calculators (HVAC).}
-\label{tab:parameter_comparison}
 \centering
 \begin{tabular}{@{} l c c @{}}
 \toprule
@@ -373,7 +371,9 @@ Indoor Temp (alt.)  & ---        & \checkmark \\
 \item[c] Question context provides occupancy information.
 \end{tablenotes}
 \end{threeparttable}
-\end{table}
+\caption{Scenario parameters available to LLM architectures vs.\ ground-truth calculators (HVAC).}
+\label{tab:parameter_comparison}
+\end{table*}
 
 \FloatBarrier
 
@@ -406,7 +406,7 @@ In our study, we chose the following weights: Environmental Impact (35\%), Energ
 
 \begin{table*}[htbp]
 \begin{threeparttable}
-\small
+\footnotesize
 \centering
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lllll}
@@ -420,9 +420,9 @@ Practicality & 15 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.2 & Higher raw = bette
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
 \caption{MAVT criterion specification. Weights sum to 100\% and are held constant across all architectures and the ground truth calculator.}
 \label{tab:item3}
-\end{threeparttable}
 \end{table*}
 
 The Environmental Impact weight of 0.35 reflects two considerations. Residential emissions account for a sizable share of national CO\textsubscript{2} emissions \citep{dietz2009}, so a household decision-support tool that does not give priority to environmental impact fails in its objective. The Value--belief--norm theory, which says that environmental orientation is the most consistent normative driver across pro-environmental household behaviours, also applies heavily due to the nature of the people using the tool. \citep{stern1999,steg2005}. Finally, entropy-based normalization of the scenario distributions assigns higher information weight to the environmental criterion, independently supporting an above-average allocation \citep{roszkowska2026} (see ~\ref{app:weights} for the full computation).
@@ -489,11 +489,13 @@ Each ground-truth calculator consumes a scenario with three alternatives and ret
 
 For HVAC and Appliance decisions, environmental impact uses PJM marginal emissions factors:
 \begin{equation}
-  \mathrm{CO_2} = E_{\mathrm{kWh}} \cdot \varepsilon(t), \qquad
-  \varepsilon(t) = \begin{cases}
+\begin{split}
+  \mathrm{CO_2} &= E_{\mathrm{kWh}} \cdot \varepsilon(t), \\
+  \varepsilon(t) &= \begin{cases}
     1.041 \text{ lbs/kWh} & \text{peak (7am--11pm)} \\
     0.976 \text{ lbs/kWh} & \text{off-peak}
   \end{cases}
+\end{split}
   \label{eq:emissions}
 \end{equation}
 \noindent where $E_{\mathrm{kWh}}$ is the decision-period energy use and $\varepsilon(t)$ is the PJM marginal emissions factor at run time $t$ \citep{pjm2022emissions}. Marginal rather than average factors are used because shifting a residential load displaces or adds the generator at the margin.
@@ -515,11 +517,13 @@ All three calculators apply an identical four-tier budget penalty $P(u)$ multipl
 \subsubsection{HVAC Calculator}
 Thermal load decomposes into four ASHRAE-style components. For cooling:
 \begin{equation}
-  Q_{\mathrm{cool}} =
+\begin{split}
+  Q_{\mathrm{cool}} ={} &
     \underbrace{\frac{m \cdot A}{R}\,\Delta T}_{\text{conductive}}
-    +\underbrace{400n + A + 800}_{\text{internal}}
-    +\underbrace{0.15\,A \times 20}_{\text{solar}}
+    +\underbrace{400n + A + 800}_{\text{internal}} \\
+    &+\underbrace{0.15\,A \times 20}_{\text{solar}}
     +\underbrace{1.08\,\frac{A\, h_c\, \alpha}{60}\,\Delta T}_{\text{infiltration}}
+\end{split}
   \label{eq:hvac_cooling_load}
 \end{equation}
 \noindent where $A$ is floor area (sq\,ft); $m$ is a housing-type envelope multiplier (1.7 single-family, 1.6 twin/semi-detached, 1.5 townhouse/rowhouse, 1.2 apartment/condo) \citep{accamanualj}; $R$ is the wall insulation R-value; $\Delta T = T_{\mathrm{out}} - T_{\mathrm{in}}$; $n$ is household size; $h_c = 8$\,ft and $\alpha = 0.35$\,ACH for ceiling height and infiltration rate \citep{polly2011}. The 800\,BTU/hr baseline captures always-on standby loads per ACCA Manual~J \citep{accamanualj}. The heating load uses the same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and internal gains subtracted rather than added.
@@ -545,6 +549,7 @@ Effective EER is estimated from the unit's rated SEER via the AHRI\,210/240 quad
 
 Because HVAC alternatives carry no explicit run-time, the marginal emissions factor in Eq.~\ref{eq:emissions} is resolved from the occupancy context by applying each pattern onto the PJM peak (7am--11pm, 16\,h) and off-peak (8\,h) windows, with away-hours assumed to fill the daytime peak window first:
 \begin{equation}
+\footnotesize
   \varepsilon_{\mathrm{occ}} =
   \begin{cases}
     \varepsilon_{\mathrm{off}} & \text{occupied-sleep (night-only runtime)} \\[4pt]
@@ -554,6 +559,7 @@ Because HVAC alternatives carry no explicit run-time, the marginal emissions fac
     \dfrac{16\,\varepsilon_{\mathrm{pk}} + (H-16)\,\varepsilon_{\mathrm{off}}}{H}
       & \text{unoccupied } H\text{\,hr},\; H > 16
   \end{cases}
+  \normalsize
   \label{eq:hvac_occ_emissions}
 \end{equation}
 \noindent where $\varepsilon_{\mathrm{pk}} = 1.041$ and $\varepsilon_{\mathrm{off}} = 0.976$\ (in terms of lbs/kWh) are the PJM peak and off-peak marginal factors and $H$ is hours-away per day \citep{pjm2022emissions}. Occupied-sleep returns the off-peak factor because the home's conditioning runtime falls entirely in the overnight off-peak window.
@@ -581,13 +587,15 @@ where $E_{\mathrm{cyc}}$ is kWh/cycle and $r(t,\ell)$ is the location- and time-
 The PJM emissions window (7am--11pm) applies to environmental impact regardless of the utility's billing window, because emissions follow the regional grid.
 The run-time rate period is selected by mapping location $\ell$ to a utility $U(\ell)$ and then applying that utility's TOU peak window otherwise.
 \begin{equation}
+\begin{split}
 (h^{U}_{\mathrm{pk,s}}, h^{U}_{\mathrm{pk,e}}):
 \quad
-r(t,\ell)=r^{U}_{\mathrm{pk}}
+r(t,\ell)&=r^{U}_{\mathrm{pk}}
 \text{ if }
-h(t)\in[h^{U}_{\mathrm{pk,s}}, h^{U}_{\mathrm{pk,e}})
-\text{ and }
+h(t)\in[h^{U}_{\mathrm{pk,s}}, h^{U}_{\mathrm{pk,e}}) \\
+&\text{ and }
 r(t,\ell)=r^{U}_{\mathrm{off}}
+\end{split}
 \end{equation}
 \noindent where $U(\ell)$ maps location $\ell$ to a serving utility, $h^{U}_{\mathrm{pk,s}}$ and $h^{U}_{\mathrm{pk,e}}$ are that utility's TOU peak-window start and end hours, $r^{U}_{\mathrm{pk}}$ and $r^{U}_{\mathrm{off}}$ are the utility's peak and off-peak energy prices (\$/kWh), and $h(t)$ maps time $t$ to an hour-of-day on a 24-hour clock.
 \noindent In the implementation, the six utilities use distinct peak windows (e.g., 2--6pm for PECO and PPL, 2--9pm for most FirstEnergy utilities). The appliance calculator does not model weekend or holiday peak-hour pricing; all days use weekday TOU rates. Seasonal peak-window shifts are also unmodeled: PPL's winter (Dec--May) peak window is 4--8pm versus the 2--6pm summer window applied here; the summer window is used year-round because scenarios carry no season or date field. This simplification shifts the optimal scheduling window by 1--2 hours for some utilities in winter months.
@@ -723,12 +731,11 @@ Two alternative aggregation strategies appear in the appendices for comparison. 
 
 
 
-\begin{table*}[H]
+\begin{table*}[t]
 \begin{threeparttable}
-\small
+\footnotesize
 \centering
-\caption{Failure modes and their trigger conditions.}
-\label{tab:failure-modes}
+\setlength{\tabcolsep}{5pt}
 \begin{tabular}{lll}
 \toprule
 Failure Mode & Trigger & Applies To \\
@@ -741,7 +748,10 @@ Failed extraction & Non-JSON, invalid decision type, or non-finite parameter & $
 Calculation error & Ground-truth calculator exception & $\mathcal{A}_{\text{H}}$ only \\
 \bottomrule
 \end{tabular}
+\setlength{\tabcolsep}{6pt}
 \end{threeparttable}
+\caption{Failure modes and their trigger conditions.}
+\label{tab:failure-modes}
 \end{table*}
 
 Failure is recorded per scenario via a reserved sentinel value (1928) that marks any of the failure modes listed in Table~\ref{tab:failure-modes}. Accuracy metrics are conditioned on success: scenarios containing any sentinel are excluded from MAE/RMSE and ranking computations and counted separately in the failure rate. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ issue one call per alternative and mark the whole scenario failed if any alternative fails; $\mathcal{A}_{\text{H}}$ issues a single extraction call per scenario, so its failure unit is the scenarios. The imputed calculations take into account the failed scenarios to ensure that the weaker models are not artificially boosted by metric calculation style.
@@ -867,10 +877,9 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
 
 \begin{table*}[htbp]
 \begin{threeparttable}
+  \footnotesize
   \centering
   \textbf{Incremental contribution over Fixed-Default baseline}
-  \caption{Per-type arithmetic means of Top-1 accuracy and Kendall's~$\tau$. Best and worst model shown for LLM architectures.}
-  \label{tab:incremental-contribution}
   \begin{tabular}{lcccc}
     \toprule
     System & Top-1 & $\Delta$ vs FixedDef & Kendall $\tau$ & $\Delta$ vs FixedDef \\
@@ -889,6 +898,8 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
     \bottomrule
   \end{tabular}
 \end{threeparttable}
+\caption{Per-type arithmetic means of Top-1 accuracy and Kendall's~$\tau$. Best and worst model shown for LLM architectures.}
+\label{tab:incremental-contribution}
 \end{table*}
 \FloatBarrier
 
@@ -900,11 +911,9 @@ This baseline is important because it shows that the benchmark is not merely rew
 \subsection{Criterion-Level Error}
 \label{sec:res-error}
 \begin{figure*}[htbp]
-\begin{threeparttable}
 	\centering
 	\plotCriterionMAEByModel
 	\caption{MAE by criterion and model (5-run mean, 195 scenarios each). Each line is one model; the x-axis is architecture ($\mathcal{A}_{\text{D}}$~$\rightarrow$~$\mathcal{A}_{\text{E}}$~$\rightarrow$~$\mathcal{A}_{\text{H}}$).}
-\end{threeparttable}
 \label{fig:mae_criterion}
 \end{figure*}
 
@@ -927,6 +936,7 @@ That error rarely propagates to the decision. For most parameters the conditiona
 \centering
 \textbf{Extraction accuracy and counterfactual top-1 sensitivity}
 \renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccccccc}
 \toprule
  & & \multicolumn{4}{c}{MAE} & \multicolumn{4}{c}{$P(\text{top-1 change} \mid \text{error})$} \\
@@ -942,13 +952,14 @@ Shower & Tank size (gal) & 8.100 & 8.933 & 6.933 & 6.733 & 0.000 & 0.026 & 0.025
 Shower & Heater setpoint (\textdegree{}F) & 4.717 & 4.583 & 8.317 & 4.583 & 0.042 & 0.050 & 0.062 & 0.050 \\
 \bottomrule
 \end{tabular}
+\setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
 \item Numeric parameters only; all 195 test scenarios matched for every model. Categorical accuracy: appliance type 100\% (GPT-OSS, Qwen, DeepSeek) and 93.8\% (Gemini); baseline time 100\% for all models; HVAC occupancy context 75.4\%, 78.6\%, 81.4\%, and 80.0\% respectively. Counterfactual probabilities are conditional on the parameter being mis-estimated, with each parameter varied individually.
 \end{tablenotes}
+\end{threeparttable}
 \caption{Per-parameter extraction error and the probability that an extraction error changes the top-ranked alternative.}
 \label{tab:extraction_accuracy}
-\end{threeparttable}
 \end{table*}
 
 \FloatBarrier
@@ -958,7 +969,7 @@ The error-cancellation mechanism in Section~\ref{sec:res-extraction} raises a sh
 
 Calculator access alone is not sufficient. With no per-scenario inference, the median-parameter arm reaches $\tau = 0.641$ and Top-1 of 76.9\%, well above chance but far below the published $\mathcal{A}_{\text{H}}$ results. LLM extraction lifts this to $\tau = 0.897$--$0.921$ and Top-1 of 91.3--94.3\%, a gain of roughly 0.26 in $\tau$ attributable to extraction rather than to the calculator. The extracted arm's $\tau$ falls within 0.02 of the main-text $\mathcal{A}_{\text{H}}$ values in Figure~\ref{fig:grouped_bars} for every model, which validates the ablation harness against known results. The remaining gap to the ceiling, about 0.08--0.10 in $\tau$, is the headroom a better estimator could recover. Extraction is therefore doing substantive work: the common-mode cancellation identified above acts on informative estimates, not on noise.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
 \begin{threeparttable}
 \footnotesize
 \centering
@@ -985,10 +996,10 @@ DeepSeek & Corpus median & 0.641 & 0.769 & 0.122 \\
 \begin{tablenotes}
 \item All arms scored by the same reference calculators over the same 195 test scenarios; the arms differ only in the source of the withheld engineering parameters. The true-parameter arm reproduces the reference ranking exactly by construction, which serves as a correctness check on the harness. The corpus-median arm uses one constant per parameter and no model output, so it is identical across models. Scenarios whose extraction failed are excluded from that arm rather than defaulted; the extracted arm scored 194 of 195 scenarios for GPT-OSS and 195 for the other two models.
 \end{tablenotes}
+\end{threeparttable}
 \caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with true, LLM-extracted, and corpus-median hidden parameters.}
 \label{tab:param_provenance}
-\end{threeparttable}
-\end{table}
+\end{table*}
 
 Friedman tests confirm the three arms differ by more than run-to-run noise for every model on every metric ($\chi^2_2$ ranging from 52.5 to 305.3, all $p_{\text{Holm}} < 10^{-11}$ across the nine-test family described in Section~\ref{sec:hybrid-ablation-methods}). Post-hoc Wilcoxon signed-rank tests isolate where that difference sits. Extracted beats default\_params on Kendall's $\tau$ for all three models ($p_{\text{Holm}} < 10^{-6}$, Cliff's $\delta$ between $-0.22$ and $-0.23$, small) and on MAE ($p_{\text{Holm}} < 10^{-10}$, $\delta$ between 0.35 and 0.48, medium to large); the Top-1 comparison is significant for all three models but the effect size is small for GPT-OSS ($\delta=-0.175$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both arms already place the correct alternative first most of the time.
 
@@ -1009,6 +1020,7 @@ Table~\ref{tab:item7} reports $\tau$ by decision type; per-decision-type breakdo
 \centering
 \textbf{Ranking accuracy by decision type}
 \renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lcccccc}
 \toprule
  & \multicolumn{2}{c}{$\mathcal{A}_{\text{D}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{E}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{H}}$} \\
@@ -1026,10 +1038,11 @@ Shower & & & & & & \\
 \quad Worst & 0.069 (Q) & 34.3 (Q) & 0.236 (Q) & 48.3 (Q) & \textbf{0.784 (O)} & \textbf{82.0 (O)} \\
 \bottomrule
 \end{tabular}
+\setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
 \caption{5-run per-run-then-average, showing best and worst model per cell (G = Gemini, D = DeepSeek, O = GPT-OSS, Q = Qwen). Per-model results by decision type appear in Appendix~\ref{app:per_model_results}.}
 \label{tab:item7}
-\end{threeparttable}
 \end{table*}
 
 $\mathcal{A}_{\text{E}}$ shows wide model-level variance on HVAC, performs strongest on Shower across all models, and depends primarily on duration and flow rate---fewer interacting variables than HVAC load calculations or appliance TOU scheduling---so the exemplar's calibration anchor is more effective here.
@@ -1044,7 +1057,7 @@ $\mathcal{A}_{\text{D}}$ is near-random or below on HVAC and Appliance for all m
 
 To test the stability of the ranking results, weights were perturbed by $\pm 0.05$ on each of the four criteria individually, redistributing the difference equally across the remaining three, plus one equal-weight scenario ($w_j = 0.25$ for all $j$).
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
 \begin{threeparttable}
 \small
 \centering
@@ -1070,22 +1083,22 @@ Equal       & 0.139 & 0.368 & 0.913 \\
 \begin{tablenotes}
 \item Each cell is the arithmetic mean of the four per-model Kendall's $\tau$ values reported in Supplementary Material S2, not a scenario-pooled statistic. Perturbation vectors are defined in Supplementary Material S2.
 \end{tablenotes}
+\end{threeparttable}
 \caption{Mean Kendall's $\tau$ across the four evaluated models (Gemini, DeepSeek, GPT-OSS, Qwen), by architecture and weight-perturbation scenario.}
 \label{tab:sensitivity_pooled}
-\end{threeparttable}
-\end{table}
+\end{table*}
 
 Table~\ref{tab:sensitivity_pooled} reports the mean Kendall's $\tau$ across the four evaluated models for each of the nine weight-perturbation scenarios plus baseline and equal weights. The ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds with no overlap between architecture groups: the highest $\mathcal{A}_{\text{D}}$ mean (0.140) sits below the lowest $\mathcal{A}_{\text{E}}$ mean (0.278), which in turn sits below the lowest $\mathcal{A}_{\text{H}}$ mean (0.867); per-model results appear in Supplementary Material S2.
 
 \FloatBarrier
 \subsection{RAG Ablation}
 \label{sec:rag-ablation}
-\begin{figure}[htbp]
+\begin{figure*}[htbp]
 	\centering
 	\plotRagAblation
 	\caption{RAG ablation results: Kendall's $\tau$ by configuration and model on the full 90-scenario RAG corpus. Configurations are ordered by overall $\tau$. Dashed line marks $\tau = 0$.}
 \label{fig:rag_ablation}
-\end{figure}
+\end{figure*}
 
 The RAG ablation (design in Section~\ref{sec:rag-ablation-methods}, full values in Supplementary Material S2) produced the following findings. Unlike the corpus-level \texttt{NearestNeighbor} baseline in Section~\ref{sec:res-baselines} ($k=3$ majority vote, evaluated on the 195-scenario test set), this offline baseline performs leave-one-out retrieval within the 90-scenario RAG corpus itself and assigns the retrieved scenario's score directly without LLM rescoring or voting, yielding $\tau = 0.001$ (95\% CI: $[-0.175,\, 0.172]$), indistinguishable from zero and confirming that naive exemplar copying provides no ranking signal.
 
@@ -1099,10 +1112,11 @@ A reviewer may reasonably ask whether the reported architecture ordering reflect
 
 \begin{table*}[htbp]
 \begin{threeparttable}
-\small
+\footnotesize
 \centering
 \textbf{Kendall's $\tau$ and Top-1 accuracy by prompt variant}
 \renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccc}
 \toprule
 & & \multicolumn{4}{c}{Prompt variant} \\
@@ -1126,13 +1140,14 @@ $\mathcal{A}_{\text{E}}$ & GPT-OSS  & 0.454 & --- & 0.440 & \textbf{0.489} \\
 $\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
 \bottomrule
 \end{tabular}
+\setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}\footnotesize
 \item Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and no\_anchors, which use ten runs: no\_anchors was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no no\_anchors arm because its shipped prompt contains no numeric anchors.
 \end{tablenotes}
+\end{threeparttable}
 \caption{Prompt-sensitivity ablation. Within each model, every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$, so no prompt perturbation reverses the architecture ordering for a fixed model.}
 \label{tab:prompt_ablation}
-\end{threeparttable}
 \end{table*}
 
 Table~\ref{tab:prompt_ablation} shows the architecture ordering survives every perturbation when architecture and model are held together, though a weaker model running the stronger architecture can still trail a stronger model running the weaker one ($\mathcal{A}_{\text{E}}$ with Qwen falls to $\tau = 0.102$ under scale\_0\_10, below $\mathcal{A}_{\text{D}}$ with DeepSeek at $\tau = 0.167$), the same model--architecture interaction visible in the sensitivity analysis (Section~\ref{sec:res-sensitivity}). The shipped prompts are not an unlucky draw: of the pairwise comparisons that reach significance (protocol in Section~\ref{sec:prompt-ablation-methods}), every one involving the control favors the control for $\mathcal{A}_{\text{E}}$, while the few significant $\mathcal{A}_{\text{D}}$ comparisons reflect that architecture operating near the noise floor; full statistics appear in Supplementary Material S2. As in the RAG ablation (Section~\ref{sec:rag-ablation}), ranking is more stable under perturbation than calibration: the Friedman omnibus on Kendall's $\tau$ is not significant for any $\mathcal{A}_{\text{E}}$ model, while the Top-1 omnibus is significant for DeepSeek, so prompt wording shifts which alternative is ranked first more readily than it shifts the relative order of all three.
@@ -1172,7 +1187,7 @@ Table~\ref{tab:item8} reports API usage and costs based on OpenRouter pricing as
 
 To determine whether failures follow systematic patterns, we identified every scenario across all 60 runs (5 runs $\times$ 4 models $\times$ 3 architectures) that produced a sentinel score of 1928 (the reserved failure indicator) in any criterion. Table~\ref{tab:failure_arch_model} reports failure counts per architecture and model.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
 \small\centering
 \caption{Failure counts per architecture and model (summed across 5 runs). Counts are unique scenario-run failures (one per scenario per run), not raw output rows.}
 \label{tab:failure_arch_model}
@@ -1185,7 +1200,7 @@ $\mathcal{A}_{\text{E}}$ & 0 & 60 & 0 & 0 & 60 \\
 $\mathcal{A}_{\text{H}}$ & 0 & 1 & 117 & 2 & 120 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 These counts reflect total scenario-run failures; unique scenario failures (deduplicated across runs) are lower, as cross-run recovery rescues many transient failures.
 
@@ -1208,7 +1223,7 @@ Mode & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text
 \footnotetext{Counts are 5-run totals summed across all four models. Of fifteen possible failure codes, only these two ever fired across all 60 runs; the remaining thirteen were checked and never triggered.}
 \end{table*}
 
-The most common failure mode (Table~\ref{tab:failure_modes}) for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ is \texttt{EXTRACTION\_INVALID\_JSON} (model returns unparseable output), while for $\mathcal{A}_{\text{H}}$, all failures concentrate in \texttt{FAILED\_EXTRACTION\_INVALID\_PARAMETERS} (extracted numeric parameter falls outside the physical validation bounds), driven almost entirely by GPT-OSS on HVAC scenarios.
+The most common failure mode (Table~\ref{tab:failure_modes}) for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ is \texttt{EXTRACTION\_INVALID\_\allowbreak JSON} (model returns unparseable output), while for $\mathcal{A}_{\text{H}}$, all failures concentrate in \texttt{FAILED\_EXTRACTION\_\allowbreak INVALID\_\allowbreak PARAMETERS} (extracted numeric parameter falls outside the physical validation bounds), driven almost entirely by GPT-OSS on HVAC scenarios.
 
 Cross-run recovery eliminates most of these failures: when a scenario fails in one run but succeeds in another, the successful run's score is used. The "without recovery" values exclude scenarios where all five runs failed (equivalent to the primary per-run-then-average protocol), while "with recovery" uses cross-run success to score every scenario. Without cross-run recovery, pooled $\tau$ is 0.886 and Top-1 is 90.8\%, versus 0.897 and 91.6\% with recovery.
 
@@ -1327,7 +1342,7 @@ This research did not receive any specific grant from funding agencies in the pu
 \textbf{Ahaan Nigam:} Conceptualization, Methodology, Software, Validation, Formal analysis, Investigation, Data Curation, Writing --- Original Draft, Writing --- Review \& Editing, Visualization. \textbf{River Huang:} Validation, Conceptualization, Methodology, Supervision, Writing --- Review \& Editing.
 
 \paragraph*{Software and data availability}
-Name of software/dataset: LLM-MCDA-Paper (benchmark code, ground-truth calculators, and scenario/RAG data). Developer and contact: Ahaan Nigam (\href{mailto:ahaan-ishaannigam27@gmail.com}{ahaan-ishaannigam27@gmail.com}). Year first available: 2026. Hardware required: none beyond a standard desktop/laptop capable of running Python 3.11+; network access to the OpenRouter API for LLM calls. Software required: Python 3.11+ with the packages listed in the repository's dependency file (pandas, openpyxl, chromadb, sentence-transformers). Program language: Python. Availability and cost: free, openly available. Repository form: public Git repository containing source code, Excel-format ground-truth and scenario data, and raw run outputs. Access: \url{https://github.com/AN00927/LLM-MCDA-Paper}.
+Name of software/dataset: LLM-MCDA-Paper (benchmark code, ground-truth calculators, and scenario/RAG data). Developer and contact: Ahaan Nigam (\href{mailto:ishaannigam27@gmail.com}{ishaannigam27@gmail.com}). Year first available: 2026. Hardware required: none beyond a standard desktop/laptop capable of running Python 3.11+; network access to the OpenRouter API for LLM calls. Software required: Python 3.11+ with the packages listed in the repository's dependency file (pandas, openpyxl, chromadb, sentence-transformers). Program language: Python. Availability and cost: free, openly available. Repository form: public Git repository containing source code, Excel-format ground-truth and scenario data, and raw run outputs. Access: \url{https://github.com/AN00927/LLM-MCDA-Paper}.
 
 \paragraph*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
 During the preparation of this work the author(s) used [TODO: NAME OF TOOL/SERVICE] in order to [TODO: REASON]. After using this tool/service, the author(s) reviewed and edited the content as needed and take(s) full responsibility for the content of the published article.
@@ -1347,7 +1362,7 @@ Supplementary material associated with this article is available online. Part S1
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{ll}
+\begin{tabular}{@{} l p{0.85\textwidth} @{}}
 \toprule
 Symbol & Definition \\
 \midrule
@@ -1363,9 +1378,9 @@ $k$ & number of retrieved scenarios per query in RAG ($k=1$) \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
 \caption{Notation used throughout this paper.}
 \label{tab:item1}
-\end{threeparttable}
 \end{table*}
 
 
@@ -1427,11 +1442,9 @@ Figure~\ref{app:decision_type_full_figures}; per-run standard deviations and
 imputed robustness results also appear in Supplementary Material S2.
 
 \begin{figure*}[htbp]
-\begin{threeparttable}
 	\centering
 	\plotDecisionTypeByModel
 	\caption{Kendall's $\tau$ (a--c) and Top-1 accuracy (d--f) by decision type and model (5-run mean, 195 scenarios each). Top row: $\tau$ by architecture ($\mathcal{A}_{\text{D}}$~$\rightarrow$~$\mathcal{A}_{\text{E}}$~$\rightarrow$~$\mathcal{A}_{\text{H}}$). Bottom row: Top-1 accuracy (\%). The dotted line in (a--c) marks $\tau = 0$ (random ranking).}
-\end{threeparttable}
 \label{app:decision_type_full_figures}
 \end{figure*}
 
