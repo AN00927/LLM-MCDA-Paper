@@ -242,7 +242,7 @@ def _to_float(value):
 
 
 # ---------------------------------------------------------------------------
-# Scenario matching (mirrors the corrected matcher in EvaluateHybridExtraction)
+# Scenario matching (mirrors the corrected matcher in evaluate_parameter_extraction)
 # ---------------------------------------------------------------------------
 
 MATCH_KEYS = {

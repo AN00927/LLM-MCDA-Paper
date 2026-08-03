@@ -32,7 +32,7 @@ from HVACGroundTruthCalculator import HVACGroundTruthCalculator, apply_mavt_rank
 from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
 from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
 
-from RunRAGAblations import (
+from run_rag_ablation_experiments import (
     nearest_neighbor_prediction,
     build_collection,
     retrieve_similar,
@@ -322,7 +322,7 @@ def run_fixed_default_baseline(test_df):
 
 def run_nearest_neighbor_baseline(test_df, k=3):
     groups_by_type = load_source_groups()
-    from RunRAGAblations import DEFAULT_EMBEDDING_MODEL
+    from run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
     import tempfile, shutil
     temp_path, collection, model, _ = build_collection(DEFAULT_EMBEDDING_MODEL, Path(tempfile.gettempdir()))
     try:

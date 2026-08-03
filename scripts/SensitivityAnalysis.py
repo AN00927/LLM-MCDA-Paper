@@ -17,7 +17,7 @@ import argparse
 
 from model_config import CRITERION_WEIGHTS, MODEL_KEY, MODEL_SPECS, TIE_BREAK_PRIORITY, get_output_folder
 from sentinel_utils import _atomic_write_xlsx
-from CalculateMetrics import (
+from evaluate_architecture_metrics import (
     CRITERIA,
     _build_config,
     aggregate_run_files,
