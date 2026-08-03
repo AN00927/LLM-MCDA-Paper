@@ -2,7 +2,7 @@
 query path uses (L2 on unnormalized all-MiniLM-L6-v2 embeddings).
 
 Replicates, field-for-field:
-  - Index side:  Miscellaneous Scripts/BuildRAG.py (embed path, lines ~224-235 /
+  - Index side:  Miscellaneous Scripts/build_rag_index.py (embed path, lines ~224-235 /
     252-263 / 279-290): read_table_clean(RAG sheet) -> group by scenario_id ->
     first_row -> format_embedding_text(decision_type, first_row) ->
     embedding_model.encode(text) (bare, no normalize_embeddings).
@@ -13,9 +13,9 @@ Replicates, field-for-field:
   - Candidate pool: production queries filter where={"decision_type": X}
     (Example-Guided_LLM_Scoring.py line 338), so nearest-neighbour search is
     restricted to the same decision type's corpus entries, exactly like here.
-  - Distance unit: Chroma's default hnsw space is L2 (BuildRAG.py line 204 has
+  - Distance unit: Chroma's default hnsw space is L2 (build_rag_index.py line 204 has
     no hnsw:space key). True L2 = np.linalg.norm(q - c), the same convention as
-    the ablation harness (Miscellaneous Scripts/RunRAGAblations.py line 623).
+    the ablation harness (Miscellaneous Scripts/run_rag_ablation_experiments.py line 623).
 
 No API calls. All data on disk. New file; nothing existing is modified.
 """
@@ -47,7 +47,7 @@ OUT_JSON = PROJECT_ROOT / "Analysis" / "TestRAG_distances.json"
 
 
 def build_corpus(model):
-    """One embedding per RAG scenario, exactly as BuildRAG.py does."""
+    """One embedding per RAG scenario, exactly as build_rag_index.py does."""
     corpus = []  # list of dicts: decision_type, scenario_id, text, embedding
     for dtype, fname in RAG_FILES.items():
         df = read_table_clean(SCENARIO_DIR / fname)

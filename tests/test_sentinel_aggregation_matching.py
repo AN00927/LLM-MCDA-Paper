@@ -57,7 +57,7 @@ import importlib.util as _ilu
 def _load_calc_metrics():
     spec = _ilu.spec_from_file_location(
         "calculate_metrics",
-        PROJECT_ROOT / "Miscellaneous Scripts" / "CalculateMetrics.py"
+        PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
     )
     mod = _ilu.module_from_spec(spec)
     spec.loader.exec_module(mod)

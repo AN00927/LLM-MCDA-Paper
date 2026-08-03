@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-run_all.py - Master pipeline for paper data generation.
+run_paper_pipeline.py - Master pipeline for paper data generation.
 
 Usage:
-    python3 paper_pipeline/run_all.py              # full pipeline
-    python3 paper_pipeline/run_all.py --skip-metrics  # skip per-run metrics (if already computed)
+    python3 paper_pipeline/run_paper_pipeline.py              # full pipeline
+    python3 paper_pipeline/run_paper_pipeline.py --skip-metrics  # skip per-run metrics (if already computed)
 """
 
 import argparse
@@ -40,7 +40,7 @@ def main():
 
     run_step(
         "Step 2: Generate hardcoded plot snippet",
-        [sys.executable, "paper_pipeline/generate_variance_snippet.py"],
+        [sys.executable, "paper_pipeline/generate_variance_plot_tex.py"],
     )
 
     print(f"\n{'='*60}")

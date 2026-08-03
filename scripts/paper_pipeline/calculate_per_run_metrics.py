@@ -4,7 +4,7 @@ calculate_per_run_metrics.py
 
 Computes ranking and error metrics for each individual model run
 (not averaged across runs). Produces per-run CSV files consumed by
-generate_boxplot_tex.py and generate_violin_tex.py.
+ generate_boxplot_tex.py and generate_violin_plot_tex.py.
 
 Usage:
     python paper_pipeline/calculate_per_run_metrics.py
@@ -28,7 +28,7 @@ from model_config import MODEL_KEY, MODEL_SPECS
 from sentinel_utils import _is_complete_run_file, read_table_clean
 
 # ---------- dynamic import of CalculateMetrics ----------
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "CalculateMetrics.py"
+_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("CalculateMetrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)

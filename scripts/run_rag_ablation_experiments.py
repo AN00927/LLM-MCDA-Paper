@@ -971,8 +971,8 @@ def holm_correct(p_values, alpha: float = 0.05):
     the codebase that needs to correct more than one p-value drawn from the
     same family of hypotheses -- both the pairwise post-hoc tables (via
     `posthoc_wilcoxon_holm` below) and the cross-stratum Friedman omnibus
-    tables in `RunRAGAblations.py`, `PromptAblationSignificance.py`, and
-    `HybridAblationSignificance.py`. Centralising it means a correction fix
+    tables in `run_rag_ablation_experiments.py`, `test_prompt_ablation_significance.py`, and
+    `test_hybrid_ablation_significance.py`. Centralising it means a correction fix
     only has to happen once.
 
     Holm controls the family-wise error rate: sort p-values ascending, test
@@ -1452,7 +1452,7 @@ def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
     Two correction layers are applied, matching the convention used
     throughout the rest of the paper's significance testing
     (`significance_testing.py`) and mirrored identically in
-    `PromptAblationSignificance.py` and `HybridAblationSignificance.py`:
+    `test_prompt_ablation_significance.py` and `test_hybrid_ablation_significance.py`:
 
     1. Cross-stratum family correction on the Friedman omnibus tests
        themselves. This script runs one Friedman test per metric in

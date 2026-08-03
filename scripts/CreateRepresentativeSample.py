@@ -2,11 +2,11 @@
 """
 CreateRepresentativeSample.py
 
-Drop-in replacement for the `stratified_sample` function in RunRAGAblations.py.
+Drop-in replacement for the `stratified_sample` function in run_rag_ablation_experiments.py.
 
 Problem with the original implementation
 -----------------------------------------
-`stratified_sample` in RunRAGAblations.py stratifies only by *decision type*
+`stratified_sample` in run_rag_ablation_experiments.py stratifies only by *decision type*
 (equal counts per type).  Within each type it draws uniformly at random.
 
 With the default `--sample-size 15` (5 per type from pools of 20–35 scenarios)
@@ -27,7 +27,7 @@ Usage
 Option A — use as a standalone script to inspect the sample:
     python "Miscellaneous Scripts/CreateRepresentativeSample.py" --sample-size 33
 
-Option B — replace `stratified_sample` in RunRAGAblations.py:
+Option B — replace `stratified_sample` in run_rag_ablation_experiments.py:
     from CreateRepresentativeSample import stratified_sample_by_features as stratified_sample
 
     # Then in run():
@@ -134,7 +134,7 @@ def stratified_sample_by_features(
     Parameters
     ----------
     groups_by_type : dict
-        Output of `load_source_groups()` from RunRAGAblations.py.
+        Output of `load_source_groups()` from run_rag_ablation_experiments.py.
         Maps decision_type -> list of scenario dicts.
     sample_size : int or None
         Total number of scenarios to draw across all types.

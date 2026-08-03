@@ -1,15 +1,15 @@
-"""SyncRAGGroundTruth.py
+"""sync_rag_ground_truth_scores.py
 
 Refreshes the score columns in each RAG scenario file from the latest ground
 truth files WITHOUT changing which scenario_ids are assigned to RAG.
 
 Run this after re-running any Ground Truth Calculator to propagate updated
-scores into the RAG corpus (then re-run BuildRAG.py to rebuild ChromaDB).
+scores into the RAG corpus (then re-run build_rag_index.py to rebuild ChromaDB).
 
 Workflow:
     1. python "Ground Truth Calculators/<Domain>GroundTruthCalculator.py"
-    2. python "Miscellaneous Scripts/SyncRAGGroundTruth.py"
-    3. python "Miscellaneous Scripts/BuildRAG.py"
+    2. python "Miscellaneous Scripts/sync_rag_ground_truth_scores.py"
+    3. python "Miscellaneous Scripts/build_rag_index.py"
 
 Matching is intentionally strict: before overwriting anything the script
 verifies that every descriptor column (question/description, location,
@@ -295,7 +295,7 @@ def main(dry_run: bool = False) -> None:
     elif dry_run:
         print("Dry run complete - all validations passed. Run without --dry-run to write.")
     else:
-        print("Sync complete. Run BuildRAG.py next to rebuild the ChromaDB vector store.")
+        print("Sync complete. Run build_rag_index.py next to rebuild the ChromaDB vector store.")
 
 
 if __name__ == "__main__":

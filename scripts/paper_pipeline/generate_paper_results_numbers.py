@@ -211,7 +211,7 @@ for _, r in rag.iterrows():
 # ────────────────────────────────────────────────────────────────
 # INCREMENTAL CONTRIBUTION TABLE
 # Baselines (FixedDefault, NearestNeighbor) are deterministic;
-# computed by RunBaselines.py + CalculateMetrics.py --include-baselines.
+# computed by run_baseline_models.py + evaluate_architecture_metrics.py --include-baselines.
 # LLM rows computed from per-run CSVs as per-type arithmetic means.
 # ────────────────────────────────────────────────────────────────
 
@@ -223,7 +223,7 @@ def per_type_arithmetic_mean(arch, model, metric):
     return type_means.mean()
 
 # FixedDefault and NearestNeighbor -- deterministic values from
-# CalculateMetrics.py --include-baselines (single run, all models)
+# evaluate_architecture_metrics.py --include-baselines (single run, all models)
 baseline_data = {
     "FixedDefault":     {"Top-1": 0.7282, "kendall_tau": 0.6137},
     "NearestNeighbor":  {"Top-1": 0.5692, "kendall_tau": 0.3709},
