@@ -26,7 +26,7 @@ generate_paper_results_numbers.py -- pools per-run CSVs across all 4 models
     |                        - writes paper/numbers_master.csv
     |
     v
-Significance_testing.py -- statistical tests on per-scenario metrics
+significance_testing.py -- statistical tests on per-scenario metrics
                           - ICC(2,1), Wilcoxon, Stouffer, Cliff's delta, bootstrap
                           - writes paper/per_run_metrics/significance_tests.xlsx
 ```
@@ -62,7 +62,7 @@ There are two primary evaluation handling strategies, plus a standalone per-run 
 **Filtered mode (scenario-level exclusion — the primary method):**
 - `filter_failed_scenarios()` groups by `arch_scenario_id`, checks if ANY alternative row has ANY criterion sentinel
 - If so, ALL rows for that scenario are removed from metrics computation
-- Used by: `evaluate_all()` filtered mode, `Significance_testing.py`, `calculate_per_run_metrics.py`
+- Used by: `evaluate_all()` filtered mode, `significance_testing.py`, `calculate_per_run_metrics.py`
 
 **Method C (per-cell safe_mean):**
 - `safe_mean(series)` in `generate_method_c_consensus.py`: requires >=3 non-NaN values out of 5 runs
@@ -159,7 +159,7 @@ For each scenario (by `arch_scenario_id`):
 3. Final tau = mean of per-scenario taus (arithmetic mean over all valid scenarios)
 4. **Top-1**: GT best (rank 1) == architecture best (rank 1), compared by normalized alternative string
 5. **Top-2**: Two definitions exist:
-   - `CalculateMetrics`: Intersection of GT top-2 set and architecture top-2 set is non-empty
+   - `evaluate_architecture_metrics.py`: Intersection of GT top-2 set and architecture top-2 set is non-empty
    - `calculate_per_run_metrics.py`: GT top-1 is in architecture top-2 set
 
 ### 4.3 `compute_failure_rate(arch_df)`
@@ -247,7 +247,7 @@ In `generate_paper_results_numbers.py`, per-type metrics are:
 
 ---
 
-## 9. Cross-Model Pooling (numbers_master.py)
+## 9. Cross-Model Pooling (generate_paper_results_numbers.py)
 
 `generate_paper_results_numbers.py` reads per-run CSVs from all 4 models and computes:
 
@@ -275,7 +275,7 @@ For GPT-OSS A_H, each of 5 runs' individual metrics are listed, plus pooled valu
 
 ## 10. Statistical Significance Tests
 
-All in `Significance_testing.py`. These tests operate on per-scenario metric vectors (195 values per architecture per model), NOT on aggregate values.
+All in `significance_testing.py`. These tests operate on per-scenario metric vectors (195 values per architecture per model), NOT on aggregate values.
 
 The pipeline:
 1. For each model x architecture: load 5 runs, match to GT, filter failed scenarios
@@ -430,5 +430,5 @@ Pairwise comparisons between configurations. Results: retrieval k variants, embe
 | `generate_paper_results_numbers.py` | Cross-model pooling, numbers_master.csv |
 | `generate_method_c_consensus.py` | Method C comparison (safe_mean, consensus) |
 | `analyze_benchmark_failures.py` | Failure detection, LaTeX tables |
-| `Significance_testing.py` | ICC, Wilcoxon, Stouffer, Cliff's delta, mixed model |
+| `significance_testing.py` | ICC, Wilcoxon, Stouffer, Cliff's delta, mixed model |
 | `run_rag_ablation_experiments.py` | RAG ablation: Friedman, bootstrap, post-hoc |

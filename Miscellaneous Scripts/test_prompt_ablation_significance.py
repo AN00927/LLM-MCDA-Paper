@@ -74,7 +74,7 @@ METRIC_COLS = ["kendall_tau", "top1"]
 
 
 def _load_rag_module():
-    """Import RunRAGAblations for its reviewed statistical helpers."""
+    """Import run_rag_ablation_experiments for its reviewed statistical helpers."""
     path = Path(__file__).resolve().parent / "run_rag_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_rag_ablations", path)
     module = importlib.util.module_from_spec(spec)

@@ -144,7 +144,7 @@ def stratified_sample_by_features(
 
     Returns
     -------
-    list of scenario dicts (same structure as RunRAGAblations.stratified_sample).
+    list of scenario dicts (same structure as run_rag_ablation_experiments.stratified_sample).
     """
     rng = np.random.default_rng(seed)
 
@@ -234,7 +234,7 @@ def stratified_sample_by_features(
 # ---------------------------------------------------------------------------
 
 def _load_groups():
-    """Load the RAG source groups the same way RunRAGAblations does."""
+    """Load the RAG source groups the same way run_rag_ablation_experiments does."""
     from sentinel_utils import read_table_clean
 
     def _to_float(v):
@@ -274,7 +274,7 @@ def _load_groups():
                 if "duration_min" in row:
                     alt["duration_min"] = _to_float(row.get("duration_min"))
                 alts.append(alt)
-            # Build a scenario dict compatible with RunRAGAblations
+            # Build a scenario dict compatible with run_rag_ablation_experiments
             scenario = dict(first_row)
             scenario.update({
                 "decision_type":     dt,

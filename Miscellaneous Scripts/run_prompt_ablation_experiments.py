@@ -538,7 +538,7 @@ def load_reference() -> Dict[int, Dict]:
     Built from the same Ground Truth workbooks the paper's reference calculators
     write, matched to the Test sheet by question+location with progressive
     narrowing on the alternative labels (the coordinate-system bug fixed in
-    EvaluateHybridExtraction came from matching on positional indices instead).
+    evaluate_parameter_extraction came from matching on positional indices instead).
     """
     test_df = read_table_clean(
         TEST_SCENARIOS, keep_str_cols=["alternative_1", "alternative_2", "alternative_3"])

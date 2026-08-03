@@ -58,7 +58,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
-from CalculateMetrics import filter_failed_scenarios, normalize_alternative, build_gt_lookup
+from evaluate_architecture_metrics import filter_failed_scenarios, normalize_alternative, build_gt_lookup
 
 # ---------------------------------------------------------------------------
 # Paths and constants

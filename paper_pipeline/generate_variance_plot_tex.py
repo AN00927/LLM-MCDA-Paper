@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from generate_boxplot_tex import generate_boxplot_block
-from generate_violin_tex import generate_violin_block
+from generate_violin_plot_tex import generate_violin_block
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = PROJECT_ROOT / "paper" / "per_run_metrics"
