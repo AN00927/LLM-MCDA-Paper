@@ -432,7 +432,7 @@ Practicality & 0.15 & 0.015 & 0.095 & 0.053 \\
 
 % TODO: One thing I use, not necessarily dependent on this section but that should be stated, is that another part of the difference between A sub E and A sub D is that in A sub D we never give any hint to what Pennsylvania-specific values for a lot of these are. Even though the location is given, obviously most models do not have that good location-specific knowledge. This should be noted somewhere briefly.
 
-In our study, the benchmark harness uses the following weight configuration: Environmental Impact (35\%), Energy Cost (30\%), Comfort (20\%), and Practicality (15\%), as summarized in Table~\ref{tab:item3}. The vector is an input held constant across architectures and decision types so that the comparison is controlled, and results are reported across multiple weight configurations, including the baseline, nine single-criterion perturbations, equal weights, and the objective weight vectors in the weight robustness appendix (Appendix~\ref{app:weights}).
+In our study, the benchmark harness uses the following weight configuration: Environmental Impact (35\%), Energy Cost (30\%), Comfort (20\%), and Practicality (15\%), as summarized in Table~\ref{tab:item3}. The vector is an input held constant across architectures and decision types so that the comparison is controlled, and results are reported across multiple weight configurations, including the baseline, equal weights, and the entropy- and MEREC-derived objective weight vectors in the weight robustness appendix (Appendix~\ref{app:weights}).
 
 \begin{table*}[htbp]
 \centering
@@ -515,7 +515,7 @@ Practicality & 0.05--1.0 & 0.05--1.0 & 0.05--1.0 \\
 \end{threeparttable}
 \end{table}
 
-For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. The cost is estimated at \$0.19/kWh, which represents a bundled retail rate combining generation, transmission, distribution, monthly service fees, riders, and state taxes. Form EIA-861 reports a 2024 Pennsylvania statewide average price of 17.77\textcent/kWh based on total utility revenue divided by sales \cite{eia_epa_2024}. However, in urban and suburban Philadelphia, the Pennsylvania Public Utility Commission 2025 Rate Report lists an average monthly PECO residential bill of \$135.29 for 702\,kWh, establishing an effective bundled price of 19.27\textcent/kWh \cite{paupc2025}. Approved PUC rate settlements increase representative 700\,kWh PECO bills to \$149.43 in 2025 (21.3\textcent/kWh) and \$152.13 in 2026 (21.7\textcent/kWh) \cite{paupc2024dec}. The \$0.19/kWh baseline provides a conservative, empirical rate for Pennsylvania decision modeling. Excluding zero-load points, the realized 8-hour cost distribution at Pennsylvania's bundled residential rate (\$0.19/kWh) \cite{eia_epa_2024,paupc2025,paupc2024dec} spans \$0.38--\$3.29.  An Off option receives top cost score via decreasing-value normalization. These endpoints match residential HVAC efficiency benchmarks \cite{synapse2013,parker2018}.
+For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. The cost is estimated at \$0.19/kWh, which represents a bundled retail rate combining generation, transmission, distribution, monthly service fees, riders, and state taxes. Form EIA-861 reports a 2024 Pennsylvania statewide average price of 17.77\textcent/kWh based on total utility revenue divided by sales \cite{eia_epa_2024}. However, in urban and suburban Philadelphia, the Pennsylvania Public Utility Commission 2025 Rate Report lists an average monthly PECO residential bill of \$135.29 for 702\,kWh, establishing an effective bundled price of 19.27\textcent/kWh \cite{paupc2025}. Approved PUC rate settlements increase representative 700\,kWh PECO bills to \$149.43 in 2025 (21.3\textcent/kWh) and \$152.13 in 2026 (21.7\textcent/kWh) \cite{paupc2024dec}. The \$0.19/kWh baseline provides a conservative, empirical rate for Pennsylvania decision modeling. Excluding zero-load points, the realized 8-hour cost distribution at Pennsylvania's bundled residential rate (\$0.19/kWh) \cite{eia_epa_2024,paupc2025,paupc2024dec} spans \$0.38--\$3.29.  An Off option receives top cost score via decreasing-value normalization. These endpoints match residential HVAC efficiency benchmarks \cite{synapse2013,parker2018,huyen2019,alves2016}.
 
 Using this kWh distribution with PJM marginal emissions factors (0.976 off-peak, 1.041 peak lbs CO\textsubscript{2}/kWh) yields HVAC environmental bounds of 1.96--18.04 lbs CO\textsubscript{2} \cite{pjm2022emissions}.
 
@@ -569,9 +569,9 @@ Thermal load decomposes into four ASHRAE-style components. For cooling:
 \end{split}
   \label{eq:hvac_cooling_load}
 \end{equation}
-\noindent where $A$ is floor area (sq\,ft); $m$ is a housing-type envelope multiplier (1.7 single-family, 1.6 twin/semi-detached, 1.5 townhouse/rowhouse, 1.2 apartment/condo), a modeling assumption of the calculator; $R$ is the wall insulation R-value; $\Delta T = T_{\mathrm{out}} - T_{\mathrm{in}}$; $n$ is household size; $h_c = 8$\,ft and $\alpha = 0.35$\,ACH for ceiling height and infiltration rate \cite{polly2011}. The 800\,BTU/hr baseline captures always-on standby loads per the ASHRAE Handbook of Fundamentals (Chapter~18, Table~1) \cite{ashrae_hof2017}. The heating load uses the same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and internal gains subtracted rather than added.
+\noindent where $A$ is floor area (sq\,ft); $m$ is a housing-type envelope multiplier (1.7 single-family, 1.6 twin/semi-detached, 1.5 townhouse/rowhouse, 1.2 apartment/condo), a modeling assumption of the calculator \cite{accamanualj}; $R$ is the wall insulation R-value; $\Delta T = T_{\mathrm{out}} - T_{\mathrm{in}}$; $n$ is household size; $h_c = 8$\,ft and $\alpha = 0.35$\,ACH for ceiling height and infiltration rate \cite{polly2011,ashrae62_1_1989}. The 800\,BTU/hr baseline captures always-on standby loads per the ASHRAE Handbook of Fundamentals (Chapter~18, Table~1) \cite{ashrae_hof2017}. The heating load uses the same expression with $\Delta T = T_{\mathrm{in}} - T_{\mathrm{out}}$, no solar term, and internal gains subtracted rather than added.
 
-Effective EER is estimated from the unit's rated SEER via a quadratic approximation, a modeling assumption of the calculator:
+Effective EER is estimated from the unit's rated SEER via a quadratic approximation \cite{ahri2008}, a modeling assumption of the calculator:
 \begin{equation}
   \mathrm{EER} = -0.02\,\mathrm{SEER}^{2} + 1.12\,\mathrm{SEER}
   \label{eq:eer_quadratic}
@@ -624,7 +624,7 @@ Energy cost per cycle is
     C = E_{\mathrm{cyc}} \cdot r(t,\ell)
 \end{equation}
 
-where $E_{\mathrm{cyc}}$ is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021} (see Supplementary Material S1 for the full rate structure).
+where $E_{\mathrm{cyc}}$ is kWh/cycle and $r(t,\ell)$ is the location- and time-specific TOU rate resolved to one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021,ppl2025,firstenergy2025,firstenergy2026,duquesne2026} (see Supplementary Material S1 for the full rate structure).
 \noindent. $C$ is per-cycle energy cost (dollars/cycle), $E_{\mathrm{cyc}}$ is per-cycle energy use (kWh/cycle), $t$ is the appliance run time (time-of-day), and $\ell$ is the household location used to resolve the serving utility.
 
 The PJM emissions window (7am--11pm) applies to environmental impact regardless of the utility's billing window, because emissions follow the regional grid.
@@ -772,6 +772,64 @@ Every arm is computed from data already collected for the main benchmark, so thi
 
 Significance is tested within each model rather than pooled across models, since pooling would confound the provenance effect under test with whichever model happens to extract parameters better. Three models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives nine Holm-corrected Friedman omnibus tests, with post-hoc Wilcoxon testing restricted to the model--metric cells whose corrected result remains significant.
 
+\FloatBarrier
+\subsection{Alternative ordering}
+\label{sec:alternative-order}
+
+Language models weight response options by position as well as by content
+\cite{wang2023positionbias,zheng2023judging}, so a fixed alternative order is a
+candidate confound. The exposure depends on how each architecture elicits
+scores, and it differs sharply across the three.
+
+$\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ score one alternative per
+API call. Each call names the alternative under evaluation, states the scenario
+context, and lists the remaining two alternatives on a single line for context.
+The calls are independent and carry no conversation state, so the sequence in
+which they are issued cannot affect any individual response. Reversing the
+alternative order therefore changes exactly one thing the model can observe:
+the order of a two-element list mentioned in passing. Scoring a setpoint of
+76\,\textdegree F, for example, the prompt moves from ``Other alternatives
+available for this decision: [72, 80]'' to ``[80, 72]'' while the alternative
+being scored, the scenario context, and the scoring instructions are
+byte-identical. Neither architecture ever presents the three alternatives as a
+ranked list to choose among, which is the presentation format the position-bias
+literature concerns. The mechanism those results describe has no route into
+this design.
+
+We verified this rather than assuming it. Rescoring all 195 test scenarios with
+the alternative order reversed, across all four models, left
+$\mathcal{A}_{\text{D}}$ unchanged: the reversed arm was less accurate in one of
+four models, and no model separated from its own five-run variation (exact
+McNemar on top-1 correctness, $p \geq 0.807$ against every shipped run). Because
+the ranking tie-break resolves exact ties by input order, reversal can flip a
+fully tied choice set on its own; that artifact biases the comparison toward
+detecting an effect, so the observed null is conservative. $\mathcal{A}_{\text{D}}$'s
+shipped runs disagree with each other on top-1 for roughly half of scenarios,
+so this null bounds the effect at about 14 percentage points rather than
+excluding one.
+
+$\mathcal{A}_{\text{H}}$ is not covered by that argument. Its extraction call
+passes the whole scenario record, including all three alternatives as a numbered
+sequence, so it is the one architecture whose prompt matches the format the
+position-bias literature describes. Any effect would be indirect, acting through
+the estimated physical parameters rather than through a score, because the
+calculator and not the model produces the ranking. We therefore tested it
+directly.
+
+We re-ran $\mathcal{A}_{\text{H}}$'s extraction over all 195 test scenarios with
+the alternative values reversed in the prompt, five times per model, and paired
+it with three same-session runs in the shipped order. The control arm is
+necessary because the benchmark runs were collected days earlier: a difference
+between a reversed arm and an older shipped arm is equally consistent with an
+ordering effect and with provider-side drift. Extracted parameters were handed
+to the calculator with the alternatives in canonical order in every arm, so the
+ranking tie-break cannot manufacture a difference between them. We test whether
+reversed runs are distinguishable from shipped-order runs by relabelling which
+runs carry the reversed label across all $\binom{13}{5}$ assignments, an exact
+permutation test that uses every scenario rather than only the few on which two
+runs disagree.
+
+\FloatBarrier
 \subsection{Evaluation Metrics}
 \label{sec:eval-metrics}
 Accuracy is evaluated on two axes. Score-level error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and ground-truth scores on the 0--1 MAVT scale, computed separately for each criterion and aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ between the architecture's induced ranking of the three alternatives and the ground-truth ranking, together with Top-1 accuracy (architecture's best-ranked alternative matches ground truth) and Top-2 accuracy (ground-truth top alternative appears in the architecture's top two). For each scenario, Kendall's $\tau$ is computed between the ground-truth rank and the architecture's rank over the three alternatives, then averaged across all 195 scenarios by arithmetic mean. With $n=3$ alternatives, per-scenario $\tau$ can take only discrete values ($-1, -\frac{1}{3}, \frac{1}{3}, 1$) before averaging, while a uniformly random ranking gives Top-1 accuracy of $1/3$, Top-2 accuracy of $2/3$, and expected Kendall's $\tau$ of $0$. Efficiency is evaluated using total tokens (input plus output) and cost, both summed across the 195-scenario test set.
@@ -1141,44 +1199,48 @@ $\mathcal{A}_{\text{D}}$ is near-random or below on HVAC and Appliance for all m
 \subsection{Sensitivity Analysis}
 \label{sec:res-sensitivity}
 
-To test the stability of the ranking results, weights were perturbed by $\pm 0.05$ on each of the four criteria individually, redistributing the difference equally across the remaining three, plus one equal-weight scenario ($w_j = 0.25$ for all $j$).
+To test the stability of the ranking results, both the ground-truth ranking and the architecture rankings were recomputed under a range of alternative weight vectors: an equal-weight vector ($w_j = 0.25$ for all $j$), and the entropy- and MEREC-derived vectors of Appendix~\ref{app:weights}, applied pooled and per decision type. Single-criterion $\pm 0.05$ perturbations of the design vector are not reported: they move the $\mathcal{A}_{\text{E}} - \mathcal{A}_{\text{D}}$ gap only within $0.179$--$0.225$, against $0.090$ under the MEREC HVAC vector, so they probe a strictly narrower range than the data-derived vectors already shown and cannot establish weight robustness on their own.
 
 \begin{table*}[htbp]
 \begin{threeparttable}
-\small
+\footnotesize
 \centering
-\textbf{Sensitivity analysis: mean ranking outcomes under weight perturbation}
+\textbf{Sensitivity analysis: Kendall's $\tau$ by model under reweighting}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{@{} l ccc @{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{} l rrr rrr rrr rrr @{}}
 \toprule
-\textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
+ & \multicolumn{3}{c}{Gemini} & \multicolumn{3}{c}{DeepSeek} & \multicolumn{3}{c}{GPT-OSS} & \multicolumn{3}{c}{Qwen} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
+\textbf{Weight vector} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Baseline    & 0.093 & 0.278 & 0.899 \\
-Ene $+0.05$ & 0.131 & 0.341 & 0.891 \\
-Ene $-0.05$ & 0.101 & 0.362 & 0.928 \\
-Env $+0.05$ & 0.106 & 0.341 & 0.904 \\
-Env $-0.05$ & 0.109 & 0.341 & 0.928 \\
-Com $+0.05$ & 0.100 & 0.357 & 0.918 \\
-Com $-0.05$ & 0.140 & 0.320 & 0.867 \\
-Pra $+0.05$ & 0.101 & 0.334 & 0.917 \\
-Pra $-0.05$ & 0.113 & 0.361 & 0.907 \\
-Equal       & 0.139 & 0.368 & 0.913 \\
+Design (baseline)  & 0.169 & 0.292 & 0.925 & 0.159 & 0.350 & 0.897 & 0.053 & 0.374 & 0.907 & $-$0.002 & 0.241 & 0.877 \\
+Equal              & 0.323 & 0.415 & 0.925 & 0.121 & 0.337 & 0.921 & 0.142 & 0.337 & 0.904 & $-$0.029 & 0.289 & 0.901 \\
+\midrule
+Entropy pooled     & 0.200 & 0.316 & 0.904 & 0.149 & 0.333 & 0.874 & 0.080 & 0.350 & 0.887 & 0.005 & 0.221 & 0.833 \\
+Entropy per-type   & 0.159 & 0.320 & 0.911 & 0.097 & 0.395 & 0.904 & 0.050 & 0.337 & 0.900 & $-$0.012 & 0.241 & 0.891 \\
+\midrule
+MEREC pooled       & \textbf{0.655} & 0.655 & 0.932 & 0.327 & 0.484 & 0.956 & 0.344 & 0.385 & 0.938 & $-$0.015 & 0.296 & 0.942 \\
+MEREC per-type     & 0.603 & 0.665 & 0.942 & \textbf{0.456} & 0.419 & 0.939 & 0.258 & 0.460 & 0.928 & 0.022 & 0.309 & 0.935 \\
+MEREC HVAC vector  & \textbf{0.682} & 0.617 & 0.973 & \textbf{0.528} & 0.470 & 0.969 & 0.344 & 0.552 & 0.962 & 0.060 & 0.333 & 0.969 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{6pt}
 \begin{tablenotes}
-\item Each cell is the arithmetic mean of the four per-model Kendall's $\tau$ values reported in Supplementary Material S2, not a scenario-pooled statistic. Perturbation vectors are defined in Supplementary Material S2.
+\footnotesize
+\item Both the reference ranking and the architecture ranking are recomputed under each vector, because a MAVT reference is defined by its weights. Bold marks the four cells in which $\mathcal{A}_{\text{D}}$ meets or exceeds $\mathcal{A}_{\text{E}}$; all four occur under MEREC vectors. Top-1 accuracy for the same cells appears in Supplementary Material S2.
 \end{tablenotes}
 \end{threeparttable}
-\caption{Mean Kendall's $\tau$ across the four evaluated models (Gemini, DeepSeek, GPT-OSS, Qwen), by architecture and weight-perturbation scenario.}
-\label{tab:sensitivity_pooled}
+\caption{Kendall's $\tau$ by model and architecture under seven weight vectors. No value is pooled across models.}
+\label{tab:sensitivity_by_model}
 \end{table*}
 
-Table~\ref{tab:sensitivity_pooled} reports the mean Kendall's $\tau$ across the four evaluated models for each of the nine weight-perturbation scenarios plus baseline and equal weights. The ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds with no overlap between architecture groups: the highest $\mathcal{A}_{\text{D}}$ mean (0.140) sits below the lowest $\mathcal{A}_{\text{E}}$ mean (0.278), which in turn sits below the lowest $\mathcal{A}_{\text{H}}$ mean (0.867); per-model results appear in Supplementary Material S2.
+$\mathcal{A}_{\text{H}}$'s advantage over $\mathcal{A}_{\text{E}}$ is unconditional: it holds in all 28 model $\times$ weight-vector cells, by a margin of at least $0.277$ Kendall's $\tau$. The $\mathcal{A}_{\text{E}}$ advantage over $\mathcal{A}_{\text{D}}$ is not. It survives the design, equal and entropy vectors in all four models, but MEREC weights narrow it sharply and in three cells reverse it: $\mathcal{A}_{\text{D}}$ overtakes $\mathcal{A}_{\text{E}}$ for Gemini under the MEREC HVAC vector ($0.682$ vs.\ $0.617$) and for DeepSeek under both MEREC HVAC ($0.528$ vs.\ $0.470$) and MEREC per-type ($0.456$ vs.\ $0.419$), with Gemini under MEREC pooled an exact tie at $0.655$. Every such case is a MEREC vector, which loads onto Comfort (0.663 for HVAC against the design's 0.200), the one criterion $\mathcal{A}_{\text{D}}$ estimates about as well as $\mathcal{A}_{\text{E}}$ does. The $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ result should therefore be read as conditional on weighting that gives substantial mass to cost and emissions, which the design vector and the entropy vectors both do and MEREC does not. Per-model results appear in Supplementary Material S2.
 
-A second check varies the value-function curvature rather than the weights. Recomputing the ground-truth scores with the logarithmic shape parameter $\alpha$ swept over $\{1.0,\,1.2,\,1.5,\,2.0\}$ (1.0 is the linear function) holds the weight vector at baseline and leaves the architecture scores untouched. For Gemini the ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ is invariant across all four values, with Kendall's $\tau$ for $\mathcal{A}_{\text{D}}/\mathcal{A}_{\text{E}}/\mathcal{A}_{\text{H}}$ equal to 0.1761/0.2786/0.9111 at $\alpha = 1.0$, 0.1726/0.2957/0.9282 at $\alpha = 1.2$, 0.1692/0.2923/0.9248 at $\alpha = 1.5$, and 0.1726/0.2889/0.9145 at $\alpha = 2.0$. Applying the MEREC and Entropy per-decision-type vectors from Appendix~\ref{app:weights} as additional arms preserves $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ in every case: the $\mathcal{A}_{\text{E}}$ minus $\mathcal{A}_{\text{D}}$ difference in Kendall's $\tau$ is $+0.1880$ under the MEREC-HVAC vector, $+0.0239$ under MEREC-Appliance, $+0.0923$ under MEREC-Shower, and $+0.1607$ under the Entropy per-type vectors, with $\mathcal{A}_{\text{H}}$ holding at 0.911--0.942.
+A second check varies the value-function curvature rather than the weights. Recomputing the ground-truth scores with the logarithmic shape parameter $\alpha$ swept over $\{1.0,\,1.2,\,1.5,\,2.0\}$ (1.0 is the linear function) holds the weight vector at baseline and leaves the architecture scores untouched. For Gemini the ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ is invariant across all four values, with Kendall's $\tau$ for $\mathcal{A}_{\text{D}}/\mathcal{A}_{\text{E}}/\mathcal{A}_{\text{H}}$ equal to 0.1761/0.2786/0.9111 at $\alpha = 1.0$, 0.1726/0.2957/0.9282 at $\alpha = 1.2$, 0.1692/0.2923/0.9248 at $\alpha = 1.5$, and 0.1726/0.2889/0.9145 at $\alpha = 2.0$.
 
-The sensitivity analysis reweights both sides of the comparison: each arm recomputes the ground-truth weighted scores and the architecture weighted scores from the same perturbed vector. $\mathcal{A}_{\text{H}}$'s per-criterion scores originate from the reference calculator modules, so the two reweighted vectors are near-identical and $\mathcal{A}_{\text{H}}$'s invariance across perturbations reflects architecture structure rather than evidence about the weight vector. The informative result is the invariance of $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$: $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ criterion scores differ substantively from the reference, so the ordering surviving every perturbation in Table~\ref{tab:sensitivity_pooled} and every arm above is a weight-robust finding.
+The sensitivity analysis reweights both sides of the comparison: each arm recomputes the ground-truth weighted scores and the architecture weighted scores from the same vector. $\mathcal{A}_{\text{H}}$'s per-criterion scores originate from the reference calculator modules, so the two reweighted vectors are near-identical and $\mathcal{A}_{\text{H}}$'s invariance across vectors reflects architecture structure rather than evidence about the weight vector. The informative comparison is $\mathcal{A}_{\text{E}}$ against $\mathcal{A}_{\text{D}}$, whose criterion scores both differ substantively from the reference; Table~\ref{tab:sensitivity_by_model} shows that comparison is weight-robust across the design, equal and entropy vectors and not under MEREC.
 
 \FloatBarrier
 \subsection{RAG Ablation}
@@ -1328,11 +1390,40 @@ The results above are five-run averages for Kendall's $\tau$. To assess trial-to
 
 RMSE, which penalizes large errors more than MAE, shows the same architecture separation. $\mathcal{A}_{\text{H}}$ RMSE is $< 0.11$ for three of four models across every run, while $\mathcal{A}_{\text{D}}$'s RMSE is always more than 0.29. The Qwen $\mathcal{A}_{\text{H}}$ box shows a wider interquartile range (RMSE $\in [0.157, 0.167]$), reflecting the GPM estimation imprecision that also limits its $\tau$. The full RMSE distribution, and mean $\pm$ std for MAE and Top-1 accuracy across runs, appear in Supplementary Material S2.
 
+\FloatBarrier
+\subsection{Alternative Ordering}
+\label{sec:res-order}
+
+Ordering changed what the models extracted, and did not change what they
+decided. Under the permutation test of Section~\ref{sec:alternative-order}, two
+of four models separated at the parameter level (Qwen and Gemini, separation
+$0.054$ and $0.047$, $p = 0.0008$, Holm-adjusted $p = 0.006$ across the eight
+tests), while no model separated on the top-1 alternative ($p \geq 0.24$). Both
+significant $p$-values sit at the exact permutation floor of $1/1287$: the
+observed labelling was the most extreme of all assignments, so the true $p$ is
+bounded above by that figure rather than estimated at it. The separation is a
+shift in which values the model returns, not a loss of accuracy: against the
+reference ranking, the reversed and control arms differ by less than $0.004$
+Kendall's $\tau$, and the sign of that difference is not consistent across
+models. Listing the alternatives in a different order moves Gemini's estimate of
+a dwelling's insulation and equipment age, quantities that have nothing to do
+with the order the setpoints are printed in. The deterministic calculator
+absorbs that perturbation before it reaches the ranking.
+
+One incidental observation bears on any benchmark that compares arms collected
+at different times. For DeepSeek, run-to-run agreement on extracted parameters
+was $0.42$ among the shipped runs and $0.64$ and $0.67$ among the two arms
+collected in the later session, with no manipulation distinguishing the latter
+two. Had we compared a reversed arm against the shipped runs without a
+contemporaneous control, that gap would have been readable as an effect of the
+manipulation.
+
 
 \FloatBarrier
 \section{Discussion}
 \label{sec:discussion}
 
+\FloatBarrier
 \subsection{Interpretation of Results}
 \label{sec:interpretation}
 
@@ -1342,13 +1433,19 @@ The ranking advantage of $\mathcal{A}_{\text{H}}$ is partly structural (see Sect
 
 This robustness is not a property of extraction accuracy improving; it is a property of decision structure. Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than any single alternative and largely cancels when the calculator ranks. That cancellation should hold wherever the alternatives share an underlying, jointly-uncertain state, as they do throughout this benchmark's within-household choice sets, but it weakens for a parameter that both scales the outcome directly and is recovered from a coarse homeowner-facing proxy, as Shower GPM demonstrates (Section~\ref{sec:res-extraction}). The parameter-provenance ablation (Section~\ref{sec:res-paramprov}) locates where the resulting accuracy actually comes from: calculator access alone, with no per-scenario inference, reaches only $\tau = 0.641$, so roughly a quarter of $\mathcal{A}_{\text{H}}$'s advantage is attributable to the LLM's extraction rather than to the calculator doing the work unaided. Deploying $\mathcal{A}_{\text{H}}$ on decisions where alternatives do not share a common underlying parameter set, comparing unrelated households or services rather than variants of the same scenario, would remove this cancellation effect and remains untested here.
 
+The alternative-ordering test (Section~\ref{sec:res-order}) measures that same cancellation rather than assuming it. Reversing the order in which the alternatives are listed provably changed what two of four models extracted, at the permutation floor of the test, and changed what none of the four decided. The perturbation entered the LLM layer, moved the estimated parameters, and did not survive the calculator. This is the architecture's central claim observed directly, and a null result at the model layer would not have established it: a null is equally consistent with the manipulation having been too weak to do anything at all. Because the effect is demonstrably present upstream and demonstrably absent downstream, the calculator can be credited with absorbing it. The same logic bounds the claim. What was absorbed here is a perturbation that shifts scenario-level parameters shared by all three alternatives; a perturbation that moved one alternative's parameters relative to the others would not be cancelled by the same mechanism.
+
 The RAG ablation study (Figure~\ref{fig:rag_ablation}) confirms that exemplar scores anchor the LLM's output scale, counteracting the central-tendency bias that otherwise collapses scores toward 0.5. Removing scores drops $\tau$ substantially, while removing hidden engineering parameters has negligible effect: the LLM infers engineering parameters from scenario context, making them redundant. Semantic selection of exemplars drives the RAG contribution (random exemplars yield $\tau = 0.121$), while retrieval architecture and exemplar content contribute negligibly (top-cluster pairwise $p_{\text{Holm}} > 0.62$). The practical implication is that investing in pre-scored exemplars matters more than enriching exemplar content.
 
 $\mathcal{A}_{\text{D}}$'s central-tendency bias (Section~\ref{sec:mavt-design}) is most damaging under high task dimensionality (Section~\ref{sec:res-bytype}).
 
 $\mathcal{A}_{\text{E}}$ achieves 80\% Top-2 across models: the ground-truth best alternative appears in the architecture's top two four times out of five, 13.3 percentage points above the 66.7\% chance level (with three alternatives, a random pair contains the best one two-thirds of the time). Top-2's practical sufficiency depends on the decision domain: when the cost gap between first and second place is large, Top-1 accuracy matters, but when the alternatives are closely matched, Top-2 provides actionable guidance. $\mathcal{A}_{\text{H}}$ at 97.8\% Top-2 avoids this issue: the best alternative is almost always in the recommended pair, 31.1 percentage points above the same chance level.
 
-An entropy-based weight analysis, reported in Appendix~\ref{app:weights}, supports the assumed 35/30/20/15 weighting scheme: entropy and MEREC methods assign above-average weight to the Environmental criterion, consistent with the a priori design, while implied weights collapse toward criteria with the most within-scenario variance---a methodological finding rather than an indictment of the design weights.
+An entropy-based weight analysis, reported in Appendix~\ref{app:weights}, supports the assumed 35/30/20/15 weighting scheme: the entropy method assigns above-average weight to the Environmental criterion (0.371 vs.\ a priori 0.350), consistent with the a priori design. MEREC and the implied weights instead track within-scenario variance, and both shift away from Environmental for exactly that reason---MEREC gives it 0.131, the lowest of its four, and Environmental is constant across alternatives in 42.0\% of Appliance scenarios. That divergence is a methodological finding about which criteria discriminate between the alternatives actually on offer, rather than an indictment of the design weights.
+
+The divergence has a consequence for how the architecture comparison should be read. Weighting toward the criterion that separates alternatives closes most of the distance between $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, and in four of the 28 model $\times$ weight-vector cells in Table~\ref{tab:sensitivity_by_model} it closes the gap entirely (Section~\ref{sec:res-sensitivity}). Every such cell is a MEREC vector, and MEREC vectors load onto Comfort; entropy vectors load onto Energy Cost and Environmental Impact, as the design does, and produce results indistinguishable from the design vector. The architectures are therefore not uniformly better or worse at multi-criteria judgement. They differ most where the criteria are hardest for a language model to estimate, which in this corpus is cost and emissions, and least on Comfort. $\mathcal{A}_{\text{E}}$'s advantage over $\mathcal{A}_{\text{D}}$ is concentrated in estimating quantities that follow from tariff structure and grid emissions factors rather than in ranking alternatives per se. The design weights place 0.65 on those two criteria, so the reported benchmark is the least favourable weighting for $\mathcal{A}_{\text{D}}$ among those tested; the honest statement of the result is that $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ is conditional on a weighting that values cost and emissions substantially, while $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}}$ holds under every vector tested and in every model.
+
+The Appliance case also shows the cost of the criterion definitions chosen to avoid collinearity. Holding emissions to a marginal-factor definition on a 7am--11pm window while cost follows utility-specific peak windows leaves 42\% of Appliance scenarios with no environmental difference between alternatives, so the criterion carrying the largest nominal weight contributes least to the ranking there.
 
 $\mathcal{A}_{\text{H}}$ was the strongest architecture overall. This central-tendency avoidance corroborates Li et al. (2026) and Zhu et al. (2026), who documented systematic scoring biases in LLM-as-judge pipelines; $\mathcal{A}_{\text{H}}$ sidesteps these biases by removing the LLM from the scoring role entirely. The MAE reduction relative to $\mathcal{A}_{\text{E}}$ is large in absolute terms; delegating arithmetic to a vetted reference model proves more reliable than asking the LLM to score directly. $\mathcal{A}_{\text{H}}$'s primary limitation is reliance on the calculator: if the calculator cannot model a criterion (e.g., user practicality), the architecture falls back on the same weaknesses as other architectures.
 
@@ -1356,6 +1453,7 @@ Each architecture trades upfront setup effort against output accuracy and runtim
 
 The $\mathcal{A}_{\text{H}}$ design generalizes to any domain with a verifiable ground-truth function (Section~\ref{sec:futurework}). The LLM estimates input parameters and the calculator produces scores, sidestepping uncalibrated LLM scoring. The dimensionality analysis in Section~\ref{sec:res-bytype} suggests a deployment heuristic: $\mathcal{A}_{\text{H}}$'s accuracy advantage is largest for high-dimensional decisions ($\geq$4 interacting parameters) and narrows for low-dimensional decisions ($\leq$3 parameters).
 
+\FloatBarrier
 \subsection{Comparison with Prior Work}
 \label{sec:comparison}
 
@@ -1365,6 +1463,7 @@ The $\mathcal{A}_{\text{E}}$ architecture follows Case-Based Reasoning \cite{aam
 
 Rather than improving the LLM's arithmetic capability through chain-of-thought prompting or tool augmentation \cite{schick2023toolformer,gao2023pal}, $\mathcal{A}_{\text{H}}$ bypasses the numeracy problem entirely \cite{cobbe2021gsm8k,imani2023mathprompter}. The architecture requires only a single structured extraction call and a function call to an existing calculator: no fine-tuning, no few-shot engineering, no prompt-embedded arithmetic. This simplicity is itself a contribution. Fewer failure modes, lower cost, easier verification. Huang and Burgherr (2024) built a streamlined MCDA calculator that still requires users to possess MCDA expertise; $\mathcal{A}_{\text{H}}$ eliminates that barrier by having the LLM bridge natural-language context to domain-specific parameters.
 
+\FloatBarrier
 \subsection{Limitations of the Study}
 \label{sec:limitations}
 
@@ -1401,6 +1500,7 @@ The framework assumes a single decision-maker with fixed weights, while real hou
 
 
 
+\FloatBarrier
 \subsection{Future Work}
 \label{sec:futurework}
 Future work falls into three tiers ordered by cost and proximity to the current results.
@@ -1480,16 +1580,23 @@ $k$ & number of retrieved scenarios per query in RAG ($k=1$) \\
 
 Table~\ref{tab:weight_comparison} compares the a priori subjective weights
 against three objective weight-derivation methods computed on the full
-ground-truth corpus (195 test + 90 RAG scenarios, 285 total).
+ground-truth corpus (195 test + 90 RAG scenarios, 285 total). The full corpus
+is the appropriate scope because the value functions against which every
+criterion score is normalized are themselves calibrated on it: the HVAC
+energy-cost bounds of \$0.38--\$3.29 in Table~\ref{table:reference_ranges}, for
+example, are the 5th--95th percentiles of the active-conditioning cost
+distribution over all 285 scenarios. Deriving objective weights from the 195
+test scenarios alone would measure criterion dispersion on a normalization
+basis calibrated over a different pool.
 
 \begin{table}[t]
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\caption{Weight comparison: a priori (subjective) vs.\ objective
-derivation methods. Entropy and MEREC weights are computed over the
-full 285-scenario corpus; implied weights from pairwise regression
-(855 comparisons). The a priori vector
+\caption{Weight comparison: a priori (subjective) vs.\ entropy and MEREC
+weights, both computed over the full 285-scenario corpus. Implied weights are
+reported separately in the text because they collapse to corner solutions; see
+Table~\ref{tab:zero_variance}. The a priori vector
 $(0.30,\,0.35,\,0.20,\,0.15)$ is the design choice defended in
 Section~\ref{sec:mavt-design}.}
 \label{tab:weight_comparison}
@@ -1507,19 +1614,46 @@ MEREC (overall)           & 0.194 & 0.131 & 0.404 & 0.272 \\
 MEREC (HVAC)              & 0.138 & 0.128 & 0.663 & 0.071 \\
 MEREC (Appliance)         & 0.208 & 0.044 & 0.292 & 0.456 \\
 MEREC (Shower)            & 0.248 & 0.244 & 0.203 & 0.305 \\
-\midrule
-Implied (overall)         & 0.000 & 0.000 & 1.000 & 0.000 \\
-Implied (HVAC)            & 0.000 & 0.000 & 1.000 & 0.000 \\
-Implied (Appliance)       & 0.000 & 0.000 & 0.000 & 1.000 \\
-Implied (Shower)          & 0.000 & 0.000 & 1.000 & 0.000 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-Implied weights are derived via multinomial logistic regression on pairwise preferences between alternatives. When a criterion has zero variance across all alternatives in a scenario, that criterion contributes no discriminatory information and drops out of the likelihood, concentrating the regression weight on whichever criterion does vary. Across the 285-scenario corpus, 13--45\% of scenarios contain at least one zero-variance criterion, which explains the corner-solution pattern in Table~\ref{tab:weight_comparison}.
+Implied weights are derived by constrained least squares on pairwise preferences between alternatives: for each of the 855 within-scenario pairs, the four criterion-score differences are regressed on the rank difference, minimizing squared residuals subject to $w_j \ge 0$ and $\sum_j w_j = 1$. When a criterion has zero variance across the alternatives in a scenario, its score differences are identically zero for that scenario's pairs, so it carries no discriminatory information and receives no fitted weight, concentrating the solution on whichever criteria do vary. Table~\ref{tab:zero_variance} reports how often this occurs. Practicality is constant across all three alternatives in 44.8\% of HVAC scenarios and Environmental Impact in 42.0\% of Appliance scenarios; the recovered implied weights are correspondingly degenerate, placing all weight on Comfort for HVAC (0/0/1/0) and on Practicality for Appliance (0/0/0/1). Shower, the only decision type in which all four criteria vary in essentially every scenario, is the only one that does not produce a single-criterion corner: it returns $(0.211,\,0.789,\,0,\,0)$, splitting weight between Energy Cost and Environmental Impact.
 
-Three objective weight-derivation methods provide different perspectives on the a priori weights. Entropy weights assign 0.371 to the Environmental criterion (a priori: 0.350), 0.163 to Comfort (a priori: 0.200), and 0.198 to Practicality (a priori: 0.150). Both differences fall within the bounds tested by the sensitivity analysis (Supplementary Material S2), supporting the Environmental priority. MEREC's per-decision-type weights diverge sharply from the design vector for HVAC and Appliance and converge for Shower. For HVAC, Comfort rises from 0.200 to 0.663 while Environmental falls from 0.350 to 0.128; for Appliance, Environmental falls from 0.350 to 0.044, its smallest weight. The Shower vector (0.248, 0.244, 0.203, 0.305) sits close to the design values (0.300, 0.350, 0.200, 0.150). The direction of divergence matches the realized within-scenario swing in Table~\ref{tab:swing_weights}: the criteria on which the three alternatives actually differ are not the criteria carrying the largest nominal weight, because nominal weights were assigned over the global reference range while each scenario's alternatives span a fraction of it. Applied as sensitivity arms (Section~\ref{sec:res-sensitivity}), these per-decision-type vectors preserve the $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering in every arm. Implied weights collapse to corner solutions---all weight on Comfort or Practicality---because those are the only criteria that vary across alternatives in scenarios where Energy Cost and Environmental Impact are dominated by zero-variance cases. This is a structural feature of the calculator design, not a finding about the importance of Environmental or Cost criteria: when no alternative changes the emissions or cost, those criteria cannot inform a pairwise regression. Entropy weights therefore provide the informative objective comparison here; implied weights confirm that the calculator's deterministic structure constrains discriminatory power, reinforcing why normative design choices cannot be replaced by data-driven optimization alone.
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\caption{Within-scenario dispersion of each criterion score across the three
+alternatives, by decision type, over the 285-scenario corpus. ``\% zero-var''
+is the share of scenarios in which the criterion takes an identical value for
+all three alternatives and therefore cannot discriminate between them.}
+\label{tab:zero_variance}
+\begin{tabular}{@{}l l rr@{}}
+\toprule
+\textbf{Decision type} & \textbf{Criterion} & Mean within-std & \% zero-var \\
+\midrule
+HVAC      & Energy Cost   & 0.039 & 10.5 \\
+          & Environmental & 0.038 & 10.5 \\
+          & Comfort       & 0.181 & 0.0 \\
+          & Practicality  & 0.045 & 44.8 \\
+\midrule
+Appliance & Energy Cost   & 0.104 & 28.0 \\
+          & Environmental & 0.010 & 42.0 \\
+          & Comfort       & 0.206 & 0.0 \\
+          & Practicality  & 0.265 & 0.0 \\
+\midrule
+Shower    & Energy Cost   & 0.149 & 1.2 \\
+          & Environmental & 0.151 & 1.2 \\
+          & Comfort       & 0.145 & 0.0 \\
+          & Practicality  & 0.151 & 0.0 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+Three objective weight-derivation methods provide different perspectives on the a priori weights. Entropy weights assign 0.371 to the Environmental criterion (a priori: 0.350), 0.163 to Comfort (a priori: 0.200), and 0.198 to Practicality (a priori: 0.150). All three differences are small, and the entropy vectors are themselves applied as sensitivity arms in Section~\ref{sec:res-sensitivity}, where the architecture ordering is preserved, supporting the Environmental priority. MEREC's per-decision-type weights diverge sharply from the design vector for HVAC and Appliance and converge for Shower. For HVAC, Comfort rises from 0.200 to 0.663 while Environmental falls from 0.350 to 0.128; for Appliance, Environmental falls from 0.350 to 0.044, its smallest weight. The Shower vector (0.248, 0.244, 0.203, 0.305) sits close to the design values (0.300, 0.350, 0.200, 0.150). The direction of divergence matches the realized within-scenario swing in Table~\ref{tab:swing_weights}: the criteria on which the three alternatives actually differ are not the criteria carrying the largest nominal weight, because nominal weights were assigned over the global reference range while each scenario's alternatives span a fraction of it. Applied as sensitivity arms (Section~\ref{sec:res-sensitivity}), these per-decision-type vectors narrow, and in three model$\times$vector cells reverse, the $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering. Implied weights collapse to corner solutions for HVAC and Appliance---all weight on Comfort and Practicality respectively---because those are the only criteria that vary across alternatives in scenarios where the remaining criteria are dominated by zero-variance cases. This is a structural feature of the calculator design, not a finding about the importance of Environmental or Cost criteria: when no alternative changes the emissions or cost, those criteria cannot inform a pairwise regression. Entropy weights therefore provide the informative objective comparison here; implied weights confirm that the calculator's deterministic structure constrains discriminatory power, reinforcing why normative design choices cannot be replaced by data-driven optimization alone.
 
 \section{Full Per-Model Results}
 \label{app:per_model_results}

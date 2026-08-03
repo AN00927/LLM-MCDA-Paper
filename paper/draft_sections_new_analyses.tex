@@ -1,166 +1,143 @@
 % ============================================================================
-% DRAFT SECTIONS FOR NEW ANALYSES -- NOT YET SPLICED INTO paper_draft_working.tex
+% DRAFT SECTIONS FOR NEW ANALYSES -- SPLICED 2026-08-03. ARCHIVE COPY ONLY.
+% Edit paper_draft_working.tex, not this file. Kept for provenance.
 %
-% Standalone so it does not collide with concurrent edits to the main draft.
-% Each block is marked with its intended destination. Numbers are current as of
-% the runs described in each block; regenerate with the named script before
-% splicing.
+% Splice record (2026-08-03):
+%   ORDER  -> methods half is Sec 3.7 \subsection{Alternative ordering}
+%             (sec:alternative-order); results half is Sec 4.12
+%             \subsection{Alternative Ordering} (sec:res-order). Numbers were
+%             refreshed to the 5-run result before splicing; see the block
+%             comment below.
+%   B4/B5 realised-weight -> NOT spliced. The main draft already carries
+%             tab:swing_weights (Sec 2.2) for realised swing and the newly
+%             added tab:zero_variance (app:weights) for the discrimination
+%             rates, so tab:realised_weight would have duplicated both.
+%   B5 sensitivity table -> spliced as tab:sensitivity_by_model, but rebuilt
+%             PER MODEL rather than as a four-model mean, per user instruction
+%             not to pool across models. Top-1 for the same cells went to
+%             supplementary tab:sensitivity_top1. The +/-0.05 rows are deleted
+%             from the main paper and the supplementary.
+%   B6     -> Discussion, Interpretation of Results.
+%   B7     -> app:weights prose, with two corrections to the block as drafted:
+%             (a) the "three of 195 top-1 rankings" figure was unverifiable
+%                 from the repo and was dropped; the 285-scope justification
+%                 now rests on calibration consistency, which was verified
+%                 (HVAC active-cost p5/p95 over all 285 = 0.3820/3.2920,
+%                 matching the calculator's $0.38--$3.29).
+%             (b) "implied weights collapse to corner solutions, placing the
+%                 entire weight on Comfort or Practicality" is false for
+%                 Shower, which returns (0.211, 0.789, 0, 0). Corrected.
 %
-% Blocks:
-%   B1  Methods    -- position-bias control arm            -> after Sec 3.x ablations
-%   B2  Results    -- position-bias control results        -> new subsection in Results
-%   B3  Discussion -- what the position-bias result means  -> Discussion
-%   B4  Methods    -- weight realisation diagnostics       -> Sec 2.2 area / appendix
-%   B5  Results    -- weight realisation + sensitivity     -> replaces old sensitivity table
-%   B6  Discussion -- what the weight result means         -> Discussion
-%   B7  Appendix   -- corrected weight-robustness appendix -> replaces app:weights prose
+% HISTORY: earlier drafts of this file carried a position-bias Results and
+% Discussion block built on an A_E arm in which retrieval was silently dead
+% (chroma_collection was None; "Retrieved 0 similar scenarios" for all 585 calls
+% per model). That arm measured exemplar removal, not alternative order, and
+% those blocks were removed. The A_D arm from the same runs is valid, because
+% A_D never retrieves, and it is the empirical support cited in the ORDER block.
+%
+% CITATIONS: wang2023positionbias and zheng2023judging were added to
+% paper/cas-refs.bib on 2026-08-03. No longer blocking.
 % ============================================================================
 
 
 % ============================================================================
-% B1  METHODS -- POSITION-BIAS CONTROL ARM
-% Script: Miscellaneous Scripts/PositionBiasControl.py
+% B1-B3 REPLACEMENT -- ALTERNATIVE-ORDER JUSTIFICATION
+% Destination: Methods, immediately after the prompt design description.
+% Supporting data: Analysis/PositionBias/position_bias_summary_all_models.xlsx
+%                  (A_D arm, 195 scenarios x 4 models, valid)
 % ============================================================================
 
-\subsection{Alternative-order control}
-\label{sec:position-bias-methods}
+\subsection{Alternative ordering}
+\label{sec:alternative-order}
 
-Each architecture receives the three alternatives in a fixed canonical order,
-ascending by setpoint, start time, or duration. Language models are known to
-weight response options by position independently of content
-\cite{wang2023positionbias,zheng2023judging}, so a fixed order is a candidate
-confound for any architecture that reads the alternative set.
+Language models weight response options by position as well as by content
+\cite{wang2023positionbias,zheng2023judging}, so a fixed alternative order is a
+candidate confound. The exposure depends on how each architecture elicits
+scores, and it differs sharply across the three.
 
-Randomising order across the five shipped runs would be the textbook design,
-but it changes the condition under which the reported results were produced. We
-therefore ran an additive control arm rather than replacing the shipped runs.
-For every model and for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$,
-all 195 test scenarios were rescored once with the alternative order reversed.
-$\mathcal{A}_{\text{H}}$ is excluded because its language model never sees the
-alternative set; the calculator enumerates alternatives after parameter
-extraction.
+$\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ score one alternative per
+API call. Each call names the alternative under evaluation, states the scenario
+context, and lists the remaining two alternatives on a single line for context.
+The calls are independent and carry no conversation state, so the sequence in
+which they are issued cannot affect any individual response. Reversing the
+alternative order therefore changes exactly one thing the model can observe:
+the order of a two-element list mentioned in passing. Scoring a setpoint of
+76\,\textdegree F, for example, the prompt moves from ``Other alternatives
+available for this decision: [72, 80]'' to ``[80, 72]'' while the alternative
+being scored, the scenario context, and the scoring instructions are
+byte-identical. Neither architecture ever presents the three alternatives as a
+ranked list to choose among, which is the presentation format the position-bias
+results above concern. The mechanism those results describe has no route into
+this design.
 
-Reversal is applied to the scenario record before it reaches either
-architecture, so it propagates to the alternative list in the prompt, the order
-in which alternatives are scored, and the deterministic tie-break. The
-alternative ordering inside $\mathcal{A}_{\text{E}}$'s retrieved exemplars is
-deliberately left in canonical order, which makes the manipulation a test of
-whether the query's own ordering matters and leaves exemplar-to-query order
-matching as a separate question (Section~\ref{sec:position-bias-discussion}).
+We verified this rather than assuming it. Rescoring all 195 test scenarios with
+the alternative order reversed, across all four models, left
+$\mathcal{A}_{\text{D}}$ unchanged: the reversed arm was less accurate in one of
+four models, and no model separated from its own five-run variation (exact
+McNemar on top-1 correctness, $p \geq 0.807$ against every shipped run). Because
+the ranking tie-break resolves exact ties by input order, reversal can flip a
+fully tied choice set on its own; that artifact biases the comparison toward
+detecting an effect, so the observed null is conservative.
 
-The reversed arm is a single run, so each comparison is paired against one of
-the five shipped runs and then summarised across the five. We report McNemar's
-exact test on top-1 correctness, the median $p$ across the five shipped
-comparisons, and the maximum. The maximum is the weakest of the five, so
-$p_{\max} < 0.05$ means the effect held against every shipped run rather than
-against a favourable one. Per-decision-type tests are Holm-corrected across the
-three types within each model--architecture pair.
+$\mathcal{A}_{\text{H}}$ is not covered by that argument. Its extraction call
+passes the whole scenario record, including all three alternatives as a numbered
+sequence, so it is the one architecture whose prompt matches the format the
+position-bias literature describes. Any effect would be indirect, acting through
+the estimated physical parameters rather than through a score, because the
+calculator and not the model produces the ranking. We therefore tested it
+directly.
 
+We re-ran $\mathcal{A}_{\text{H}}$'s extraction over all 195 test scenarios with
+the alternative values reversed in the prompt, five times per model, and paired
+it with three same-session runs in the shipped order. The control arm is
+necessary because the benchmark runs were collected days earlier: a difference
+between a reversed arm and an older shipped arm is equally consistent with an
+ordering effect and with provider-side drift. Extracted parameters were handed
+to the calculator with the alternatives in canonical order in every arm, so the
+ranking tie-break cannot manufacture a difference between them. We test whether
+reversed runs are distinguishable from shipped-order runs by relabelling which
+runs carry the reversed label across all $\binom{13}{5}$ assignments, an exact
+permutation test that uses every scenario rather than only the few on which two
+runs disagree.
 
-% ============================================================================
-% B2  RESULTS -- POSITION-BIAS CONTROL
-% Regenerate: python "Miscellaneous Scripts/PositionBiasAggregate.py"
-% Source: Analysis/PositionBias/position_bias_summary_all_models.xlsx
-% ============================================================================
+Ordering changed what the models extracted, and did not change what they
+decided. Two of four models separated at the parameter level (Qwen and Gemini,
+separation $0.054$ and $0.047$, $p = 0.0008$, Holm-adjusted $p = 0.006$ across
+the eight tests), while no model separated on the top-1 alternative
+($p \geq 0.24$). Both significant $p$-values sit at the exact permutation floor
+of $1/1287$: the observed labelling was the most extreme of all assignments, so
+the true $p$ is bounded above by that figure rather than estimated at it. The
+separation is a shift in which values the model returns, not a loss of accuracy:
+against the reference ranking, the reversed and control arms differ by less than
+$0.004$ Kendall's $\tau$, and the sign of that difference is not consistent
+across models. Listing the alternatives in a
+different order moves Gemini's estimate of a dwelling's insulation and equipment
+age, quantities that have nothing to do with the order the setpoints are printed
+in. The deterministic calculator absorbs that perturbation before it reaches the
+ranking, which is the behaviour the architecture is designed to produce and
+which the two model-side null results alone would not have demonstrated.
 
-\FloatBarrier
-\subsection{Alternative-order control}
-\label{sec:res-position-bias}
+One incidental observation bears on any benchmark that compares arms collected
+at different times. For DeepSeek, run-to-run agreement on extracted parameters
+was $0.42$ among the shipped runs and $0.64$ and $0.67$ among the two arms
+collected in the later session, with no manipulation distinguishing the latter
+two. Had we compared a
+reversed arm against the shipped runs without a contemporaneous control, that
+gap would have been readable as an effect of the manipulation.
 
-\begin{table}[htbp]
-\centering
-\begin{threeparttable}
-\footnotesize
-\caption{Effect of reversing alternative order, by architecture and model.
-``Net'' is the mean number of scenarios per shipped-run comparison that the
-reversed arm gets right and the shipped run gets wrong, minus the reverse;
-negative values mean reversal hurts. $p_{\max}$ is the largest McNemar exact
-$p$ across the five shipped runs.}
-\label{tab:position_bias}
-\begin{tabular}{@{}llrrrr@{}}
-\toprule
-Architecture & Model & $n$ & Net & $p_{\text{med}}$ & $p_{\max}$ \\
-\midrule
-$\mathcal{A}_{\text{D}}$ & Qwen3.5 9B        & 190 & $+2.2$  & 0.712 & 1.000 \\
-                         & GPT-OSS 20B       & 193 & $+3.4$  & 0.615 & 0.902 \\
-                         & DeepSeek V4 Flash & 193 & $-8.2$  & 0.477 & 0.807 \\
-                         & Gemini 3.5 Flash  & 195 & $+1.4$  & 0.856 & 1.000 \\
-\midrule
-$\mathcal{A}_{\text{E}}$ & Qwen3.5 9B        & 195 & $-29.6$ & 0.001 & 0.011 \\
-                         & GPT-OSS 20B       & 195 & $-30.6$ & 0.002 & 0.004 \\
-                         & DeepSeek V4 Flash & 195 & $-17.2$ & 0.079 & 0.378 \\
-                         & Gemini 3.5 Flash  & 193 & $-25.8$ & 0.000 & 0.002 \\
-\bottomrule
-\end{tabular}
-\begin{tablenotes}
-\footnotesize
-\item Paired McNemar exact test on top-1 correctness, reversed arm against each
-of the five shipped runs.
-\end{tablenotes}
-\end{threeparttable}
-\end{table}
-
-Table~\ref{tab:position_bias} separates the two architectures cleanly.
-$\mathcal{A}_{\text{D}}$ is unaffected by alternative order: the reversed arm is
-worse in one of four models, and no model reaches significance against even its
-most favourable shipped comparison ($p_{\max}$ from 0.807 to 1.000).
-$\mathcal{A}_{\text{E}}$ degrades in all four models, and in three of four the
-degradation holds against every shipped run ($p_{\max} \leq 0.011$). The
-exception is DeepSeek, where the overall effect is in the same direction but
-does not separate from run-to-run variation.
-
-The magnitude is large enough to remove the architecture's advantage. Under
-reversed order, Qwen's $\mathcal{A}_{\text{E}}$ reaches a top-1 accuracy of
-0.318 against a three-alternative chance baseline of 0.333, while its
-$\mathcal{A}_{\text{D}}$ sits at 0.316; the two architectures become
-indistinguishable. Gemini's $\mathcal{A}_{\text{E}}$ falls from a shipped range
-of 0.456--0.508 to 0.344.
-
-Within decision types the effect concentrates in Appliance for the two stronger
-models, but after Holm correction across the three types only Gemini's
-Appliance cell survives ($p_{\max}^{\text{Holm}} = 0.0003$); DeepSeek's is
-marginal at 0.059 and no other type-level cell is significant. The robust
-result is therefore the overall effect, not its distribution across decision
-types.
-
-
-% ============================================================================
-% B3  DISCUSSION -- POSITION-BIAS
-% ============================================================================
-
-\FloatBarrier
-\subsection{Order dependence in example-guided scoring}
-\label{sec:position-bias-discussion}
-
-The order control does not behave the way a generic position-bias account
-predicts. Position bias is reported to fall as model capability rises
-\cite{wang2023positionbias,zheng2023judging}, but the weakest and the strongest
-model here show the same effect at comparable significance, and the effect is
-absent from $\mathcal{A}_{\text{D}}$, which reads the same alternative list in
-the same order. What separates the two architectures is the retrieved
-exemplars.
-
-Both the test scenarios and the retrieval corpus list alternatives in canonical
-order. In the shipped condition an exemplar's positional pattern, that the
-second listed option wins, maps directly onto the query. Reversing the query
-alone breaks that mapping. The result is consistent with
-$\mathcal{A}_{\text{E}}$ transferring a positional template from the exemplar
-rather than reasoning from exemplar content, which would explain both the size
-of the drop and its absence in $\mathcal{A}_{\text{D}}$.
-
-Two readings remain open, and the present arm cannot separate them. The first
-is that the model has an order preference that exemplars amplify. The second is
-that $\mathcal{A}_{\text{E}}$ depends on agreement between exemplar order and
-query order, in which case the shipped measurement is valid for deployments
-that present alternatives canonically, which is the normal case, but the
-measured advantage is partly mechanical rather than semantic. Reversing the
-exemplars alongside the query would distinguish them: recovery to shipped
-performance implicates order matching, while continued degradation implicates
-the model. We report this as an open question rather than resolving it here.
-
-% TODO(author): decide whether to run the both-reversed arm before submission.
-% Roughly 585 API calls per model. Requires reversing the alternative ordering
-% inside format_rag_context in Example-Guided_LLM_Scoring.py.
+% NUMBERS CURRENT as of 2026-08-03, 5 reversed + 5 shipped + 3 control runs per
+% model (Analysis/Hybrid_Ablation/hybrid_order_reversal.xlsx, sheet "summary",
+% pooled_* columns; C(13,5) = 1287 relabelings):
+%   pooled_param_sep / pooled_param_p:
+%     qwen  +0.0543 / 0.000777   gemini   +0.0471 / 0.000777
+%     gptoss +0.0041 / 0.302     deepseek -0.0158 / 0.450
+%   pooled_choice_p: gemini 0.235 (min), qwen 0.679, gptoss 0.838, deepseek 0.953
+%   Holm over 8 tests: qwen param 0.0062, gemini param 0.0062, all others 1.000
+%   tau order_control vs order_reversed:
+%     deepseek 0.8974/0.9009  gemini 0.9293/0.9262
+%     gptoss   0.8988/0.8970  qwen   0.8895/0.8913   (max |gap| 0.0035)
+%   deepseek param identity: within_shipped 0.4230, within_control 0.6393,
+%     within_reversed 0.6703
 
 
 % ============================================================================

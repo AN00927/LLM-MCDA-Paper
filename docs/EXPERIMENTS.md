@@ -66,7 +66,102 @@ LLM-Parameterized tau (0.880-0.897), validating the harness against known number
 
 ---
 
-## 2. RAG ablation (Example-Guided Scoring)
+## 2. Alternative-ordering ablation (LLM-Parameterized Reference Scoring)
+
+**Script:** `Miscellaneous Scripts/RunHybridAblations.py` (`--collect-only` for collection,
+default mode for analysis)
+**Outputs:** `Analysis/Hybrid_Ablation/hybrid_order_reversal.xlsx` (`summary` and `pairwise`
+sheets)
+**Cost:** collection only, 20 reversed runs across 4 models (2,340 API calls); analysis is free
+
+Tests whether LLM-Parameterized_Reference_Scoring's ranking depends on the order in which the
+three alternatives are listed in the extraction prompt. This is the only architecture whose
+prompt shows all three alternatives as a numbered sequence in one call (Direct and
+Example-Guided score one alternative per stateless call). The manipulation reverses
+`alternative_1`/`alternative_3` in the extraction prompt and nothing else; scoring is always
+performed in canonical alternative order in every arm, so the calculator's stable-sort
+tie-break cannot manufacture a difference between arms.
+
+Three arms per model:
+
+| Arm | Runs | What it is |
+| --- | --- | --- |
+| `shipped` | 5 | the benchmark runs, collected 2026-07-29 |
+| `control` | 3 | shipped order, re-sent 2026-08-03, identical code path |
+| `reversed` | 5 | reversed order, collected 2026-08-03 |
+
+The control arm exists because the shipped runs record no collection timestamp (see the
+CLAUDE.md convention added this session requiring one going forward): a gap between reversed
+and shipped is equally consistent with an ordering effect or with provider drift, so
+control-vs-shipped measures drift directly and reversed-vs-control holds the session fixed.
+
+The primary test is an exact label-permutation test (`_exchangeability_test`): under the null a
+reversed run is just another run, so the test relabels which runs carry the reversed label
+across all `pooled` (shipped+control treated as one shipped-order group, the primary basis;
+conservative because pooling inflates the reference group's internal spread) assignments and
+asks how often the observed within-minus-between separation is matched. At 5 reversed + 3
+control runs there are C(13,5) = 1287 relabelings.
+
+### Results (5 reversed runs, final)
+
+| Model | choice-level p (pooled) | param-level separation | param-level p (pooled) | Holm (8 tests) |
+| --- | --- | --- | --- | --- |
+| Gemini | 0.235 | **+0.047** | 0.00078 | **0.0062** |
+| Qwen | 0.679 | **+0.054** | 0.00078 | **0.0062** |
+| GPT-OSS | 0.838 | +0.004 | 0.302 | 1.000 |
+| DeepSeek | 0.953 | -0.016 | 0.450 | 1.000 |
+
+**0/4 models show decision-level (top-1 choice) order sensitivity. 2/4 (Gemini, Qwen) show
+parameter-level order sensitivity**, surviving Holm correction across all eight tests (4
+models x 2 instruments). Both significant p-values sit exactly at the permutation floor
+(1/1287 = 0.00078): the observed labelling was the most extreme of all 1287 assignments, so
+the test is saturated and the true p is bounded above by that figure rather than estimated at
+it.
+
+Accuracy against the ground-truth ranking does not move consistently with the ordering
+manipulation, and the sign of the (small) shift is inconsistent across models — Kendall's tau,
+order_control vs. order_reversed: DeepSeek 0.8974/0.9009, Gemini 0.9293/0.9262, GPT-OSS
+0.8988/0.8970, Qwen 0.8895/0.8913 (max gap 0.0035). A low permutation p means the two arms are
+*distinguishable*, not that one ordering is more accurate — reversing the alternative order
+shifts which parameter values the model returns, not how good the resulting ranking is.
+
+**Do not use McNemar as the headline test here.** It is included in the workbook for
+completeness but is structurally underpowered: shipped runs disagree on top-1 for only a
+handful of the 195 scenarios, and an exact binomial on that few discordant pairs cannot reach
+p < 0.05 at any plausible split. A McNemar null in this workbook is an artefact of the test,
+not evidence about ordering.
+
+**Conclusion (unchanged from the 3-run interim result, now at full power):** the calculator
+absorbs the ordering perturbation before it reaches the ranking. The perturbation demonstrably
+moved extracted parameters upstream (2/4 models, at the permutation floor) and demonstrably did
+not move the top-1 decision downstream (0/4 models) — this is the architecture's core claim
+(errors in scenario-level parameters cancel across alternatives at the ranking stage) measured
+directly rather than assumed. See `paper/paper_draft_working.tex`
+`\subsection{Alternative ordering}` (Methods, `sec:alternative-order`) and
+`\subsection{Alternative Ordering}` (Results, `sec:res-order`) for the full writeup.
+
+**Incidental finding, also in the paper's Results section:** DeepSeek's run-to-run parameter
+agreement was 0.4230 among the shipped runs (collected 2026-07-29) versus 0.6393 (control) and
+0.6703 (reversed), both collected 2026-08-03. Both of the same-day arms show the elevated
+agreement equally, so this is a session/provider effect, not an ordering effect — without the
+contemporaneous control arm this would have been misread as a finding about reversal.
+
+### Reproduction
+
+```bash
+# Collection (spends API calls; resume-aware, never re-run a completed run index)
+python "Miscellaneous Scripts/RunHybridAblations.py" --collect-only \
+    --models <key> --order-arms reversed --order-run-start 1 --order-runs 5
+python "Miscellaneous Scripts/RunHybridAblations.py" --collect-only \
+    --models <key> --order-arms control --order-run-start 1 --order-runs 3
+
+# Analysis (free, reads existing run outputs)
+python "Miscellaneous Scripts/RunHybridAblations.py" --models qwen gptoss deepseek gemini
+```
+
+---
+
+## 3. RAG ablation (Example-Guided Scoring)
 
 **Script:** `Miscellaneous Scripts/RunRAGAblations.py`
 **Outputs:** `Analysis/RAG_Ablation/rag_ablation_{results,summary,summary_by_decision_type,friedman_tests,posthoc_tests,bootstrap_ci}.xlsx`
@@ -133,7 +228,7 @@ its nearest exemplar.
 
 ---
 
-## 3. Prompt ablation (Direct and Example-Guided Scoring)
+## 4. Prompt ablation (Direct and Example-Guided Scoring)
 
 **Script:** `Miscellaneous Scripts/RunPromptAblations.py`
 **Outputs:** `Analysis/Prompt_Ablation/`

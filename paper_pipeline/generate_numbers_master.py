@@ -33,7 +33,7 @@ for f in MODELS:
     per_run_frames.append(df)
 per_run = pd.concat(per_run_frames, ignore_index=True)
 
-imputed = pd.read_excel("Analysis/MetricsSummary/metrics_summary_all_models_imputed.xlsx")
+imputed = pd.read_excel("Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx")
 
 rag = pd.read_excel("Analysis/RAG_Ablation/rag_ablation_summary.xlsx")
 
@@ -314,27 +314,23 @@ for arch in LLM_ARCHS:
 
 # ────────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────────
-df_out = pd.DataFrame(rows)
-df_out.to_csv(OUT, index=False)
-print(f"Wrote {len(df_out)} rows to {OUT}")
-
 # ────────────────────────────────────────────────────────────────
-# ROBUSTNESS: Method A (per-run) vs Imputed (0.5) comparison
+# ROBUSTNESS: Method A (per-run) vs Imputed (per-run) comparison
 # ────────────────────────────────────────────────────────────────
-print("\n=== ROBUSTNESS: Method A vs Imputed (0.5) ===")
+print("\n=== ROBUSTNESS: Method A vs Imputed (per-run) ===")
 print(f"{'Arch':4s} {'Metric':6s} {'MethodA':>8s} {'Imputed':>8s} {'diff':>8s}")
 for arch in LLM_ARCHS:
     for metric in ["kendall_tau", "overall_mae", "top1_accuracy"]:
         nice = {"kendall_tau": "tau", "overall_mae": "MAE", "top1_accuracy": "Top-1"}[metric]
-        imp_metric = {"kendall_tau": "kendall_tau", "overall_mae": "overall_MAE", "top1_accuracy": "top1_accuracy"}[metric]
         # Method A: per-run CSVs, mean across all runs
         pr_vals = per_run[(per_run["architecture"] == arch) &
                           (per_run["decision_type"] == "Overall")][metric].dropna().values
         pr_mean = np.mean(pr_vals) if len(pr_vals) > 0 else np.nan
-        # Imputed: from imputed xlsx
-        imp_sub = imputed[(imputed["architecture"] == arch) &
+        # Imputed: from imputed per-run xlsx (comparison sheet has variant ImputedPerRun and lowercase metric names)
+        imp_sub = imputed[(imputed["variant"] == "ImputedPerRun") &
+                          (imputed["architecture"] == arch) &
                           (imputed["decision_type"] == "Overall") &
-                          (imputed["metric"] == imp_metric)]
+                          (imputed["metric"] == metric)]
         imp_vals = imp_sub["value"].dropna().values
         imp_mean = np.mean(imp_vals) if len(imp_vals) > 0 else np.nan
         if pd.notna(pr_mean) and pd.notna(imp_mean):
@@ -343,6 +339,10 @@ for arch in LLM_ARCHS:
             add("RobustnessComparison", arch, "MethodA", "Overall", nice, pr_mean)
             add("RobustnessComparison", arch, "Imputed", "Overall", nice, imp_mean)
             print(f"{ARCH_SHORT[arch]:4s} {nice:6s} {pr_mean:8.4f} {imp_mean:8.4f} {diff:8.4f}{flag}")
+
+df_out = pd.DataFrame(rows)
+df_out.to_csv(OUT, index=False)
+print(f"Wrote {len(df_out)} rows to {OUT}")
 
 print(f"\nDistinct models in RAG ablation: {n_distinct_models}")
 print(f"Models: {sorted(rag['model_key'].unique())}")

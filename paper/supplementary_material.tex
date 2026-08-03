@@ -369,16 +369,9 @@ Duquesne   & 2--9pm  & 0.1375 & 0.1375 \\
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-PECO (Rate R-TOU) and PPL (Rate RTS) use a 4-hour afternoon peak window
-(2--6pm weekdays). The three FirstEnergy utilities (West Penn, Penelec,
-MetEd) use a 7-hour peak window (2--9pm weekdays), with rates derived from
-the Jun-2025 Price-to-Compare (PTC) multiplied by approved multipliers
-\citep{firstenergy2025,firstenergy2026}. Duquesne uses a flat default rate
-(Rate RS); an optional TOU schedule (peak 3--9pm) exists but is not
-applied in the benchmark because the majority of Duquesne customers remain
-on the flat rate.\subsection{Electricity Rate Provenance}
+PECO (Rate R-TOU) \citep{peco2021} and PPL (Rate RTS) \citep{ppl2025} use a 4-hour afternoon peak window (2--6pm weekdays). The three FirstEnergy utilities (West Penn, Penelec, MetEd) use a 7-hour peak window (2--9pm weekdays), with rates derived from the Jun-2025 Price-to-Compare (PTC) multiplied by approved multipliers \citep{firstenergy2025,firstenergy2026}. Duquesne uses a flat default rate (Rate RS) \citep{duquesne2026}; an optional TOU schedule (peak 3--9pm) exists but is not applied in the benchmark because the majority of Duquesne customers remain on the flat rate.\subsection{Electricity Rate Provenance}
 
-For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. The cost is estimated at \$0.19/kWh, which represents a bundled retail rate combining generation, transmission, distribution, monthly service fees, riders, and state taxes. Form EIA-861 reports a 2024 Pennsylvania statewide average price of 17.77\textcent/kWh based on total utility revenue divided by sales \citep{eia_epa_2024}. However, in urban and suburban Philadelphia, the Pennsylvania Public Utility Commission 2025 Rate Report lists an average monthly PECO residential bill of \$135.29 for 702\,kWh, establishing an effective bundled price of 19.27\textcent/kWh \citep{paupc2025}. Approved PUC rate settlements increase representative 700\,kWh PECO bills to \$149.43 in 2025 (21.3\textcent/kWh) and \$152.13 in 2026 (21.7\textcent/kWh) \citep{paupc2024dec}. The \$0.19/kWh baseline provides a conservative, empirical rate for Pennsylvania decision modeling. Excluding zero-load points, the realized 8-hour cost distribution at Pennsylvania's bundled residential rate (\$0.19/kWh) \citep{eia_epa_2024,paupc2025,paupc2024dec} spans \$0.38--\$3.29.  An Off option receives top cost score via decreasing-value normalization. These endpoints match residential HVAC efficiency benchmarks \citep{synapse2013,parker2018}.
+For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. The cost is estimated at \$0.19/kWh, which represents a bundled retail rate combining generation, transmission, distribution, monthly service fees, riders, and state taxes. Form EIA-861 reports a 2024 Pennsylvania statewide average price of 17.77\textcent/kWh based on total utility revenue divided by sales \citep{eia_epa_2024}. However, in urban and suburban Philadelphia, the Pennsylvania Public Utility Commission 2025 Rate Report lists an average monthly PECO residential bill of \$135.29 for 702\,kWh, establishing an effective bundled price of 19.27\textcent/kWh \citep{paupc2025}. Approved PUC rate settlements increase representative 700\,kWh PECO bills to \$149.43 in 2025 (21.3\textcent/kWh) and \$152.13 in 2026 (21.7\textcent/kWh) \citep{paupc2024dec}. The \$0.19/kWh baseline provides a conservative, empirical rate for Pennsylvania decision modeling. Excluding zero-load points, the realized 8-hour cost distribution at Pennsylvania's bundled residential rate (\$0.19/kWh) \citep{eia_epa_2024,paupc2025,paupc2024dec} spans \$0.38--\$3.29.  An Off option receives top cost score via decreasing-value normalization. These endpoints match residential HVAC efficiency benchmarks \citep{synapse2013,parker2018,huyen2019,alves2016}.
 \subsection{Comfort and Practicality Utility Function Derivations}\label{app:utility_derivations}
 
 This appendix contains the piecewise value function derivations for the Comfort and Practicality criteria across all three decision types. These utility functions are applied to the true engineering parameter values (R-value, GPM, appliance age in years) rather than the homeowner-facing band labels (insulation, flow rate, age band) that appear in the LLM prompts and scenario description sheets.
@@ -529,99 +522,50 @@ failure-handling and aggregation protocols.
 \subsection{Full Sensitivity Analysis Results}
 \label{app:sensitivity_full}
 
-Tables~\ref{tab:sensitivity_gemini} and~\ref{tab:sensitivity_gptoss} report
-Kendall's~$\tau$ for each architecture under the nine weight-perturbation
-scenarios (Table~\ref{tab:sensitivity_weights}) plus the baseline,
-evaluated separately for each LLM model.
+Kendall's~$\tau$ for every model, architecture and weight vector is reported in
+Section~4.7 of the main paper. Table~\ref{tab:sensitivity_top1} gives Top-1
+accuracy for the same cells. The weight vectors are the design vector
+$(0.30,\,0.35,\,0.20,\,0.15)$, the equal-weight vector
+$(0.25,\,0.25,\,0.25,\,0.25)$, and the entropy- and MEREC-derived vectors of
+Appendix~B, each applied pooled across the corpus and per decision type. No
+value in either table is pooled across models.
 
-The perturbation vectors are defined in Table~\ref{tab:sensitivity_weights}; per-model results follow.
-
-\begin{table}[htbp]
+\begin{table*}[t]
 \begin{threeparttable}
+\footnotesize
 \centering
-\small
-\textbf{Weight perturbation scenarios}
-\caption{Each row perturbs one criterion's weight by $\pm0.05$ from baseline (bold); the other three weights are rescaled proportionally to keep the vector summing to 1. The architecture ordering is preserved across all perturbations (Section~4.7 of the main paper).}
-\label{tab:sensitivity_weights}
-\begin{tabular}{@{} l r r r r @{}}
+\renewcommand{\arraystretch}{1.10}
+\setlength{\tabcolsep}{4pt}
+\caption{Sensitivity analysis: Top-1 accuracy (\%) by model and architecture under seven weight vectors.}
+\label{tab:sensitivity_top1}
+\begin{tabular}{@{}l rrr rrr rrr rrr@{}}
 \toprule
-\textbf{Scenario} & $w_{\text{Ene}}$ & $w_{\text{Env}}$ & $w_{\text{Com}}$ & $w_{\text{Pra}}$ \\
+ & \multicolumn{3}{c}{Gemini} & \multicolumn{3}{c}{DeepSeek} & \multicolumn{3}{c}{GPT-OSS} & \multicolumn{3}{c}{Qwen} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
+\textbf{Weight vector} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Baseline          & 0.3000 & 0.3500 & 0.2000 & 0.1500 \\
+Design (baseline)  & 35.9 & 46.2 & 93.3 & 40.0 & 56.4 & 91.3 & 33.9 & 56.4 & 92.3 & 31.8 & 46.2 & 90.3 \\
+Equal              & 50.3 & 57.4 & 94.9 & 38.0 & 50.8 & 95.4 & 44.1 & 55.4 & 94.8 & 28.7 & 47.2 & 90.3 \\
 \midrule
-Ene $+0.05$       & \textbf{0.3500} & 0.3333  & 0.1833  & 0.1333 \\
-Ene $-0.05$       & \textbf{0.2500}  & 0.3667 & 0.2167 & 0.1667 \\
+Entropy pooled     & 37.4 & 47.7 & 92.8 & 38.0 & 54.4 & 90.3 & 34.9 & 53.8 & 92.8 & 31.3 & 45.1 & 86.7 \\
+Entropy per-type   & 38.0 & 50.3 & 94.4 & 38.0 & 59.5 & 92.8 & 34.9 & 55.4 & 94.8 & 33.3 & 45.6 & 92.8 \\
 \midrule
-Env $+0.05$       & 0.2833  & \textbf{0.4000} & 0.1833  & 0.1333 \\
-Env $-0.05$       & 0.3167 & \textbf{0.3000}  & 0.2167 & 0.1667 \\
-\midrule
-Com $+0.05$       & 0.2833  & 0.3333  & \textbf{0.2500} & 0.1333 \\
-Com $-0.05$       & 0.3167 & 0.3667 & \textbf{0.1500}  & 0.1667 \\
-\midrule
-Pra $+0.05$       & 0.2833  & 0.3333  & 0.1833  & \textbf{0.2000} \\
-Pra $-0.05$       & 0.3167 & 0.3667 & 0.2167 & \textbf{0.1000} \\
-\midrule
-Equal             & 0.2500  & 0.2500  & 0.2500 & 0.2500 \\
+MEREC pooled       & 75.4 & 77.4 & 92.3 & 50.3 & 62.1 & 93.8 & 52.3 & 59.5 & 92.3 & 34.4 & 53.3 & 94.4 \\
+MEREC per-type     & 70.3 & 79.5 & 94.9 & \textbf{60.5} & 52.8 & 95.4 & 46.2 & 63.6 & 94.3 & 32.8 & 51.3 & 93.3 \\
+MEREC HVAC vector  & \textbf{81.5} & 75.4 & 96.4 & \textbf{67.7} & 58.0 & 95.9 & 53.3 & 66.7 & 94.8 & 36.9 & 56.4 & 96.9 \\
 \bottomrule
 \end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{6pt}
+\begin{tablenotes}
+\footnotesize
+\item Percentage of the 195 test scenarios whose top-ranked alternative matches
+the reference. Bold marks cells in which $\mathcal{A}_{\text{D}}$ exceeds
+$\mathcal{A}_{\text{E}}$; these are the same MEREC cells that reverse on
+Kendall's~$\tau$.
+\end{tablenotes}
 \end{threeparttable}
-\end{table}
-
-\begin{table}[t]
-\small
-\centering
-\renewcommand{\arraystretch}{1.10}
-\caption{Sensitivity analysis: Kendall's~$\tau$ under weight perturbations, Gemini 3.5 Flash and DeepSeek V4 Flash.}
-\label{tab:sensitivity_gemini}
-\label{tab:sensitivity_deepseek}
-\begin{tabular}{@{}l ccc ccc@{}}
-\toprule
- & \multicolumn{3}{c}{Gemini} & \multicolumn{3}{c}{DeepSeek} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-\textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
-\midrule
-Baseline      & 0.176 & 0.305 & 0.923 & 0.144 & 0.328 & 0.897 \\
-Ene $+0.05$   & 0.200 & 0.374 & 0.904 & 0.203 & 0.357 & 0.880 \\
-Ene $-0.05$   & 0.210 & 0.443 & 0.945 & 0.139 & 0.381 & 0.939 \\
-Env $+0.05$   & 0.190 & 0.385 & 0.921 & 0.176 & 0.350 & 0.891 \\
-Env $-0.05$   & 0.217 & 0.415 & 0.939 & 0.139 & 0.364 & 0.939 \\
-Com $+0.05$   & 0.210 & 0.422 & 0.932 & 0.142 & 0.388 & 0.928 \\
-Com $-0.05$   & 0.210 & 0.392 & 0.901 & 0.217 & 0.327 & 0.860 \\
-Pra $+0.05$   & 0.207 & 0.415 & 0.939 & 0.121 & 0.344 & 0.918 \\
-Pra $-0.05$   & 0.180 & 0.402 & 0.915 & 0.197 & 0.364 & 0.894 \\
-Equal         & 0.323 & 0.463 & 0.925 & 0.121 & 0.395 & 0.921 \\
-\bottomrule
-\end{tabular}
-\renewcommand{\arraystretch}{1.0}
-\end{table}
-
-\begin{table}[t]
-\small
-\centering
-\renewcommand{\arraystretch}{1.10}
-\caption{Sensitivity analysis: Kendall's~$\tau$ under weight perturbations, GPT-OSS 20B and Qwen 3.5 9B.}
-\label{tab:sensitivity_gptoss}
-\label{tab:sensitivity_qwen}
-\begin{tabular}{@{}l ccc ccc@{}}
-\toprule
- & \multicolumn{3}{c}{GPT-OSS} & \multicolumn{3}{c}{Qwen} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-\textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
-\midrule
-Baseline      & 0.041 & 0.270 & 0.897 & 0.010 & 0.207 & 0.880 \\
-Ene $+0.05$   & 0.080 & 0.357 & 0.904 & 0.039 & 0.275 & 0.877 \\
-Ene $-0.05$   & 0.074 & 0.354 & 0.924 & $-$0.019 & 0.268 & 0.904 \\
-Env $+0.05$   & 0.050 & 0.340 & 0.914 & 0.009 & 0.289 & 0.891 \\
-Env $-0.05$   & 0.087 & 0.333 & 0.931 & $-$0.009 & 0.251 & 0.904 \\
-Com $+0.05$   & 0.077 & 0.344 & 0.918 & $-$0.029 & 0.272 & 0.894 \\
-Com $-0.05$   & 0.097 & 0.306 & 0.876 & 0.036 & 0.255 & 0.833 \\
-Pra $+0.05$   & 0.077 & 0.327 & 0.924 & $-$0.002 & 0.248 & 0.887 \\
-Pra $-0.05$   & 0.056 & 0.371 & 0.931 & 0.019 & 0.306 & 0.887 \\
-Equal         & 0.142 & 0.361 & 0.904 & $-$0.029 & 0.251 & 0.901 \\
-\bottomrule
-\end{tabular}
-\renewcommand{\arraystretch}{1.0}
-\end{table}\subsection{RAG Ablation: Full Per-Configuration Table}
+\end{table*}\subsection{RAG Ablation: Full Per-Configuration Table}
 \label{app:rag_ablation_full}
 
 \begin{table}[t]

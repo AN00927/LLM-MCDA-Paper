@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """C5: rebuild the imputed robustness check at per-run granularity.
 
-Computes, for all 4 models x 3 architectures, three comparison columns:
+Computes, for all 4 models x 3 architectures, two comparison columns:
 
   (a) Method A           per-run-then-average: failed scenarios excluded from their
                          run's metric computation, metrics averaged across 5 runs.
-  (b) Imputed (all-5)    existing variant: runs aggregated first; a scenario that
-                         fails in ALL five runs receives the 0.5 scale midpoint at
-                         criterion-score level before metric computation.
-  (c) Imputed (per-run)  NEW variant: for EACH run independently, any scenario
+  (c) Imputed (per-run)  per-run imputed variant: for EACH run independently, any scenario
                          carrying a sentinel in that run receives 0.5 for the
                          affected criterion scores before that run's MAVT
                          aggregation, ranking, and metric computation; metrics are
@@ -21,12 +18,11 @@ existing aggregation and ranking machinery (CalculateMetrics.impute_failed_score
 + recompute_arch_ranks) runs on the imputed scores. The sentinel 1928 never enters
 an average or a ranking.
 
-Zero API calls. Writes only NEW files:
+Zero API calls. Writes:
   Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx
 
 Embedded verification: (a) checked against paper/per_run_metrics_all.csv and the
-supplementary table tab:imputed_comparison; (b) checked against
-Analysis/MetricsSummary/metrics_summary_all_models_imputed.xlsx.
+supplementary table tab:imputed_comparison.
 """
 
 import sys
@@ -66,17 +62,6 @@ SUPP_METHOD_A = {
     ("LLM-Parameterized_Reference_Scoring", "kendall_tau"): 0.899,
     ("LLM-Parameterized_Reference_Scoring", "overall_mae"): 0.055,
     ("LLM-Parameterized_Reference_Scoring", "top1_accuracy"): 0.913,
-}
-SUPP_IMPUTED = {
-    ("Direct_LLM_Scoring", "kendall_tau"): 0.095,
-    ("Direct_LLM_Scoring", "overall_mae"): 0.219,
-    ("Direct_LLM_Scoring", "top1_accuracy"): 0.354,
-    ("Example-Guided_LLM_Scoring", "kendall_tau"): 0.314,
-    ("Example-Guided_LLM_Scoring", "overall_mae"): 0.161,
-    ("Example-Guided_LLM_Scoring", "top1_accuracy"): 0.513,
-    ("LLM-Parameterized_Reference_Scoring", "kendall_tau"): 0.900,
-    ("LLM-Parameterized_Reference_Scoring", "overall_mae"): 0.051,
-    ("LLM-Parameterized_Reference_Scoring", "top1_accuracy"): 0.917,
 }
 
 
@@ -143,24 +128,7 @@ def compute_variant_a_per_run(cm, prm, gt_lookup, gt_id_lookup, run_paths, arch_
     return rows
 
 
-def compute_variant_b(cm, gt_lookup, gt_id_lookup, run_paths, arch_name):
-    """Existing all-five-runs imputed variant: aggregate, then impute, then evaluate."""
-    aggregated = cm.aggregate_run_files(run_paths)
-    arch_df = cm.load_architecture(aggregated, arch_name)
-    merged, _ = cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name)
-    merged_imp, n_rows, n_sids = cm.impute_failed_scores(merged.copy(), impute_value=0.5)
-    merged_imp = cm.recompute_arch_ranks(merged_imp)
-    crit = _crit_metrics_dict(cm.compute_criterion_metrics(merged_imp))
-    rank = _rank_metrics_dict(cm.compute_ranking_metrics(merged_imp))
-    row = {
-        "variant": "ImputedAll5",
-        "architecture": arch_name,
-        "n_imputed_scenarios": n_sids,
-        "n_imputed_cells": n_rows,
-    }
-    row.update(crit)
-    row.update(rank)
-    return row
+
 
 
 def compute_variant_c_per_run(cm, prm, gt_lookup, gt_id_lookup, run_paths, arch_name):
@@ -239,7 +207,6 @@ def main():
 
     variant_a_long = []   # long rows: model x arch x metric (Method A)
     variant_c_long = []   # long rows: model x arch x metric (ImputedPerRun)
-    variant_b_rows = []   # wide rows: model x arch (ImputedAll5)
     detail_rows = []      # per-run rows (Method A + ImputedPerRun)
     impute_count_rows = []
     rank_diag_all = []
@@ -259,7 +226,6 @@ def main():
                 continue
 
             a_rows = compute_variant_a_per_run(cm, prm, gt_lookup, gt_id_lookup, run_paths, arch_name)
-            b_row = compute_variant_b(cm, gt_lookup, gt_id_lookup, run_paths, arch_name)
             c_rows, rank_diag = compute_variant_c_per_run(cm, prm, gt_lookup, gt_id_lookup, run_paths, arch_name)
             rank_diag_all.append((mk, arch_name, rank_diag))
 
@@ -268,9 +234,6 @@ def main():
 
             variant_a_long.extend(_long_rows(mk, arch_name, a_agg))
             variant_c_long.extend(_long_rows(mk, arch_name, c_agg))
-
-            b_row["model"] = mk
-            variant_b_rows.append(b_row)
 
             for r in a_rows + c_rows:
                 r["model"] = mk
@@ -329,36 +292,7 @@ def main():
         ok_a = ok_a and flag == "OK"
         print(f"      {arch} {m:16s} got={got:.4f} target={target:.4f} {flag}")
 
-    # (b) per-model vs existing imputed aggregate xlsx
-    existing_imp = PROJECT_ROOT / "Analysis" / "MetricsSummary" / "metrics_summary_all_models_imputed.xlsx"
-    max_diff_b = 0.0
-    n_cmp_b = 0
-    metric_name_map = {"overall_mae": "overall_MAE", "overall_rmse": "overall_RMSE",
-                       "overall_rmse_mae_ratio": "overall_rmse_mae_ratio"}
-    if existing_imp.exists():
-        ex = pd.read_excel(existing_imp)
-        ex = ex[ex["decision_type"] == "Overall"]
-        for r in variant_b_rows:
-            for m in RANK_METRICS + ["overall_mae", "overall_rmse", "overall_rmse_mae_ratio"]:
-                erow = ex[(ex["model"] == r["model"]) & (ex["architecture"] == r["architecture"])
-                          & (ex["metric"] == metric_name_map.get(m, m))]
-                if len(erow) == 0 or pd.isna(r.get(m)):
-                    continue
-                max_diff_b = max(max_diff_b, abs(r[m] - erow["value"].iloc[0]))
-                n_cmp_b += 1
-        print(f"  (b) max |value diff| vs metrics_summary_all_models_imputed.xlsx: "
-              f"{max_diff_b:.6f} ({n_cmp_b} values compared)")
 
-    # (b) pooled vs supplementary table Imputed column
-    print("  (b) pooled vs supplementary tab:imputed_comparison 'Imputed (0.5)':")
-    ok_b = True
-    for (arch, m), target in SUPP_IMPUTED.items():
-        vals = [r.get(m) for r in variant_b_rows if r["architecture"] == arch]
-        vals = [v for v in vals if pd.notna(v)]
-        got = float(np.mean(vals)) if vals else np.nan
-        flag = "OK" if abs(got - target) <= 0.0006 else "MISMATCH"
-        ok_b = ok_b and flag == "OK"
-        print(f"      {arch} {m:16s} got={got:.4f} target={target:.4f} {flag}")
 
     # (c) full-set coverage
     cov_ok = True
@@ -382,12 +316,6 @@ def main():
     comp_rows = []
     for r in variant_a_long:
         comp_rows.append({"variant": "MethodA", **r})
-    for r in variant_b_rows:
-        for m in RANK_METRICS + ["overall_mae", "overall_rmse", "overall_rmse_mae_ratio",
-                                 "n_scenarios"] + [f"{c}_mae" for c in CRIT_KEYS]:
-            comp_rows.append({"variant": "ImputedAll5", "model": r["model"],
-                              "architecture": r["architecture"], "decision_type": "Overall",
-                              "metric": m, "value": r.get(m, np.nan)})
     for r in variant_c_long:
         comp_rows.append({"variant": "ImputedPerRun", **r})
     comp_df = pd.DataFrame(comp_rows)
@@ -396,12 +324,11 @@ def main():
     for arch in ARCH_STEMS:
         for m in TABLE_METRICS:
             row = {"architecture": arch, "metric": m}
-            for variant in ["MethodA", "ImputedAll5", "ImputedPerRun"]:
+            for variant in ["MethodA", "ImputedPerRun"]:
                 vals = comp_df[(comp_df["variant"] == variant) & (comp_df["architecture"] == arch)
                                & (comp_df["metric"] == m)]["value"]
                 row[variant] = float(np.mean(vals.dropna())) if len(vals.dropna()) else np.nan
             row["perrun_minus_A"] = row["ImputedPerRun"] - row["MethodA"]
-            row["all5_minus_A"] = row["ImputedAll5"] - row["MethodA"]
             pooled_rows.append(row)
     pooled_df = pd.DataFrame(pooled_rows)
 
@@ -425,7 +352,7 @@ def main():
     print("\n" + "=" * 72)
     print("VERDICT")
     print("=" * 72)
-    for variant in ["MethodA", "ImputedAll5", "ImputedPerRun"]:
+    for variant in ["MethodA", "ImputedPerRun"]:
         tau = {}
         for short, long in [("AD", "Direct_LLM_Scoring"), ("AE", "Example-Guided_LLM_Scoring"),
                             ("AH", "LLM-Parameterized_Reference_Scoring")]:
@@ -455,7 +382,7 @@ def main():
               f"{'holds' if ok else 'BREAKS'}")
 
     print("\nVerification summary: (a) matches pipeline CSV + supp table:",
-          ok_a and max_diff_a < 0.0015, "| (b) matches existing imputed xlsx + supp table:", ok_b)
+          ok_a and max_diff_a < 0.0015)
     print("Done.")
 
 
