@@ -57,22 +57,21 @@ SENTINEL_FLOAT = 1928.0
 
 ### Handling approaches
 
-There are three different strategies used across different evaluation modes:
+There are two primary evaluation handling strategies, plus a standalone per-run imputed robustness check:
 
 **Filtered mode (scenario-level exclusion — the primary method):**
 - `filter_failed_scenarios()` groups by `arch_scenario_id`, checks if ANY alternative row has ANY criterion sentinel
 - If so, ALL rows for that scenario are removed from metrics computation
-- Used by: `evaluate()` filtered mode, `Significance_testing.py`, `calculate_per_run_metrics.py`
-
-**Imputed mode (replace with 0.5):**
-- `impute_failed_scores(merged_df, impute_value=0.5)` replaces sentinel values with 0.5
-- Then `recompute_arch_ranks()` recomputes weighted scores and ranks
-- Used by: `evaluate()` imputed mode
+- Used by: `evaluate_all()` filtered mode, `Significance_testing.py`, `calculate_per_run_metrics.py`
 
 **Method C (per-cell safe_mean):**
 - `safe_mean(series)` in `generate_method_c_consensus.py`: requires >=3 non-NaN values out of 5 runs
 - If fewer than 3 valid values, the cell stays NaN (row excluded from that criterion)
 - Scores are averaged across runs BEFORE metrics computation
+
+**Per-run imputed robustness check:**
+- Standalone robustness analysis via `paper_pipeline/rebuild_imputed_robustness.py`
+- Imputes sentinels to 0.5 per run before MAVT ranking using building blocks `impute_failed_scores()` and `recompute_arch_ranks()`
 
 ---
 
@@ -210,14 +209,12 @@ In `generate_method_c_consensus.py`:
 5. Compute metrics once on the consensus ranking
 6. Compare to Method A: Method A tau vs Method C tau, with difference column
 
-### 6.2 Imputed method
+### 6.2 Per-run imputed robustness building blocks
 
-In `CalculateMetrics.py.impute_failed_scores()`:
-
-1. Replace sentinel 1928 in `arch_*` columns with default 0.5 (scale midpoint)
-2. Recompute ranks via `recompute_arch_ranks()`
-3. Compute metrics normally
-4. Used in `evaluate()` as the "imputed" output alongside the "filtered" output
+In `CalculateMetrics.py`:
+- `impute_failed_scores(df, impute_value=0.5)` replaces sentinel 1928 in `arch_*` columns with 0.5 (scale midpoint).
+- `recompute_arch_ranks(df)` recomputes weighted scores and ranks after imputation.
+- Used as building blocks by `paper_pipeline/rebuild_imputed_robustness.py` for per-run imputed robustness checking.
 
 ---
 

@@ -432,7 +432,7 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
             context += f"  {line}\n"
         context += "  Expert scores:\n"
 
-        for j in range(1, 4):
+        for j in (1, 2, 3):
             name = md.get(f'alt{j}')
             if name in (None, '', 'N/A'):
                 continue

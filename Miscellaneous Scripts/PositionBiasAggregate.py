@@ -13,9 +13,8 @@ the maximum is the weakest of the five comparisons, so "max p < 0.05" means the
 effect held against every shipped run, not just a favourable one.
 
 Per-decision-type p-values are Holm-corrected across the three types within each
-(model, architecture) pair. Without that correction, four models times two
-architectures times three types is twenty-four tests and a single borderline
-cell means nothing.
+(model, architecture) pair. Without that correction, four models times three
+types is twelve tests and a single borderline cell means nothing.
 
 Usage:
     python "Miscellaneous Scripts/PositionBiasAggregate.py"
@@ -46,9 +45,10 @@ MODEL_LABELS = {
     "deepseek": "DeepSeek V4 Flash",
     "gemini": "Gemini 3.5 Flash",
 }
+# A_D only. The A_H order arm lives in RunHybridAblations.py, where it is
+# compared against A_H's own five shipped runs rather than against a sample.
 ARCH_LABELS = {
     "Direct_LLM_Scoring": "A_D",
-    "Example-Guided_LLM_Scoring": "A_E",
 }
 
 
@@ -138,7 +138,7 @@ def main():
     print("p_max is the weakest of the five comparisons. Per-type p is "
           "Holm-corrected across the three types.\n")
 
-    for arch in ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring"]:
+    for arch in ARCH_LABELS:
         sub = summary[summary["architecture"] == arch]
         if sub.empty:
             continue
@@ -157,7 +157,7 @@ def main():
     print("\n\nDIRECTION OF EFFECT, OVERALL, BY ARCHITECTURE")
     print("=" * 104)
     ov = summary[summary["scope"] == "Overall"]
-    for arch in ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring"]:
+    for arch in ARCH_LABELS:
         s = ov[ov["architecture"] == arch]
         if s.empty:
             continue

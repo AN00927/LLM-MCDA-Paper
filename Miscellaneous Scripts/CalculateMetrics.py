@@ -999,17 +999,15 @@ def _load_diagnostics_json(arch_path_str, arch_name):
     return result
 
 
-def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0.5):
+def evaluate_all(config, include_baselines=False, model_key=None):
     """Evaluate all architectures against ground truth and return metrics.
 
-    Always runs both filtered (failed scenarios dropped) and imputed
-    (failed scores replaced with impute_value) modes.
+    Runs filtered mode (failed scenarios dropped).
 
     Args:
         config: CONFIG dict with paths for this model.
         include_baselines: If True, also evaluate non-LLM baselines.
         model_key: Human-readable model identifier shown in headers.
-        impute_value: Value to substitute for sentinel 1928 (default 0.5).
     """
     model_label = f" [{model_key.upper()}]" if model_key else ""
     print("=" * 72)
@@ -1116,8 +1114,8 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
         n_matched_arch = merged["arch_scenario_id"].nunique() if len(merged) > 0 else 0
         n_unmatched_arch = n_total_arch - n_matched_arch
         if n_failed > 0 or n_unmatched_arch > 0:
-            print(f"\n  Scenario funnel: {n_total_arch} total → {n_matched_arch} matched "
-                  f"({n_unmatched_arch} unmatched) → {n_failed} sentinel-failed "
+            print(f"\n  Scenario funnel: {n_total_arch} total -> {n_matched_arch} matched "
+                  f"({n_unmatched_arch} unmatched) -> {n_failed} sentinel-failed "
                   f"({n_matched_arch - n_failed} clean)")
             print(f"    Failures: {n_failed}/{n_total_arch} "
                   f"({fail['total_failure_rate']*100:.1f}%)")
@@ -1150,17 +1148,12 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
                   f"(p={xcorr[f'cross_criterion_rho_{dtype}_pvalue']:.2e})")
 
         merged_filtered, n_failed, n_total = filter_failed_scenarios(merged.copy())
-        merged_imputed, n_imputed_rows, n_imputed_sids = impute_failed_scores(merged.copy())
-        merged_imputed = recompute_arch_ranks(merged_imputed)
 
         if n_failed > 0:
             print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
                   f"evaluating {n_total - n_failed} successful scenarios")
-        if n_imputed_sids > 0:
-            print(f"  Imputed {n_imputed_sids} scenario(s) had sentinel scores "
-                  f"({n_imputed_rows} total cells set to {impute_value})")
 
-        for mode, merged_mode in [("filtered", merged_filtered), ("imputed", merged_imputed)]:
+        for mode, merged_mode in [("filtered", merged_filtered)]:
             if len(merged_mode) == 0:
                 continue
 
@@ -1201,18 +1194,18 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
 
                 print(f"\n  {mode.upper()} {dtype} ({n_dt} scenarios, {len(dt_data)} alt rows):")
                 print(f"    MAE:  EC={dt_crit['energy_cost_MAE']:.3f}  "
-                      f"ENV={dt_crit['environmental_MAE']:.3f}  "
-                      f"COM={dt_crit['comfort_MAE']:.3f}  "
-                      f"PRA={dt_crit['practicality_MAE']:.3f}  "
-                      f"All={dt_crit['overall_MAE']:.3f}")
+                  f"ENV={dt_crit['environmental_MAE']:.3f}  "
+                  f"COM={dt_crit['comfort_MAE']:.3f}  "
+                  f"PRA={dt_crit['practicality_MAE']:.3f}  "
+                  f"All={dt_crit['overall_MAE']:.3f}")
                 print(f"    RMSE: EC={dt_crit['energy_cost_RMSE']:.3f}  "
-                      f"ENV={dt_crit['environmental_RMSE']:.3f}  "
-                      f"COM={dt_crit['comfort_RMSE']:.3f}  "
-                      f"PRA={dt_crit['practicality_RMSE']:.3f}  "
-                      f"All={dt_crit['overall_RMSE']:.3f}")
+                  f"ENV={dt_crit['environmental_RMSE']:.3f}  "
+                  f"COM={dt_crit['comfort_RMSE']:.3f}  "
+                  f"PRA={dt_crit['practicality_RMSE']:.3f}  "
+                  f"All={dt_crit['overall_RMSE']:.3f}")
                 print(f"    tau={dt_rank['kendall_tau']:.4f}  "
-                      f"Top1={dt_rank['top1_accuracy']:.4f} "
-                      f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})")
+                  f"Top1={dt_rank['top1_accuracy']:.4f} "
+                  f"({round(dt_rank['top1_accuracy']*n_dt)}/{n_dt})")
 
                 for k, v in {**dt_crit, **dt_rank}.items():
                     all_metrics.append({
@@ -1242,7 +1235,7 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
 
     archs = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
 
-    for mode_label in ("filtered", "imputed"):
+    for mode_label in ("filtered",):
         print(f"\n{'='*60}")
         print(f"  {mode_label.upper()} METRICS")
         print(f"{'='*60}")
@@ -1289,16 +1282,11 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
 
     metrics_df = pd.DataFrame(all_metrics, columns=["architecture", "decision_type", "mode", "metric", "value"])
 
-    # Duplicate shared (no-mode) rows into both modes
+    # Include filtered rows and shared (no-mode) rows
     shared = metrics_df[metrics_df["mode"].isna()]
     df_f = pd.concat([
         metrics_df[metrics_df["mode"] == "filtered"],
         shared.assign(mode="filtered"),
-    ], ignore_index=True).drop(columns=["mode"])
-
-    df_i = pd.concat([
-        metrics_df[metrics_df["mode"] == "imputed"],
-        shared.assign(mode="imputed"),
     ], ignore_index=True).drop(columns=["mode"])
 
     base_out = Path(config["output_csv"])
@@ -1306,14 +1294,11 @@ def evaluate_all(config, include_baselines=False, model_key=None, impute_value=0
     stem = base_out.stem
 
     filtered_path = str(out_dir / f"{stem}.xlsx")
-    imputed_path = str(out_dir / f"{stem}_imputed.xlsx")
 
     _atomic_write_xlsx(df_f, filtered_path)
-    _atomic_write_xlsx(df_i, imputed_path)
 
     print(f"\n\nFiltered metrics saved to: {filtered_path}")
-    print(f"Imputed metrics saved to: {imputed_path}")
-    print(f"Total metric rows: {len(metrics_df)} ({len(df_f)} filtered + {len(df_i)} imputed)")
+    print(f"Total metric rows: {len(df_f)}")
 
     return metrics_df, merged_dfs
 
@@ -1350,27 +1335,23 @@ if __name__ == "__main__":
         return str(od / f"metrics_summary_{mk}.xlsx")
 
     if args.all_models:
-        all_mode_dfs = {"filtered": [], "imputed": []}
+        all_filtered_dfs = []
         for mk in _all_model_keys:
             cfg = _build_config(mk)
             cfg["output_csv"] = _output_stem(mk)
             mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
             shared = mdf[mdf["mode"].isna()]
-            for mode_key in ("filtered", "imputed"):
-                md = pd.concat([
-                    mdf[mdf["mode"] == mode_key],
-                    shared.assign(mode=mode_key),
-                ], ignore_index=True).drop(columns=["mode"])
-                md["model"] = mk
-                all_mode_dfs[mode_key].append(md)
-        for mode_key in ("filtered", "imputed"):
-            combined = pd.concat(all_mode_dfs[mode_key], ignore_index=True)
-            suffix = "" if mode_key == "filtered" else "_imputed"
-            _atomic_write_xlsx(combined, str(PROJECT_ROOT / "Analysis" / "MetricsSummary" / f"metrics_summary_all_models{suffix}.xlsx"))
+            md = pd.concat([
+                mdf[mdf["mode"] == "filtered"],
+                shared.assign(mode="filtered"),
+            ], ignore_index=True).drop(columns=["mode"])
+            md["model"] = mk
+            all_filtered_dfs.append(md)
+        combined = pd.concat(all_filtered_dfs, ignore_index=True)
+        _atomic_write_xlsx(combined, str(PROJECT_ROOT / "Analysis" / "MetricsSummary" / "metrics_summary_all_models.xlsx"))
         print(f"\nCombined metrics saved for all models.")
     else:
         mk = args.model if args.model else MODEL_KEY
         cfg = _build_config(mk)
         cfg["output_csv"] = _output_stem(mk)
         metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
-
