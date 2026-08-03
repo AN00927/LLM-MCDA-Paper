@@ -34,7 +34,7 @@ Weights are constant across all decision types, architectures, and the ground-tr
 | Comfort | 20% | Dominant driver of HVAC behavior even when it conflicts with energy savings; ASHRAE 55 provides a physically interpretable anchor |
 | Practicality | 15% | Constraint on feasibility and long-term adoption |
 
-A sensitivity analysis confirms architecture ordering is stable under +/-0.05 perturbations to each criterion weight (see [Sensitivity Analysis](#sensitivity-analysis) below).
+A sensitivity analysis confirms LLM-Parameterized_Reference_Scoring's advantage over RAG-Enhanced is unconditional across every weight vector tested. RAG-Enhanced's advantage over Pure Prompting holds under baseline, equal, and entropy-derived weights but narrows and reverses in a few model/decision-type cells under MEREC-derived weights, which load heavily onto Comfort rather than cost and emissions (see [Sensitivity Analysis](#sensitivity-analysis) below).
 
 ---
 
@@ -93,9 +93,7 @@ LLM-Parameterized_Reference_Scoring dominates across all four models. RAG-Enhanc
 
 ### Imputation Robustness Test
 
-`--impute-failures` retains failed scenarios by replacing sentinel scores (1928) with a configurable value (default 0.5, the 0-1 scale midpoint). `--impute-value` controls the replacement. Sentinels occur when an LLM call produces no valid scores for an alternative. Non-imputed mode drops the entire scenario. Imputed mode assigns the neutral score, then runs weighted scoring and ranking normally.
-
-We ran all 4 models across all 3 architectures with `--impute-failures --impute-value 5.0`. Results matched non-imputed output exactly for every model and architecture. The single scenario retaining all-run sentinels (GPT-OSS Hybrid SID 14) carries alternatives `"Alternative 1 (extraction failed)"` — placeholders that match no ground-truth alternative, so the scenario is dropped at the content-matching stage before the sentinel filter runs. No scenario that passed matching contained sentinel scores. The feature is wired and correct on this dataset; it matters for single-run runs or models where extraction fails on scenarios whose alternatives match ground truth.
+Per-run imputed robustness is computed via [paper_pipeline/rebuild_imputed_robustness.py](paper_pipeline/rebuild_imputed_robustness.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Output is written to [Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx](Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx).
 
 ---
 
@@ -315,7 +313,7 @@ where eta = 0.92 (UEF for 40-55 gal electric tank). Environmental impact = GPM *
 
 ## Sensitivity Analysis
 
-Ten weight scenarios test stability of architecture ordering under +/-0.05 perturbations to each criterion weight (difference redistributed equally across the remaining three) plus an equal-weight scenario.
+[SensitivityAnalysis.py](Miscellaneous%20Scripts/SensitivityAnalysis.py) still computes the ten single-criterion `+/-0.05` perturbation scenarios below plus an equal-weight scenario, but these are **no longer the reported robustness check in the paper**: they move the RAG-Enhanced minus Pure Prompting gap only within 0.179-0.225, a narrower range than the entropy- and MEREC-derived weight vectors reach (0.090 under the MEREC HVAC vector), so they cannot establish weight robustness on their own. They are retained here for completeness and are still exercised by the script.
 
 | Scenario | w(EnergyCost) | w(Environmental) | w(Comfort) | w(Practicality) |
 | --- | --- | --- | --- | --- |
@@ -330,7 +328,14 @@ Ten weight scenarios test stability of architecture ordering under +/-0.05 pertu
 | Pra -0.05 | 0.3167 | 0.3667 | 0.2167 | 0.1000 |
 | Equal | 0.2500 | 0.2500 | 0.2500 | 0.2500 |
 
-Architecture ordering (LLM-Parameterized_Reference_Scoring > RAG-Enhanced > Pure Prompting) is preserved across all weight scenarios for all four models.
+### What the paper actually reports
+
+The reported sensitivity check reweights both the ground-truth ranking and the architecture rankings under the baseline, equal, and the entropy- and MEREC-derived vectors (see [Objective Weight Validation Scripts](#objective-weight-validation-scripts) below), applied pooled and per decision type, per model (never pooled across models — see `tab:sensitivity_by_model` in `paper/paper_draft_working.tex`).
+
+- **LLM-Parameterized_Reference_Scoring's advantage over RAG-Enhanced is unconditional**: it holds in all 28 model x weight-vector cells tested, by a margin of at least 0.277 Kendall's tau.
+- **RAG-Enhanced's advantage over Pure Prompting is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights — which load heavily onto Comfort rather than cost and emissions — narrow the gap sharply and reverse it in three cells plus one exact tie: Gemini under the MEREC HVAC vector (Pure Prompting 0.682 vs. RAG-Enhanced 0.617), DeepSeek under MEREC HVAC (0.528 vs. 0.470) and MEREC per-type (0.456 vs. 0.419), and Gemini under MEREC pooled (an exact tie at 0.655). The RAG-Enhanced > Pure Prompting result should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
+
+This reversal was hidden by an earlier four-model-mean presentation of the same analysis; per the project's no-pooling-across-models convention (see `CLAUDE.md`), sensitivity results are reported per model.
 
 ---
 
@@ -348,10 +353,10 @@ Two scripts independently validate the subjective MAVT weights against the groun
 | Script | Purpose |
 | --- | --- |
 | [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes ChromaDB vector index from RAG scenario files (35 HVAC, 35 Appliance, 20 Shower). Computes SHA-256 of source files and stores schema version in collection metadata to detect when rebuild is needed. Current schema version: 4. |
-| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1/2 accuracy, Kendall's tau, Spearman rho, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to ground truth. Supports `--impute-failures` to replace sentinels with a configurable value (default 5.0) instead of dropping scenarios. Outputs metrics_summary_{MODEL_KEY}.xlsx (or *_imputed.xlsx). |
+| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1/2 accuracy, Kendall's tau, Spearman rho, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to ground truth. Outputs metrics_summary_{MODEL_KEY}.xlsx. |
 | [CreateRepresentativeSample.py](Miscellaneous Scripts/CreateRepresentativeSample.py) | Drop-in replacement for RunRAGAblations.py's stratified_sample. Stratafies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation samples. |
 | [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs updated ground truth scores back into RAG scenario workbooks after re-running ground truth calculators. Matches on descriptor columns. Run after calculator updates, then re-run BuildRAG.py. |
-| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Reruns ranking metrics across 10 weight perturbation scenarios (+/-0.05 per criterion + equal weights). Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
+| [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). The paper reports only the baseline/equal/entropy/MEREC arms (see [Sensitivity Analysis](#sensitivity-analysis)); the +/-0.05 arms are still computed but not reported. Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
 | [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Computes Shannon entropy weights from ground-truth score distributions overall and by decision type. Outputs entropy_weights.xlsx. |
 | [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Outputs merec_weights_summary.xlsx. |
 | [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers implied weights from ground-truth ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Outputs implied_weights_summary.xlsx. |

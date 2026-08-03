@@ -55,6 +55,17 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   `TEMPERATURE`, `MAX_RETRIES=10`, `REQUEST_TIMEOUT=90`, `RETRY_BASE_DELAY`,
   `MAX_RETRY_BACKOFF`. All three `query_openrouter` implementations share this policy
   and report `latency_ms` measured around the successful POST only.
+- **Every run must record a UTC collection timestamp.** Any new run output (per-run
+  xlsx and `*_raw.jsonl`) needs a wall-clock timestamp per run. The shipped benchmark
+  runs do not have one, and that omission is expensive: the 2026-08-03 A_H
+  alternative-ordering experiment had to collect a 3-run contemporaneous control arm
+  (2,340 extra API calls) purely to rule out provider drift, because a gap between a
+  new arm and an undated older arm is equally consistent with an ordering effect and
+  with the provider changing under you. That control earned its cost — DeepSeek's
+  run-to-run parameter agreement was 0.42 in the old session and 0.64/0.67 in the new
+  one with no manipulation involved, which without the control would have read as a
+  finding. With timestamps, a contemporaneous control becomes optional rather than
+  mandatory.
 - **Proxy/true pairs (intentional):** the LLM sees a homeowner-accessible label/estimate;
   the calculator gets the true engineering value. Never leak the true value to the LLM
   prompt, never let the calculator score the label directly.

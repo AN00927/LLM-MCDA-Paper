@@ -1,50 +1,3 @@
-#!/usr/bin/env python3
-"""
-PositionBiasControl.py
-
-Additive control arm for alternative-order (position) bias. This does NOT
-replace or modify the shipped five-run benchmark. It scores a stratified
-subsample of the Test corpus once more with the order of the three
-alternatives reversed, then compares that arm against the five shipped runs
-restricted to the same scenarios.
-
-Design
-------
-Manipulation:  scenario['alternative_1'], ['alternative_2'], ['alternative_3']
-               are reversed before the scenario record reaches the
-               architecture. That flips (a) the order of the "Other
-               alternatives available for this decision" list in the user
-               prompt, (b) the order in which the three independent scoring
-               calls are issued, and (c) the row order, which is what the
-               stable mergesort in apply_mavt_ranking uses to break ties.
-               Nothing else in the prompt changes. The scenario context
-               fields are NOT reordered -- this arm isolates the ordering of
-               the choice set, not of the context.
-
-Scope:        A_D (Direct) and A_E (Example-Guided) only. A_H has no
-              exposure: its LLM call extracts physical parameters and never
-              sees the alternatives, which the calculator enumerates itself.
-
-Reference:    The shipped arm is the existing five runs subset to the same
-              scenarios. That gives a five-value reference distribution per
-              metric at zero additional API cost, so the reversed arm is
-              judged against real run-to-run variation rather than against a
-              single point estimate.
-
-Cost:         n_scenarios x 3 alternatives x 2 architectures API calls.
-              At the default n=60 that is 360 calls.
-
-Usage
------
-    python "Miscellaneous Scripts/PositionBiasControl.py" run --model qwen
-    python "Miscellaneous Scripts/PositionBiasControl.py" analyze --model qwen
-
-    # weakest and strongest, if budget allows two:
-    python "Miscellaneous Scripts/PositionBiasControl.py" run --model gemini
-
-`run` is resume-aware per architecture: a complete output file is skipped.
-`analyze` makes no API calls and can be re-run freely.
-"""
 
 import argparse
 import json
@@ -76,12 +29,20 @@ ALT_COLS = ["alternative_1", "alternative_2", "alternative_3"]
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
-DEFAULT_N = 60
+# The shipped arm ran the full corpus. A smaller default would silently
+# downsample an arm launched without --n, so there is no default: pass it.
+DEFAULT_N = 195
 DEFAULT_SEED = 20260803
 
+# A_D only. A_E was dropped: its arm changes the same two-element "other
+# options" list A_D's does, and an earlier A_E run was invalidated when the
+# module's Chroma resources were never initialised, so retrieval silently
+# returned nothing and the arm measured exemplar removal instead of ordering.
+# The architecture whose prompt actually presents all three alternatives as a
+# numbered sequence is A_H, and that arm now lives in RunHybridAblations.py
+# where it can be compared against A_H's own run-to-run variation.
 ARCHITECTURES = {
     "Direct_LLM_Scoring": PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py",
-    "Example-Guided_LLM_Scoring": PROJECT_ROOT / "Architectures" / "Example-Guided_LLM_Scoring.py",
 }
 
 RESULT_COLUMNS = [
@@ -143,15 +104,14 @@ def stratified_sample(scenarios, n_total, seed):
     sampled.sort(key=lambda s: s["scenario_id"])
     return sampled, alloc
 
-
 def reverse_alternatives(scenario):
     """Return a copy with alternative_1/2/3 reversed. Blank slots are left in
     place so a scenario with fewer than three alternatives is not corrupted."""
     out = dict(scenario)
     present = [scenario.get(c) for c in ALT_COLS]
-    filled = [a for a in present if a not in (None, "", "N/A") and str(a).strip() != ""]
-    reversed_filled = list(reversed(filled))
-    it = iter(reversed_filled)
+    filled = [a for a in present
+              if a not in (None, "", "N/A") and str(a).strip() != ""]
+    it = iter(list(reversed(filled)))
     for col, original in zip(ALT_COLS, present):
         if original in (None, "", "N/A") or str(original).strip() == "":
             out[col] = original
@@ -159,10 +119,6 @@ def reverse_alternatives(scenario):
             out[col] = next(it)
     return out
 
-
-# --------------------------------------------------------------------------
-# architecture loading
-# --------------------------------------------------------------------------
 
 def load_architecture_module(arch_name, model_key):
     """Load an architecture module from its path (the names contain hyphens,
@@ -179,19 +135,15 @@ def load_architecture_module(arch_name, model_key):
     mod.API_CONFIG["model"] = model_config.get_model_id(model_key)
     mod.API_CONFIG["reasoning"] = model_config.get_reasoning_payload(model_key)
     print(f"  [INFO] {arch_name} pointed at {mod.API_CONFIG['model']}")
+
+    # A_D holds no retrieval or index state, so importing the module and calling
+    # run_scenario directly is complete. An architecture that initialises
+    # resources inside main() would need that initialisation reproduced here and
+    # asserted live -- skipping it degrades silently rather than raising.
     return mod
 
 
 def normalize_result(result, scenario):
-    """Flatten one run_scenario() return into result rows.
-
-    The two architectures return slightly different shapes: A_D puts criterion
-    scores directly on each alternative entry and returns 'ranking_results';
-    A_E nests them under 'scores' and returns 'ranking_result'. Failure
-    semantics are mirrored from A_D exactly -- if any alternative in the
-    scenario failed, every row for that scenario is written as the sentinel,
-    which is what filter_failed_scenarios expects downstream.
-    """
     alt_entries = result.get("alternatives_scores", [])
     ranking = result.get("ranking_results") or result.get("ranking_result") or {}
     ranks = ranking.get("ranks", [])
@@ -257,8 +209,6 @@ def normalize_result(result, scenario):
 
 
 # --------------------------------------------------------------------------
-# run
-# --------------------------------------------------------------------------
 
 def output_dir_for(model_key):
     return PROJECT_ROOT / get_output_folder(model_key) / "position_bias"
@@ -298,10 +248,24 @@ def write_sample_manifest(sampled, alloc, model_key, n_total, seed):
     return manifest_path
 
 
-def run_reversed_arm(model_key, n_total, seed):
+ARM_SUFFIX = "reversed"
+
+
+def run_reversed_arm(model_key, n_total, seed, n_runs=1):
+    """Reverse the alternative order in the scenario handed to A_D.
+
+    A_D scores one alternative per stateless call, so the only text that moves
+    is the two-element "other options" list shown alongside the alternative
+    under scoring. That is a weak manipulation by construction, which is the
+    point: it bounds how much of A_D's behaviour could be presentational.
+    """
     scenarios = load_scenarios()
     sampled, alloc = stratified_sample(scenarios, n_total, seed)
 
+    suffix = ARM_SUFFIX
+    arch_list = list(ARCHITECTURES)
+
+    print(f"Runs: {n_runs} | architectures: {arch_list}")
     print(f"Sampled {len(sampled)} scenarios (seed={seed})")
     for dtype in sorted(alloc):
         print(f"  {dtype}: {alloc[dtype]}")
@@ -310,18 +274,20 @@ def run_reversed_arm(model_key, n_total, seed):
     out_dir.mkdir(parents=True, exist_ok=True)
     write_sample_manifest(sampled, alloc, model_key, n_total, seed)
 
-    for arch_name in ARCHITECTURES:
-        out_path = out_dir / f"{arch_name}_reversed_run_01.xlsx"
+    for arch_name, run_idx in [(a, r) for a in arch_list
+                               for r in range(1, n_runs + 1)]:
+        out_path = out_dir / f"{arch_name}_{suffix}_run_{run_idx:02d}.xlsx"
         if _is_complete_run_file(out_path):
             print(f"[SKIP] {arch_name}: {out_path.name} already complete")
             continue
 
-        print(f"\n=== {arch_name}: reversed arm, {len(sampled)} scenarios ===")
+        print(f"\n=== {arch_name}: reversed arm, run {run_idx}/{n_runs}, "
+              f"{len(sampled)} scenarios ===")
 
         # Per-scenario checkpoint. A long arm (195 scenarios x 3 alternatives)
         # should survive a dropped connection, so completed scenarios are
         # appended to a jsonl and skipped on restart.
-        ckpt_path = out_dir / f"{arch_name}_reversed_partial.jsonl"
+        ckpt_path = out_dir / f"{arch_name}_{suffix}_partial_run_{run_idx:02d}.jsonl"
         rows = []
         done_ids = set()
         if ckpt_path.exists():
@@ -419,7 +385,7 @@ def _top1_by_scenario(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_
         sc = clean[clean["arch_scenario_id"] == sid]
         if len(sc) < 2:
             continue
-        gt_r = sc["gt_rank"].astype(float).values
+        gt_r = sc["gt_rank"].astype(float).values 
         ar_r = sc["arch_rank"].astype(float).values
         if np.isnan(gt_r).any() or np.isnan(ar_r).any():
             continue
@@ -517,11 +483,21 @@ def analyze(model_key):
     rows = []
     paired_rows = []
 
-    for arch_name in ARCHITECTURES:
-        reversed_path = out_dir / f"{arch_name}_reversed_run_01.xlsx"
-        if not reversed_path.exists():
-            print(f"[SKIP] {arch_name}: {reversed_path.name} not found")
-            continue
+    suffix = ARM_SUFFIX
+    arch_list = list(ARCHITECTURES)
+    arm_runs = [
+        (a, p)
+        for a in arch_list
+        for p in sorted(out_dir.glob(f"{a}_{suffix}_run_*.xlsx"))
+        if _is_complete_run_file(p)
+    ]
+    if not arm_runs:
+        print(f"[ERROR] No complete reversed-arm runs in {out_dir}")
+        return
+    print(f"Reversed arm | {len(arm_runs)} run file(s)")
+
+    for arch_name, reversed_path in arm_runs:
+        rev_run = int(reversed_path.stem.split("_run_")[-1])
 
         rev_df = mod.load_architecture(reversed_path, arch_name)
         rev_overall, rev_by_type = _metrics_for(
@@ -562,6 +538,8 @@ def analyze(model_key):
                 z = delta / sd if sd and not np.isnan(sd) and sd > 0 else float("nan")
                 rows.append({
                     "architecture": arch_name,
+                    "arm": "reversed",
+                    "arm_run": rev_run,
                     "scope": scope,
                     "metric": key,
                     "reversed": round(float(rev_metrics[key]), 4),
@@ -621,6 +599,8 @@ def analyze(model_key):
                 )
                 paired_rows.append({
                     "architecture": arch_name,
+                    "arm": "reversed",
+                    "arm_run": rev_run,
                     "comparison": f"reversed_vs_shipped[{dt}]",
                     "shipped_run": run_id,
                     "n_paired_scenarios": n_dt,
@@ -634,6 +614,8 @@ def analyze(model_key):
 
             paired_rows.append({
                 "architecture": arch_name,
+                "arm": "reversed",
+                "arm_run": rev_run,
                 "comparison": "reversed_vs_shipped",
                 "shipped_run": run_id,
                 "n_paired_scenarios": n_pairs,
@@ -657,6 +639,8 @@ def analyze(model_key):
                 )
                 paired_rows.append({
                     "architecture": arch_name,
+                    "arm": "reversed",
+                    "arm_run": rev_run,
                     "comparison": "shipped_vs_shipped",
                     "shipped_run": f"{run_ids[i]}v{run_ids[j]}",
                     "n_paired_scenarios": np.nan,
@@ -743,10 +727,14 @@ def main():
     parser.add_argument("--n", type=int, default=DEFAULT_N,
                         help=f"Scenarios to sample (default {DEFAULT_N})")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    parser.add_argument("--runs", type=int, default=1,
+                        help="Repeat runs of the arm. Use >1 when the expected "
+                             "result is a null, so the comparison has a "
+                             "variance estimate on both sides.")
     args = parser.parse_args()
 
     if args.command == "run":
-        run_reversed_arm(args.model, args.n, args.seed)
+        run_reversed_arm(args.model, args.n, args.seed, n_runs=args.runs)
     else:
         analyze(args.model)
 
