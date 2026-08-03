@@ -1,10 +1,10 @@
 """
-failure_analysis.py
+analyze_benchmark_failures.py
 
 Scans per-run xlsx files for 1928 sentinel values, loads diagnostics JSONs for
 failure mode breakdown, and outputs LaTeX tables for a failure analysis subsection.
 
-Usage: python paper_pipeline/failure_analysis.py
+Usage: python paper_pipeline/analyze_benchmark_failures.py
 """
 import json
 import pandas as pd

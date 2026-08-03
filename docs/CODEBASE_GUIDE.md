@@ -45,15 +45,15 @@ LLM-MCDA Paper/
 │   ├── ApplianceGroundTruthCalculator.py
 │   └── ShowerGroundTruthCalculator.py
 ├── Miscellaneous Scripts/
-│   ├── BuildRAG.py
-│   ├── CalculateMetrics.py
-│   ├── SyncRAGGroundTruth.py
+│   ├── build_rag_index.py
+│   ├── evaluate_architecture_metrics.py
+│   ├── sync_rag_ground_truth_scores.py
 │   ├── SensitivityAnalysis.py
 │   ├── EntropyWeights.py
-│   ├── ImpliedWeights.py
-│   ├── MERCECWeights.py
-│   ├── EvaluateHybridExtraction.py
-│   └── RunRAGAblations.py
+│   ├── implied_weights.py
+│   ├── merec_weights.py
+│   ├── evaluate_parameter_extraction.py
+│   └── run_rag_ablation_experiments.py
 ├── Scenario Files/
 │   ├── ConsolidatedforSimaltaneousediting.xlsx
 │   ├── HVACScenarios.xlsx
@@ -63,7 +63,7 @@ LLM-MCDA Paper/
 │   ├── ApplianceRAGScenarios.xlsx
 │   ├── ShowerRAGScenarios.xlsx
 │   ├── TestScenarios.xlsx
-│   └── rebuild_consolidated.py
+│   └── build_consolidated_scenario_workbooks.py
 ├── Scoring Logic and Documentation/
 ├── tests/
 ├── model_config.py
@@ -140,7 +140,7 @@ The label helpers are shared by scenario rebuild, RAG index construction, and RA
 
 `Scenario Files/ConsolidatedforSimaltaneousediting.xlsx` is the source workbook for derived scenario sheets.
 
-`Scenario Files/rebuild_consolidated.py` derives:
+`Scenario Files/build_consolidated_scenario_workbooks.py` derives:
 
 - `Scenario Files/TestScenarios.xlsx`
 - `Scenario Files/HVACRagScenarios.xlsx`
@@ -151,16 +151,16 @@ It also backs up first, cleans master pools, caches existing RAG scores, re-deri
 
 Key constants:
 
-- backup path and workbook path at `Scenario Files/rebuild_consolidated.py:29`
-- shared label helpers imported at `Scenario Files/rebuild_consolidated.py:37`
-- `backup()` at `Scenario Files/rebuild_consolidated.py:45`
-- `clean_text()` at `Scenario Files/rebuild_consolidated.py:58`
-- `to_clock()` at `Scenario Files/rebuild_consolidated.py:110`
-- `alt_norm()` at `Scenario Files/rebuild_consolidated.py:137`
-- `put()` for typed Excel writes at `Scenario Files/rebuild_consolidated.py:171`
-- `export_standalone()` at `Scenario Files/rebuild_consolidated.py:184`
-- canonical column definitions at `Scenario Files/rebuild_consolidated.py:224`
-- `main()` at `Scenario Files/rebuild_consolidated.py:267`
+- backup path and workbook path at `Scenario Files/build_consolidated_scenario_workbooks.py:29`
+- shared label helpers imported at `Scenario Files/build_consolidated_scenario_workbooks.py:37`
+- `backup()` at `Scenario Files/build_consolidated_scenario_workbooks.py:45`
+- `clean_text()` at `Scenario Files/build_consolidated_scenario_workbooks.py:58`
+- `to_clock()` at `Scenario Files/build_consolidated_scenario_workbooks.py:110`
+- `alt_norm()` at `Scenario Files/build_consolidated_scenario_workbooks.py:137`
+- `put()` for typed Excel writes at `Scenario Files/build_consolidated_scenario_workbooks.py:171`
+- `export_standalone()` at `Scenario Files/build_consolidated_scenario_workbooks.py:184`
+- canonical column definitions at `Scenario Files/build_consolidated_scenario_workbooks.py:224`
+- `main()` at `Scenario Files/build_consolidated_scenario_workbooks.py:267`
 
 Schema details are documented in `XLSX_Schema_Map.md:1`.
 
@@ -221,11 +221,11 @@ Important functions:
 Order when scenario data changes:
 
 ```text
-python "Scenario Files/rebuild_consolidated.py"
-python "Miscellaneous Scripts/BuildRAG.py"
+python "Scenario Files/build_consolidated_scenario_workbooks.py"
+python "Miscellaneous Scripts/build_rag_index.py"
 ```
 
-`rebuild_consolidated.py` derives Test/RAG sheets from the master workbook. `BuildRAG.py` must run afterward because the Chroma source hash is computed from the RAG sheet bytes.
+`build_consolidated_scenario_workbooks.py` derives Test/RAG sheets from the master workbook. `build_rag_index.py` must run afterward because the Chroma source hash is computed from the RAG sheet bytes.
 
 ### 5.3 Ground truth generation
 
@@ -235,8 +235,8 @@ Order when a ground-truth calculator changes:
 python "Ground Truth Calculators/HVACGroundTruthCalculator.py"
 python "Ground Truth Calculators/ApplianceGroundTruthCalculator.py"
 python "Ground Truth Calculators/ShowerGroundTruthCalculator.py"
-python "Miscellaneous Scripts/SyncRAGGroundTruth.py"
-python "Miscellaneous Scripts/BuildRAG.py"
+python "Miscellaneous Scripts/sync_rag_ground_truth_scores.py"
+python "Miscellaneous Scripts/build_rag_index.py"
 ```
 
 Calculator entry points:
@@ -247,35 +247,35 @@ Calculator entry points:
 
 ### 5.4 RAG index build
 
-`Miscellaneous Scripts/BuildRAG.py` builds a ChromaDB persistent collection.
+`Miscellaneous Scripts/build_rag_index.py` builds a ChromaDB persistent collection.
 
 Important constants:
 
-- `CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"` at `Miscellaneous Scripts/BuildRAG.py:23`
-- `COLLECTION_NAME = "mcda_scenarios"` at `Miscellaneous Scripts/BuildRAG.py:24`
-- embedding model `sentence-transformers/all-MiniLM-L6-v2` at `Miscellaneous Scripts/BuildRAG.py:25`
-- `RAG_SCHEMA_VERSION = 4` at `Miscellaneous Scripts/BuildRAG.py:44`
+- `CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"` at `Miscellaneous Scripts/build_rag_index.py:23`
+- `COLLECTION_NAME = "mcda_scenarios"` at `Miscellaneous Scripts/build_rag_index.py:24`
+- embedding model `sentence-transformers/all-MiniLM-L6-v2` at `Miscellaneous Scripts/build_rag_index.py:25`
+- `RAG_SCHEMA_VERSION = 4` at `Miscellaneous Scripts/build_rag_index.py:44`
 
 Important functions:
 
-- `compute_source_table_hash()` at `Miscellaneous Scripts/BuildRAG.py:47`
-- `load_hvac_data()` at `Miscellaneous Scripts/BuildRAG.py:63`
-- `load_appliance_data()` at `Miscellaneous Scripts/BuildRAG.py:74`
-- `load_shower_data()` at `Miscellaneous Scripts/BuildRAG.py:84`
-- `format_scenario_text()` at `Miscellaneous Scripts/BuildRAG.py:94`
-- `build_scenario_metadata()` at `Miscellaneous Scripts/BuildRAG.py:119`
-- `build_rag_database()` at `Miscellaneous Scripts/BuildRAG.py:183`
-- `test_retrieval()` at `Miscellaneous Scripts/BuildRAG.py:314`
+- `compute_source_table_hash()` at `Miscellaneous Scripts/build_rag_index.py:47`
+- `load_hvac_data()` at `Miscellaneous Scripts/build_rag_index.py:63`
+- `load_appliance_data()` at `Miscellaneous Scripts/build_rag_index.py:74`
+- `load_shower_data()` at `Miscellaneous Scripts/build_rag_index.py:84`
+- `format_scenario_text()` at `Miscellaneous Scripts/build_rag_index.py:94`
+- `build_scenario_metadata()` at `Miscellaneous Scripts/build_rag_index.py:119`
+- `build_rag_database()` at `Miscellaneous Scripts/build_rag_index.py:183`
+- `test_retrieval()` at `Miscellaneous Scripts/build_rag_index.py:314`
 
-`BuildRAG.py` stores full scenario metadata in Chroma, including per-alternative criterion scores, MAVT scores, and ranks. See metadata construction at `Miscellaneous Scripts/BuildRAG.py:168`.
+`build_rag_index.py` stores full scenario metadata in Chroma, including per-alternative criterion scores, MAVT scores, and ranks. See metadata construction at `Miscellaneous Scripts/build_rag_index.py:168`.
 
 ### 5.5 Metrics evaluation
 
-`Miscellaneous Scripts/CalculateMetrics.py` compares architecture outputs against ground truth.
+`Miscellaneous Scripts/evaluate_architecture_metrics.py` compares architecture outputs against ground truth.
 
 Entry point:
 
-- `evaluate_all()` at `Miscellaneous Scripts/CalculateMetrics.py:799`
+- `evaluate_all()` at `Miscellaneous Scripts/evaluate_architecture_metrics.py:799`
 
 Main flow:
 
@@ -296,21 +296,21 @@ evaluate_all()
 
 Important functions:
 
-- config at `Miscellaneous Scripts/CalculateMetrics.py:25`
-- deterministic ranking helper at `Miscellaneous Scripts/CalculateMetrics.py:81`
-- sentinel row detection at `Miscellaneous Scripts/CalculateMetrics.py:127`
-- alternative normalization at `Miscellaneous Scripts/CalculateMetrics.py:170`
-- ground truth loading at `Miscellaneous Scripts/CalculateMetrics.py:197`
-- architecture loading at `Miscellaneous Scripts/CalculateMetrics.py:224`
-- per-run aggregation at `Miscellaneous Scripts/CalculateMetrics.py:257`
-- GT lookup construction at `Miscellaneous Scripts/CalculateMetrics.py:349`
-- scenario matching at `Miscellaneous Scripts/CalculateMetrics.py:410`
-- criterion metrics at `Miscellaneous Scripts/CalculateMetrics.py:607`
-- ranking metrics at `Miscellaneous Scripts/CalculateMetrics.py:633`
-- failure-rate metrics at `Miscellaneous Scripts/CalculateMetrics.py:681`
-- diagnostics JSON loading at `Miscellaneous Scripts/CalculateMetrics.py:725`
+- config at `Miscellaneous Scripts/evaluate_architecture_metrics.py:25`
+- deterministic ranking helper at `Miscellaneous Scripts/evaluate_architecture_metrics.py:81`
+- sentinel row detection at `Miscellaneous Scripts/evaluate_architecture_metrics.py:127`
+- alternative normalization at `Miscellaneous Scripts/evaluate_architecture_metrics.py:170`
+- ground truth loading at `Miscellaneous Scripts/evaluate_architecture_metrics.py:197`
+- architecture loading at `Miscellaneous Scripts/evaluate_architecture_metrics.py:224`
+- per-run aggregation at `Miscellaneous Scripts/evaluate_architecture_metrics.py:257`
+- GT lookup construction at `Miscellaneous Scripts/evaluate_architecture_metrics.py:349`
+- scenario matching at `Miscellaneous Scripts/evaluate_architecture_metrics.py:410`
+- criterion metrics at `Miscellaneous Scripts/evaluate_architecture_metrics.py:607`
+- ranking metrics at `Miscellaneous Scripts/evaluate_architecture_metrics.py:633`
+- failure-rate metrics at `Miscellaneous Scripts/evaluate_architecture_metrics.py:681`
+- diagnostics JSON loading at `Miscellaneous Scripts/evaluate_architecture_metrics.py:725`
 
-Scenario matching is content-based, not strict ID-based. Strict ID matching is disabled because architecture scenario IDs and GT scenario IDs do not align across files. See `Miscellaneous Scripts/CalculateMetrics.py:65` and `Miscellaneous Scripts/CalculateMetrics.py:410`.
+Scenario matching is content-based, not strict ID-based. Strict ID matching is disabled because architecture scenario IDs and GT scenario IDs do not align across files. See `Miscellaneous Scripts/evaluate_architecture_metrics.py:65` and `Miscellaneous Scripts/evaluate_architecture_metrics.py:410`.
 
 ## 6. Architecture comparison
 
@@ -447,10 +447,10 @@ main()
 
 RAG schema/version contract:
 
-- `BuildRAG.py` writes `schema_version` and `source_table_sha256` into Chroma metadata at `Miscellaneous Scripts/BuildRAG.py:203`.
+- `build_rag_index.py` writes `schema_version` and `source_table_sha256` into Chroma metadata at `Miscellaneous Scripts/build_rag_index.py:203`.
 - `Example-Guided_LLM_Scoring.py` verifies those values at `Architectures/Example-Guided_LLM_Scoring.py:128`.
-- If the RAG sheets change but Chroma is stale, rerun `Miscellaneous Scripts/BuildRAG.py`.
-- If the embedding text or metadata schema changes, bump `RAG_SCHEMA_VERSION` in both `Miscellaneous Scripts/BuildRAG.py:44` and `Architectures/Example-Guided_LLM_Scoring.py:67`, then rebuild.
+- If the RAG sheets change but Chroma is stale, rerun `Miscellaneous Scripts/build_rag_index.py`.
+- If the embedding text or metadata schema changes, bump `RAG_SCHEMA_VERSION` in both `Miscellaneous Scripts/build_rag_index.py:44` and `Architectures/Example-Guided_LLM_Scoring.py:67`, then rebuild.
 
 ## 9. LLM-Parameterized_Reference_Scoring architecture
 
@@ -651,7 +651,7 @@ Each architecture writes per-run files and an averaged final file under the acti
 
 ### Metrics
 
-`CalculateMetrics.py` writes:
+`evaluate_architecture_metrics.py` writes:
 
 ```text
 <output_folder>/metrics_summary_<MODEL_KEY>.xlsx
@@ -691,21 +691,21 @@ LLM-Parameterized_Reference_Scoring dynamically loads calculator classes at impo
 
 ### RAG index used by RAG architecture
 
-`BuildRAG.py` writes Chroma metadata. `Example-Guided_LLM_Scoring.py` reads and validates it.
+`build_rag_index.py` writes Chroma metadata. `Example-Guided_LLM_Scoring.py` reads and validates it.
 
-- source hash in BuildRAG: `Miscellaneous Scripts/BuildRAG.py:47`
+- source hash in build_rag_index: `Miscellaneous Scripts/build_rag_index.py:47`
 - source hash in RAG runtime: `Architectures/Example-Guided_LLM_Scoring.py:75`
-- metadata write: `Miscellaneous Scripts/BuildRAG.py:203`
+- metadata write: `Miscellaneous Scripts/build_rag_index.py:203`
 - metadata validation: `Architectures/Example-Guided_LLM_Scoring.py:128`
 - retrieval query: `Architectures/Example-Guided_LLM_Scoring.py:280`
 
 ### Metrics script reads architecture outputs and ground truth
 
-`CalculateMetrics.py` does not consume architecture JSON directly for scoring metrics. It reads XLSX outputs or per-run XLSX files and separately loads diagnostics JSON for failure-mode counters.
+`evaluate_architecture_metrics.py` does not consume architecture JSON directly for scoring metrics. It reads XLSX outputs or per-run XLSX files and separately loads diagnostics JSON for failure-mode counters.
 
-- architecture config at `Miscellaneous Scripts/CalculateMetrics.py:33`
-- aggregate run files at `Miscellaneous Scripts/CalculateMetrics.py:257`
-- diagnostics JSON at `Miscellaneous Scripts/CalculateMetrics.py:725`
+- architecture config at `Miscellaneous Scripts/evaluate_architecture_metrics.py:33`
+- aggregate run files at `Miscellaneous Scripts/evaluate_architecture_metrics.py:257`
+- diagnostics JSON at `Miscellaneous Scripts/evaluate_architecture_metrics.py:725`
 
 ## 13. Tests and audits
 
@@ -777,7 +777,7 @@ python "Architectures/LLM-Parameterized_Reference_Scoring.py"
 Rebuild Test/RAG sheets from the master workbook:
 
 ```powershell
-python "Scenario Files/rebuild_consolidated.py"
+python "Scenario Files/build_consolidated_scenario_workbooks.py"
 ```
 
 Regenerate ground truth:
@@ -791,19 +791,19 @@ python "Ground Truth Calculators/ShowerGroundTruthCalculator.py"
 Refresh RAG score columns after calculator changes:
 
 ```powershell
-python "Miscellaneous Scripts/SyncRAGGroundTruth.py"
+python "Miscellaneous Scripts/sync_rag_ground_truth_scores.py"
 ```
 
 Rebuild the RAG vector database:
 
 ```powershell
-python "Miscellaneous Scripts/BuildRAG.py"
+python "Miscellaneous Scripts/build_rag_index.py"
 ```
 
 Compute metrics:
 
 ```powershell
-python "Miscellaneous Scripts/CalculateMetrics.py"
+python "Miscellaneous Scripts/evaluate_architecture_metrics.py"
 ```
 
 Run focused tests:
@@ -826,15 +826,15 @@ python "tests/audit_scenarios.py"
 | Change `TIE_BREAK_PRIORITY` | `model_config.py:31`, calculators, metrics | update architecture rankers if they should match GT tie-break; rerun metrics | GT and architecture ranks may disagree on ties |
 | Change API model, temperature, retry policy | `model_config.py`, all architecture `query_openrouter` functions | rerun affected architectures | outputs reflect different model behavior |
 | Change `N_RUNS` | `model_config.py`, all `run_multi_and_aggregate` loops | rerun benchmarks | old outputs may mix different run counts |
-| Change scenario master workbook | `Scenario Files/rebuild_consolidated.py` | rerun rebuild, rebuild RAG, rerun affected outputs | Test/RAG sheets drift from source |
-| Change age/flow banding | `sentinel_utils.py`, `rebuild_consolidated.py`, `BuildRAG.py`, `Example-Guided_LLM_Scoring.py` | rebuild Test/RAG, rebuild Chroma | RAG query/index text no longer matches |
-| Change ground-truth formula | domain calculator | rerun calculator, `SyncRAGGroundTruth.py`, `BuildRAG.py`, all architectures, metrics | RAG exemplars and metrics use stale GT |
-| Change RAG metadata schema or embedding text | `BuildRAG.py`, `Example-Guided_LLM_Scoring.py`, `sentinel_utils.py` | bump `RAG_SCHEMA_VERSION` in both files, rebuild Chroma | stale Chroma metadata can silently corrupt retrieval |
+| Change scenario master workbook | `Scenario Files/build_consolidated_scenario_workbooks.py` | rerun rebuild, rebuild RAG, rerun affected outputs | Test/RAG sheets drift from source |
+| Change age/flow banding | `sentinel_utils.py`, `build_consolidated_scenario_workbooks.py`, `build_rag_index.py`, `Example-Guided_LLM_Scoring.py` | rebuild Test/RAG, rebuild Chroma | RAG query/index text no longer matches |
+| Change ground-truth formula | domain calculator | rerun calculator, `sync_rag_ground_truth_scores.py`, `build_rag_index.py`, all architectures, metrics | RAG exemplars and metrics use stale GT |
+| Change RAG metadata schema or embedding text | `build_rag_index.py`, `Example-Guided_LLM_Scoring.py`, `sentinel_utils.py` | bump `RAG_SCHEMA_VERSION` in both files, rebuild Chroma | stale Chroma metadata can silently corrupt retrieval |
 | Change Pure prompt | `Architectures/Direct_LLM_Scoring.py` | rerun Pure only | other architectures remain comparable |
 | Change RAG prompt/context | `Architectures/Example-Guided_LLM_Scoring.py` | rerun RAG only | Pure/LLM-Parameterized_Reference_Scoring remain comparable |
 | Change LLM-Parameterized_Reference_Scoring extraction prompt or validation | `Architectures/LLM-Parameterized_Reference_Scoring.py` | rerun LLM-Parameterized_Reference_Scoring only | Pure/RAG remain comparable |
-| Change metric matching | `Miscellaneous Scripts/CalculateMetrics.py` | rerun metrics only | benchmark outputs need not change |
-| Change output schema | architecture and metrics | update `CalculateMetrics.py` column mappings and tests | metrics may drop columns or misread fields |
+| Change metric matching | `Miscellaneous Scripts/evaluate_architecture_metrics.py` | rerun metrics only | benchmark outputs need not change |
+| Change output schema | architecture and metrics | update `evaluate_architecture_metrics.py` column mappings and tests | metrics may drop columns or misread fields |
 | Add new architecture | new file under `Architectures/`, `run_benchmarks.py`, metrics config | add tests for sentinel/aggregation/output schema | new outputs may not be evaluated |
 
 ## 17. Known consistency points to watch during refactors
@@ -843,7 +843,7 @@ python "tests/audit_scenarios.py"
 2. Do not average `1928` as if it were a score.
 3. Do not let failed numeric extraction become `0.0`; zero energy/cost can become a fabricated perfect score.
 4. RAG query text and RAG index text must be produced from the same embedding formatter. The shared function is `format_embedding_text()` at `sentinel_utils.py:258`.
-5. RAG schema version must be bumped in both `BuildRAG.py` and `Example-Guided_LLM_Scoring.py` when embedding or metadata changes.
+5. RAG schema version must be bumped in both `build_rag_index.py` and `Example-Guided_LLM_Scoring.py` when embedding or metadata changes.
 6. Scenario IDs are not globally aligned across Test, RAG, and Ground Truth. Metrics match by content and normalized alternatives, not by raw ID.
 7. Ground-truth calculators currently use `TIE_BREAK_PRIORITY` in their ranking helpers, while the three architecture `apply_mavt_ranking()` functions sort by weighted score only:
    - Pure: `Architectures/Direct_LLM_Scoring.py:378`
@@ -871,7 +871,7 @@ Refactors that would be risky:
 
 - Changing the sentinel value.
 - Changing RAG embedding text without rebuilding Chroma.
-- Changing scenario-derived sheet schemas without updating `XLSX_Schema_Map.md`, `CalculateMetrics.py`, and tests.
+- Changing scenario-derived sheet schemas without updating `XLSX_Schema_Map.md`, `evaluate_architecture_metrics.py`, and tests.
 - Changing ground-truth formulas without refreshing RAG exemplars and metrics.
 
 ## 19. Practical mental model

@@ -11,16 +11,16 @@ true_params is a ceiling by construction (tau = 1.0, MAE = 0 for every
 scenario), so pairs involving it are reported but are not evidence about the
 method -- they quantify the remaining headroom.
 
-As in PromptAblationSignificance.py, no statistic is implemented here. The
+As in test_prompt_ablation_significance.py, no statistic is implemented here. The
 Friedman / Wilcoxon-Holm / Cliff's delta / bootstrap functions come from
-RunRAGAblations.py, so all three ablations in the paper are tested by the
+run_rag_ablation_experiments.py, so all three ablations in the paper are tested by the
 same reviewed code.
 
 Tests run within each model. Pooling models would confound provenance effects
 with model effects.
 
 Significance-testing methodology (two correction layers, identical in kind to
-RunRAGAblations.py and PromptAblationSignificance.py):
+run_rag_ablation_experiments.py and test_prompt_ablation_significance.py):
   1. Friedman omnibus test per (model, metric) -- 3 models x 3 metrics = 9
      independent tests. Holm-Bonferroni correction is applied ACROSS this
      whole family before any p-value is used downstream, so the 9 omnibus
@@ -40,7 +40,7 @@ Outputs (Analysis/Hybrid_Ablation/):
     hybrid_ablation_significance.xlsx     friedman / posthoc / descriptives
 
 Run:
-    python "Miscellaneous Scripts/HybridAblationSignificance.py"
+    python "Miscellaneous Scripts/test_hybrid_ablation_significance.py"
 """
 
 import importlib.util
@@ -60,7 +60,7 @@ METRIC_COLS = ["kendall_tau", "top1", "mae"]
 
 
 def _load_rag_module():
-    path = Path(__file__).resolve().parent / "RunRAGAblations.py"
+    path = Path(__file__).resolve().parent / "run_rag_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_rag_ablations", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -69,7 +69,7 @@ def _load_rag_module():
 
 def main():
     if not SUMMARY_XLSX.exists():
-        raise SystemExit(f"Missing {SUMMARY_XLSX}. Run RunHybridAblations.py first.")
+        raise SystemExit(f"Missing {SUMMARY_XLSX}. Run run_hybrid_ablation_experiments.py first.")
 
     rag = _load_rag_module()
     df = pd.read_excel(SUMMARY_XLSX, sheet_name="per_scenario")
@@ -92,7 +92,7 @@ def main():
         # Bootstrap CIs are left ungated: they describe each arm's own
         # sampling uncertainty, not a pairwise comparison, so they are
         # computed for every model x metric regardless of the Friedman
-        # outcome (matching RunRAGAblations.py and PromptAblationSignificance.py).
+        # outcome (matching run_rag_ablation_experiments.py and test_prompt_ablation_significance.py).
         for metric in METRIC_COLS:
             bc = rag.bootstrap_ci_per_config(stratum, metric, config_col="arm")
             for _, r in bc.iterrows():
@@ -104,8 +104,8 @@ def main():
     # independent Friedman omnibus tests are run above, one per (model,
     # metric) pair. Holm-Bonferroni correction is applied ACROSS this whole
     # family before it is used for anything downstream, for the same reason
-    # and using the same method as RunRAGAblations.py (4-test family) and
-    # PromptAblationSignificance.py (12-test family): reporting several
+    # and using the same method as run_rag_ablation_experiments.py (4-test family) and
+    # test_prompt_ablation_significance.py (12-test family): reporting several
     # omnibus tests side by side at nominal alpha=0.05 with no correction
     # inflates the family-wise false-positive rate across the study.
     if not friedman.empty:

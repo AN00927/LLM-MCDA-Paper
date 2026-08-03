@@ -705,7 +705,7 @@ outputs, this needs no new runs. Report which route you took.
 
 # PART B — Code fixes
 
-### B1. Dead-code trap in `Miscellaneous Scripts/CalculateMetrics.py` (~lines 795-812)
+### B1. Dead-code trap in `Miscellaneous Scripts/evaluate_architecture_metrics.py` (~lines 795-812)
 
 ```python
 # top-2
@@ -729,7 +729,7 @@ confirmed by an exhaustive repo search — there are exactly two implementations
 **So this is a latent trap, not a results bug. Do not touch
 `paper_pipeline/calculate_per_run_metrics.py`.**
 
-**Required change.** In `Miscellaneous Scripts/CalculateMetrics.py`, fix the
+**Required change.** In `Miscellaneous Scripts/evaluate_architecture_metrics.py`, fix the
 implementation to match the paper's definition and the pipeline's behaviour:
 `if gt_top1 in ar_top2:`, reusing the `gt_top1` already computed just above for the
 top-1 metric. Remove the unused `gt_top1_val`. Add a short comment recording that with
@@ -781,12 +781,12 @@ paper (Sensitivity Analysis subsection) and forward-reference it from A2.
 
 **Verified problems — three:**
 
-1. **It is not a cosine distance.** `Miscellaneous Scripts/BuildRAG.py` line 204
+1. **It is not a cosine distance.** `Miscellaneous Scripts/build_rag_index.py` line 204
    creates the collection with `metadata={"description", "source_table_sha256",
    "schema_version"}` and **no `hnsw:space` key** — so ChromaDB uses its default,
    **L2**. The ablation harness separately computes `np.linalg.norm(...)` — Euclidean.
    **No cosine is computed anywhere in the pipeline.**
-2. **The vectors are not normalized.** `encode()` is called bare at `BuildRAG.py`
+2. **The vectors are not normalized.** `encode()` is called bare at `build_rag_index.py`
    lines 227, 255, 282 and `Example-Guided_LLM_Scoring.py` line 327 — no
    `normalize_embeddings=True`. So the number is not even scale-free.
 3. **It measures the wrong pairing.** The 0.05 is a **RAG→RAG** leave-one-out distance.
@@ -798,7 +798,7 @@ paper (Sensitivity Analysis subsection) and forward-reference it from A2.
 
 (a) **Do NOT change the Chroma distance metric.** Adding `hnsw:space: cosine` or
     `normalize_embeddings=True` would change retrieval, force a `RAG_SCHEMA_VERSION`
-    bump in **both** `BuildRAG.py` and `Example-Guided_LLM_Scoring.py` (they are kept
+    bump in **both** `build_rag_index.py` and `Example-Guided_LLM_Scoring.py` (they are kept
     in lockstep), and require re-running A_E entirely. Out of scope. Instead, **rename
     the metric in the paper** to what is actually computed (L2 distance between
     unnormalized all-MiniLM-L6-v2 embeddings) and report the value in those units.

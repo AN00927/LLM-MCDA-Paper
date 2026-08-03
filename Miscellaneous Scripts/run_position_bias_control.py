@@ -39,7 +39,7 @@ DEFAULT_SEED = 20260803
 # module's Chroma resources were never initialised, so retrieval silently
 # returned nothing and the arm measured exemplar removal instead of ordering.
 # The architecture whose prompt actually presents all three alternatives as a
-# numbered sequence is A_H, and that arm now lives in RunHybridAblations.py
+# numbered sequence is A_H, and that arm now lives in run_hybrid_ablation_experiments.py
 # where it can be compared against A_H's own run-to-run variation.
 ARCHITECTURES = {
     "Direct_LLM_Scoring": PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py",

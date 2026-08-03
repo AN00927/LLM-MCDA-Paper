@@ -12,7 +12,7 @@ other three models). Pass `--models` to override.
 
 ## 1. Parameter-provenance ablation (LLM-Parameterized Reference Scoring)
 
-**Script:** `Miscellaneous Scripts/RunHybridAblations.py`
+**Script:** `Miscellaneous Scripts/run_hybrid_ablation_experiments.py`
 **Outputs:** `Analysis/Hybrid_Ablation/hybrid_ablation_summary.xlsx`
 **Cost:** zero API calls (reads existing run outputs and scenario sheets)
 
@@ -68,7 +68,7 @@ LLM-Parameterized tau (0.880-0.897), validating the harness against known number
 
 ## 2. Alternative-ordering ablation (LLM-Parameterized Reference Scoring)
 
-**Script:** `Miscellaneous Scripts/RunHybridAblations.py` (`--collect-only` for collection,
+**Script:** `Miscellaneous Scripts/run_hybrid_ablation_experiments.py` (`--collect-only` for collection,
 default mode for analysis)
 **Outputs:** `Analysis/Hybrid_Ablation/hybrid_order_reversal.xlsx` (`summary` and `pairwise`
 sheets)
@@ -150,20 +150,20 @@ contemporaneous control arm this would have been misread as a finding about reve
 
 ```bash
 # Collection (spends API calls; resume-aware, never re-run a completed run index)
-python "Miscellaneous Scripts/RunHybridAblations.py" --collect-only \
+python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only \
     --models <key> --order-arms reversed --order-run-start 1 --order-runs 5
-python "Miscellaneous Scripts/RunHybridAblations.py" --collect-only \
+python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only \
     --models <key> --order-arms control --order-run-start 1 --order-runs 3
 
 # Analysis (free, reads existing run outputs)
-python "Miscellaneous Scripts/RunHybridAblations.py" --models qwen gptoss deepseek gemini
+python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --models qwen gptoss deepseek gemini
 ```
 
 ---
 
 ## 3. RAG ablation (Example-Guided Scoring)
 
-**Script:** `Miscellaneous Scripts/RunRAGAblations.py`
+**Script:** `Miscellaneous Scripts/run_rag_ablation_experiments.py`
 **Outputs:** `Analysis/RAG_Ablation/rag_ablation_{results,summary,summary_by_decision_type,friedman_tests,posthoc_tests,bootstrap_ci}.xlsx`
 
 Evaluated on the **90-scenario RAG corpus**, not the 195 test scenarios. `load_source_df`
@@ -230,7 +230,7 @@ its nearest exemplar.
 
 ## 4. Prompt ablation (Direct and Example-Guided Scoring)
 
-**Script:** `Miscellaneous Scripts/RunPromptAblations.py`
+**Script:** `Miscellaneous Scripts/run_prompt_ablation_experiments.py`
 **Outputs:** `Analysis/Prompt_Ablation/`
 
 Four prompt variants across Direct and Example-Guided Scoring, over the full 195-scenario
@@ -278,10 +278,10 @@ perturbations are one-at-a-time rather than factorial, so interactions are out o
 
 ### Significance testing
 
-`Miscellaneous Scripts/PromptAblationSignificance.py` and
-`Miscellaneous Scripts/HybridAblationSignificance.py` implement no statistics of their
+`Miscellaneous Scripts/test_prompt_ablation_significance.py` and
+`Miscellaneous Scripts/test_hybrid_ablation_significance.py` implement no statistics of their
 own -- they import `friedman_test_per_metric`, `posthoc_wilcoxon_holm`, `cliff_delta`,
-and `bootstrap_ci_per_config` from `RunRAGAblations.py`, so all three ablations are
+and `bootstrap_ci_per_config` from `run_rag_ablation_experiments.py`, so all three ablations are
 tested by the same reviewed code. Tests run within strata (architecture x model for the
 prompt ablation, model for the parameter-provenance ablation); pooling would confound
 the manipulation with model identity.
@@ -296,16 +296,16 @@ all three metrics, 27 of 27 pairs significant, with medium-to-large Cliff's delt
 
 ```bash
 # Parameter-provenance ablation (free, zero API calls)
-python "Miscellaneous Scripts/RunHybridAblations.py"
+python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py"
 
 # RAG ablation, full 90-scenario corpus, Gemini excluded by default
-python "Miscellaneous Scripts/RunRAGAblations.py"
+python "Miscellaneous Scripts/run_rag_ablation_experiments.py"
 
 # Prompt ablation. Resume-aware: a completed cell xlsx is skipped, so
 # re-invoking after an interruption costs nothing for work already done.
 # Run ONE process at a time for Example-Guided arms -- concurrent Chroma access
 # across processes corrupts the collection handle and yields zero-API failed cells.
-python "Miscellaneous Scripts/RunPromptAblations.py"
+python "Miscellaneous Scripts/run_prompt_ablation_experiments.py"
 
 # Rebuild the prompt-ablation summary from every cell file. Needed whenever the
 # matrix ran as several partial jobs, since each job's summary covers only its
@@ -313,18 +313,18 @@ python "Miscellaneous Scripts/RunPromptAblations.py"
 python "Miscellaneous Scripts/AggregatePromptAblations.py"
 
 # Significance tests (free, read existing outputs)
-python "Miscellaneous Scripts/PromptAblationSignificance.py"
-python "Miscellaneous Scripts/HybridAblationSignificance.py"
+python "Miscellaneous Scripts/test_prompt_ablation_significance.py"
+python "Miscellaneous Scripts/test_hybrid_ablation_significance.py"
 
 # Extraction accuracy per model (free, reads existing outputs).
 # --output must be an ABSOLUTE path; a relative path resolves against the
 # shell cwd and can raise PermissionError. Expect "Matched scenarios: 195/195".
-python "Miscellaneous Scripts/EvaluateHybridExtraction.py" \
+python "Miscellaneous Scripts/evaluate_parameter_extraction.py" \
   --results "Output Files GPT-OSS 20B/LLM-Parameterized_Reference_Scoring_results.xlsx" \
   --output "/absolute/path/extraction_gptoss.md"
 
 # Regenerate paper/numbers_master.csv, including token-derived cost table
-python paper_pipeline/generate_numbers_master.py
+python paper_pipeline/generate_paper_results_numbers.py
 ```
 
 None of the ablation runners has any parallelism. Wall clock, not cost, is the binding
@@ -337,7 +337,7 @@ POST only.
 
 ## Cost derivation
 
-`paper_pipeline/generate_numbers_master.py` computes per-run API costs from measured
+`paper_pipeline/generate_paper_results_numbers.py` computes per-run API costs from measured
 token totals in each architecture's `*_results_diagnostics_run_*.json`, priced with
 rates parsed from `model_config.MODEL_SPECS[...]["label"]`, so a price edit propagates
 rather than being duplicated. It is the source of record for the paper's cost table and
@@ -367,16 +367,16 @@ encourage reasoning (such as `cot_scaffold`) can exceed a naive token projection
 - `Ground Truth/ground_truth_shower.xlsx` can drift out of date relative to
   `Ground Truth Calculators/ShowerGroundTruthCalculator.py`. After changing any
   calculator, run it to regenerate its `Ground Truth/ground_truth_*.xlsx`, then
-  `Miscellaneous Scripts/SyncRAGGroundTruth.py`, then `Miscellaneous Scripts/BuildRAG.py`
-  — in that order. `BuildRAG.py` must always run last, or the Chroma source hash will
+  `Miscellaneous Scripts/sync_rag_ground_truth_scores.py`, then `Miscellaneous Scripts/build_rag_index.py`
+  — in that order. `build_rag_index.py` must always run last, or the Chroma source hash will
   not match the re-exported RAG sheets.
 - `Scenario Files/ConsolidatedforSimaltaneousediting.xlsx`, referenced in `CLAUDE.md` and
   in the README repository tree as the master workbook that
-  `Scenario Files/rebuild_consolidated.py` derives the Test and RAG sheets from, is not
+  `Scenario Files/build_consolidated_scenario_workbooks.py` derives the Test and RAG sheets from, is not
   present in this repository. The derived standalone sheets (`TestScenarios.xlsx`, the
   three `*RAGScenarios.xlsx`, and the three `*Scenarios.xlsx` masters) are present and
   are what every script actually reads.
-- `Miscellaneous Scripts/EvaluateHybridExtraction.py` matches results to ground truth by
+- `Miscellaneous Scripts/evaluate_parameter_extraction.py` matches results to ground truth by
   progressive narrowing on the descriptor columns in `MATCH_KEYS`. An earlier
   positional tie-break compared indices from two different coordinate systems (position
   within the Test sheet vs position within the combined Test+RAG master) and silently

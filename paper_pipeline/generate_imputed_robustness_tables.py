@@ -68,7 +68,7 @@ SUPP_METHOD_A = {
 def _load_modules():
     """Dynamically import CalculateMetrics and calculate_per_run_metrics
     (same pattern as the pipeline; paths contain spaces / hyphens)."""
-    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "CalculateMetrics.py"
+    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
     cm_spec = spec_from_file_location("CalculateMetrics", cm_path)
     cm = module_from_spec(cm_spec)
     cm_spec.loader.exec_module(cm)

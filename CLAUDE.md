@@ -21,13 +21,13 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   deterministic physics. LLM-Parameterized_Reference_Scoring imports these at runtime; run a file directly to
   regenerate its `Ground Truth/ground_truth_*.xlsx`.
 - `Scenario Files/` — masters live in `ConsolidatedforSimaltaneousediting.xlsx`;
-  `rebuild_consolidated.py` derives `TestScenarios.xlsx` + the 3 `*RAGScenarios.xlsx`
+  `build_consolidated_scenario_workbooks.py` derives `TestScenarios.xlsx` + the 3 `*RAGScenarios.xlsx`
   from it (audited, deterministic, backs up first).
-- `Miscellaneous Scripts/` — `BuildRAG.py` (Chroma index), `SyncRAGGroundTruth.py`
-  (refresh RAG scores from GT), `CalculateMetrics.py`, weight scripts,
+- `Miscellaneous Scripts/` — `build_rag_index.py` (Chroma index), `sync_rag_ground_truth_scores.py`
+  (refresh RAG scores from GT), `evaluate_architecture_metrics.py`, weight scripts,
   `run_benchmarks.py`.
-- `paper_pipeline/` — `run_all.py` (master pipeline), `generate_figures.py`,
-  `generate_numbers_master.py`, per-run metrics + LaTeX snippet generators.
+- `paper_pipeline/` — `run_paper_pipeline.py` (master pipeline), `generate_paper_figures.py`,
+  `generate_paper_results_numbers.py`, per-run metrics + LaTeX snippet generators.
 - `model_config.py`, `sentinel_utils.py` — shared config + shared utilities.
 - `docs/` — `CODEBASE_GUIDE.md`, `PROVENANCE_AUDIT_PROMPT.md`, `EXPERIMENTS.md`,
   `metrics_calculation_pipeline.md`.
@@ -43,7 +43,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   `N_RUNS` in [model_config.py](model_config.py); output routes to that model's folder.
 - Run an architecture: `python Architectures/Direct_LLM_Scoring.py` (resp. RAG / LLM-Parameterized_Reference_Scoring).
   Runs are resume-aware (a complete per-run xlsx is skipped).
-- RAG requires a current Chroma index — run `BuildRAG.py` first.
+- RAG requires a current Chroma index — run `build_rag_index.py` first.
 
 ## Conventions that MUST hold
 
@@ -85,24 +85,24 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - **Reference ranges** in each calculator's `apply_value_function` are 5th–95th
   percentiles of the actual scenario distributions (must match the README table), not
   theoretical extremes.
-- **Objective weight scripts** (`EntropyWeights`, `MERCECWeights`, `ImpliedWeights`) are
+- **Objective weight scripts** (`EntropyWeights`, `merec_weights`, `implied_weights`) are
   VALIDATION only — they triangulate the 35/30/20/15 weights. No architecture or
   calculator may import them or change weights at runtime.
-- **RAG schema version** is in lockstep: `BuildRAG.RAG_SCHEMA_VERSION` ==
+- **RAG schema version** is in lockstep: `build_rag_index.RAG_SCHEMA_VERSION` ==
   `Example-Guided_LLM_Scoring.py.EXPECTED_RAG_SCHEMA_VERSION` (currently **4**). Bump BOTH on any
   change to the embedding string or Chroma metadata; the source-file SHA only catches
   sheet edits, not embedding-code changes — so a code-only change needs a version bump.
 
-## Refresh workflows (order matters — BuildRAG is always LAST)
+## Refresh workflows (order matters — build_rag_index is always LAST)
 
 - **Changed a ground-truth calculator** → run that calculator (regenerates
-  `ground_truth_*.xlsx`) → `SyncRAGGroundTruth.py` (refreshes RAG score columns;
+  `ground_truth_*.xlsx`) → `sync_rag_ground_truth_scores.py` (refreshes RAG score columns;
   matches RAG↔GT by descriptor signature, not scenario_id; time-aware on appliance
-  alternatives) → `BuildRAG.py`.
-- **Changed scenario data / banding** → `Scenario Files/rebuild_consolidated.py`
-  (re-derives Test + RAG, audits, exports standalone files) → `BuildRAG.py`.
+  alternatives) → `build_rag_index.py`.
+- **Changed scenario data / banding** → `Scenario Files/build_consolidated_scenario_workbooks.py`
+  (re-derives Test + RAG, audits, exports standalone files) → `build_rag_index.py`.
   Because the rebuild re-exports the RAG sheets, the Chroma source-hash only matches
-  if BuildRAG runs after it.
+  if build_rag_index runs after it.
 - Any data change invalidates prior `*_results.xlsx` for the affected type — those
   need fresh architecture runs.
 

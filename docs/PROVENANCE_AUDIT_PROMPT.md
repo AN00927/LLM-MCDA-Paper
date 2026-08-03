@@ -75,6 +75,6 @@ Emit, per decision type:
 - A final `PASS` only if all of: counts reconcile, zero orphans, zero
   double-claims, zero score mismatches, zero rank inconsistencies.
 
-> Note: `rebuild_consolidated.py` already encodes most of these as automated
+> Note: `build_consolidated_scenario_workbooks.py` already encodes most of these as automated
 > checks (A01–A14). This prompt is the human-/LLM-readable contract those checks
 > enforce, and the reference for auditing the sheets outside that script.

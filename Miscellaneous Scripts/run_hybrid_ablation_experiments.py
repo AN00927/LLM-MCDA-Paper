@@ -67,7 +67,7 @@ Collecting the reversed arm costs one extraction call per scenario per run, and
 is a separate, resumable step. Note that --models defaults to the three non-Gemini
 keys, so the full four-model collection has to name them:
 
-    python "Miscellaneous Scripts/RunHybridAblations.py" --collect-only \
+    python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only \
         --models qwen gptoss deepseek gemini --order-runs 3
 
 That is 195 x 3 x 4 = 2,340 calls. Run one model per process to parallelise.

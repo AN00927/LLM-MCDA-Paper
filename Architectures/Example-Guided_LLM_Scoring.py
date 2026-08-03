@@ -158,14 +158,14 @@ def init_rag_resources() -> None:
         raise RuntimeError(
             f"RAG schema version mismatch: collection has "
             f"schema_version={stored_version!r}, runtime expects "
-            f"{EXPECTED_RAG_SCHEMA_VERSION}. Re-run BuildRAG.py."
+            f"{EXPECTED_RAG_SCHEMA_VERSION}. Re-run build_rag_index.py."
         )
     if stored_hash != expected_hash:
         raise RuntimeError(
             f"RAG source hash mismatch — Chroma collection is stale.\n"
             f"  collection source_table_sha256: {stored_hash}\n"
             f"  current source_table_sha256:    {expected_hash}\n"
-            f"Re-run Miscellaneous Scripts/BuildRAG.py to refresh."
+            f"Re-run Miscellaneous Scripts/build_rag_index.py to refresh."
         )
 
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)

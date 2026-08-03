@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RunBaselines.py - Non-LLM Baselines
+run_baseline_models.py - Non-LLM Baselines
 Computes four baselines for MCDA architecture comparison.
 """
 import argparse

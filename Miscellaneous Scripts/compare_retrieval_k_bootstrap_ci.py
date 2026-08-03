@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""K1VsK3BootstrapCI.py - Percentile bootstrap CI on the k=1 vs k=3 retrieval difference.
+"""compare_retrieval_k_bootstrap_ci.py - Percentile bootstrap CI on the k=1 vs k=3 retrieval difference.
 
 Task C4(a): quantify the power actually available behind the paper's claim that
 retrieval counts k=1 and k=3 produced "statistically indistinguishable" ranking
@@ -10,7 +10,7 @@ per-scenario difference in Kendall's tau:
 
 for each model and pooled across models, using the same bootstrap conventions
 as the prompt-ablation machinery (bootstrap_ci_per_config in
-Miscellaneous Scripts/RunRAGAblations.py):
+Miscellaneous Scripts/run_rag_ablation_experiments.py):
 
     - n_bootstrap = 10,000 resamples
     - seed = 42 (np.random.default_rng(42))
@@ -56,7 +56,7 @@ def load_paired_differences() -> pd.DataFrame:
     """Return one row per (model, source_scenario_id) with the k1-k3 tau difference.
 
     Scenario-level rows are the same deduplication the ablation itself uses
-    (scenario_level_df in RunRAGAblations.py): one row per
+    (scenario_level_df in run_rag_ablation_experiments.py): one row per
     (model_key, ablation_id, ablation_label, decision_type, source_scenario_id).
     Kendall's tau is NaN for scenarios with no valid/varying predictions; a
     paired difference requires valid tau in BOTH configurations, so rows with
@@ -94,7 +94,7 @@ def load_paired_differences() -> pd.DataFrame:
 def percentile_ci(diffs: np.ndarray, n_bootstrap: int = N_BOOTSTRAP, seed: int = RANDOM_SEED):
     """Percentile bootstrap CI for the mean of paired differences.
 
-    Mirrors bootstrap_ci_per_config in RunRAGAblations.py exactly:
+    Mirrors bootstrap_ci_per_config in run_rag_ablation_experiments.py exactly:
     default_rng(seed), rng.choice(values, size=len(values), replace=True),
     mean of each resample, np.percentile(..., 2.5 / 97.5).
     """

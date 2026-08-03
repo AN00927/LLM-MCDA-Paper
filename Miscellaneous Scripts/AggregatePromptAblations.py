@@ -1,6 +1,6 @@
 """Rebuild the prompt-ablation summary from every completed cell file.
 
-`RunPromptAblations.py` writes its summary workbook and markdown report from
+`run_prompt_ablation_experiments.py` writes its summary workbook and markdown report from
 whatever cells that invocation covered, so running the matrix as several
 partial jobs (per variant, per model, or resumed after an interruption) leaves
 those aggregates describing only the last slice. The per-cell xlsx files under
@@ -28,7 +28,7 @@ import pandas as pd
 
 
 def _load_runner():
-    path = Path(__file__).resolve().parent / "RunPromptAblations.py"
+    path = Path(__file__).resolve().parent / "run_prompt_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_prompt_ablations", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

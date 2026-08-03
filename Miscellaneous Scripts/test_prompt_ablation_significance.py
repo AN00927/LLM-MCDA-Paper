@@ -4,7 +4,7 @@ Answers the question the summary means cannot: are the differences between
 prompt variants larger than run-to-run noise?
 
 No statistic is implemented here. The Friedman / Wilcoxon-Holm / Cliff's delta
-functions are imported from `RunRAGAblations.py`, which already carries the
+functions are imported from `run_rag_ablation_experiments.py`, which already carries the
 reviewed implementations used for the retrieval ablation -- so both ablations
 in the paper are tested by identical code. Those functions take `config_col`
 and `scenario_col` as parameters, which is what makes the reuse direct.
@@ -24,7 +24,7 @@ Design:
     test 3 variants and A_D strata test 4.
 
 Significance-testing methodology (two correction layers, mirroring
-RunRAGAblations.py and HybridAblationSignificance.py exactly):
+run_rag_ablation_experiments.py and test_hybrid_ablation_significance.py exactly):
   1. Friedman omnibus test per (architecture, model, metric) -- up to
      6 strata x 2 metrics = 12 independent tests. Holm-Bonferroni correction
      is applied ACROSS this whole family before anything downstream reads a
@@ -51,7 +51,7 @@ inspected the same way):
     prompt_ablation_summary_by_decision_type.xlsx
 
 Run:
-    python "Miscellaneous Scripts/PromptAblationSignificance.py"
+    python "Miscellaneous Scripts/test_prompt_ablation_significance.py"
 """
 
 import glob
@@ -75,7 +75,7 @@ METRIC_COLS = ["kendall_tau", "top1"]
 
 def _load_rag_module():
     """Import RunRAGAblations for its reviewed statistical helpers."""
-    path = Path(__file__).resolve().parent / "RunRAGAblations.py"
+    path = Path(__file__).resolve().parent / "run_rag_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_rag_ablations", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -129,8 +129,8 @@ def main():
     # the same failure mode multiple pairwise tests have without Holm
     # correction. Holm is applied here across the whole Friedman table for
     # consistency with the correction used for post-hoc pairwise tests below
-    # and with the equivalent family correction in RunRAGAblations.py and
-    # HybridAblationSignificance.py. Post-hoc pairwise tests for a given
+    # and with the equivalent family correction in run_rag_ablation_experiments.py and
+    # test_hybrid_ablation_significance.py. Post-hoc pairwise tests for a given
     # stratum x metric are only computed if that cell's Friedman result
     # remains significant AFTER this correction (significant_holm), not on
     # the raw p_value.
