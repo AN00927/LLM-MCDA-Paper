@@ -416,7 +416,7 @@ The late-night noise penalty is applied when running between 10pm and 7am and th
   \end{cases}
   \label{eq:appliance_noise_penalty}
 \end{equation}
-\noindent where $N(t,\mathrm{type},\mathrm{housing})$ is a nonnegative noise-disruption penalty in comfort-score points, $\mathrm{dBA}(\mathrm{type})$ is the appliance noise level for the appliance type, $\theta = 45$\,dBA is the dBA threshold, and $\kappa(\mathrm{housing})$ is a unitless housing-type multiplier (larger for shared-wall housing).
+\noindent where $N(t,\mathrm{type},\mathrm{housing})$ is a nonnegative noise-disruption penalty in comfort-score points, $\mathrm{dBA}(\mathrm{type})$ is the appliance noise level for the appliance type, $\theta = 45$\,dBA is the dBA threshold, and $\kappa(\mathrm{housing})$ is a unitless housing-type multiplier (larger for shared-wall housing). Representative appliance levels are about 45\,dBA for dishwashers \citep{bellingham2026}, 74\,dBA for washers at spin-cycle peak \citep{precision2024}, and 65\,dBA for dryers \citep{coolblue2026}. The 45\,dBA threshold sits above the EPA/WHO 35\,dBA indoor night limit so that a dishwasher at its rated level is at threshold \citep{epa1974noise}, and only the $>45$\,dBA test reads the values, so washers and dryers incur the penalty regardless of the exact figure.
 The household-size penalty scales with delay relative to the appliance-specific maximum acceptable delay $d_{\max}(\mathrm{type})$:
 \begin{equation}
   S(d,n,\mathrm{type})=\sigma(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
@@ -433,8 +433,8 @@ Final comfort is then
 
 \subsubsection{Shower Comfort}
 
-Comfort is a piecewise function peaking at the REU2016 average of 7.8\,min \citep{reu2016,harrispoll2024}, with additive penalties for temperature adequacy (CDC Legionella thresholds \citep{cdc2026}) and household contention.
-The implementation uses a duration-based piecewise base comfort $C_{\mathrm{base}}(\tau)$ (with a short-duration cubic ramp to reflect severely rushed showers), then subtracts a temperature penalty $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ and a household contention penalty $\Delta_{\mathrm{cont}}(\tau,n)$, and clips to $[0,10]$. The comfort-optimal duration is the 7.8\,min REU2016 mean at moderate outdoor temperatures but is shifted upward in cold weather to at most 10.3\,min, the observed winter field-mean envelope. This cold-weather elasticity is an explicit modeling assumption supported only in direction by the literature \citep{wong2022,reu2016}, and warm-weather scoring is unchanged:
+Comfort is a piecewise function peaking at the REU2016 average of 7.8\,min \citep{reu2016,harrispoll2024}, with additive penalties for temperature adequacy (CDC Legionella thresholds \citep{cdc2026}, with 120\,\textdegree{}F delivery and 140\,\textdegree{}F storage following CDC guidance and 110 and 130\,\textdegree{}F defined as comfort and scald boundaries, the latter near the 30-second deep-burn level of Moritz and Henriques \citep{moritzhenriques1947}) and household contention.
+The implementation uses a duration-based piecewise base comfort $C_{\mathrm{base}}(\tau)$ (with a short-duration cubic ramp to reflect severely rushed showers), then subtracts a temperature penalty $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ and a household contention penalty $\Delta_{\mathrm{cont}}(\tau,n)$, and clips to $[0,10]$. The comfort-optimal duration is the 7.8\,min REU2016 mean at moderate outdoor temperatures but is shifted upward in cold weather to at most 10.3\,min, from the 11.6 versus 8.8\,min winter/summer field-mean ratio of Ibanez-Rueda et al. (2023), a southern-Spain sample, so the cap is a cross-population extrapolation \citep{ibanezrueda2023}. This cold-weather elasticity is an explicit modeling assumption supported only in direction by the literature \citep{wong2022,reu2016}, and warm-weather scoring is unchanged:
 \begin{equation}
   C_{\mathrm{comfort}}(\tau,T_{\mathrm{heater}},n)
   = \mathrm{clip}_{[0,10]}\!\Bigl(C_{\mathrm{base}}(\tau)
@@ -486,7 +486,7 @@ The base practicality component is:
   \label{eq:appliance_base_practicality}
 \end{equation}
 \noindent where $P_{\mathrm{base}}(d)$ is the pre-penalty practicality score (0--1) as a function of delay $d$.
-Timing complexity applies an additive penalty by run-time hour:
+Timing complexity applies an additive penalty by run-time hour, because low-price zones at the brink of the day are perceived as too early or too late to act on \citep{paetz2012}:
 \begin{equation}
   T(t)=
   \begin{cases}
@@ -507,7 +507,7 @@ Final practicality is $C_{\mathrm{prac}}=\mathrm{clip}_{[1.5,10]}\!\bigl(P_{\mat
 
 \subsubsection{Shower Practicality}
 
-Practicality additionally penalizes alternatives that exceed available tank capacity. Unlike comfort, the base practicality curve is not centered on the 7.8\,min comfort optimum: it rises with duration up to a peak near 12\,min before declining, because practicality here measures likelihood of adoption for everyone---how little behavior change an alternative demands of a household that already showers at a given length---rather than momentary preference. A very short shower scores low on practicality (it requires sustained restraint), while a moderately long one is easy to sustain. Pressure toward shorter showers in the MAVT aggregate therefore comes from the cost and environmental criteria and from the comfort optimum, not from practicality.
+Practicality additionally penalizes alternatives that exceed available tank capacity. Unlike comfort, the base practicality curve is not centered on the 7.8\,min comfort optimum: it rises with duration up to a peak near 12\,min before declining, because practicality here measures likelihood of adoption for everyone---how little behavior change an alternative demands of a household that already showers at a given length---rather than momentary preference. A very short shower scores low on practicality (it requires sustained restraint), while a moderately long one is easy to sustain. Pressure toward shorter showers in the MAVT aggregate therefore comes from the cost and environmental criteria and from the comfort optimum, not from practicality. Beyond the 15-minute Harris Poll threshold the tail declines conservatively: 33\% of adults self-report showers longer than 15\,min \citep{harrispoll2024}, while the metered REU2016 data implies a much lower true rate \citep{reu2016}.
 
 On the other hand, the capacity constraint below is what makes an over-long shower infeasible for a constrained household.
 The practicality model uses a duration-based base practicality $P_{\mathrm{base}}(\tau)$ and a capacity constraint computed from hot-water demand. Hot-water per shower is $\tau\,\dot V\,f_{\mathrm{hot}}$ (gal), total household hot-water need is $n\,\tau\,\dot V\,f_{\mathrm{hot}}$, and available draw is approximated as $0.8$ of nominal tank size $S$:
@@ -943,32 +943,37 @@ $\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ scale\_0\_10 ($\tau$) & $-$0.052 
 \end{table}\subsection{Imputed Robustness Check}
 \label{app:imputed}
 
-The main results (Section~4 of the main paper) use per-run-then-average aggregation: failed scenarios are excluded from their run's metric computation, and metrics are averaged across five runs. To test sensitivity to this exclusion, Table~\ref{tab:imputed_comparison} reports an imputed alternative in which scenarios that fail in all five runs receive the scale midpoint (0.5) before metric computation, preserving the full 195-scenario test set.
+The main results (Section~4 of the main paper) use per-run-then-average aggregation: failed scenarios are excluded from their run's metric computation, and metrics are averaged across five runs. To test sensitivity to this exclusion, Table~\ref{tab:imputed_comparison} reports an imputed alternative at per-run granularity: within each run, scenarios that carry a failed score receive the scale midpoint (0.5) on the affected criterion scores before that run's metrics are computed, and every run evaluates the full 195-scenario test set.
 
 \begin{table}[htbp]
 \begin{threeparttable}
 \small\centering
-\caption{Comparison of per-run-then-average (Method A) vs imputed (0.5 midpoint) aggregation. Values are means across all four models.}
+\caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation. Values are means across all four models.}
 \label{tab:imputed_comparison}
 \begin{tabular}{lccc}
 \toprule
-Architecture & Metric & Method A & Imputed (0.5) \\
+Architecture & Metric & Method A & Imputed (per-run) \\
 \midrule
-$\mathcal{A}_{\text{D}}$ & $\tau$ & 0.093 & 0.095 \\
-$\mathcal{A}_{\text{D}}$ & MAE & 0.232 & 0.219 \\
-$\mathcal{A}_{\text{D}}$ & Top-1 (\%) & 34.1 & 35.4 \\
-$\mathcal{A}_{\text{E}}$ & $\tau$ & 0.277 & 0.314 \\
-$\mathcal{A}_{\text{E}}$ & MAE & 0.171 & 0.161 \\
-$\mathcal{A}_{\text{E}}$ & Top-1 (\%) & 49.2 & 51.3 \\
-$\mathcal{A}_{\text{H}}$ & $\tau$ & 0.899 & 0.900 \\
-$\mathcal{A}_{\text{H}}$ & MAE & 0.055 & 0.051 \\
-$\mathcal{A}_{\text{H}}$ & Top-1 (\%) & 91.3 & 91.7 \\
+$\mathcal{A}_{\text{D}}$ & $\tau$ & 0.093 & 0.094 \\
+$\mathcal{A}_{\text{D}}$ & MAE & 0.232 & 0.232 \\
+$\mathcal{A}_{\text{D}}$ & Top-1 (\%) & 34.1 & 34.2 \\
+$\mathcal{A}_{\text{E}}$ & $\tau$ & 0.277 & 0.279 \\
+$\mathcal{A}_{\text{E}}$ & MAE & 0.171 & 0.172 \\
+$\mathcal{A}_{\text{E}}$ & Top-1 (\%) & 49.2 & 49.3 \\
+$\mathcal{A}_{\text{H}}$ & $\tau$ & 0.899 & 0.871 \\
+$\mathcal{A}_{\text{H}}$ & MAE & 0.055 & 0.061 \\
+$\mathcal{A}_{\text{H}}$ & Top-1 (\%) & 91.3 & 89.2 \\
 \bottomrule
 \end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\begin{tablenotes}
+\item Mean scenarios imputed per run: DeepSeek $\mathcal{A}_{\text{D}}$ 1.4, DeepSeek $\mathcal{A}_{\text{H}}$ 0.2, Gemini $\mathcal{A}_{\text{E}}$ 4.0, GPT-OSS $\mathcal{A}_{\text{H}}$ 23.4, Qwen $\mathcal{A}_{\text{D}}$ 0.4, Qwen $\mathcal{A}_{\text{H}}$ 0.4; all other cells impute none. GPT-OSS imputes 20--26 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set.
+\item Imputed scenarios receive 0.5 on all four criterion scores; their ranks follow the pipeline's deterministic tie-break (appearance order).
+\end{tablenotes}
 \end{threeparttable}
 \end{table}
 
-The $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering is unchanged. Most differences are small; $\mathcal{A}_{\text{E}}$ is the most sensitive, with $\tau$ rising by 0.037 under midpoint imputation, while $\mathcal{A}_{\text{H}}$ moves by at most 0.004 on any metric. This confirms that failure exclusion does not bias the results.\subsection{Aggregation Method Sensitivity}
+The $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering survives per-run imputation: pooled $\tau$ equals 0.871, 0.279, and 0.094 for the three architectures, and each of the four models preserves the ordering. The largest movement occurs on GPT-OSS $\mathcal{A}_{\text{H}}$, where Kendall's $\tau$ falls from 0.897 to 0.786 ($-0.111$), Top-1 falls from 91.6\% to 83.6\%, and MAE rises from 0.052 to 0.078. GPT-OSS imputes 23.4 scenarios per run on $\mathcal{A}_{\text{H}}$ (12\% of its test set), which drives the movement. Imputation lowers $\mathcal{A}_{\text{H}}$'s success-conditioned metrics, so failure exclusion inflated them; pooled $\mathcal{A}_{\text{H}}$ $\tau$ falls from 0.899 to 0.871 ($-0.029$). Every other cell moves by at most 0.006.\subsection{Aggregation Method Sensitivity}
 \label{app:method-c}
 
 Table~\ref{tab:method_c} compares the per-run-then-average protocol (Method A) used throughout the main text with a mean-aggregate-then-evaluate protocol (Method C) in which per-scenario scores are averaged across all five runs before metric computation. Method C produces a consensus ranking that may differ from the average of per-run rankings.

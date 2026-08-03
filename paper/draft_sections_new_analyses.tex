@@ -1,0 +1,353 @@
+% ============================================================================
+% DRAFT SECTIONS FOR NEW ANALYSES -- NOT YET SPLICED INTO paper_draft_working.tex
+%
+% Standalone so it does not collide with concurrent edits to the main draft.
+% Each block is marked with its intended destination. Numbers are current as of
+% the runs described in each block; regenerate with the named script before
+% splicing.
+%
+% Blocks:
+%   B1  Methods    -- position-bias control arm            -> after Sec 3.x ablations
+%   B2  Results    -- position-bias control results        -> new subsection in Results
+%   B3  Discussion -- what the position-bias result means  -> Discussion
+%   B4  Methods    -- weight realisation diagnostics       -> Sec 2.2 area / appendix
+%   B5  Results    -- weight realisation + sensitivity     -> replaces old sensitivity table
+%   B6  Discussion -- what the weight result means         -> Discussion
+%   B7  Appendix   -- corrected weight-robustness appendix -> replaces app:weights prose
+% ============================================================================
+
+
+% ============================================================================
+% B1  METHODS -- POSITION-BIAS CONTROL ARM
+% Script: Miscellaneous Scripts/PositionBiasControl.py
+% ============================================================================
+
+\subsection{Alternative-order control}
+\label{sec:position-bias-methods}
+
+Each architecture receives the three alternatives in a fixed canonical order,
+ascending by setpoint, start time, or duration. Language models are known to
+weight response options by position independently of content
+\cite{wang2023positionbias,zheng2023judging}, so a fixed order is a candidate
+confound for any architecture that reads the alternative set.
+
+Randomising order across the five shipped runs would be the textbook design,
+but it changes the condition under which the reported results were produced. We
+therefore ran an additive control arm rather than replacing the shipped runs.
+For every model and for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$,
+all 195 test scenarios were rescored once with the alternative order reversed.
+$\mathcal{A}_{\text{H}}$ is excluded because its language model never sees the
+alternative set; the calculator enumerates alternatives after parameter
+extraction.
+
+Reversal is applied to the scenario record before it reaches either
+architecture, so it propagates to the alternative list in the prompt, the order
+in which alternatives are scored, and the deterministic tie-break. The
+alternative ordering inside $\mathcal{A}_{\text{E}}$'s retrieved exemplars is
+deliberately left in canonical order, which makes the manipulation a test of
+whether the query's own ordering matters and leaves exemplar-to-query order
+matching as a separate question (Section~\ref{sec:position-bias-discussion}).
+
+The reversed arm is a single run, so each comparison is paired against one of
+the five shipped runs and then summarised across the five. We report McNemar's
+exact test on top-1 correctness, the median $p$ across the five shipped
+comparisons, and the maximum. The maximum is the weakest of the five, so
+$p_{\max} < 0.05$ means the effect held against every shipped run rather than
+against a favourable one. Per-decision-type tests are Holm-corrected across the
+three types within each model--architecture pair.
+
+
+% ============================================================================
+% B2  RESULTS -- POSITION-BIAS CONTROL
+% Regenerate: python "Miscellaneous Scripts/PositionBiasAggregate.py"
+% Source: Analysis/PositionBias/position_bias_summary_all_models.xlsx
+% ============================================================================
+
+\FloatBarrier
+\subsection{Alternative-order control}
+\label{sec:res-position-bias}
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\footnotesize
+\caption{Effect of reversing alternative order, by architecture and model.
+``Net'' is the mean number of scenarios per shipped-run comparison that the
+reversed arm gets right and the shipped run gets wrong, minus the reverse;
+negative values mean reversal hurts. $p_{\max}$ is the largest McNemar exact
+$p$ across the five shipped runs.}
+\label{tab:position_bias}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Architecture & Model & $n$ & Net & $p_{\text{med}}$ & $p_{\max}$ \\
+\midrule
+$\mathcal{A}_{\text{D}}$ & Qwen3.5 9B        & 190 & $+2.2$  & 0.712 & 1.000 \\
+                         & GPT-OSS 20B       & 193 & $+3.4$  & 0.615 & 0.902 \\
+                         & DeepSeek V4 Flash & 193 & $-8.2$  & 0.477 & 0.807 \\
+                         & Gemini 3.5 Flash  & 195 & $+1.4$  & 0.856 & 1.000 \\
+\midrule
+$\mathcal{A}_{\text{E}}$ & Qwen3.5 9B        & 195 & $-29.6$ & 0.001 & 0.011 \\
+                         & GPT-OSS 20B       & 195 & $-30.6$ & 0.002 & 0.004 \\
+                         & DeepSeek V4 Flash & 195 & $-17.2$ & 0.079 & 0.378 \\
+                         & Gemini 3.5 Flash  & 193 & $-25.8$ & 0.000 & 0.002 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item Paired McNemar exact test on top-1 correctness, reversed arm against each
+of the five shipped runs.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+Table~\ref{tab:position_bias} separates the two architectures cleanly.
+$\mathcal{A}_{\text{D}}$ is unaffected by alternative order: the reversed arm is
+worse in one of four models, and no model reaches significance against even its
+most favourable shipped comparison ($p_{\max}$ from 0.807 to 1.000).
+$\mathcal{A}_{\text{E}}$ degrades in all four models, and in three of four the
+degradation holds against every shipped run ($p_{\max} \leq 0.011$). The
+exception is DeepSeek, where the overall effect is in the same direction but
+does not separate from run-to-run variation.
+
+The magnitude is large enough to remove the architecture's advantage. Under
+reversed order, Qwen's $\mathcal{A}_{\text{E}}$ reaches a top-1 accuracy of
+0.318 against a three-alternative chance baseline of 0.333, while its
+$\mathcal{A}_{\text{D}}$ sits at 0.316; the two architectures become
+indistinguishable. Gemini's $\mathcal{A}_{\text{E}}$ falls from a shipped range
+of 0.456--0.508 to 0.344.
+
+Within decision types the effect concentrates in Appliance for the two stronger
+models, but after Holm correction across the three types only Gemini's
+Appliance cell survives ($p_{\max}^{\text{Holm}} = 0.0003$); DeepSeek's is
+marginal at 0.059 and no other type-level cell is significant. The robust
+result is therefore the overall effect, not its distribution across decision
+types.
+
+
+% ============================================================================
+% B3  DISCUSSION -- POSITION-BIAS
+% ============================================================================
+
+\FloatBarrier
+\subsection{Order dependence in example-guided scoring}
+\label{sec:position-bias-discussion}
+
+The order control does not behave the way a generic position-bias account
+predicts. Position bias is reported to fall as model capability rises
+\cite{wang2023positionbias,zheng2023judging}, but the weakest and the strongest
+model here show the same effect at comparable significance, and the effect is
+absent from $\mathcal{A}_{\text{D}}$, which reads the same alternative list in
+the same order. What separates the two architectures is the retrieved
+exemplars.
+
+Both the test scenarios and the retrieval corpus list alternatives in canonical
+order. In the shipped condition an exemplar's positional pattern, that the
+second listed option wins, maps directly onto the query. Reversing the query
+alone breaks that mapping. The result is consistent with
+$\mathcal{A}_{\text{E}}$ transferring a positional template from the exemplar
+rather than reasoning from exemplar content, which would explain both the size
+of the drop and its absence in $\mathcal{A}_{\text{D}}$.
+
+Two readings remain open, and the present arm cannot separate them. The first
+is that the model has an order preference that exemplars amplify. The second is
+that $\mathcal{A}_{\text{E}}$ depends on agreement between exemplar order and
+query order, in which case the shipped measurement is valid for deployments
+that present alternatives canonically, which is the normal case, but the
+measured advantage is partly mechanical rather than semantic. Reversing the
+exemplars alongside the query would distinguish them: recovery to shipped
+performance implicates order matching, while continued degradation implicates
+the model. We report this as an open question rather than resolving it here.
+
+% TODO(author): decide whether to run the both-reversed arm before submission.
+% Roughly 585 API calls per model. Requires reversing the alternative ordering
+% inside format_rag_context in Example-Guided_LLM_Scoring.py.
+
+
+% ============================================================================
+% B4  METHODS -- WEIGHT REALISATION DIAGNOSTICS
+% Script: Miscellaneous Scripts/WeightDiagnostics.py
+% Output: Scoring Logic and Documentation/method/weight_discrimination.xlsx
+%         Scoring Logic and Documentation/method/cost_env_collinearity.xlsx
+% ============================================================================
+
+\subsubsection{Realised weight}
+\label{sec:realised-weight}
+
+A criterion weight only affects a ranking to the extent that the criterion
+varies across the alternatives being ranked. We therefore report, alongside the
+nominal weights, the mean within-scenario range of each criterion and the
+product of the two, which we call realised swing. Normalising realised swing to
+sum to one puts it on the same scale as the nominal vector, so the two are
+directly comparable.
+
+
+% ============================================================================
+% B5  RESULTS -- WEIGHT REALISATION AND SENSITIVITY
+% Regenerate: python "Miscellaneous Scripts/WeightDiagnostics.py"
+%             python "Miscellaneous Scripts/SensitivityAnalysis.py" --all-models
+% ============================================================================
+
+\FloatBarrier
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\footnotesize
+\caption{Nominal weight against realised swing share, by decision type.
+Realised swing is the nominal weight times the criterion's mean within-scenario
+range, normalised to sum to one. ``No discrim.'' is the percentage of scenarios
+in which the criterion takes the same value for all three alternatives.}
+\label{tab:realised_weight}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Type & Criterion & Nominal & Realised & No discrim. (\%) \\
+\midrule
+HVAC & Energy cost    & 0.300 & 0.172 & 10.5 \\
+     & Environmental  & 0.350 & 0.198 & 10.5 \\
+     & Comfort        & 0.200 & 0.538 & 0.0  \\
+     & Practicality   & 0.150 & 0.092 & 44.8 \\
+\midrule
+Appliance & Energy cost   & 0.300 & 0.247 & 28.0 \\
+          & Environmental & 0.350 & 0.029 & 42.0 \\
+          & Comfort       & 0.200 & 0.368 & 0.0  \\
+          & Practicality  & 0.150 & 0.356 & 0.0  \\
+\midrule
+Shower & Energy cost   & 0.300 & 0.301 & 1.2 \\
+       & Environmental & 0.350 & 0.357 & 1.2 \\
+       & Comfort       & 0.200 & 0.192 & 0.0 \\
+       & Practicality  & 0.150 & 0.149 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+Table~\ref{tab:realised_weight} shows the design weights are realised as
+specified in one decision type and not in the other two. For Shower the
+realised shares reproduce the nominal vector to within 0.008 across all four
+criteria. For HVAC, Comfort realises 0.538 against a nominal 0.200 while
+Practicality contributes almost nothing and fails to separate the alternatives
+in 44.8\% of scenarios. For Appliance, Environmental realises 0.029 against the
+largest nominal weight in the design, 0.350, because 42\% of Appliance
+scenarios contain no environmental difference between the alternatives at all.
+
+This is the same structure the objective weight methods report from a different
+direction. MEREC's zero-variance counts match these discrimination rates
+exactly, and MEREC's per-type vectors load onto Comfort for HVAC (0.663) and
+away from Environmental for Appliance (0.044), which is what a method that
+weights by within-scenario discrimination must do given
+Table~\ref{tab:realised_weight}.
+
+% --- Replacement sensitivity table. The +/-0.05 rows are removed: they span
+% --- 0.179 to 0.225 on the between-architecture gap while the data-derived
+% --- arms reach 0.090, so they cannot establish weight robustness on their own.
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\footnotesize
+\caption{Mean Kendall's $\tau$ across the four evaluated models under
+data-derived weight vectors, with the between-architecture gap.}
+\label{tab:sensitivity_pooled}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Weight vector & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{E}}-\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{H}}-\mathcal{A}_{\text{E}}$ \\
+\midrule
+Design (baseline)   & 0.095 & 0.315 & 0.902 & 0.220 & 0.587 \\
+Equal               & 0.139 & 0.345 & 0.913 & 0.205 & 0.568 \\
+\midrule
+Entropy pooled      & 0.109 & 0.305 & 0.874 & 0.197 & 0.569 \\
+Entropy per-type    & 0.074 & 0.323 & 0.902 & 0.250 & 0.579 \\
+\midrule
+MEREC pooled        & 0.327 & 0.455 & 0.942 & 0.127 & 0.487 \\
+MEREC per-type      & 0.335 & 0.463 & 0.936 & 0.128 & 0.473 \\
+MEREC HVAC vector   & 0.403 & 0.493 & 0.968 & 0.090 & 0.475 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item Each cell is the arithmetic mean of the four per-model values. Both the
+reference ranking and the architecture ranking are recomputed with each vector,
+because a MAVT reference is defined by its weights.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+The architecture ordering
+$\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds
+under every weight vector tested, including MEREC's HVAC vector, which assigns
+Comfort 0.663 against the design's 0.200. The magnitude of the
+$\mathcal{A}_{\text{E}}$ advantage, however, is weight-dependent in a way the
+design vector conceals. Under MEREC weights $\mathcal{A}_{\text{D}}$'s $\tau$
+rises from 0.095 to 0.403 while $\mathcal{A}_{\text{E}}$'s rises only from
+0.315 to 0.493, so the gap between them falls from 0.220 to 0.090.
+
+
+% ============================================================================
+% B6  DISCUSSION -- WEIGHTS
+% ============================================================================
+
+\FloatBarrier
+
+Weighting toward the criterion that separates alternatives closes most of the
+distance between direct prompting and example-guided scoring. MEREC vectors
+load onto Comfort; entropy vectors load onto Energy Cost and Environmental
+Impact, as the design does, and produce results indistinguishable from the
+design vector. The architectures are therefore not uniformly better or worse at
+multi-criteria judgement. They differ most where the criteria are hardest for a
+language model to estimate, which in this corpus is cost and emissions, and
+least on Comfort.
+
+That reading has a direct consequence for what
+$\mathcal{A}_{\text{E}}$ contributes. Its advantage over
+$\mathcal{A}_{\text{D}}$ is concentrated in estimating quantities that follow
+from tariff structure and grid emissions factors rather than in ranking
+alternatives per se. The design weights place 0.65 on those two criteria, which
+makes the reported benchmark the least favourable weighting for
+$\mathcal{A}_{\text{D}}$ among those tested, and the architecture ordering
+survives it.
+
+The Appliance case also shows the cost of the criterion definitions chosen to
+avoid collinearity. Holding emissions to a marginal-factor definition on a
+7am--11pm window while cost follows utility-specific peak windows leaves 42\%
+of Appliance scenarios with no environmental difference between alternatives,
+so the criterion carrying the largest nominal weight contributes least to the
+ranking there.
+
+
+% ============================================================================
+% B7  APPENDIX -- CORRECTED WEIGHT-ROBUSTNESS PROSE
+% Replaces the paragraph currently ending "Entropy and MEREC therefore provide
+% the informative objective comparisons here". Corrects three errors:
+%   (1) MEREC does NOT assign above-average weight to Environmental (0.131).
+%   (2) ImpliedWeights.py uses constrained least squares, not multinomial
+%       logistic regression; there is no likelihood.
+%   (3) The corpus scope was never stated.
+% ============================================================================
+
+Entropy and MEREC weights are computed over the full 285-scenario corpus, the
+same corpus the value functions are calibrated against; restricting the
+percentile bounds to the 195 evaluated scenarios changes three of 195 reference
+top-1 rankings.
+
+Implied weights are derived by constrained least squares on pairwise
+preferences between alternatives, minimising squared error subject to
+non-negativity and a unit sum. When a criterion takes the same value for all
+alternatives in a scenario it contributes no discriminatory information, and
+the fit concentrates on whichever criterion does vary.
+
+The three objective methods disagree with the design in different directions,
+and the disagreement is informative rather than corrective. Entropy weights
+support the Environmental priority, assigning it 0.371 against the design's
+0.350. MEREC does not: it assigns Environmental 0.131, the lowest of its four
+criteria, and Comfort 0.404 against the design's 0.200. Implied weights
+collapse to corner solutions, placing the entire weight on Comfort or
+Practicality, and the Appliance fit reports a negative pairwise $R^2$
+($-0.211$), so they are reported here as a discrimination diagnostic rather
+than as a candidate weighting.
+
+The two disagreements share one cause. Entropy measures spread across the whole
+corpus, where cost and emissions vary widely between scenarios. MEREC and the
+implied fit measure spread within a choice set, where they often do not. The
+design weights follow the entropy reading, and the sensitivity analysis
+(Table~\ref{tab:sensitivity_pooled}) reports what happens under the MEREC
+reading instead.
