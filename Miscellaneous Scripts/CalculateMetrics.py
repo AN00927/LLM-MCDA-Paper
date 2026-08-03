@@ -799,10 +799,13 @@ def compute_ranking_metrics(merged_df):
             top1_ok += 1
 
         # top-2
-        gt_top1_val = sc["gt_rank"].astype(float).min()
-        gt_top2 = set(sc.loc[sc["gt_rank"].astype(float).nsmallest(2).index, "norm_alternative"])
+        # With n=3 alternatives the set-intersection form (do the two top-2
+        # sets overlap?) is degenerate: |A|+|B| = 4 > 3, so by pigeonhole the
+        # intersection is never empty and top2_accuracy is identically 1.0.
+        # The containment form is required: does the ground-truth top
+        # alternative appear in the architecture's top two?
         ar_top2 = set(sc.loc[sc["arch_rank"].astype(float).nsmallest(2).index, "norm_alternative"])
-        if gt_top2 & ar_top2:
+        if gt_top1 in ar_top2:
             top2_ok += 1
 
     return {

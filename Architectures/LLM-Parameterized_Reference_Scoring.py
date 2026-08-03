@@ -403,17 +403,38 @@ def query_openrouter(messages: List[Dict], model: str = None,
 
     raise Exception(f"{FAILED_API_EXHAUSTED}: Failed to get response after {MAX_RETRIES} attempts")
 
+# Household-reported fields the LLM extraction prompt may see. Engineering-truth
+# keys (r_value, gpm, kwh_per_cycle, ...) must NEVER reach the prompt -- the LLM
+# is scored on estimating exactly those values (proxy/true-pair rule). Any key
+# outside this allowlist is a schema violation and must fail loudly instead of
+# being forwarded. 'question' is handled by its own skip below and is not a
+# member here.
+EXTRACTION_SCENARIO_ALLOWLIST = frozenset({
+    'decision_type', 'location', 'square_footage', 'insulation',
+    'household_size', 'utility_budget', 'housing_type', 'outdoor_temp',
+    'house_age', 'appliance_age', 'flow_rate',
+    'alternative_1', 'alternative_2', 'alternative_3',
+})
+
 def format_scenario_for_extraction(scenario: Dict) -> str:
     """Format scenario for extraction.
 
     Skips the Question (rendered separately) and any cells that are blank,
     NaN, or the literal string 'nan' so noise from columns irrelevant to the
-    current decision type doesn't leak into the LLM context.
+    current decision type doesn't leak into the LLM context. Only keys in
+    EXTRACTION_SCENARIO_ALLOWLIST are emitted; an unexpected key raises
+    before its value can reach the prompt.
     """
     lines = []
     for key, value in scenario.items():
         if key == 'question':
             continue
+        if key not in EXTRACTION_SCENARIO_ALLOWLIST:
+            raise ValueError(
+                f"ERROR: unexpected scenario key {key!r} is not in the "
+                f"extraction allowlist; refusing to forward it to the LLM "
+                f"(proxy/true-pair guard)."
+            )
         if value is None:
             continue
         if isinstance(value, float) and pd.isna(value):

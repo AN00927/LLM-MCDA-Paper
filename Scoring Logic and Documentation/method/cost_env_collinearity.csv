@@ -1,0 +1,5 @@
+corpus,scope,n_scenarios,mean_spearman_cost_env,pct_rho_equals_1,pct_scores_identical,combined_cost_env_weight
+full,Overall,285,0.9335,85.4,11.2,0.65
+full,HVAC,105,1.0,100.0,27.6,0.65
+full,Appliance,100,0.6463,29.3,1.0,0.65
+full,Shower,80,0.9933,95.0,2.5,0.65

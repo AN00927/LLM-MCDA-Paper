@@ -1,0 +1,33 @@
+model,model_label,architecture,arch_label,scope,n_scenarios,n_shipped_runs,shipped_right_reversed_wrong,shipped_wrong_reversed_right,net_reversed_gain,mcnemar_p_median,mcnemar_p_max,top1_choice_agreement,mcnemar_p_median_holm,mcnemar_p_max_holm
+qwen,Qwen3.5 9B,Direct_LLM_Scoring,A_D,Overall,190,5,32.6,34.8,2.2,0.7122,1.0,0.4789,,
+qwen,Qwen3.5 9B,Direct_LLM_Scoring,A_D,HVAC,66,5,9.6,19.4,9.8,0.0614,0.5847,0.4135,0.1842,1.0
+qwen,Qwen3.5 9B,Direct_LLM_Scoring,A_D,Appliance,64,5,8.8,4.8,-4.0,0.424,0.7905,0.6459,0.5726,1.0
+qwen,Qwen3.5 9B,Direct_LLM_Scoring,A_D,Shower,60,5,14.2,10.6,-3.6,0.2863,1.0,0.3734,0.5726,1.0
+gptoss,GPT-OSS 20B,Direct_LLM_Scoring,A_D,Overall,193,5,30.2,33.6,3.4,0.6147,0.9022,0.5233,,
+gptoss,GPT-OSS 20B,Direct_LLM_Scoring,A_D,HVAC,68,5,15.4,19.0,3.6,0.6076,1.0,0.3618,1.0,1.0
+gptoss,GPT-OSS 20B,Direct_LLM_Scoring,A_D,Appliance,65,5,3.4,7.0,3.6,0.5078,1.0,0.6985,1.0,1.0
+gptoss,GPT-OSS 20B,Direct_LLM_Scoring,A_D,Shower,60,5,11.4,7.6,-3.8,0.5034,0.8318,0.5167,1.0,1.0
+deepseek,DeepSeek V4 Flash,Direct_LLM_Scoring,A_D,Overall,193,5,37.2,29.0,-8.2,0.4767,0.8072,0.4815,,
+deepseek,DeepSeek V4 Flash,Direct_LLM_Scoring,A_D,HVAC,70,5,9.8,14.8,5.0,0.6776,1.0,0.3925,1.0,1.0
+deepseek,DeepSeek V4 Flash,Direct_LLM_Scoring,A_D,Appliance,63,5,12.8,5.4,-7.4,0.1435,0.3323,0.5278,0.4305,0.9969
+deepseek,DeepSeek V4 Flash,Direct_LLM_Scoring,A_D,Shower,60,5,14.6,8.8,-5.8,0.5413,0.8388,0.5352,1.0,1.0
+gemini,Gemini 3.5 Flash,Direct_LLM_Scoring,A_D,Overall,195,5,16.4,17.8,1.4,0.8555,1.0,0.7477,,
+gemini,Gemini 3.5 Flash,Direct_LLM_Scoring,A_D,HVAC,70,5,10.0,11.2,1.2,1.0,1.0,0.5714,1.0,1.0
+gemini,Gemini 3.5 Flash,Direct_LLM_Scoring,A_D,Appliance,65,5,1.0,2.8,1.8,0.625,1.0,0.8892,1.0,1.0
+gemini,Gemini 3.5 Flash,Direct_LLM_Scoring,A_D,Shower,60,5,5.4,3.8,-1.6,0.7539,1.0,0.8,1.0,1.0
+qwen,Qwen3.5 9B,Example-Guided_LLM_Scoring,A_E,Overall,195,5,56.8,27.2,-29.6,0.0011,0.0106,0.3867,,
+qwen,Qwen3.5 9B,Example-Guided_LLM_Scoring,A_E,HVAC,70,5,20.2,10.4,-9.8,0.1221,0.3616,0.3686,0.2442,0.7232
+qwen,Qwen3.5 9B,Example-Guided_LLM_Scoring,A_E,Appliance,65,5,16.2,10.4,-5.8,0.3449,0.7011,0.4246,0.3449,0.7232
+qwen,Qwen3.5 9B,Example-Guided_LLM_Scoring,A_E,Shower,60,5,20.4,6.4,-14.0,0.0025,0.1078,0.3667,0.0075,0.3234
+gptoss,GPT-OSS 20B,Example-Guided_LLM_Scoring,A_E,Overall,195,5,54.6,24.0,-30.6,0.0023,0.0043,0.4605,,
+gptoss,GPT-OSS 20B,Example-Guided_LLM_Scoring,A_E,HVAC,70,5,22.8,10.0,-12.8,0.041,0.1496,0.36,0.123,0.4488
+gptoss,GPT-OSS 20B,Example-Guided_LLM_Scoring,A_E,Appliance,65,5,12.8,6.0,-6.8,0.1671,0.4545,0.5138,0.1671,0.459
+gptoss,GPT-OSS 20B,Example-Guided_LLM_Scoring,A_E,Shower,60,5,19.0,8.0,-11.0,0.0755,0.2295,0.52,0.151,0.459
+deepseek,DeepSeek V4 Flash,Example-Guided_LLM_Scoring,A_E,Overall,195,5,56.2,39.0,-17.2,0.079,0.3776,0.4143,,
+deepseek,DeepSeek V4 Flash,Example-Guided_LLM_Scoring,A_E,HVAC,70,5,13.8,16.8,3.0,0.7201,1.0,0.3743,1.0,1.0
+deepseek,DeepSeek V4 Flash,Example-Guided_LLM_Scoring,A_E,Appliance,65,5,30.8,10.2,-20.6,0.0051,0.0195,0.3292,0.0153,0.0585
+deepseek,DeepSeek V4 Flash,Example-Guided_LLM_Scoring,A_E,Shower,60,5,11.6,12.0,0.4,0.8238,1.0,0.5533,1.0,1.0
+gemini,Gemini 3.5 Flash,Example-Guided_LLM_Scoring,A_E,Overall,193,5,37.6,11.8,-25.8,0.0003,0.0016,0.692,,
+gemini,Gemini 3.5 Flash,Example-Guided_LLM_Scoring,A_E,HVAC,69,5,7.8,3.2,-4.6,0.5078,0.5488,0.7637,1.0,1.0
+gemini,Gemini 3.5 Flash,Example-Guided_LLM_Scoring,A_E,Appliance,65,5,24.4,3.0,-21.4,0.0,0.0001,0.5091,0.0,0.0003
+gemini,Gemini 3.5 Flash,Example-Guided_LLM_Scoring,A_E,Shower,59,5,5.4,5.6,0.2,1.0,1.0,0.8066,1.0,1.0

@@ -1,0 +1,103 @@
+{
+  "test_rag_nn": {
+    "label": "Test->RAG nearest neighbour L2 (all 195)",
+    "n": 195,
+    "min": 0.066196009516716,
+    "median": 0.21467289328575134,
+    "max": 0.42658013105392456,
+    "mean": 0.22053704475745176
+  },
+  "test_rag_random_mean": {
+    "label": "Test->RAG random corpus entry L2 mean, same-type pool (all 195)",
+    "n": 195,
+    "min": 0.3063350519963673,
+    "median": 0.3778822600841522,
+    "max": 0.6772334967340742,
+    "mean": 0.42182757358820666
+  },
+  "test_rag_random_mean_all_corpus": {
+    "label": "Test->RAG random corpus entry L2 mean, all 90 entries (all 195)",
+    "n": 195,
+    "min": 0.7740846266349156,
+    "median": 0.9095613555775748,
+    "max": 1.015013983514574,
+    "mean": 0.8836291944972131
+  },
+  "rag_rag_loo": {
+    "label": "RAG->RAG leave-one-out NN L2 (90 corpus scenarios)",
+    "n": 90,
+    "min": 0.1345289796590805,
+    "median": 0.21942415833473206,
+    "max": 0.5225971937179565,
+    "mean": 0.2268431896964709
+  },
+  "per_type": {
+    "HVAC": {
+      "n": 70,
+      "nn": {
+        "label": "HVAC NN",
+        "n": 70,
+        "min": 0.09589444845914841,
+        "median": 0.2484600618481636,
+        "max": 0.33873164653778076,
+        "mean": 0.2463082978768008
+      },
+      "random_mean": {
+        "label": "HVAC random",
+        "n": 70,
+        "min": 0.3063350519963673,
+        "median": 0.35876259633472984,
+        "max": 0.4162438222340175,
+        "mean": 0.36492686854637396
+      }
+    },
+    "Appliance": {
+      "n": 65,
+      "nn": {
+        "label": "Appliance NN",
+        "n": 65,
+        "min": 0.13718779385089874,
+        "median": 0.20732451975345612,
+        "max": 0.42658013105392456,
+        "mean": 0.22508465876946082
+      },
+      "random_mean": {
+        "label": "Appliance random",
+        "n": 65,
+        "min": 0.4940110662153789,
+        "median": 0.5371913041387285,
+        "max": 0.6772334967340742,
+        "mean": 0.5458934231511839
+      }
+    },
+    "Shower": {
+      "n": 60,
+      "nn": {
+        "label": "Shower NN",
+        "n": 60,
+        "min": 0.066196009516716,
+        "median": 0.16377780586481094,
+        "max": 0.3146147131919861,
+        "mean": 0.18554400093853474
+      },
+      "random_mean": {
+        "label": "Shower random",
+        "n": 60,
+        "min": 0.3256989374756813,
+        "median": 0.3512893557548523,
+        "max": 0.4087179884314537,
+        "mean": 0.3538070591104527
+      }
+    }
+  },
+  "verdict": {
+    "nn_median": 0.21467289328575134,
+    "random_mean": 0.42182757358820666,
+    "random_mean_all_corpus": 0.8836291944972131,
+    "ratio_nn_to_random": 0.5089114764586672,
+    "rag_rag_loo_median": 0.21942415833473206,
+    "ratio_nn_to_loo": 0.9783466638995482,
+    "verdict": "DISCRIMINATING",
+    "rule": "NN median / random mean >= 0.9 -> near-random (little discrimination)"
+  }
+}
