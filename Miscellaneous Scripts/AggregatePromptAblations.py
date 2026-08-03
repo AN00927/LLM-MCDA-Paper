@@ -7,7 +7,7 @@ those aggregates describing only the last slice. The per-cell xlsx files under
 Analysis/Prompt_Ablation/ are the complete record; this script re-derives the
 full summary from all of them.
 
-Reuses `RunPromptAblations.summarize` and `_md` so the output is identical in
+Reuses `run_prompt_ablation_experiments.summarize` and `_md` so the output is identical in
 shape to a single-shot run -- no metric is recomputed here.
 
 Run after the matrix finishes (or any time a partial view is wanted):

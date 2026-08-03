@@ -5,8 +5,8 @@ WeightDiagnostics.py
 Measures what the criterion weights actually do inside the choice sets the
 benchmark evaluates, as opposed to what they are nominally set to.
 
-The three objective weight scripts (EntropyWeights, MERCECWeights,
-ImpliedWeights) each return a weight vector, and comparing four vectors
+The three objective weight scripts (EntropyWeights, merec_weights,
+implied_weights) each return a weight vector, and comparing four vectors
 column by column produces a table that is consistent and uninformative. The
 quantities below are the ones that carry a finding:
 
