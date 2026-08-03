@@ -10,7 +10,7 @@ This document explains every calculation in the metrics and significance pipelin
 Raw per-run xlsx (3 architectures x 4 models x 5 runs = 60 files)
     |
     v
-CalculateMetrics.py -- evaluates each architecture against ground truth
+evaluate_architecture_metrics.py -- evaluates each architecture against ground truth
     |                    - matches scenarios by (question, location)
     |                    - computes MAE, RMSE, Kendall's tau, Top-1, Top-2
     |                    - outputs per-architecture metrics xlsx
@@ -20,7 +20,7 @@ calculate_per_run_metrics.py -- same metrics, but per individual run
     |                         - writes paper/per_run_metrics/per_run_metrics_{model}.csv
     |
     v
-generate_numbers_master.py -- pools per-run CSVs across all 4 models
+generate_paper_results_numbers.py -- pools per-run CSVs across all 4 models
     |                        - computes pooled means + stds (4 models x 5 runs = 20 values)
     |                        - computes per-model means, per-criterion breakdowns
     |                        - writes paper/numbers_master.csv
@@ -31,7 +31,7 @@ Significance_testing.py -- statistical tests on per-scenario metrics
                           - writes paper/per_run_metrics/significance_tests.xlsx
 ```
 
-Each stage computes its own metrics from raw data rather than consuming pre-computed aggregates from the prior stage. The per-run CSV bridge is used only by generate_numbers_master.py.
+Each stage computes its own metrics from raw data rather than consuming pre-computed aggregates from the prior stage. The per-run CSV bridge is used only by generate_paper_results_numbers.py.
 
 ---
 
@@ -52,8 +52,8 @@ SENTINEL_FLOAT = 1928.0
 |----------|------|-------------|
 | `is_sentinel(value)` | sentinel_utils.py | Coerces to float, checks `== 1928.0`. NaN returns False |
 | `has_sentinel_scores(scores, criteria)` | sentinel_utils.py | Checks any criterion in dict is sentinel |
-| `is_failed_row(row)` | CalculateMetrics.py | Checks if any score column in a row is sentinel |
-| `_to_float_or_nan(val)` | CalculateMetrics.py | Returns NaN on any failure instead of sentinel |
+| `is_failed_row(row)` | evaluate_architecture_metrics.py | Checks if any score column in a row is sentinel |
+| `_to_float_or_nan(val)` | evaluate_architecture_metrics.py | Returns NaN on any failure instead of sentinel |
 
 ### Handling approaches
 
@@ -70,7 +70,7 @@ There are two primary evaluation handling strategies, plus a standalone per-run 
 - Scores are averaged across runs BEFORE metrics computation
 
 **Per-run imputed robustness check:**
-- Standalone robustness analysis via `paper_pipeline/rebuild_imputed_robustness.py`
+- Standalone robustness analysis via `paper_pipeline/generate_imputed_robustness_tables.py`
 - Imputes sentinels to 0.5 per run before MAVT ranking using building blocks `impute_failed_scores()` and `recompute_arch_ranks()`
 
 ---
@@ -127,7 +127,7 @@ For matching, alternative values are normalized:
 
 ## 4. Per-Run Metrics — Functions
 
-All functions below are in `CalculateMetrics.py` unless noted. They operate on a `merged_df` containing `arch_*` and `gt_*` columns.
+All functions below are in `evaluate_architecture_metrics.py` unless noted. They operate on a `merged_df` containing `arch_*` and `gt_*` columns.
 
 ### 4.1 `compute_criterion_metrics(merged_df)`
 
@@ -211,10 +211,10 @@ In `generate_method_c_consensus.py`:
 
 ### 6.2 Per-run imputed robustness building blocks
 
-In `CalculateMetrics.py`:
+In `evaluate_architecture_metrics.py`:
 - `impute_failed_scores(df, impute_value=0.5)` replaces sentinel 1928 in `arch_*` columns with 0.5 (scale midpoint).
 - `recompute_arch_ranks(df)` recomputes weighted scores and ranks after imputation.
-- Used as building blocks by `paper_pipeline/rebuild_imputed_robustness.py` for per-run imputed robustness checking.
+- Used as building blocks by `paper_pipeline/generate_imputed_robustness_tables.py` for per-run imputed robustness checking.
 
 ---
 
@@ -222,7 +222,7 @@ In `CalculateMetrics.py`:
 
 Each criterion (energy_cost, environmental, comfort, practicality) has its own MAE and RMSE computed independently.
 
-In `generate_numbers_master.py`, per-criterion MAEs are reported:
+In `generate_paper_results_numbers.py`, per-criterion MAEs are reported:
 
 - **Pooled**: mean of 20 values (4 models x 5 runs) for that criterion x architecture
 - **Best/worst model**: model with minimum/maximum mean overall_MAE per architecture
@@ -241,7 +241,7 @@ Metrics are computed separately for each decision type by filtering merged_df:
 
 `compute_criterion_metrics()` and `compute_ranking_metrics()` are called on each filtered subset.
 
-In `generate_numbers_master.py`, per-type metrics are:
+In `generate_paper_results_numbers.py`, per-type metrics are:
 - **Pooled**: mean across all 20 values per architecture x decision type for tau and Top-1
 - **Best/worst**: model with max/min mean tau per architecture x decision type
 
@@ -249,7 +249,7 @@ In `generate_numbers_master.py`, per-type metrics are:
 
 ## 9. Cross-Model Pooling (numbers_master.py)
 
-`generate_numbers_master.py` reads per-run CSVs from all 4 models and computes:
+`generate_paper_results_numbers.py` reads per-run CSVs from all 4 models and computes:
 
 ### Pooled overall (Table 5)
 For each architecture, collects metric values from all 20 runs (4 models x 5 runs):
@@ -374,7 +374,7 @@ Thresholds: <0.147 negligible, <0.33 small, <0.474 medium, >=0.474 large.
 
 ## 11. Failure Analysis Pipeline
 
-In `failure_analysis.py`:
+In `analyze_benchmark_failures.py`:
 
 1. Scans every row of every per-run xlsx for 1928 sentinel
 2. Checks each of 4 score columns via `float(val) == 1928`
@@ -392,7 +392,7 @@ In `failure_analysis.py`:
 
 ## 12. RAG Ablation Tests
 
-In `RunRAGAblations.py`, using a 35-scenario subset:
+In `run_rag_ablation_experiments.py`, using a 35-scenario subset:
 
 ### 12.1 Configurations tested
 Seven configurations against a `k=3` control:
@@ -425,10 +425,10 @@ Pairwise comparisons between configurations. Results: retrieval k variants, embe
 |------|------|
 | `model_config.py` | Constants: CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS |
 | `sentinel_utils.py` | is_sentinel, has_sentinel_scores, apply_mavt_ranking |
-| `CalculateMetrics.py` | Central metrics engine: matching, filtering, all metrics |
+| `evaluate_architecture_metrics.py` | Central metrics engine: matching, filtering, all metrics |
 | `calculate_per_run_metrics.py` | Per-run wrapper (Method A) |
-| `generate_numbers_master.py` | Cross-model pooling, numbers_master.csv |
+| `generate_paper_results_numbers.py` | Cross-model pooling, numbers_master.csv |
 | `generate_method_c_consensus.py` | Method C comparison (safe_mean, consensus) |
-| `failure_analysis.py` | Failure detection, LaTeX tables |
+| `analyze_benchmark_failures.py` | Failure detection, LaTeX tables |
 | `Significance_testing.py` | ICC, Wilcoxon, Stouffer, Cliff's delta, mixed model |
-| `RunRAGAblations.py` | RAG ablation: Friedman, bootstrap, post-hoc |
+| `run_rag_ablation_experiments.py` | RAG ablation: Friedman, bootstrap, post-hoc |

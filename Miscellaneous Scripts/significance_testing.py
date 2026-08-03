@@ -14,9 +14,9 @@ Aggregation method (Method A):
     Per-scenario metrics are computed independently for each of the 5 runs,
     then averaged across runs. This gives one (scenario, model, architecture)
     metric value. The headline results in the paper use the identical pipeline
-    (calculate_per_run_metrics.py -> generate_numbers_master.py), so the point
+    (calculate_per_run_metrics.py -> generate_paper_results_numbers.py), so the point
     estimate being significance-tested IS the number reported in results tables.
-    CalculateMetrics.py's standalone evaluate_all() uses a different aggregation
+    evaluate_architecture_metrics.py's standalone evaluate_all() uses a different aggregation
     (Method C: average raw scores across 5 runs -> recompute rank -> compute
     metric once); generate_method_c_consensus.py tracks this discrepancy.
 
@@ -158,7 +158,7 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
 
     Returns a DataFrame of matched (arch_scenario, GT scenario) rows with
     per-alternative arch and GT scores.  This mirrors the match_scenarios
-    logic in CalculateMetrics.py but is scoped to a single run dataframe.
+    logic in evaluate_architecture_metrics.py but is scoped to a single run dataframe.
     """
     matched_rows = []
 
@@ -377,7 +377,7 @@ def compute_per_scenario_metrics_from_raw():
 
     The 5 runs are averaged to produce a single per-scenario-per-model
     metric vector (195 scenarios per model). This is Method A (per-run
-    metrics averaged). The same method feeds generate_numbers_master.py,
+    metrics averaged). The same method feeds generate_paper_results_numbers.py,
     so significance tests here test the same point estimate as the paper's
     results tables.
 

@@ -261,7 +261,7 @@ def _assert_control_matches_shipped() -> None:
         raise RuntimeError(
             "Shipped prompts have drifted from this script's copies:\n  - "
             + "\n  - ".join(problems)
-            + "\nUpdate the constants in RunPromptAblations.py before running, or the "
+            + "\nUpdate the constants in run_prompt_ablation_experiments.py before running, or the "
               "ablation will be measured against a stale baseline."
         )
 

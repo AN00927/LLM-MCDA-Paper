@@ -93,7 +93,7 @@ LLM-Parameterized_Reference_Scoring dominates across all four models. RAG-Enhanc
 
 ### Imputation Robustness Test
 
-Per-run imputed robustness is computed via [paper_pipeline/rebuild_imputed_robustness.py](paper_pipeline/rebuild_imputed_robustness.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Output is written to [Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx](Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx).
+Per-run imputed robustness is computed via [paper_pipeline/generate_imputed_robustness_tables.py](paper_pipeline/generate_imputed_robustness_tables.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Output is written to [Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx](Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx).
 
 ---
 
@@ -129,18 +129,18 @@ LLM-MCDA-Paper/
 │   ├── HVACGroundTruthCalculator.py
 │   └── ShowerGroundTruthCalculator.py
 ├── Miscellaneous Scripts/
-│   ├── BuildRAG.py
-│   ├── CalculateMetrics.py
+│   ├── build_rag_index.py
+│   ├── evaluate_architecture_metrics.py
 │   ├── CreateRepresentativeSample.py
 │   ├── EntropyWeights.py
-│   ├── EvaluateHybridExtraction.py
-│   ├── GenerateBaselineTable.py
-│   ├── ImpliedWeights.py
-│   ├── MERCECWeights.py
-│   ├── RunBaselines.py
-│   ├── RunRAGAblations.py
+│   ├── evaluate_parameter_extraction.py
+│   ├── generate_baseline_table.py
+│   ├── implied_weights.py
+│   ├── merec_weights.py
+│   ├── run_baseline_models.py
+│   ├── run_rag_ablation_experiments.py
 │   ├── SensitivityAnalysis.py
-│   └── SyncRAGGroundTruth.py
+│   └── sync_rag_ground_truth_scores.py
 ├── Scenario Files/
 │   ├── ConsolidatedforSimaltaneousediting.xlsx
 │   ├── HVACScenarios.xlsx
@@ -150,7 +150,7 @@ LLM-MCDA-Paper/
 │   ├── ApplianceRAGScenarios.xlsx
 │   ├── ShowerRAGScenarios.xlsx
 │   ├── TestScenarios.xlsx
-│   └── rebuild_consolidated.py
+│   └── build_consolidated_scenario_workbooks.py
 ├── Scoring Logic and Documentation/
 │   └── method/
 ├── Output Files GPT-OSS 20B/
@@ -344,7 +344,7 @@ This reversal was hidden by an earlier four-model-mean presentation of the same 
 Two scripts independently validate the subjective MAVT weights against the ground-truth score distributions:
 
 - **[EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py)** -- Shannon entropy weights overall and by decision type. The environmental criterion receives above-average entropy weight, independently supporting the 0.35 allocation.
-- **[MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py)** -- Computes MEREC (Method based on Removal Effects of Criteria) weights per-scenario then averages them. MEREC is correlation-free and robust to nonlinearity, making it appropriate for comfort and practicality which use nonlinear value functions.
+- **[merec_weights.py](Miscellaneous Scripts/merec_weights.py)** -- Computes MEREC (Method based on Removal Effects of Criteria) weights per-scenario then averages them. MEREC is correlation-free and robust to nonlinearity, making it appropriate for comfort and practicality which use nonlinear value functions.
 
 ---
 
@@ -352,18 +352,18 @@ Two scripts independently validate the subjective MAVT weights against the groun
 
 | Script | Purpose |
 | --- | --- |
-| [BuildRAG.py](Miscellaneous Scripts/BuildRAG.py) | Builds/refreshes ChromaDB vector index from RAG scenario files (35 HVAC, 35 Appliance, 20 Shower). Computes SHA-256 of source files and stores schema version in collection metadata to detect when rebuild is needed. Current schema version: 4. |
-| [CalculateMetrics.py](Miscellaneous Scripts/CalculateMetrics.py) | Computes Top-1/2 accuracy, Kendall's tau, Spearman rho, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to ground truth. Outputs metrics_summary_{MODEL_KEY}.xlsx. |
-| [CreateRepresentativeSample.py](Miscellaneous Scripts/CreateRepresentativeSample.py) | Drop-in replacement for RunRAGAblations.py's stratified_sample. Stratafies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation samples. |
-| [SyncRAGGroundTruth.py](Miscellaneous Scripts/SyncRAGGroundTruth.py) | Syncs updated ground truth scores back into RAG scenario workbooks after re-running ground truth calculators. Matches on descriptor columns. Run after calculator updates, then re-run BuildRAG.py. |
+| [build_rag_index.py](Miscellaneous Scripts/build_rag_index.py) | Builds/refreshes ChromaDB vector index from RAG scenario files (35 HVAC, 35 Appliance, 20 Shower). Computes SHA-256 of source files and stores schema version in collection metadata to detect when rebuild is needed. Current schema version: 4. |
+| [evaluate_architecture_metrics.py](Miscellaneous Scripts/evaluate_architecture_metrics.py) | Computes Top-1/2 accuracy, Kendall's tau, Spearman rho, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to ground truth. Outputs metrics_summary_{MODEL_KEY}.xlsx. |
+| [CreateRepresentativeSample.py](Miscellaneous Scripts/CreateRepresentativeSample.py) | Drop-in replacement for run_rag_ablation_experiments.py's stratified_sample. Stratafies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation samples. |
+| [sync_rag_ground_truth_scores.py](Miscellaneous Scripts/sync_rag_ground_truth_scores.py) | Syncs updated ground truth scores back into RAG scenario workbooks after re-running ground truth calculators. Matches on descriptor columns. Run after calculator updates, then re-run build_rag_index.py. |
 | [SensitivityAnalysis.py](Miscellaneous Scripts/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). The paper reports only the baseline/equal/entropy/MEREC arms (see [Sensitivity Analysis](#sensitivity-analysis)); the +/-0.05 arms are still computed but not reported. Outputs sensitivity_analysis_{MODEL_KEY}.xlsx. |
 | [EntropyWeights.py](Miscellaneous Scripts/EntropyWeights.py) | Computes Shannon entropy weights from ground-truth score distributions overall and by decision type. Outputs entropy_weights.xlsx. |
-| [MERCECWeights.py](Miscellaneous Scripts/MERCECWeights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Outputs merec_weights_summary.xlsx. |
-| [ImpliedWeights.py](Miscellaneous Scripts/ImpliedWeights.py) | Recovers implied weights from ground-truth ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Outputs implied_weights_summary.xlsx. |
-| [RunBaselines.py](Miscellaneous Scripts/RunBaselines.py) | Computes 5 non-LLM baselines + Oracle upper bound: Random (20 seeds), Uniform (all scores = 0.5), Fixed-Default (GT calculators with fixed default params), Nearest-Neighbor (k=3 retrieval from RAG), Oracle (true GT scores). Outputs to Output Files/Baselines/. |
-| [RunRAGAblations.py](Miscellaneous Scripts/RunRAGAblations.py) | Runs 9 RAG retrieval/exemplar ablations on stratified sample (default 15 scenarios x 3 types): Control (k=3, scores+ranks+hidden params), Random exemplars, No exemplars, Descriptions without scores/ranks, Exemplars without hidden params, Retrieval k=1/k=5, Alternate embedding, Nearest-neighbor. Outputs summary tables, plots, and Markdown report. |
-| [EvaluateHybridExtraction.py](Miscellaneous Scripts/EvaluateHybridExtraction.py) | Evaluates LLM-Parameterized_Reference_Scoring parameter extraction accuracy vs ground truth: numeric params (MAE/RMSE/percentiles), categorical params (accuracy), counterfactual top-1 sensitivity. Outputs LLM-Parameterized_Reference_Scoring_parameter_evaluation.md. |
-| [GenerateBaselineTable.py](Miscellaneous Scripts/GenerateBaselineTable.py) | Reads metrics_summary_{MODEL_KEY}.xlsx and generates incremental contribution table comparing all 8 systems (5 baselines + 3 LLM architectures). Outputs console table, LaTeX, and CSV. Default baseline for deltas: FixedDefault. |
+| [merec_weights.py](Miscellaneous Scripts/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Outputs merec_weights_summary.xlsx. |
+| [implied_weights.py](Miscellaneous Scripts/implied_weights.py) | Recovers implied weights from ground-truth ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Outputs implied_weights_summary.xlsx. |
+| [run_baseline_models.py](Miscellaneous Scripts/run_baseline_models.py) | Computes 5 non-LLM baselines + Oracle upper bound: Random (20 seeds), Uniform (all scores = 0.5), Fixed-Default (GT calculators with fixed default params), Nearest-Neighbor (k=3 retrieval from RAG), Oracle (true GT scores). Outputs to Output Files/Baselines/. |
+| [run_rag_ablation_experiments.py](Miscellaneous Scripts/run_rag_ablation_experiments.py) | Runs 9 RAG retrieval/exemplar ablations on stratified sample (default 15 scenarios x 3 types): Control (k=3, scores+ranks+hidden params), Random exemplars, No exemplars, Descriptions without scores/ranks, Exemplars without hidden params, Retrieval k=1/k=5, Alternate embedding, Nearest-neighbor. Outputs summary tables, plots, and Markdown report. |
+| [evaluate_parameter_extraction.py](Miscellaneous Scripts/evaluate_parameter_extraction.py) | Evaluates LLM-Parameterized_Reference_Scoring parameter extraction accuracy vs ground truth: numeric params (MAE/RMSE/percentiles), categorical params (accuracy), counterfactual top-1 sensitivity. Outputs LLM-Parameterized_Reference_Scoring_parameter_evaluation.md. |
+| [generate_baseline_table.py](Miscellaneous Scripts/generate_baseline_table.py) | Reads metrics_summary_{MODEL_KEY}.xlsx and generates incremental contribution table comparing all 8 systems (5 baselines + 3 LLM architectures). Outputs console table, LaTeX, and CSV. Default baseline for deltas: FixedDefault. |
 
 ---
 

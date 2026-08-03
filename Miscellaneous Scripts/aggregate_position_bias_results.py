@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-PositionBiasAggregate.py
+aggregate_position_bias_results.py
 
 Combines the per-model position-bias control arms into the tables the paper
-reports. Reads only files already written by PositionBiasControl.py, so it can
+reports. Reads only files already written by run_position_bias_control.py, so it can
 be re-run at any time without touching the API.
 
 The reversed arm is a single run compared against five shipped runs, so every
@@ -17,7 +17,7 @@ Per-decision-type p-values are Holm-corrected across the three types within each
 types is twelve tests and a single borderline cell means nothing.
 
 Usage:
-    python "Miscellaneous Scripts/PositionBiasAggregate.py"
+    python "Miscellaneous Scripts/aggregate_position_bias_results.py"
 """
 
 import sys
@@ -45,7 +45,7 @@ MODEL_LABELS = {
     "deepseek": "DeepSeek V4 Flash",
     "gemini": "Gemini 3.5 Flash",
 }
-# A_D only. The A_H order arm lives in RunHybridAblations.py, where it is
+# A_D only. The A_H order arm lives in run_hybrid_ablation_experiments.py, where it is
 # compared against A_H's own five shipped runs rather than against a sample.
 ARCH_LABELS = {
     "Direct_LLM_Scoring": "A_D",

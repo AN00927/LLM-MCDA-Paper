@@ -1,5 +1,5 @@
 """
-ImpliedWeights.py
+implied_weights.py
 -----------------
 Recovers "implied weights" from the ground truth ranking structure using
 pairwise constrained linear regression.
