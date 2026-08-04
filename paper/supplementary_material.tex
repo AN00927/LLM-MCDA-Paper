@@ -371,7 +371,7 @@ Duquesne   & 2--9pm  & 0.1375 & 0.1375 \\
 
 PECO (Rate R-TOU) \citep{peco2021} and PPL (Rate RTS) \citep{ppl2025} use a 4-hour afternoon peak window (2--6pm weekdays). The three FirstEnergy utilities (West Penn, Penelec, MetEd) use a 7-hour peak window (2--9pm weekdays), with rates derived from the Jun-2025 Price-to-Compare (PTC) multiplied by approved multipliers \citep{firstenergy2025,firstenergy2026}. Duquesne uses a flat default rate (Rate RS) \citep{duquesne2026}; an optional TOU schedule (peak 3--9pm) exists but is not applied in the benchmark because the majority of Duquesne customers remain on the flat rate.\subsection{Electricity Rate Provenance}
 
-For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. The cost is estimated at \$0.19/kWh, which represents a bundled retail rate combining generation, transmission, distribution, monthly service fees, riders, and state taxes. Form EIA-861 reports a 2024 Pennsylvania statewide average price of 17.77\textcent/kWh based on total utility revenue divided by sales \citep{eia_epa_2024}. However, in urban and suburban Philadelphia, the Pennsylvania Public Utility Commission 2025 Rate Report lists an average monthly PECO residential bill of \$135.29 for 702\,kWh, establishing an effective bundled price of 19.27\textcent/kWh \citep{paupc2025}. Approved PUC rate settlements increase representative 700\,kWh PECO bills to \$149.43 in 2025 (21.3\textcent/kWh) and \$152.13 in 2026 (21.7\textcent/kWh) \citep{paupc2024dec}. The \$0.19/kWh baseline provides a conservative, empirical rate for Pennsylvania decision modeling. Excluding zero-load points, the realized 8-hour cost distribution at Pennsylvania's bundled residential rate (\$0.19/kWh) \citep{eia_epa_2024,paupc2025,paupc2024dec} spans \$0.38--\$3.29.  An Off option receives top cost score via decreasing-value normalization. These endpoints match residential HVAC efficiency benchmarks \citep{synapse2013,parker2018,huyen2019,alves2016}.
+For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. The cost is estimated at \$0.19/kWh, which represents a bundled retail rate combining generation, transmission, distribution, monthly service fees, riders, and state taxes. Form EIA-861 reports a 2024 Pennsylvania statewide average price of 17.77\textcent/kWh based on total utility revenue divided by sales \citep{eia_epa_2024}. However, in urban and suburban Philadelphia, the Pennsylvania Public Utility Commission 2025 Rate Report lists an average monthly PECO residential bill of \$135.29 for 702\,kWh, establishing an effective bundled price of 19.27\textcent/kWh \citep{paupc2025}. Approved PUC rate settlements increase representative 700\,kWh PECO bills to \$149.43 in 2025 (21.3\textcent/kWh) and \$152.13 in 2026 (21.7\textcent/kWh) \citep{paupc2024dec}. The \$0.19/kWh baseline provides a conservative, empirical rate for Pennsylvania decision modeling. Excluding zero-load points, the realized 8-hour cost distribution at Pennsylvania's bundled residential rate (\$0.19/kWh) \citep{eia_epa_2024,paupc2025,paupc2024dec} spans \$0.38--\$3.29.  An Off option receives top cost score via decreasing-value normalization. These endpoints match residential HVAC efficiency benchmarks \citep{synapse2013,parker2018,huyen2019}.
 \subsection{Comfort and Practicality Utility Function Derivations}\label{app:utility_derivations}
 
 This appendix contains the piecewise value function derivations for the Comfort and Practicality criteria across all three decision types. These utility functions are applied to the true engineering parameter values (R-value, GPM, appliance age in years) rather than the homeowner-facing band labels (insulation, flow rate, age band) that appear in the LLM prompts and scenario description sheets.
@@ -380,7 +380,7 @@ This appendix contains the piecewise value function derivations for the Comfort 
 
 \subsubsection{Appliance Comfort}
 
-Comfort is a piecewise decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr (dishwashers), 8\,hr (washers), and 6\,hr (dryers) \citep{paetz2012,waseem2020}, plus an additive noise penalty scaled by housing type for runs after 10\,pm \citep{epa1974noise} and a household-size penalty. Apartment and Condo units receive the largest noise multiplier ($\kappa=1.5$, shared walls transmit vibration directly), Single-family homes the smallest ($\kappa=0.8$, isolated structure), with Townhouse and Rowhouse intermediate ($\kappa=1.2$). The household-size penalty $\sigma(n)$ steps from 0.0 for fewer than 3 occupants, to 0.8 for 3--4, to 1.5 for 5 or more, reflecting the empirical finding that multi-person households experience disproportionate annoyance from delayed appliance cycles \citep{waseem2020}.
+Comfort is a piecewise decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr (dishwashers), 8\,hr (washers), and 6\,hr (dryers), modeling assumptions of the calculator informed by demand-response acceptance research \citep{paetz2012,waseem2020}, plus an additive noise penalty scaled by housing type for runs after 10\,pm \citep{epa1974noise} and a household-size penalty. Apartment and Condo units receive the largest noise multiplier ($\kappa=1.5$, shared walls transmit vibration directly), Single-family homes the smallest ($\kappa=0.8$, isolated structure), with Townhouse and Rowhouse intermediate ($\kappa=1.2$). The household-size penalty $\sigma(n)$ steps from 0.0 for fewer than 3 occupants, to 0.8 for 3--4, to 1.5 for 5 or more, reflecting the empirical finding that multi-person households experience disproportionate annoyance from delayed appliance cycles \citep{waseem2020}.
 Delays are computed as the minimum circular distance from the baseline time $t_0$ on a 24-hour clock (avoiding wrap-around artifacts), i.e.,
 \begin{equation}
   d(t,t_0)=\min\!\bigl((h(t)-h(t_0))\bmod 24,\; (h(t_0)-h(t))\bmod 24\bigr),
@@ -460,7 +460,7 @@ The result is then multiplied by an outdoor--indoor $\Delta T$ feasibility facto
   D = \min\!\Bigl(0.30,\; \delta_{\mathrm{maint}}\bigl[\,1.5\min(a,10) + 0.5\max(a-10,0)\,\bigr]\Bigr)
   \label{eq:hvac_degradation}
 \end{equation}
-\noindent is the fraction of efficiency lost (capped at 30\%), $a$ is HVAC age in years, and $\delta_{\mathrm{maint}}$ is the base annual loss rate (0.005, 0.010, 0.015 per year for good, moderate, and poor upkeep); the first ten years degrade at $1.5\,\delta_{\mathrm{maint}}$ and later years at $0.5\,\delta_{\mathrm{maint}}$ \citep{domanski2014}. The final practicality score is clipped to $[0.5, 10]$.
+\noindent is the fraction of efficiency lost (capped at 30\%), $a$ is HVAC age in years, and $\delta_{\mathrm{maint}}$ is the base annual loss rate (0.005, 0.010, 0.015 per year for good, moderate, and poor upkeep); the first ten years degrade at $1.5\,\delta_{\mathrm{maint}}$ and later years at $0.5\,\delta_{\mathrm{maint}}$, a modeling assumption of the calculator \citep{domanski2014}. The final practicality score is clipped to $[0.5, 10]$.
 
 \subsubsection{Appliance Practicality}
 
@@ -544,15 +544,15 @@ value in either table is pooled across models.
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
 \textbf{Weight vector} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-Design (baseline)  & 35.9 & 46.2 & 93.3 & 40.0 & 56.4 & 91.3 & 33.9 & 56.4 & 92.3 & 31.8 & 46.2 & 90.3 \\
-Equal              & 50.3 & 57.4 & 94.9 & 38.0 & 50.8 & 95.4 & 44.1 & 55.4 & 94.8 & 28.7 & 47.2 & 90.3 \\
+Design (baseline)  & 36.2 & 47.2 & 93.1 & 36.7 & 54.5 & 90.8 & 33.3 & 48.0 & 91.6 & 30.0 & 47.0 & 89.7 \\
+Equal              & 50.0 & 55.3 & 94.9 & 36.8 & 52.2 & 93.7 & 37.7 & 49.4 & 93.5 & 28.8 & 47.2 & 89.5 \\
 \midrule
-Entropy pooled     & 37.4 & 47.7 & 92.8 & 38.0 & 54.4 & 90.3 & 34.9 & 53.8 & 92.8 & 31.3 & 45.1 & 86.7 \\
-Entropy per-type   & 38.0 & 50.3 & 94.4 & 38.0 & 59.5 & 92.8 & 34.9 & 55.4 & 94.8 & 33.3 & 45.6 & 92.8 \\
+Entropy pooled     & 37.6 & 48.8 & 92.7 & 35.1 & 53.2 & 89.1 & 33.8 & 48.0 & 90.6 & 29.7 & 46.1 & 87.6 \\
+Entropy per-type   & 38.5 & 52.1 & 94.6 & 34.3 & 55.0 & 92.4 & 34.6 & 48.9 & 92.9 & 30.4 & 45.4 & 93.1 \\
 \midrule
-MEREC pooled       & 75.4 & 77.4 & 92.3 & 50.3 & 62.1 & 93.8 & 52.3 & 59.5 & 92.3 & 34.4 & 53.3 & 94.4 \\
-MEREC per-type     & 70.3 & 79.5 & 94.9 & \textbf{60.5} & 52.8 & 95.4 & 46.2 & 63.6 & 94.3 & 32.8 & 51.3 & 93.3 \\
-MEREC HVAC vector  & \textbf{81.5} & 75.4 & 96.4 & \textbf{67.7} & 58.0 & 95.9 & 53.3 & 66.7 & 94.8 & 36.9 & 56.4 & 96.9 \\
+MEREC pooled       & \textbf{75.6} & 74.2 & 92.2 & 43.5 & 58.3 & 93.0 & 46.9 & 53.5 & 90.9 & 32.3 & 49.9 & 94.5 \\
+MEREC per-type     & 69.1 & 76.6 & 94.4 & 49.5 & 52.9 & 94.1 & 41.4 & 57.1 & 92.8 & 34.5 & 51.2 & 92.4 \\
+MEREC HVAC vector  & \textbf{80.4} & 73.3 & 96.4 & 53.6 & 58.2 & 96.1 & 49.1 & 61.0 & 94.6 & 37.1 & 51.8 & 96.6 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -561,8 +561,8 @@ MEREC HVAC vector  & \textbf{81.5} & 75.4 & 96.4 & \textbf{67.7} & 58.0 & 95.9 &
 \footnotesize
 \item Percentage of the 195 test scenarios whose top-ranked alternative matches
 the reference. Bold marks cells in which $\mathcal{A}_{\text{D}}$ exceeds
-$\mathcal{A}_{\text{E}}$; these are the same MEREC cells that reverse on
-Kendall's~$\tau$.
+$\mathcal{A}_{\text{E}}$; these are the same two Gemini MEREC cells that reverse
+on Kendall's~$\tau$.
 \end{tablenotes}
 \end{threeparttable}
 \end{table*}\subsection{RAG Ablation: Full Per-Configuration Table}
@@ -761,7 +761,7 @@ Architecture & Metric & $\sigma^2_{\text{model}}$ & $\sigma^2_{\text{residual}}$
 
 \subsection{Pairwise Wilcoxon Tests with Stouffer Combination}
 
-Wilcoxon signed-rank tests compare each pair of adjacent architectures ($\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$) on each of the three primary metrics ($\tau$, MAE, Top-1), applied independently within each of the four models and combined across models using Stouffer's method. All 24 per-model comparisons and all 6 Stouffer-combined comparisons reach $p < .001$, with no exceptions.
+Wilcoxon signed-rank tests compare each pair of adjacent architectures ($\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$) on each of the three primary metrics ($\tau$, MAE, Top-1), applied independently within each of the four models and combined across models using Stouffer's method. All 24 per-model comparisons on these three metrics and all 6 Stouffer-combined comparisons reach $p_{\mathrm{Holm}} < .001$ within the 56-test family described in Section~3.9 of the main paper. That family's one non-significant test---DeepSeek $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ on the RMSE/MAE ratio, $p_{\mathrm{Holm}} = 0.093$---is on a metric not shown here.
 
 \subsection{Effect Sizes}
 
@@ -847,16 +847,16 @@ Table~\ref{tab:prompt_friedman} reports the Friedman omnibus tests for $\mathcal
 \toprule
 Model & Metric & $\chi^2_2$ & raw $p$ & $p_{\text{Holm}}$ \\
 \midrule
-DeepSeek & Kendall's $\tau$ & 1.51 & --- & 0.470 \\
-GPT-OSS & Kendall's $\tau$ & 3.38 & --- & 0.922 \\
-Qwen & Kendall's $\tau$ & 5.71 & --- & 0.460 \\
-DeepSeek & Top-1 & 35.71 & --- & $2.1\times10^{-7}$ \\
+DeepSeek & Kendall's $\tau$ & 1.51 & 0.470 & 0.922 \\
+GPT-OSS & Kendall's $\tau$ & 3.38 & 0.185 & 0.922 \\
+Qwen & Kendall's $\tau$ & 5.71 & 0.058 & 0.460 \\
+DeepSeek & Top-1 & 35.71 & $1.8\times10^{-8}$ & $2.1\times10^{-7}$ \\
 Qwen & Top-1 & 9.87 & 0.007 & 0.065 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
-\item None of the Kendall's $\tau$ omnibus tests survive correction; the Top-1 omnibus is significant only for DeepSeek. Raw $p$ is reported only where stated in the primary analysis.
+\item None of the Kendall's $\tau$ omnibus tests survive correction; the Top-1 omnibus is significant only for DeepSeek. Holm adjustment is step-down with monotonicity enforced, so a test with a larger raw $p$ cannot receive a smaller adjusted $p$: DeepSeek and GPT-OSS Kendall's $\tau$ therefore share the adjusted value 0.922. The GPT-OSS Top-1 omnibus is part of the 12-test family but is not reported here.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
@@ -992,7 +992,6 @@ RMSE/MAE & 1.27 $\pm$ 0.01 & 1.44 $\pm$ 0.01 & 1.93 $\pm$ 0.04 & 1.26 $\pm$ 0.01
 \renewcommand{\arraystretch}{1.0}
 \caption{Overall performance by model (5-run mean $\pm$ std, 195 scenarios; Top-2 accuracy is a single run-averaged value, not tracked with std). Bolded values indicate the best architecture per metric per model.}
 \label{tab:overall_by_model}
-\label{tab:per_model_overall}
 \end{threeparttable}
 \end{table}
 
