@@ -230,6 +230,28 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights) -> pd.DataFrame:
     return df
 
 
+def metrics_per_run_then_average(frames: list[pd.DataFrame], weights) -> dict:
+    """Method A: score each run under `weights`, then average the metrics.
+
+    This is the protocol used for the headline results, so the design-vector row
+    of the sensitivity analysis reproduces the main figure exactly. Averaging the
+    runs before scoring (aggregate-then-evaluate) is a different estimator and is
+    reported separately as a robustness arm.
+
+    Every numeric key returned by compute_ranking_metrics is averaged, so callers
+    that read counts (e.g. n_scenarios_evaluated) keep working.
+    """
+    per_run = [compute_ranking_metrics(rerank_with_weights(f, weights)) for f in frames]
+    out = {}
+    for k in per_run[0]:
+        vals = [m[k] for m in per_run]
+        try:
+            out[k] = float(np.mean(vals))
+        except (TypeError, ValueError):
+            out[k] = vals[0]
+    return out
+
+
 def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
     """Run sensitivity analysis and return per-architecture metrics by weight scenario."""
     print("Sensitivity analysis: MCDA architecture comparison")
@@ -246,25 +268,31 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
 
     arch_names = list(CONFIG["architectures"].keys())
     pure_name, rag_name, param_name = arch_names  # Direct_LLM_Scoring, Example-Guided_LLM_Scoring, LLM-Parameterized_Reference_Scoring
-    clean_merged: dict[str, pd.DataFrame] = {}
+    # Method A (per-run-then-average): keep the runs SEPARATE here and average
+    # metrics across runs later. Aggregating the runs first (average the scores,
+    # then score once) is the aggregate-then-evaluate protocol, which is reported
+    # only as a robustness arm; using it here made the design-vector row disagree
+    # with the headline figure by up to 0.104 in Kendall's tau.
+    clean_merged: dict[str, list[pd.DataFrame]] = {}
     for name, path in CONFIG["architectures"].items():
-        # Aggregate the per-run files the same way CalculateMetrics does, so the
-        # sensitivity baseline operates on identical inputs to the headline run
-        # (previously this read the single aggregated xlsx, which could differ).
         base_path = Path(path)
         run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.xlsx"))
-        if run_paths:
-            arch_df = load_architecture(aggregate_run_files(run_paths), name)
-        else:
-            arch_df = load_architecture(path, name)
-        merged, _counts = match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
-        if len(merged) == 0:
-            print(f"  WARNING: No matched data for {name} — skipping.")
+        sources = list(run_paths) if run_paths else [path]
+        frames: list[pd.DataFrame] = []
+        for src in sources:
+            arch_df = load_architecture(src, name)
+            merged, _counts = match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
+            if len(merged) == 0:
+                continue
+            filtered, n_failed, n_total = filter_failed_scenarios(merged)
+            if n_failed:
+                print(f"  [{name}] {Path(src).name}: filtered {n_failed}/{n_total} failed scenarios.")
+            frames.append(filtered)
+        if not frames:
+            print(f"  WARNING: No matched data for {name} - skipping.")
             continue
-        filtered, n_failed, n_total = filter_failed_scenarios(merged)
-        if n_failed:
-            print(f"  [{name}] Filtered {n_failed}/{n_total} failed scenarios.")
-        clean_merged[name] = filtered
+        print(f"  [{name}] {len(frames)} run(s) held separate for per-run metrics.")
+        clean_merged[name] = frames
 
     # 2. Weight scenarios
     weight_scenarios = generate_weight_scenarios(CRITERION_WEIGHTS)
@@ -277,8 +305,7 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
         for arch_name in arch_names:
             if arch_name not in clean_merged:
                 continue
-            df_reranked = rerank_with_weights(clean_merged[arch_name], weights)
-            metrics = compute_ranking_metrics(df_reranked)
+            metrics = metrics_per_run_then_average(clean_merged[arch_name], weights)
             if _is_per_type(weights):
                 weights_json = json.dumps(
                     {dt: {c: round(v, 6) for c, v in w.items()}
@@ -383,21 +410,20 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
 
 
 def _load_arch_dfs(CONFIG: dict) -> tuple[dict, list]:
-    """Load and aggregate architecture per-run files into arch-side dataframes.
+    """Load architecture per-run files into a LIST of arch-side dataframes each.
 
-    The arch-side criterion scores are identical for every alpha value and
-    weight arm, so they are loaded once and reused (zero API calls).
+    The runs are kept separate so metrics can be computed per run and averaged
+    (Method A), matching the headline protocol. The arch-side criterion scores
+    are identical for every alpha value and weight arm, so they are loaded once
+    and reused (zero API calls).
     """
     arch_names = list(CONFIG["architectures"].keys())
-    arch_dfs: dict[str, pd.DataFrame] = {}
+    arch_dfs: dict[str, list[pd.DataFrame]] = {}
     for name, path in CONFIG["architectures"].items():
         base_path = Path(path)
         run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.xlsx"))
-        if run_paths:
-            arch_df = load_architecture(aggregate_run_files(run_paths), name)
-        else:
-            arch_df = load_architecture(path, name)
-        arch_dfs[name] = arch_df
+        sources = list(run_paths) if run_paths else [path]
+        arch_dfs[name] = [load_architecture(src, name) for src in sources]
     return arch_dfs, arch_names
 
 
@@ -409,16 +435,21 @@ def _load_clean_merged(CONFIG: dict) -> tuple[dict, list]:
     gt_id_lookup = build_gt_id_lookup(gt_by_type)
 
     arch_dfs, arch_names = _load_arch_dfs(CONFIG)
-    clean_merged: dict[str, pd.DataFrame] = {}
-    for name, arch_df in arch_dfs.items():
-        merged, _counts = match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
-        if len(merged) == 0:
+    clean_merged: dict[str, list[pd.DataFrame]] = {}
+    for name, run_dfs in arch_dfs.items():
+        frames: list[pd.DataFrame] = []
+        for arch_df in run_dfs:
+            merged, _counts = match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
+            if len(merged) == 0:
+                continue
+            filtered, n_failed, n_total = filter_failed_scenarios(merged)
+            if n_failed:
+                print(f"  [{name}] Filtered {n_failed}/{n_total} failed scenarios.")
+            frames.append(filtered)
+        if not frames:
             print(f"  WARNING: No matched data for {name} - skipping.")
             continue
-        filtered, n_failed, n_total = filter_failed_scenarios(merged)
-        if n_failed:
-            print(f"  [{name}] Filtered {n_failed}/{n_total} failed scenarios.")
-        clean_merged[name] = filtered
+        clean_merged[name] = frames
     return clean_merged, arch_names
 
 
@@ -496,15 +527,17 @@ def run_alpha_sweep(model_key: str = MODEL_KEY) -> pd.DataFrame:
         gt_lookup = build_gt_lookup(gt_by_type)
         gt_id_lookup = build_gt_id_lookup(gt_by_type)
         for arch_name in arch_names:
-            merged, _counts = match_scenarios(
-                gt_lookup, gt_id_lookup, arch_dfs[arch_name], arch_name
-            )
-            filtered, n_failed, n_total = filter_failed_scenarios(merged)
-            if n_failed:
-                print(f"  [{label} / {arch_name}] Filtered {n_failed}/{n_total} "
-                      f"failed scenarios.")
-            df_reranked = rerank_with_weights(filtered, baseline_weights)
-            metrics = compute_ranking_metrics(df_reranked)
+            frames: list[pd.DataFrame] = []
+            for arch_df in arch_dfs[arch_name]:
+                merged, _counts = match_scenarios(
+                    gt_lookup, gt_id_lookup, arch_df, arch_name
+                )
+                filtered, n_failed, n_total = filter_failed_scenarios(merged)
+                if n_failed:
+                    print(f"  [{label} / {arch_name}] Filtered {n_failed}/{n_total} "
+                          f"failed scenarios.")
+                frames.append(filtered)
+            metrics = metrics_per_run_then_average(frames, baseline_weights)
             results.append({
                 "model": model_key,
                 "scenario_name": label,
@@ -564,7 +597,7 @@ def run_alpha_sweep(model_key: str = MODEL_KEY) -> pd.DataFrame:
           f"/{n_alpha} alpha values; by top1 in "
           f"{int((sweep['top1_verdict'] == 'PRESERVED').sum())}/{n_alpha}")
 
-    output_path = ANALYSIS_DIR / "Sensitivity_alpha_sweep.xlsx"
+    output_path = ANALYSIS_DIR / f"Sensitivity_alpha_sweep_{model_key}.xlsx"
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     _atomic_write_xlsx(results_df, output_path)
     print(f"\n  Results saved to: {output_path}")
@@ -605,8 +638,7 @@ def run_objective_arms_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
         for arch_name in arch_names:
             if arch_name not in clean_merged:
                 continue
-            df_reranked = rerank_with_weights(clean_merged[arch_name], weights)
-            metrics = compute_ranking_metrics(df_reranked)
+            metrics = metrics_per_run_then_average(clean_merged[arch_name], weights)
             weights_json = json.dumps(
                 {dt: {c: round(v, 6) for c, v in w.items()}
                  for dt, w in weights.items()})
@@ -644,7 +676,7 @@ def run_objective_arms_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
         results_df.loc[results_df["scenario_name"] == scen, "tau_ah"] = ah
         print(f"  {scen:<24}{ed:>+12.4f}{ah:>10.4f}{held:>12}")
 
-    output_path = ANALYSIS_DIR / "Sensitivity_merec_entropy_arms.xlsx"
+    output_path = ANALYSIS_DIR / f"Sensitivity_merec_entropy_arms_{model_key}.xlsx"
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     _atomic_write_xlsx(results_df, output_path)
     print(f"\n  Results saved to: {output_path}")
@@ -671,7 +703,12 @@ def main():
     args = parser.parse_args()
 
     if args.alpha_sweep or args.objective_arms:
-        models = [MODEL_KEY] if not args.model else [args.model]
+        if args.all_models:
+            models = list(MODEL_SPECS.keys())
+        elif args.model:
+            models = [args.model]
+        else:
+            models = [MODEL_KEY]
         for mk in models:
             if args.alpha_sweep:
                 run_alpha_sweep(mk)
