@@ -575,22 +575,33 @@ on Kendall's~$\tau$.
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lcccc}
 \toprule
-Configuration & Overall $\tau$ & 95\% CI & Model $\tau$ range & Overall MAE \\
+Configuration & DeepSeek & Gemini & GPT-OSS & Qwen \\
 \midrule
-Exemplars w/o hidden params & 0.279 & $[0.200,\, 0.359]$ & [0.175, 0.391] & 0.097 \\
-Control ($k=3$, all-MiniLM-L6-v2) & 0.277 & $[0.194,\, 0.356]$ & [0.154, 0.489] & 0.098 \\
-Alt.\ embedding & 0.246 & $[0.166,\, 0.324]$ & [0.165, 0.346] & 0.101 \\
-Retrieval $k=1$ & 0.242 & $[0.160,\, 0.325]$ & [0.182, 0.306] & 0.104 \\
-Retrieval $k=5$ & 0.230 & $[0.146,\, 0.311]$ & [0.112, 0.342] & 0.091 \\
-Random exemplars ($k=3$) & 0.121 & $[0.044,\, 0.196]$ & [0.022, 0.276] & 0.144 \\
-Descriptions w/o scores or ranks & 0.068 & $[-0.011,\, 0.149]$ & [0.061, 0.073] & 0.147 \\
+\multicolumn{5}{l}{\emph{Kendall's $\tau$}} \\
+Exemplars w/o hidden params & 0.391 & 0.437 & 0.175 & 0.273 \\
+Control ($k=3$, all-MiniLM-L6-v2) & 0.489 & 0.387 & 0.187 & 0.154 \\
+Alt.\ embedding & 0.346 & 0.517 & 0.227 & 0.165 \\
+Retrieval $k=1$ & 0.182 & 0.377 & 0.237 & 0.306 \\
+Retrieval $k=5$ & 0.342 & 0.431 & 0.112 & 0.234 \\
+Random exemplars ($k=3$) & 0.063 & 0.177 & 0.022 & 0.276 \\
+Descriptions w/o scores or ranks & 0.073 & 0.204 & 0.061 & 0.071 \\
 \midrule
-Nearest-neighbor (offline) & 0.001 & $[-0.175,\, 0.172]$ & --- & 0.101 \\
+\multicolumn{5}{l}{\emph{MAE}} \\
+Exemplars w/o hidden params & 0.087 & 0.078 & 0.106 & 0.099 \\
+Control ($k=3$, all-MiniLM-L6-v2) & 0.088 & 0.070 & 0.105 & 0.102 \\
+Alt.\ embedding & 0.088 & 0.071 & 0.113 & 0.104 \\
+Retrieval $k=1$ & 0.098 & 0.097 & 0.118 & 0.097 \\
+Retrieval $k=5$ & 0.084 & 0.069 & 0.102 & 0.088 \\
+Random exemplars ($k=3$) & 0.127 & 0.139 & 0.163 & 0.141 \\
+Descriptions w/o scores or ranks & 0.131 & 0.143 & 0.158 & 0.151 \\
+\midrule
+\multicolumn{5}{l}{\emph{Nearest-neighbor (offline, no LLM)}} \\
+Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.173,\, 0.175]$) / 0.101} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
-\item Evaluated on the full 90-scenario RAG corpus (35 HVAC / 35 Appliance / 20 Shower) under leave-one-out retrieval, with 3 models; Gemini is excluded on cost grounds. 95\% CIs are percentile bootstrap intervals over scenario-level values. Model $\tau$ range spans the three per-model means. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring and uses no LLM, so it has no per-model range. Across all LLM configurations 17,010 scoring calls were made with 6 failures (0.04\%).
+\item Evaluated on the full 90-scenario RAG corpus (35 HVAC / 35 Appliance / 20 Shower) under leave-one-out retrieval, with all four models. Values are per-model bootstrap point estimates; the corresponding per-model 95\% percentile bootstrap intervals are in \texttt{Analysis/RAG\_Ablation/rag\_ablation\_bootstrap\_ci.xlsx} in the repository. Earlier versions of this table reported a single cross-model figure per configuration; those pooled estimates are withdrawn, because pooling reversed the random-exemplar comparison for Qwen and hid a significant $k{=}1$ against $k{=}3$ difference for DeepSeek. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring and uses no LLM, so it has no per-model row. Across all LLM configurations 7,560 scoring calls were made (4 models $\times$ 7 configurations $\times$ 90 scenarios $\times$ 3 alternatives) with 2 failures (0.03\%), both on DeepSeek.
 \end{tablenotes}
 \caption{RAG ablation: Kendall's $\tau$ and MAE by configuration.}
 \end{threeparttable}
@@ -759,9 +770,9 @@ Architecture & Metric & $\sigma^2_{\text{model}}$ & $\sigma^2_{\text{residual}}$
 \end{threeparttable}
 \end{table}
 
-\subsection{Pairwise Wilcoxon Tests with Stouffer Combination}
+\subsection{Pairwise Wilcoxon Tests, Reported Per Model}
 
-Wilcoxon signed-rank tests compare each pair of adjacent architectures ($\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$) on each of the three primary metrics ($\tau$, MAE, Top-1), applied independently within each of the four models and combined across models using Stouffer's method. All 24 per-model comparisons on these three metrics and all 6 Stouffer-combined comparisons reach $p_{\mathrm{Holm}} < .001$ within the 56-test family described in Section~3.9 of the main paper. That family's one non-significant test---DeepSeek $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ on the RMSE/MAE ratio, $p_{\mathrm{Holm}} = 0.093$---is on a metric not shown here.
+Wilcoxon signed-rank tests compare each pair of adjacent architectures ($\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$) on each of the three primary metrics ($\tau$, MAE, Top-1), applied within each of the four models. No cross-model combination is reported. The four models score the same 195 test scenarios against the same ground truth, so their per-scenario paired differences are positively dependent, and a combination that treats the four tests as independent returns a $p$-value that is anti-conservative by an unknown factor. All 24 per-model comparisons remain significant under Holm correction, whether corrected across the 24 tests reported here or across the full 56-test family described in Section~3.9 of the main paper, so nothing is lost by dropping the combination. The largest adjusted values are Gemini's $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ tests on $\tau$ and Top-1 ($p_{\mathrm{Holm}} = 0.0092$ each) and DeepSeek's on $\tau$ ($0.0018$); the other 21 fall at or below $1.1 \times 10^{-4}$, and the smallest is $3.8 \times 10^{-31}$ (GPT-OSS, $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$, MAE). Two reading notes. GPT-OSS contributes $n = 194$ rather than 195 on the $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$ comparison, one scenario dropping from the paired set. Gemini's median paired difference is exactly 0.0000 on $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ for both $\tau$ and Top-1 while the test remains significant, because the signed-rank statistic is driven by the distribution of the nonzero differences; read Gemini's effect size for that comparison from Cliff's $\delta$ in Table~\ref{tab:effect_sizes}, not from the median. The 56-test family's one non-significant test---DeepSeek $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ on the RMSE/MAE ratio, $p_{\mathrm{Holm}} = 0.093$---is on a metric not shown here. Per-test $Z$, median paired difference, and both Holm-corrected $p$-values are in \texttt{paper/per\_model\_pvalues.csv} in the repository.
 
 \subsection{Effect Sizes}
 
@@ -841,22 +852,24 @@ Table~\ref{tab:prompt_friedman} reports the Friedman omnibus tests for $\mathcal
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
-\caption{Prompt ablation: Friedman omnibus tests for $\mathcal{A}_{\text{E}}$, corrected across the full 12-test family (both architectures, all three models, both metrics).}
+\caption{Prompt ablation: Friedman omnibus tests for $\mathcal{A}_{\text{E}}$, corrected across the full 16-test family (both architectures, all four models, both metrics).}
 \label{tab:prompt_friedman}
 \begin{tabular}{@{}ll ccc@{}}
 \toprule
 Model & Metric & $\chi^2_2$ & raw $p$ & $p_{\text{Holm}}$ \\
 \midrule
-DeepSeek & Kendall's $\tau$ & 1.51 & 0.470 & 0.922 \\
-GPT-OSS & Kendall's $\tau$ & 3.38 & 0.185 & 0.922 \\
-Qwen & Kendall's $\tau$ & 5.71 & 0.058 & 0.460 \\
-DeepSeek & Top-1 & 35.71 & $1.8\times10^{-8}$ & $2.1\times10^{-7}$ \\
-Qwen & Top-1 & 9.87 & 0.007 & 0.065 \\
+DeepSeek & Kendall's $\tau$ & 1.51 & 0.470 & 0.939 \\
+Gemini & Kendall's $\tau$ & 3.31 & 0.192 & 0.766 \\
+GPT-OSS & Kendall's $\tau$ & 3.38 & 0.184 & 1.000 \\
+Qwen & Kendall's $\tau$ & 5.71 & 0.057 & 0.575 \\
+DeepSeek & Top-1 & 35.71 & $1.8\times10^{-8}$ & $2.8\times10^{-7}$ \\
+Gemini & Top-1 & 9.08 & 0.011 & 0.117 \\
+Qwen & Top-1 & 9.87 & 0.007 & 0.086 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
-\item None of the Kendall's $\tau$ omnibus tests survive correction; the Top-1 omnibus is significant only for DeepSeek. Holm adjustment is step-down with monotonicity enforced, so a test with a larger raw $p$ cannot receive a smaller adjusted $p$: DeepSeek and GPT-OSS Kendall's $\tau$ therefore share the adjusted value 0.922. The GPT-OSS Top-1 omnibus is part of the 12-test family but is not reported here.
+\item None of the Kendall's $\tau$ omnibus tests survive correction; the Top-1 omnibus is significant only for DeepSeek. Holm adjustment is step-down with monotonicity enforced, so a test with a larger raw $p$ cannot receive a smaller adjusted $p$. The GPT-OSS Top-1 omnibus is part of the 16-test family but is not reported here.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
@@ -892,32 +905,47 @@ The main results (Section~4 of the main paper) use per-run-then-average aggregat
 \begin{table}[htbp]
 \begin{threeparttable}
 \small\centering
-\caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation. Values are means across all four models.}
+\caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ values are means across all four models; $\mathcal{A}_{\text{H}}$ is broken out per model, because imputation moves one model there and leaves the other three unchanged.}
 \label{tab:imputed_comparison}
 \begin{tabular}{lccc}
 \toprule
 Architecture & Metric & Method A & Imputed (per-run) \\
 \midrule
-$\mathcal{A}_{\text{D}}$ & $\tau$ & 0.093 & 0.094 \\
-$\mathcal{A}_{\text{D}}$ & MAE & 0.232 & 0.232 \\
-$\mathcal{A}_{\text{D}}$ & Top-1 (\%) & 34.1 & 34.2 \\
-$\mathcal{A}_{\text{E}}$ & $\tau$ & 0.277 & 0.279 \\
-$\mathcal{A}_{\text{E}}$ & MAE & 0.171 & 0.172 \\
-$\mathcal{A}_{\text{E}}$ & Top-1 (\%) & 49.2 & 49.3 \\
-$\mathcal{A}_{\text{H}}$ & $\tau$ & 0.899 & 0.871 \\
-$\mathcal{A}_{\text{H}}$ & MAE & 0.055 & 0.061 \\
-$\mathcal{A}_{\text{H}}$ & Top-1 (\%) & 91.3 & 89.2 \\
+$\mathcal{A}_{\text{D}}$ (4-model mean) & $\tau$ & 0.093 & 0.094 \\
+$\mathcal{A}_{\text{D}}$ (4-model mean) & MAE & 0.232 & 0.232 \\
+$\mathcal{A}_{\text{D}}$ (4-model mean) & Top-1 (\%) & 34.1 & 34.2 \\
+\addlinespace
+$\mathcal{A}_{\text{E}}$ (4-model mean) & $\tau$ & 0.277 & 0.279 \\
+$\mathcal{A}_{\text{E}}$ (4-model mean) & MAE & 0.171 & 0.172 \\
+$\mathcal{A}_{\text{E}}$ (4-model mean) & Top-1 (\%) & 49.2 & 49.3 \\
+\addlinespace
+$\mathcal{A}_{\text{H}}$ (DeepSeek) & $\tau$ & 0.897 & 0.897 \\
+$\mathcal{A}_{\text{H}}$ (DeepSeek) & MAE & 0.047 & 0.047 \\
+$\mathcal{A}_{\text{H}}$ (DeepSeek) & Top-1 (\%) & 90.8 & 90.7 \\
+\addlinespace
+$\mathcal{A}_{\text{H}}$ (Gemini) & $\tau$ & 0.923 & 0.923 \\
+$\mathcal{A}_{\text{H}}$ (Gemini) & MAE & 0.048 & 0.048 \\
+$\mathcal{A}_{\text{H}}$ (Gemini) & Top-1 (\%) & 93.1 & 93.1 \\
+\addlinespace
+$\mathcal{A}_{\text{H}}$ (GPT-OSS) & $\tau$ & 0.897 & \textbf{0.786} \\
+$\mathcal{A}_{\text{H}}$ (GPT-OSS) & MAE & 0.052 & \textbf{0.078} \\
+$\mathcal{A}_{\text{H}}$ (GPT-OSS) & Top-1 (\%) & 91.6 & \textbf{83.6} \\
+\addlinespace
+$\mathcal{A}_{\text{H}}$ (Qwen) & $\tau$ & 0.880 & 0.877 \\
+$\mathcal{A}_{\text{H}}$ (Qwen) & MAE & 0.072 & 0.073 \\
+$\mathcal{A}_{\text{H}}$ (Qwen) & Top-1 (\%) & 89.7 & 89.5 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
 \item Mean scenarios imputed per run: DeepSeek $\mathcal{A}_{\text{D}}$ 1.4, DeepSeek $\mathcal{A}_{\text{H}}$ 0.2, Gemini $\mathcal{A}_{\text{E}}$ 4.0, GPT-OSS $\mathcal{A}_{\text{H}}$ 23.4, Qwen $\mathcal{A}_{\text{D}}$ 0.4, Qwen $\mathcal{A}_{\text{H}}$ 0.4; all other cells impute none. GPT-OSS imputes 20--26 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set.
 \item Imputed scenarios receive 0.5 on all four criterion scores; their ranks follow the pipeline's deterministic tie-break (appearance order).
+\item Bold marks the only cells that move materially. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ are reported as four-model means because no model's cell moves by more than 0.006 in either architecture.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
 
-The $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering survives per-run imputation: pooled $\tau$ equals 0.871, 0.279, and 0.094 for the three architectures, and each of the four models preserves the ordering. The largest movement occurs on GPT-OSS $\mathcal{A}_{\text{H}}$, where Kendall's $\tau$ falls from 0.897 to 0.786 ($-0.111$), Top-1 falls from 91.6\% to 83.6\%, and MAE rises from 0.052 to 0.078. GPT-OSS imputes 23.4 scenarios per run on $\mathcal{A}_{\text{H}}$ (12\% of its test set), which drives the movement. Imputation lowers $\mathcal{A}_{\text{H}}$'s success-conditioned metrics, so failure exclusion inflated them; pooled $\mathcal{A}_{\text{H}}$ $\tau$ falls from 0.899 to 0.871 ($-0.029$). Every other cell moves by at most 0.006.\subsection{Aggregation Method Sensitivity}
+The $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering survives per-run imputation in every one of the four models. Imputation lowers $\mathcal{A}_{\text{H}}$ on GPT-OSS alone, where Kendall's $\tau$ falls from 0.897 to 0.786 ($-0.111$), Top-1 falls from 91.6\% to 83.6\%, and MAE rises from 0.052 to 0.078; GPT-OSS imputes 23.4 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set, which drives the movement. DeepSeek, Gemini, and Qwen move by 0.0006, 0.0000, and 0.0032 on $\tau$. Averaging the four gives a pooled fall from 0.899 to 0.871 ($-0.029$), a figure no individual model exhibits and which should not be read as $\mathcal{A}_{\text{H}}$'s failure-inclusive accuracy. Imputation lowers $\mathcal{A}_{\text{H}}$'s success-conditioned metrics where it acts at all, so failure exclusion inflated them. Every $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ cell moves by at most 0.006 for every model.\subsection{Aggregation Method Sensitivity}
 \label{app:method-c}
 
 Table~\ref{tab:method_c} compares the per-run-then-average protocol (Method A) used throughout the main text with a mean-aggregate-then-evaluate protocol (Method C) in which per-scenario scores are averaged across all five runs before metric computation. Method C produces a consensus ranking that may differ from the average of per-run rankings.

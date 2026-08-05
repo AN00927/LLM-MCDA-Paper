@@ -1,9 +1,11 @@
 import os
 import sys
 import json
+import hashlib
 import requests
 import time
 import importlib.util
+from datetime import datetime, timezone
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from dotenv import load_dotenv
@@ -44,9 +46,15 @@ from sentinel_utils import (
     _is_complete_run_file,
     has_sentinel_scores,
     read_table_clean,
+    RawCallLog,
     SENTINEL_VALUE,
     SENTINEL_FLOAT,
 )
+
+# Raw per-call archive. Inert until run_test_set turns it on, so importing this
+# module and driving extract_all_with_ai directly (the order-reversal ablation)
+# writes nothing and keeps its own capture.
+RAW_LOG = RawCallLog()
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"
@@ -466,6 +474,10 @@ def extract_all_with_ai(scenario: Dict,
         'failure_types': []
     }
 
+    # The except below also catches faults raised AFTER a successful call, so it
+    # must not archive a second, empty record for a call already archived.
+    raw_recorded = False
+
     try:
         response_text, api_diagnostics = query_openrouter(messages)
         extraction_diagnostics.update({
@@ -473,7 +485,21 @@ def extract_all_with_ai(scenario: Dict,
             'completion_tokens': api_diagnostics.get('completion_tokens', 0),
             'latency_ms': api_diagnostics.get('latency_ms', 0)
         })
-        
+
+        RAW_LOG.record(
+            decision_type=str(scenario.get('decision_type', '')),
+            alternatives=[str(scenario.get(f'alternative_{i}', '')) for i in (1, 2, 3)],
+            model=API_CONFIG['model'],
+            prompt=prompt,
+            prompt_sha256=hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
+            response=response_text or '',
+            prompt_tokens=api_diagnostics.get('prompt_tokens', 0),
+            completion_tokens=api_diagnostics.get('completion_tokens', 0),
+            latency_ms=api_diagnostics.get('latency_ms', 0),
+            api_success=True,
+        )
+        raw_recorded = True
+
         logger.debug(f"=== EXTRACTION RESPONSE ===")
         logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
         logger.debug(f"Response length: {len(response_text)} chars")
@@ -589,6 +615,20 @@ def extract_all_with_ai(scenario: Dict,
 
     except Exception as e:
         print(f"Extraction error: {e}")
+        if not raw_recorded:
+            RAW_LOG.record(
+                decision_type=str(scenario.get('decision_type', '')),
+                alternatives=[str(scenario.get(f'alternative_{i}', '')) for i in (1, 2, 3)],
+                model=API_CONFIG['model'],
+                prompt=prompt,
+                prompt_sha256=hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
+                response='',
+                prompt_tokens=0,
+                completion_tokens=0,
+                latency_ms=0,
+                api_success=False,
+                api_error=str(e),
+            )
         extraction_diagnostics['extraction_error'] = str(e)
         error_text = str(e).lower()
         # Distinguish API/network exhaustion (transient infrastructure failure)
@@ -928,6 +968,7 @@ def run_test_set(test_path: str, output_path: str,
 
     all_results = []
     cumulative_diagnostics = {
+        'collected_utc': datetime.now(timezone.utc).isoformat(),
         'total_scenarios': len(scenarios),
         'total_api_calls': 0,
         'total_latency_ms': 0.0,
@@ -939,8 +980,16 @@ def run_test_set(test_path: str, output_path: str,
         'failed_scenarios': 0,
         **_init_failure_counters()
     }
+
+    # Archive every raw model response alongside this run's xlsx.
+    RAW_LOG.start(output_csv_path.with_name(f"{output_csv_path.stem}_raw.jsonl"))
+
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('question', 'N/A')[:60]}...")
+        # Row order is the scenario id. It is tracked here rather than put in the
+        # scenario dict because format_scenario_for_extraction rejects any key
+        # outside its allowlist (proxy/true-pair guard).
+        RAW_LOG.set_scenario(i + 1)
 
         try:
             result = run_scenario(scenario)
@@ -1012,6 +1061,9 @@ def run_test_set(test_path: str, output_path: str,
         else:
             cumulative_diagnostics['successful_calls'] += 1
             cumulative_diagnostics['successful_scenarios'] += 1
+
+    RAW_LOG.stop()
+
     cumulative_diagnostics['avg_latency_ms'] = (
             cumulative_diagnostics['total_latency_ms'] /
             max(cumulative_diagnostics['total_api_calls'], 1)

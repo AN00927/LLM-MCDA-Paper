@@ -5,6 +5,7 @@ import hashlib
 import logging
 import requests
 import time
+from datetime import datetime, timezone
 from typing import Dict, List, Tuple
 from pathlib import Path
 from dotenv import load_dotenv
@@ -42,9 +43,15 @@ from sentinel_utils import (
     format_embedding_text,
     has_sentinel_scores,
     read_table_clean,
+    RawCallLog,
     SENTINEL_VALUE,
     SENTINEL_FLOAT,
 )
+
+# Raw per-call archive. Inert until run_test_set turns it on, so importing this
+# module and calling run_scenario directly (ablation / position-bias scripts)
+# writes nothing.
+RAW_LOG = RawCallLog()
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 
@@ -536,15 +543,45 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
         'comfort': SENTINEL_VALUE, 'practicality': SENTINEL_VALUE, '_failed': True,
     }
 
+    rag_exemplar_ids = [r.get('id', '') for r in retrieved]
+
     try:
         response_text, diagnostics = query_openrouter(messages)
-        
+
+        RAW_LOG.record(
+            decision_type=scenario.get('decision_type', ''),
+            alternative=str(alternative),
+            model=API_CONFIG['model'],
+            prompt=user_prompt,
+            prompt_sha256=hashlib.sha256(user_prompt.encode('utf-8')).hexdigest(),
+            response=response_text or '',
+            prompt_tokens=diagnostics.get('prompt_tokens', 0),
+            completion_tokens=diagnostics.get('completion_tokens', 0),
+            latency_ms=diagnostics.get('latency_ms', 0),
+            api_success=bool(diagnostics.get('success')),
+            rag_exemplar_ids=rag_exemplar_ids,
+        )
+
         # DEBUG: Log the raw scoring response (always log reasoning/thinking data)
         logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
         logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
         logger.debug(f"Response length: {len(response_text)} chars")
     except Exception as e:
         logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
+        RAW_LOG.record(
+            decision_type=scenario.get('decision_type', ''),
+            alternative=str(alternative),
+            model=API_CONFIG['model'],
+            prompt=user_prompt,
+            prompt_sha256=hashlib.sha256(user_prompt.encode('utf-8')).hexdigest(),
+            response='',
+            prompt_tokens=0,
+            completion_tokens=0,
+            latency_ms=0,
+            api_success=False,
+            api_error=str(e),
+            rag_exemplar_ids=rag_exemplar_ids,
+        )
         error_text = str(e).lower()
         failure_type = FAILED_API_EXHAUSTED if FAILED_API_EXHAUSTED.lower() in error_text else FAILED_UNKNOWN
         diagnostics = {
@@ -780,6 +817,7 @@ def run_test_set(test_path: str, output_path: str,
 
     all_results = []
     cumulative_diagnostics = {
+        'collected_utc': datetime.now(timezone.utc).isoformat(),
         'total_scenarios': len(scenarios),
         'total_api_calls': 0,
         'total_latency_ms': 0.0,
@@ -791,8 +829,15 @@ def run_test_set(test_path: str, output_path: str,
         'failed_scenarios': 0,
         **_init_failure_counters()
     }
+
+    # Archive every raw model response alongside this run's xlsx.
+    RAW_LOG.start(output_csv_path.with_name(f"{output_csv_path.stem}_raw.jsonl"))
+
     for i, scenario in enumerate(scenarios):
         logger.info(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('question', 'N/A')[:60]}...")
+        # Row order is the scenario id: the results xlsx numbers scenarios by
+        # enumerate over this same list, so the jsonl joins to it on this key.
+        RAW_LOG.set_scenario(i + 1)
 
         try:
             result = run_scenario(scenario)
@@ -851,6 +896,8 @@ def run_test_set(test_path: str, output_path: str,
             cumulative_diagnostics['failed_scenarios'] += 1
         else:
             cumulative_diagnostics['successful_scenarios'] += 1
+
+    RAW_LOG.stop()
 
     cumulative_diagnostics['avg_latency_ms'] = (
         cumulative_diagnostics['total_latency_ms'] /

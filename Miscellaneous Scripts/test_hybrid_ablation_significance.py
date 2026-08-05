@@ -16,15 +16,30 @@ Friedman / Wilcoxon-Holm / Cliff's delta / bootstrap functions come from
 run_rag_ablation_experiments.py, so all three ablations in the paper are tested by the
 same reviewed code.
 
+Only the three provenance arms above are tested here. `hybrid_ablation_summary.xlsx`
+also carries the alternative-ordering arms (`extracted_per_run`, `order_control`,
+`order_reversed`), which are a different experiment with its own analysis in
+`hybrid_order_reversal.xlsx`. They are excluded for two reasons: including them
+would silently redefine this omnibus from "do the three provenance arms differ"
+to "do six mixed arms differ", and they carry several runs per scenario, which
+`friedman_test_per_metric` would collapse with `aggfunc='first'` -- keeping run 1
+and discarding the rest without saying so.
+
 Tests run within each model. Pooling models would confound provenance effects
 with model effects.
 
 Significance-testing methodology (two correction layers, identical in kind to
 run_rag_ablation_experiments.py and test_prompt_ablation_significance.py):
-  1. Friedman omnibus test per (model, metric) -- 3 models x 3 metrics = 9
-     independent tests. Holm-Bonferroni correction is applied ACROSS this
-     whole family before any p-value is used downstream, so the 9 omnibus
-     tests are not each independently exposed to nominal alpha=0.05.
+  1. Friedman omnibus test per (model, metric): the family size is (number of
+     models) x (number of metrics) and grows whenever a model is added. With
+     the four models currently collected that is 4 x 3 = 12 tests; it was 9
+     before the Gemini arm. The script prints the realised count at run time --
+     read that, not this comment, when reporting the family size.
+     Holm-Bonferroni correction is applied ACROSS this whole family before any
+     p-value is used downstream, so the omnibus tests are not each
+     independently exposed to nominal alpha=0.05. Adding a model therefore
+     makes every existing cell's corrected p-value more conservative; that is
+     the correction working, not a regression.
   2. Post-hoc pairwise Wilcoxon+Holm tests (each model x metric's own
      pairwise family separately Holm-corrected) are computed ONLY for
      (model, metric) cells whose Friedman omnibus remains significant after
@@ -58,6 +73,11 @@ SUMMARY_XLSX = OUT_DIR / "hybrid_ablation_summary.xlsx"
 
 METRIC_COLS = ["kendall_tau", "top1", "mae"]
 
+# The parameter-provenance arms, and only those. See the module docstring: the
+# summary workbook also carries the alternative-ordering arms, which belong to a
+# separate experiment and have several rows per scenario.
+PROVENANCE_ARMS = ["true_params", "extracted", "default_params"]
+
 
 def _load_rag_module():
     path = Path(__file__).resolve().parent / "run_rag_ablation_experiments.py"
@@ -74,6 +94,15 @@ def main():
     rag = _load_rag_module()
     df = pd.read_excel(SUMMARY_XLSX, sheet_name="per_scenario")
     df = df[~df["failed"].astype(bool)].copy()
+
+    missing = [a for a in PROVENANCE_ARMS if a not in set(df["arm"])]
+    if missing:
+        raise SystemExit(f"Missing provenance arm(s) in {SUMMARY_XLSX}: {missing}")
+    dropped = sorted(set(df["arm"]) - set(PROVENANCE_ARMS))
+    df = df[df["arm"].isin(PROVENANCE_ARMS)].copy()
+    if dropped:
+        print(f"Arms excluded (separate experiment, see hybrid_order_reversal.xlsx): "
+              f"{', '.join(dropped)}")
 
     friedman_rows = []
     boot_rows = []
@@ -94,20 +123,22 @@ def main():
         # computed for every model x metric regardless of the Friedman
         # outcome (matching run_rag_ablation_experiments.py and test_prompt_ablation_significance.py).
         for metric in METRIC_COLS:
-            bc = rag.bootstrap_ci_per_config(stratum, metric, config_col="arm")
+            bc = rag.bootstrap_ci_per_config(stratum, metric, config_col="arm",
+                                             stratum_key=model)
             for _, r in bc.iterrows():
                 boot_rows.append({"model": model, **r.to_dict()})
 
     friedman = pd.DataFrame(friedman_rows)
 
-    # Cross-stratum family correction: 3 models x 3 metrics = up to 9
+    # Cross-stratum family correction: (number of models) x len(METRIC_COLS)
     # independent Friedman omnibus tests are run above, one per (model,
-    # metric) pair. Holm-Bonferroni correction is applied ACROSS this whole
-    # family before it is used for anything downstream, for the same reason
-    # and using the same method as run_rag_ablation_experiments.py (4-test family) and
-    # test_prompt_ablation_significance.py (12-test family): reporting several
-    # omnibus tests side by side at nominal alpha=0.05 with no correction
-    # inflates the family-wise false-positive rate across the study.
+    # metric) pair -- 12 with the four models currently collected.
+    # Holm-Bonferroni correction is applied ACROSS this whole family before it
+    # is used for anything downstream, for the same reason and using the same
+    # method as run_rag_ablation_experiments.py and
+    # test_prompt_ablation_significance.py: reporting several omnibus tests
+    # side by side at nominal alpha=0.05 with no correction inflates the
+    # family-wise false-positive rate across the study.
     if not friedman.empty:
         p_holm, significant_holm = rag.holm_correct(friedman["p_value"].values)
         friedman["p_holm"] = p_holm

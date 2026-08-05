@@ -25,12 +25,18 @@ Design:
 
 Significance-testing methodology (two correction layers, mirroring
 run_rag_ablation_experiments.py and test_hybrid_ablation_significance.py exactly):
-  1. Friedman omnibus test per (architecture, model, metric) -- up to
-     6 strata x 2 metrics = 12 independent tests. Holm-Bonferroni correction
-     is applied ACROSS this whole family before anything downstream reads a
-     p-value, because reporting 12 omnibus tests side by side at nominal
-     alpha=0.05 with no correction inflates the chance of at least one false
-     "significant" result across the study.
+  1. Friedman omnibus test per (architecture, model, metric): one test per
+     stratum per metric, so the family size is (number of strata) x
+     (number of metrics) and grows whenever a model is added. With the four
+     models currently collected that is 8 strata x 2 metrics = 16 tests; it
+     was 12 before the Gemini arm. The script prints the realised count at
+     run time -- read that, not this comment, when reporting the family size.
+     Holm-Bonferroni correction is applied ACROSS this whole family before
+     anything downstream reads a p-value, because reporting every omnibus
+     test side by side at nominal alpha=0.05 with no correction inflates the
+     chance of at least one false "significant" result across the study.
+     Adding a model therefore makes every existing cell's corrected p-value
+     more conservative; that is the correction working, not a regression.
   2. Post-hoc pairwise Wilcoxon signed-rank tests (Holm-corrected within
      their own per-stratum-per-metric family) are computed ONLY for
      (architecture, model, metric) cells whose Friedman omnibus remains
@@ -121,9 +127,10 @@ def main():
 
     friedman = pd.DataFrame(friedman_rows)
 
-    # Cross-stratum family correction: up to (architecture x model) strata x
-    # 2 metrics = up to 12 independent Friedman omnibus tests are run above,
-    # one per (architecture, model, metric) triple. Reporting all of them at
+    # Cross-stratum family correction: (architecture x model) strata x
+    # len(METRIC_COLS) metrics independent Friedman omnibus tests are run
+    # above, one per (architecture, model, metric) triple -- 16 with the four
+    # models currently collected. Reporting all of them at
     # nominal alpha=0.05 with no correction across the family inflates the
     # chance of at least one false "significant" omnibus across the study,
     # the same failure mode multiple pairwise tests have without Holm
@@ -173,11 +180,15 @@ def main():
 
     # Bootstrap CIs per variant, within stratum. bootstrap_ci_per_config expects
     # a single config column, so each stratum is bootstrapped separately and the
-    # architecture/model labels are re-attached afterwards.
+    # architecture/model labels are re-attached afterwards. `stratum_key` is
+    # passed so each (architecture, model, variant, metric) bootstrap seeds off
+    # its own key: without it, the same variant in two strata would resample on
+    # identical indices, and the draw would depend on loop position.
     boot_rows = []
     for (arch, model), stratum in per_scenario.groupby(["architecture", "model"]):
         for metric in METRIC_COLS:
-            bc = rag.bootstrap_ci_per_config(stratum, metric, config_col="variant")
+            bc = rag.bootstrap_ci_per_config(stratum, metric, config_col="variant",
+                                             stratum_key=f"{arch}|{model}")
             for _, r in bc.iterrows():
                 boot_rows.append({"architecture": arch, "model": model, **r.to_dict()})
     bootstrap = pd.DataFrame(boot_rows)
