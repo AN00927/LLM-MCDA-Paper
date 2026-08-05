@@ -21,9 +21,14 @@ Aggregation method (Method A):
     metric once); generate_method_c_consensus.py tracks this discrepancy.
 
 Wilcoxon notes:
-    The normal approximation omits the tie-correction term in std_T. This is
-    conservative (wider CIs, fewer false positives) — standard in scipy's
-    legacy implementation and a deliberate choice here. Holm-Bonferroni
+    The normal approximation applies the tie correction to std_T:
+    std_T = sqrt([n(n+1)(2n+1) - 0.5*sum(t^3 - t)]/24) over the tie groups of
+    |d_i|. An earlier version omitted it, which inflated the variance and made
+    every test conservative; with three alternatives per scenario the
+    per-scenario Kendall tau takes only four distinct values, so ties in the
+    paired differences are the norm and the omission was not a small one.
+    The two-sided p-value uses stats.norm.sf, not 1 - stats.norm.cdf, which
+    underflowed to exactly 0.0 for |z| beyond about 8.3. Holm-Bonferroni
     correction pools all 56 tests (2 architecture pairs x 7 metrics x 4
     models) into a SINGLE family: one correction step across both pairwise
     comparisons, not two separate 28-test families. run_wilcoxon() computes
@@ -566,7 +571,10 @@ def mixed_model_pair(per_scenario_df, arch_a, arch_b, metric):
         intercept = np.nanmean(diff)
         se = np.nanstd(diff, ddof=1) / np.sqrt(len(diff))
         tval = intercept / se if se > 0 else 0.0
-        pval = 2 * (1 - stats.norm.cdf(abs(tval)))
+        # norm.sf, not 1 - norm.cdf: the latter underflows to exactly 0.0 once
+        # |tval| exceeds roughly 8.3. This fallback is reachable with far larger
+        # statistics -- the fitted A_E vs A_H tests reach |t| ~ 33.
+        pval = 2 * stats.norm.sf(abs(tval))
 
     return intercept, se, tval, pval
 
@@ -605,8 +613,13 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
            With n=195 there is substantial statistical power.
     How:   Computes the Wilcoxon T statistic manually, then derives Z
            via the normal approximation (mean=n(n+1)/4,
-           std=sqrt(n(n+1)(2n+1)/24) with tie correction).  This avoids
-           scipy's p->Z overflow for extreme p-values.
+           std=sqrt([n(n+1)(2n+1) - 0.5*sum(t^3 - t)]/24), where the t are
+           the sizes of the tie groups in |d_i|).  This avoids scipy's
+           p->Z overflow for extreme p-values.  The tie term matters here:
+           per-scenario Kendall tau over three alternatives takes only four
+           discrete values, so ties in |d_i| are pervasive rather than rare.
+           The two-sided p-value uses the survival function rather than
+           1 - cdf, which underflows to exactly 0.0 for |z| above ~8.3.
     Interp: p < 0.05 suggests the two architectures produce different
             metric values for this model across scenarios.
     """
@@ -647,15 +660,23 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
     neg_sum = -signed_ranks[signed_ranks < 0].sum()
     T = min(pos_sum, neg_sum)
 
-    # Normal approximation for Z
+    # Normal approximation for Z, with the tie correction to the variance.
+    # Tie groups are read off the midranks: rankdata assigns every member of a
+    # tie group the same midrank, so the group sizes are the value counts of
+    # `ranks`. Each group of size t removes (t^3 - t)/48 from the variance.
     mean_T = n * (n + 1) / 4.0
-    std_T = np.sqrt(n * (n + 1) * (2 * n + 1) / 24.0)
+    _, tie_sizes = np.unique(ranks, return_counts=True)
+    tie_term = np.sum(tie_sizes ** 3 - tie_sizes)
+    var_T = (n * (n + 1) * (2 * n + 1) - 0.5 * tie_term) / 24.0
+    std_T = np.sqrt(var_T) if var_T > 0 else 0.0
 
     # Continuity correction: shift T toward the mean by 0.5
     z = (T - mean_T - 0.5 * np.sign(mean_T - T)) / std_T if std_T > 0 else 0.0
 
-    # Two-sided p-value from Z
-    pval = 2 * (1 - stats.norm.cdf(abs(z)))
+    # Two-sided p-value from Z. norm.sf is used instead of 1 - norm.cdf:
+    # the latter underflows to exactly 0.0 once |z| exceeds roughly 8.3,
+    # which turns a very small p-value into an impossible one.
+    pval = 2 * stats.norm.sf(abs(z))
 
     if a_vals.sum() < b_vals.sum():
         z = -z

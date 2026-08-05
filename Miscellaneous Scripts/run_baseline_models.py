@@ -147,14 +147,21 @@ def build_scenario_from_test(row, decision_type):
             'alternative_3': str(row.get('alternative_3', '')),
         })
     elif decision_type == "Appliance":
-        app_type = str(row.get('appliance', 'Washer')).strip()
+        # TestScenarios has no 'appliance' column, so the default here decides the
+        # appliance type for every scenario. Defaulting to 'Washer' made the
+        # question-text detection below unreachable and typed all 65 appliance
+        # scenarios as washing machines. Default to empty so detection runs.
+        app_type = str(row.get('appliance', '')).strip()
         q_lower = str(row.get('question', '')).lower()
-        if not app_type or app_type.lower() == 'nan':
-            if 'washing machine' in q_lower or 'washer' in q_lower: app_type = 'Washer'
+        if not app_type or app_type.lower() in ('nan', 'none'):
+            # 'dishwasher' must be tested BEFORE 'washer': the substring 'washer'
+            # is contained in 'dishwasher', so testing 'washer' first silently
+            # classified every dishwasher scenario as a washing machine.
+            if 'dishwasher' in q_lower: app_type = 'Dishwasher'
             elif 'dryer' in q_lower: app_type = 'Dryer'
-            elif 'dishwasher' in q_lower: app_type = 'Dishwasher'
+            elif 'washing machine' in q_lower or 'washer' in q_lower: app_type = 'Washer'
             else: app_type = 'Washer'
-        
+
         if 'washer' in app_type.lower() and 'dishwasher' not in app_type.lower(): app_type = 'washing_machine'
         elif 'dryer' in app_type.lower(): app_type = 'dryer'
         elif 'dishwasher' in app_type.lower(): app_type = 'dishwasher'
@@ -173,7 +180,14 @@ def build_scenario_from_test(row, decision_type):
 
         scenario.update({
             'appliance': app_type,
-            'kwh_per_cycle': float(row.get('kwh_per_cycle', APPLIANCE_DEFAULT_KWH_FALLBACK)),
+            # Fixed-Default means a per-appliance-type default, not one constant for
+            # every appliance: a dryer and a dishwasher do not use the same energy.
+            # TestScenarios carries no kwh_per_cycle column, so this lookup is what
+            # actually supplies the value in practice.
+            'kwh_per_cycle': float(row.get(
+                'kwh_per_cycle',
+                APPLIANCE_DEFAULT_KWH_PER_CYCLE.get(app_type, APPLIANCE_DEFAULT_KWH_FALLBACK),
+            )),
             'appliance_age': appliance_age_val,
             'baseline_time': str(row.get('baseline_time', '7pm')),
             'alternative_1': str(row.get('alternative_1', '')),

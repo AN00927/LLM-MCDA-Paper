@@ -3,7 +3,7 @@
 **Author:** Ahaan Nigam  
 **Institution:** Downingtown East High School  
 **Collaborator:** Dr. River Huang, Paul Scherrer Institut (PSI), Switzerland  
-**Target Journal:** Decision Support Systems
+**Target Journal:** Environmental Modelling & Software
 
 ---
 
@@ -20,6 +20,76 @@ This project benchmarks three LLM-MCDA architectures for household energy decisi
 We evaluate four models: Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, and Qwen 3.5 9B. Each runs 5 trials per architecture per scenario (58,500 total API calls for the full benchmark).
 
 The three decision types target behavioral plasticity and contribution to residential energy/water use: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
+
+---
+
+## Setup
+
+Requires **Python 3.11 or newer**.
+
+```bash
+git clone <repository-url>
+cd LLM-MCDA-Paper
+
+# Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate        # Windows (PowerShell / cmd)
+source .venv/bin/activate     # macOS / Linux
+
+pip install -r requirements.txt
+```
+
+### API key
+
+The three architectures call models through [OpenRouter](https://openrouter.ai). Copy `.env.example` to `.env` at the repository root and fill in your key:
+
+```
+OPENROUTER_API_KEY=your_key_here
+```
+
+`.env` is gitignored and must never be committed.
+
+### Selecting a model and run count
+
+Both live in [model_config.py](model_config.py):
+
+- `MODEL_KEY` -- one of `gptoss`, `qwen`, `deepseek`, `gemini` (see [Model Set](#model-set)). This also routes output to that model's folder.
+- `N_RUNS` -- number of repeated trials per architecture (5 for the reported benchmark).
+
+### Running the benchmark
+
+```bash
+# Build the ChromaDB retrieval index first -- required by the RAG architecture,
+# and it must be rebuilt after any change to the RAG scenario workbooks.
+python "Miscellaneous Scripts/build_rag_index.py"
+
+python Architectures/Direct_LLM_Scoring.py
+python Architectures/Example-Guided_LLM_Scoring.py
+python Architectures/LLM-Parameterized_Reference_Scoring.py
+```
+
+Runs are resume-aware: a per-run `*_results_run_NN.xlsx` that already exists and is readable is skipped, so an interrupted benchmark can be relaunched without repaying for completed runs. Each run also writes `*_results_diagnostics_run_NN.json` (token counts, latency, failure-type counters, UTC collection timestamp) and `*_results_run_NN_raw.jsonl` (one record per API call with the prompt, the raw model response, and per-call latency and token counts).
+
+### Regenerating every paper number and figure
+
+```bash
+python paper_pipeline/run_paper_pipeline.py
+```
+
+This is the single entry point for the analysis side. It runs every deterministic step -- objective weights, per-run metrics, sensitivity arms, results numbers, figures, and LaTeX snippet generators -- in dependency order, reading only files already on disk. It makes **no API calls** and costs nothing. `--list` shows the stages, `--only <stage>` runs one.
+
+### Reproducing the paper
+
+The two halves have very different requirements:
+
+| | Needs an API key | Cost | Scripts |
+| --- | --- | --- | --- |
+| **Collecting the benchmark** | Yes | 58,500 API calls across 4 models x 3 architectures x 5 runs (see [API Costs](#api-costs-per-5-run-benchmark)) | `Architectures/*.py`, `Miscellaneous Scripts/run_*_experiments.py`, `run_baseline_models.py` |
+| **Everything analytical** | No | Free | `paper_pipeline/run_paper_pipeline.py` and everything it calls |
+
+The per-run outputs for all four models are committed under the `Output Files */` folders, so every metric, table, figure, significance test, ablation summary, and sensitivity arm in the paper can be regenerated from a fresh clone with no key and no spending -- `pip install -r requirements.txt` followed by `python paper_pipeline/run_paper_pipeline.py`. Re-collecting the benchmark is only necessary to change the model set, the scenario data, or a prompt.
+
+Ground-truth scores are likewise reproducible offline: running a calculator in `Ground Truth Calculators/` directly regenerates its `Ground Truth/ground_truth_*.xlsx` from the scenario workbooks. If you change a calculator or the scenario data, see the refresh-order rules in [CLAUDE.md](CLAUDE.md) -- `build_rag_index.py` always runs last.
 
 ---
 
@@ -138,9 +208,22 @@ LLM-MCDA-Paper/
 │   ├── implied_weights.py
 │   ├── merec_weights.py
 │   ├── run_baseline_models.py
+│   ├── run_benchmarks.py
 │   ├── run_rag_ablation_experiments.py
 │   ├── SensitivityAnalysis.py
 │   └── sync_rag_ground_truth_scores.py
+├── paper_pipeline/
+│   ├── run_paper_pipeline.py
+│   ├── analyze_benchmark_failures.py
+│   ├── calculate_per_run_metrics.py
+│   ├── duplication_rate_analysis.py
+│   ├── generate_boxplot_tex.py
+│   ├── generate_imputed_robustness_tables.py
+│   ├── generate_method_c_consensus.py
+│   ├── generate_paper_figures.py
+│   ├── generate_paper_results_numbers.py
+│   ├── generate_variance_plot_tex.py
+│   └── generate_violin_plot_tex.py
 ├── Scenario Files/
 │   ├── ConsolidatedforSimaltaneousediting.xlsx
 │   ├── HVACScenarios.xlsx
@@ -163,9 +246,11 @@ LLM-MCDA-Paper/
 ├── tests/
 ├── model_config.py
 ├── sentinel_utils.py
-├── run_benchmarks.py
 ├── README.md
 ├── CLAUDE.md
+├── LICENSE
+├── DATA_LICENSE
+├── .env.example
 └── requirements.txt
 ```
 
@@ -372,6 +457,12 @@ Two scripts independently validate the subjective MAVT weights against the groun
 [Codebase Guide](docs/CODEBASE_GUIDE.md) | [Ablation Experiments](docs/EXPERIMENTS.md) | [Metrics Pipeline](docs/metrics_calculation_pipeline.md) | [XLSX Schema Map](XLSX_Schema_Map.md) | [Provenance Audit](docs/PROVENANCE_AUDIT_PROMPT.md)
 
 [Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [Budget Penalties](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
+
+---
+
+## License
+
+Code is released under the MIT License ([LICENSE](LICENSE)). The scenario workbooks, ground-truth scores, and benchmark outputs are released under CC BY 4.0 ([DATA_LICENSE](DATA_LICENSE)).
 
 ---
 

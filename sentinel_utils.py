@@ -187,6 +187,83 @@ def _is_complete_run_file(path) -> bool:
     return len(df) > 0
 
 
+class RawCallLog:
+    """Append-as-you-go JSONL archive of every raw model call in a benchmark run.
+
+    One JSON object per API call, flushed immediately, so a run that dies partway
+    still leaves on disk every call it had already paid for. The per-run xlsx and
+    the diagnostics json both record aggregates only; without this the raw model
+    text is unrecoverable and any later question about *what the model actually
+    said* costs a re-collection.
+
+    Field names match the order-arm jsonl written by
+    Miscellaneous Scripts/run_hybrid_ablation_experiments.py (scenario_id, run,
+    decision_type, prompt, prompt_sha256, response, prompt_tokens,
+    completion_tokens, latency_ms) so both sources can be read by one parser.
+
+    Disabled unless start() is called. Importing an architecture module and
+    driving run_scenario yourself -- which the ablation and position-bias scripts
+    do -- archives nothing and behaves exactly as it did before.
+
+    Append-only, read last-write-wins by scenario_id, same as the order arm. A
+    crashed run is restarted from the first scenario, so its second pass appends
+    a fresh set of records rather than overwriting; every record carries its own
+    collected_utc, so the passes stay distinguishable.
+    """
+
+    def __init__(self):
+        self.path = None
+        self.run = None
+        self.scenario_id = None
+        self._warned = False
+
+    def start(self, path, run=None) -> None:
+        """Begin archiving to *path*. run is parsed from a `_run_NN` filename
+        when not given explicitly."""
+        import re
+        from pathlib import Path
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        self.path = p
+        if run is None:
+            m = re.search(r"_run_(\d+)", p.stem)
+            run = int(m.group(1)) if m else None
+        self.run = run
+        self.scenario_id = None
+        self._warned = False
+
+    def stop(self) -> None:
+        self.path = None
+        self.run = None
+        self.scenario_id = None
+
+    def set_scenario(self, scenario_id) -> None:
+        self.scenario_id = scenario_id
+
+    def record(self, **fields) -> None:
+        """Append one call record. Never raises: an archiving fault must not
+        take down a run that is spending money."""
+        if self.path is None:
+            return
+        import json
+        from datetime import datetime, timezone
+        try:
+            rec = {
+                "collected_utc": datetime.now(timezone.utc).isoformat(),
+                "run": self.run,
+                "scenario_id": self.scenario_id,
+            }
+            rec.update(fields)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+                f.flush()
+        except Exception as exc:
+            if not self._warned:
+                self._warned = True
+                print(f"[WARN] raw call log write failed ({exc}); "
+                      f"continuing without archiving")
+
+
 def house_age_to_band_label(years) -> str:
     """Canonical building-age range label for a numeric age in years.
 
