@@ -2,8 +2,10 @@ import os
 import sys
 import json
 import time
+import hashlib
 import logging
 import numpy as np
+from datetime import datetime, timezone
 from typing import Dict, List, Tuple
 from pathlib import Path
 import requests
@@ -67,9 +69,15 @@ from sentinel_utils import (
     apply_mavt_ranking,
     has_sentinel_scores,
     read_table_clean,
+    RawCallLog,
     SENTINEL_VALUE,
     SENTINEL_FLOAT,
 )
+
+# Raw per-call archive. Inert until run_test_set turns it on, so importing this
+# module and calling run_scenario directly (ablation / position-bias scripts)
+# writes nothing.
+RAW_LOG = RawCallLog()
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 
@@ -357,7 +365,21 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
     ]
 
     response, diagnostics = query_openrouter(messages)
-    
+
+    RAW_LOG.record(
+        decision_type=scenario.get("decision_type", ""),
+        alternative=str(alternative),
+        model=API_CONFIG["model"],
+        prompt=user_prompt,
+        prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
+        response=response or "",
+        prompt_tokens=diagnostics.get("tokens_input", 0),
+        completion_tokens=diagnostics.get("tokens_output", 0),
+        latency_ms=diagnostics.get("latency_ms", 0),
+        retries=diagnostics.get("retries", 0),
+        api_success=bool(diagnostics.get("success")),
+    )
+
     logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
     logger.debug(f"Raw response (first 1000 chars): {response[:1000] if response else 'None'}")
     logger.debug(f"Response length: {len(response) if response else 0} chars")
@@ -534,6 +556,7 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
 
     all_results = []
     cumulative_diagnostics = {
+        "collected_utc": datetime.now(timezone.utc).isoformat(),
         "total_scenarios": len(scenarios),
         "total_api_calls": 0,
         "total_latency_ms": 0,
@@ -546,8 +569,12 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
         **_init_failure_counters()
     }
 
+    # Archive every raw model response alongside this run's xlsx.
+    RAW_LOG.start(output_csv_path.with_name(f"{output_csv_path.stem}_raw.jsonl"))
+
     for i, scenario in enumerate(scenarios):
         logging.info(f"Processing scenario {i + 1}/{len(scenarios)}: {scenario.get('question', 'N/A')[:50]}...")
+        RAW_LOG.set_scenario(scenario.get("scenario_id", i + 1))
 
         try:
             result = run_scenario(scenario)
@@ -610,6 +637,8 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
             cumulative_diagnostics["failed_scenarios"] += 1
         else:
             cumulative_diagnostics["successful_scenarios"] += 1
+
+    RAW_LOG.stop()
 
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
     scenario_success_rate = cumulative_diagnostics["successful_scenarios"] / max(cumulative_diagnostics["total_scenarios"], 1)

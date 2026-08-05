@@ -695,11 +695,14 @@ def main():
                              "previously produced by editing model_config.py.")
     parser.add_argument("--alpha-sweep", action="store_true",
                         help="C1: sweep the ground-truth value-function shape "
-                             "parameter alpha and write Analysis/"
-                             "Sensitivity_alpha_sweep.xlsx.")
+                             "parameter alpha and write one workbook per model, "
+                             "Analysis/Sensitivity_alpha_sweep_<model>.xlsx. "
+                             "Never an unsuffixed pooled file.")
     parser.add_argument("--objective-arms", action="store_true",
                         help="C7: run the MEREC/Entropy per-decision-type arms "
-                             "and write Analysis/Sensitivity_merec_entropy_arms.xlsx.")
+                             "and write one workbook per model, Analysis/"
+                             "Sensitivity_merec_entropy_arms_<model>.xlsx. "
+                             "Never an unsuffixed pooled file.")
     args = parser.parse_args()
 
     if args.alpha_sweep or args.objective_arms:

@@ -222,11 +222,43 @@ def per_type_arithmetic_mean(arch, model, metric):
     type_means = sub.groupby("run")[metric].mean()
     return type_means.mean()
 
-# FixedDefault and NearestNeighbor -- deterministic values from
-# evaluate_architecture_metrics.py --include-baselines (single run, all models)
+# FixedDefault and NearestNeighbor are deterministic. These used to be literals
+# transcribed into this file, which meant they could not be checked and did not
+# follow a change to the baseline code -- and they silently went stale when the
+# Fixed-Default appliance defaults were corrected. They are now read from
+# Output Files/Baselines/baseline_metrics.csv, produced by
+# "Miscellaneous Scripts/evaluate_baseline_metrics.py" (which itself consumes
+# run_baseline_models.py's output). Regenerate in that order after any baseline
+# change.
+#
+# The pooled aggregate is used here, matching what the manuscript's baseline
+# rows have always reported; per-decision-type arithmetic means are also
+# available in that CSV under decision_type == "Overall_per_type_mean".
+_BASELINE_METRICS = "Output Files/Baselines/baseline_metrics.csv"
+if not os.path.exists(_BASELINE_METRICS):
+    raise FileNotFoundError(
+        f"{_BASELINE_METRICS} not found. Run:\n"
+        '  python "Miscellaneous Scripts/run_baseline_models.py" '
+        "--baselines fixed_default nearest_neighbor\n"
+        '  python "Miscellaneous Scripts/evaluate_baseline_metrics.py"'
+    )
+_bm = pd.read_csv(_BASELINE_METRICS)
+_bm = _bm[_bm["decision_type"] == "Overall_pooled"]
+
+
+def _baseline_metric(name, metric):
+    sel = _bm[(_bm["baseline"] == name) & (_bm["metric"] == metric)]["value"]
+    if sel.empty:
+        raise KeyError(f"No {metric} for baseline {name} in {_BASELINE_METRICS}")
+    return float(sel.iloc[0])
+
+
 baseline_data = {
-    "FixedDefault":     {"Top-1": 0.7282, "kendall_tau": 0.6137},
-    "NearestNeighbor":  {"Top-1": 0.5692, "kendall_tau": 0.3709},
+    name: {
+        "Top-1": _baseline_metric(name, "top1_accuracy"),
+        "kendall_tau": _baseline_metric(name, "kendall_tau"),
+    }
+    for name in ("FixedDefault", "NearestNeighbor")
 }
 for name, vals in baseline_data.items():
     for met, val in vals.items():

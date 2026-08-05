@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import logging
 import math
@@ -1102,34 +1103,66 @@ def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
     return pairs_df
 
 
+def derive_bootstrap_seed(seed: int, stratum_key, config_id, metric: str) -> int:
+    """Deterministic 64-bit seed for one (stratum, config, metric) bootstrap.
+
+    The key is hashed with SHA-256 rather than Python's built-in `hash()`,
+    which is randomised per process for strings and would therefore make the
+    draw irreproducible across runs -- the exact failure this function exists
+    to prevent.
+    """
+    key = "|".join(str(part) for part in (seed, stratum_key, config_id, metric))
+    return int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big")
+
+
 def bootstrap_ci_per_config(scenario_df: pd.DataFrame, metric: str,
                             config_col: str = 'ablation_id',
                             n_bootstrap: int = 10000,
-                            seed: int = 42) -> pd.DataFrame:
+                            seed: int = 42,
+                            stratum_key=None) -> pd.DataFrame:
     """Compute bootstrap 95% confidence intervals for each configuration's mean.
 
     For each ablation configuration the function resamples the scenario-level
     metric values with replacement to construct a 95 % confidence interval for
     the mean.  The percentile method is used for CI construction.
 
+    Seeding is per (stratum, config, metric), not per call. A single
+    `default_rng(seed)` consumed across the config loop makes each config's
+    draw depend on how many configs preceded it, so the same data bootstrapped
+    inside a seven-config loop and inside a one-config loop returns different
+    intervals -- pure Monte Carlo jitter that a reader cannot distinguish from
+    a real change. This was observed on `nearest_neighbor_k3`, whose CI moved
+    from [-0.175, 0.172] to [-0.167, 0.178] on completely unchanged data.
+    Deriving each config's seed from a hash of its own key makes the draw
+    reproducible AND keeps configs drawing independent resample sequences
+    rather than all replaying one shared stream. Callers that bootstrap
+    several strata separately must pass `stratum_key`, otherwise the same
+    config in two strata would resample on identical indices.
+
+    Neither the number of replicates nor the CI method is affected.
+
     Args:
         scenario_df: DataFrame with one row per (config, scenario) combination.
         metric: the metric column to bootstrap.
         config_col: column identifying the ablation configuration.
         n_bootstrap: number of bootstrap resamples (default 10 000).
-        seed: random seed for reproducibility.
+        seed: base seed, hashed together with the stratum/config/metric key.
+        stratum_key: identifier of the stratum this frame belongs to (e.g. a
+            model key, or an (architecture, model) pair). None is valid for
+            single-stratum callers.
 
     Returns:
         DataFrame with columns: ablation_id, ablation_label, point_estimate,
         ci_lower, ci_upper, metric.
     """
-    rng = np.random.default_rng(seed)
     results = []
 
     for config_id, group in scenario_df.groupby(config_col):
         values = group[metric].dropna().values.astype(float)
         if len(values) < 2:
             continue
+        rng = np.random.default_rng(
+            derive_bootstrap_seed(seed, stratum_key, config_id, metric))
         point_estimate = float(np.mean(values))
         boot_means = np.empty(n_bootstrap)
         for b in range(n_bootstrap):
@@ -1345,16 +1378,21 @@ def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs
     ))
 
     if friedman_results is not None and not friedman_results.empty:
-        sections.append("## Friedman Tests (non-parametric omnibus)\n\n"
-                        "Chi-squared statistic for each metric across all ablation configurations.\n\n"
+        sections.append("## Friedman Tests (non-parametric omnibus, per model)\n\n"
+                        "Chi-squared statistic for each metric across all ablation configurations, "
+                        "run separately within each model. Holm-Bonferroni is applied once across "
+                        "the whole (model x metric) family; read `p_holm`, not `p_value`.\n\n"
                         + _format_md_table(friedman_results, float_cols=["chi2", "p_value"]))
     if posthoc_df is not None and not posthoc_df.empty:
-        sections.append("## Post-hoc Pairwise Wilcoxon Tests (Holm-corrected)\n\n"
-                        "Significant pairwise differences after Holm-Bonferroni correction.\n\n"
+        sections.append("## Post-hoc Pairwise Wilcoxon Tests (Holm-corrected, within model)\n\n"
+                        "Pairwise differences within each model, computed only for (model, metric) "
+                        "cells whose Friedman omnibus survived the family correction above, and "
+                        "Holm-corrected within their own (model x metric) family.\n\n"
                         + _format_md_table(posthoc_df, float_cols=["statistic", "p_value", "p_holm", "cliff_delta"]))
     if bootstrap_df is not None and not bootstrap_df.empty:
-        sections.append("## Bootstrap 95% Confidence Intervals\n\n"
-                        "Percentile-method 95% CIs for each configuration's mean metric value.\n\n"
+        sections.append("## Bootstrap 95% Confidence Intervals (per model)\n\n"
+                        "Percentile-method 95% CIs for each configuration's mean metric value, "
+                        "computed within each model rather than pooled across models.\n\n"
                         + _format_md_table(bootstrap_df, float_cols=["point_estimate", "ci_lower", "ci_upper"]))
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -1441,7 +1479,7 @@ def run(args) -> Dict:
 
 
 def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
-                            output_dir: Path):
+                            output_dir: Path, model_col: str = 'model_key'):
     """Friedman -> Holm-corrected family -> gated post-hoc -> bootstrap CI pipeline.
 
     This is the single significance-testing entry point for the RAG ablation,
@@ -1449,61 +1487,106 @@ def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
     existing `rag_ablation_results.xlsx` (via `--recompute-significance-only`)
     without repeating the retrieval/LLM-querying work above it.
 
+    Everything here is stratified by model. There is no architecture
+    dimension in this ablation -- every retrieval config is A_E -- so
+    `model_col` alone defines a stratum, exactly as (architecture, model)
+    defines one in `test_prompt_ablation_significance.py`. Stratification is
+    not cosmetic: `friedman_test_per_metric` pivots to (scenario x config)
+    with `aggfunc='first'`, so running it over a multi-model frame silently
+    keeps one arbitrary model's value per cell and discards the rest,
+    reporting a single-model result under a whole-study label. Per-model
+    strata also keep model effects out of the config comparison, and honour
+    the project-wide rule that no reported metric is a cross-model pool.
+
     Two correction layers are applied, matching the convention used
     throughout the rest of the paper's significance testing
     (`significance_testing.py`) and mirrored identically in
     `test_prompt_ablation_significance.py` and `test_hybrid_ablation_significance.py`:
 
     1. Cross-stratum family correction on the Friedman omnibus tests
-       themselves. This script runs one Friedman test per metric in
-       `stat_metrics` (4 metrics here, since the RAG ablation pools all
-       models into a single stratum rather than testing per-model). Reporting
-       4 omnibus p-values side by side and gating each independently at
-       nominal alpha=0.05 inflates the family-wise false-positive rate across
-       that set of tests, the same way reporting 40+ uncorrected pairwise
-       tests would. Holm-Bonferroni is applied across the whole Friedman
-       table before it is used for anything downstream, and `p_holm` /
-       `significant_holm` are the columns that should be read and cited, not
-       the raw `p_value` column (kept for transparency/audit only).
-    2. Post-hoc pairwise Wilcoxon+Holm, but only for metrics whose Friedman
-       omnibus is significant AFTER the family correction above
-       (`significant_holm`, not raw `p_value < 0.05`). Running post-hoc
-       comparisons for a metric whose omnibus did not survive correction
-       would test pairwise differences the omnibus test itself could not
-       support finding.
+       themselves. One Friedman test is run per (model, metric) pair -- with
+       four evaluated models and the four metrics in `stat_metrics` that is
+       a 16-test family, and the `offline` nearest-neighbour pseudo-model is
+       skipped because a single config cannot support an omnibus test.
+       Reporting all of those omnibus p-values side by side and gating each
+       independently at nominal alpha=0.05 inflates the family-wise
+       false-positive rate across the set, the same way reporting 40+
+       uncorrected pairwise tests would. Holm-Bonferroni is applied ONCE
+       across the whole cross-stratum Friedman table before it is used for
+       anything downstream, and `p_holm` / `significant_holm` are the columns
+       that should be read and cited, not the raw `p_value` column (kept for
+       transparency/audit only).
+    2. Post-hoc pairwise Wilcoxon+Holm within the stratum, but only for
+       (model, metric) cells whose Friedman omnibus is significant AFTER the
+       family correction above (`significant_holm`, not raw
+       `p_value < 0.05`). Each surviving cell's pairwise tests are Holm-
+       corrected within their own (model x metric) family. Running post-hoc
+       comparisons for a cell whose omnibus did not survive correction would
+       test pairwise differences the omnibus test itself could not support
+       finding.
 
-    Bootstrap CIs are left ungated and computed for every metric regardless
-    of Friedman outcome: a bootstrap CI describes one configuration's own
-    sampling uncertainty, not a pairwise comparison, so it is not a multiple-
-    comparisons question in the same sense and gating it on the omnibus
-    would withhold a purely descriptive quantity from configurations that
-    otherwise didn't reach significance.
+    Bootstrap CIs are computed per config WITHIN each model and left ungated
+    regardless of Friedman outcome: a bootstrap CI describes one
+    configuration's own sampling uncertainty, not a pairwise comparison, so
+    it is not a multiple-comparisons question in the same sense and gating it
+    on the omnibus would withhold a purely descriptive quantity from
+    configurations that otherwise didn't reach significance.
+
+    Every output frame carries a `model_key` column so no row is ambiguous
+    about which stratum produced it.
     """
-    friedman_results = friedman_test_per_metric(scenario_df, stat_metrics)
+    strata = []
+    friedman_rows = []
+    for model_key, stratum in scenario_df.groupby(model_col, dropna=False):
+        # A stratum needs >= 3 configs for a Friedman omnibus. The `offline`
+        # nearest-neighbour pseudo-model has exactly one, so it drops out of
+        # the omnibus/post-hoc layers but still gets descriptive bootstrap CIs.
+        if stratum['ablation_id'].nunique() >= 3:
+            strata.append((model_key, stratum))
+            fr = friedman_test_per_metric(stratum, stat_metrics)
+            for _, r in fr.iterrows():
+                friedman_rows.append({model_col: model_key, **r.to_dict()})
+
+    friedman_results = pd.DataFrame(friedman_rows)
     if not friedman_results.empty:
         p_holm, significant_holm = holm_correct(friedman_results['p_value'].values)
         friedman_results['p_holm'] = p_holm
         friedman_results['significant_holm'] = significant_holm
     else:
-        friedman_results['p_holm'] = pd.Series(dtype=float)
-        friedman_results['significant_holm'] = pd.Series(dtype=bool)
+        friedman_results = pd.DataFrame(columns=[
+            model_col, 'metric', 'chi2', 'p_value', 'df', 'n_scenarios', 'n_configs',
+            'p_holm', 'significant_holm',
+        ])
     friedman_path = output_dir / "rag_ablation_friedman_tests.xlsx"
     _atomic_write_xlsx(friedman_results, friedman_path)
 
     posthoc_parts = []
-    for _, frow in friedman_results.iterrows():
-        if bool(frow['significant_holm']):
-            ph = posthoc_wilcoxon_holm(scenario_df, frow['metric'])
-            ph.insert(0, 'metric', frow['metric'])
+    for model_key, stratum in strata:
+        sig_metrics = set(friedman_results.loc[
+            (friedman_results[model_col] == model_key) & (friedman_results['significant_holm']),
+            'metric',
+        ])
+        for metric in stat_metrics:
+            if metric not in sig_metrics:
+                continue
+            ph = posthoc_wilcoxon_holm(stratum, metric)
+            if ph.empty:
+                continue
+            ph.insert(0, 'metric', metric)
+            ph.insert(0, model_col, model_key)
             posthoc_parts.append(ph)
     posthoc_df = pd.concat(posthoc_parts, ignore_index=True) if posthoc_parts else pd.DataFrame()
     posthoc_path = output_dir / "rag_ablation_posthoc_tests.xlsx"
     _atomic_write_xlsx(posthoc_df, posthoc_path)
 
     bootstrap_parts = []
-    for metric in ['kendall_tau', 'score_mae', 'top1_accuracy']:
-        bc = bootstrap_ci_per_config(scenario_df, metric)
-        bootstrap_parts.append(bc)
+    for model_key, stratum in scenario_df.groupby(model_col, dropna=False):
+        for metric in ['kendall_tau', 'score_mae', 'top1_accuracy']:
+            bc = bootstrap_ci_per_config(stratum, metric, stratum_key=model_key)
+            if bc.empty:
+                continue
+            bc.insert(0, model_col, model_key)
+            bootstrap_parts.append(bc)
     bootstrap_df = pd.concat(bootstrap_parts, ignore_index=True) if bootstrap_parts else pd.DataFrame()
     bootstrap_path = output_dir / "rag_ablation_bootstrap_ci.xlsx"
     _atomic_write_xlsx(bootstrap_df, bootstrap_path)
@@ -1536,22 +1619,31 @@ def recompute_significance_only(output_dir: Path, report_path: Path):
     friedman_results, posthoc_df, bootstrap_df, paths = run_significance_suite(
         scenario_df, stat_metrics, output_dir)
 
+    # Summaries are recomputed from the loaded rows rather than read back off
+    # disk: a stale summary written by an earlier, smaller run would otherwise
+    # be republished into the report alongside freshly recomputed statistics.
     summary_path = output_dir / "rag_ablation_summary.xlsx"
     dtype_summary_path = output_dir / "rag_ablation_summary_by_decision_type.xlsx"
-    summary_df = pd.read_excel(summary_path) if summary_path.exists() else pd.DataFrame()
-    dtype_summary_df = pd.read_excel(dtype_summary_path) if dtype_summary_path.exists() else pd.DataFrame()
+    summary_df = summarize_rows(rows_df)
+    dtype_summary_df = summarize_by_decision_type(rows_df)
+    _atomic_write_xlsx(summary_df, summary_path)
+    _atomic_write_xlsx(dtype_summary_df, dtype_summary_path)
 
     write_report(report_path, None, None, OrderedDict(), summary_df, dtype_summary_df, rows_df, [],
                  friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
 
     print("RAG ABLATION SIGNIFICANCE RECOMPUTE COMPLETE (no API calls made)")
     print(f"Rows loaded: {len(rows_df)}")
+    print(f"Models: {', '.join(sorted(str(m) for m in rows_df['model_key'].unique()))}")
+    print(f"Summary saved to: {summary_path}")
+    print(f"Decision-type summary saved to: {dtype_summary_path}")
     print(f"Friedman tests saved to: {paths['friedman_path']}")
     print(f"Post-hoc tests saved to: {paths['posthoc_path']}")
     print(f"Bootstrap CIs saved to: {paths['bootstrap_path']}")
     if not friedman_results.empty:
-        print("\n=== FRIEDMAN (Holm-corrected across the full family) ===")
-        show = friedman_results[['metric', 'chi2', 'p_value', 'p_holm', 'significant_holm', 'df', 'n_scenarios', 'n_configs']]
+        print(f"\n=== FRIEDMAN (per model; Holm-corrected across the full "
+              f"{int(friedman_results['p_value'].notna().sum())}-test family) ===")
+        show = friedman_results[['model_key', 'metric', 'chi2', 'p_value', 'p_holm', 'significant_holm', 'df', 'n_scenarios', 'n_configs']]
         print(show.to_string(index=False))
         sig = friedman_results[friedman_results['significant_holm']]
         if not sig.empty:

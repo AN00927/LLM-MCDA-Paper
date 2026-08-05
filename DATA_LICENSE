@@ -1,0 +1,41 @@
+Data License -- Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Ahaan Nigam
+
+The SOFTWARE in this repository (all `.py` source and the LaTeX sources under
+`paper/`) is licensed under the MIT License; see LICENSE.
+
+The DATA in this repository is licensed separately, under the Creative Commons
+Attribution 4.0 International License (CC BY 4.0). This covers:
+
+  - `Scenario Files/*.xlsx`      -- the 195 Test scenarios, the disjoint
+                                    90-scenario RAG corpus, and the
+                                    consolidated master workbook they derive
+                                    from.
+  - `Ground Truth/*.xlsx`        -- the physics MAVT ground-truth scores
+                                    produced by the calculators in
+                                    `Ground Truth Calculators/`.
+  - `Output Files*/**/*.xlsx`    -- per-run and aggregated benchmark results
+    `Output Files*/**/*.json`       and run diagnostics for each model and
+    `Output Files*/**/*.jsonl`      architecture, including archived raw model
+                                    responses.
+  - `Analysis/**`                -- derived metrics, ablation, and sensitivity
+                                    workbooks computed from the above.
+
+You are free to share and adapt this data for any purpose, including
+commercially, provided you give appropriate credit, link to the license, and
+indicate if changes were made.
+
+Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
+Summary:          https://creativecommons.org/licenses/by/4.0/
+
+Suggested attribution:
+
+  Nigam, A. (2026). LLM-MCDA benchmark scenarios, physics ground truth, and
+  model outputs. Licensed under CC BY 4.0.
+
+Third-party inputs used to construct the data (ENERGY STAR certified product
+datasets, EPA WaterSense, ASHRAE 55, CEC JA4.3, PJM marginal emissions
+factors, and published Pennsylvania utility time-of-use tariffs) remain subject
+to their own terms; this license covers only the compilation and the derived
+values in this repository.
