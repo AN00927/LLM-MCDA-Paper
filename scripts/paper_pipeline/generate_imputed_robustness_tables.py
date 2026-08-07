@@ -36,7 +36,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import MODEL_SPECS, get_output_folder  # noqa: E402
-from sentinel_utils import _is_complete_run_file  # noqa: E402
+from sentinel_utils import SENTINEL_VALUE, _is_complete_run_file  # noqa: E402
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",
@@ -147,7 +147,7 @@ def compute_variant_c_per_run(cm, prm, gt_lookup, gt_id_lookup, run_paths, arch_
         sentinel_mask = pd.Series(False, index=merged.index)
         for c in CRIT_KEYS:
             col = f"arch_{c}"
-            sentinel_mask |= (pd.to_numeric(merged[col], errors="coerce") == 1928)
+            sentinel_mask |= (pd.to_numeric(merged[col], errors="coerce") == SENTINEL_VALUE)
         imputed_sids = set(merged.loc[sentinel_mask, "arch_scenario_id"].unique())
 
         merged_imp, n_rows, n_sids = cm.impute_failed_scores(merged.copy(), impute_value=0.5)

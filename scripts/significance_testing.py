@@ -10,15 +10,12 @@ Input:  Raw per-run xlsx files from each model's output folder, plus
         ground truth xlsx files from Ground Truth/.
 Output: significance_tests.xlsx (four sheets) + stdout tables.
 
-Aggregation method (Method A):
+Aggregation method:
     Per-scenario metrics are computed independently for each of the 5 runs,
     then averaged across runs. This gives one (scenario, model, architecture)
     metric value. The headline results in the paper use the identical pipeline
     (calculate_per_run_metrics.py -> generate_paper_results_numbers.py), so the point
     estimate being significance-tested IS the number reported in results tables.
-    evaluate_architecture_metrics.py's standalone evaluate_all() uses a different aggregation
-    (Method C: average raw scores across 5 runs -> recompute rank -> compute
-    metric once); generate_method_c_consensus.py tracks this discrepancy.
 
 Wilcoxon notes:
     The normal approximation applies the tie correction to std_T:
