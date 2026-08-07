@@ -96,8 +96,7 @@ PLACEHOLDER_ALT_RE = re.compile(
 # scenario_ids are assigned from TestScenarios while GT tables number
 # independently by domain, so those ID namespaces do not align.
 #
-# Architecture *_results files are not used here. This script
-# re-aggregates per-run outputs via aggregate_run_files and serves as the
+# Architecture *_results files (per-run-then-average, "Method A") are the
 # source for reported metrics.
 
 # Secondary criterion priority used when weighted scores tie is imported from
@@ -282,131 +281,6 @@ def _coerce_score_columns(df, score_cols):
     return df
 
 
-def _align_failed_placeholder_alternatives(combined, score_cols):
-    """Map failed-run placeholder alternatives onto real alternatives.
-
-    LLM-Parameterized_Reference_Scoring writes rows like
-    "Alternative 1 (extraction failed)" when extraction fails before the
-    calculator sees the original alternatives. In multi-run aggregation, those
-    placeholders should count as failed attempts for the real alternatives, not
-    become separate unmatched alternatives.
-    """
-    out = combined.copy()
-
-    for (sid, dtype), idx in out.groupby(["scenario_id", "decision_type"]).groups.items():
-        group = out.loc[idx]
-        placeholder_positions = []
-        real_alternatives = []
-
-        for row_idx, alt in group["alternative"].items():
-            alt_text = str(alt).strip()
-            match = PLACEHOLDER_ALT_RE.match(alt_text)
-            if match:
-                placeholder_positions.append((row_idx, int(match.group(1))))
-            elif alt_text not in real_alternatives:
-                real_alternatives.append(alt_text)
-
-        if not placeholder_positions or len(real_alternatives) < 3:
-            continue
-
-        for row_idx, alt_num in placeholder_positions:
-            if 1 <= alt_num <= len(real_alternatives):
-                out.at[row_idx, "alternative"] = real_alternatives[alt_num - 1]
-
-    return out
-
-
-def aggregate_run_files(run_paths):
-    """Aggregate multi-run results into a single dataframe with mean/std scores.
-
-    The returned dataframe includes n_runs, n_successful_runs, and n_failed_runs
-    so downstream callers can report on run coverage without re-counting.
-    When std is NaN because only one run was aggregated, it is annotated.
-    """
-    run_dfs = []
-    for p in run_paths:
-        run_dfs.append(read_table_clean(p, keep_str_cols=_COMMON_STR_COLS))
-    n_readable = len(run_dfs)
-    combined = pd.concat(run_dfs, ignore_index=True)
-
-    score_cols = [
-        CONFIG["arch_score_cols"]["energy_cost"],
-        CONFIG["arch_score_cols"]["environmental"],
-        CONFIG["arch_score_cols"]["comfort"],
-        CONFIG["arch_score_cols"]["practicality"],
-    ]
-    combined = _coerce_score_columns(combined, score_cols)
-    combined = _align_failed_placeholder_alternatives(combined, score_cols)
-
-    # Treat sentinel rows as NaN for averaging
-    for c in score_cols:
-        combined.loc[combined[c] == FAIL_SENTINEL, c] = np.nan
-
-    group_keys = ["scenario_id", "decision_type", "alternative"]
-    meta_cols = [c for c in [
-        "question", "location", "outdoor_temp", "appliance_age", "flow_rate",
-        "calculator", "extraction_failed", "gt_calculation_failed"
-    ] if c in combined.columns]
-
-    n_valid_runs = combined.groupby(group_keys)[score_cols[0]].apply(
-        lambda s: s.notna().sum()
-    ).reset_index(name="n_successful_runs")
-
-    avg_scores = combined.groupby(group_keys, as_index=False)[score_cols].mean()
-    std_scores = combined.groupby(group_keys, as_index=False)[score_cols].std()
-    avg_meta = combined.groupby(group_keys, as_index=False)[meta_cols].first() if meta_cols else None
-
-    aggregated = avg_scores
-    if avg_meta is not None:
-        aggregated = aggregated.merge(avg_meta, on=group_keys)
-    aggregated = aggregated.merge(n_valid_runs, on=group_keys)
-    aggregated["n_runs"] = n_readable
-    aggregated["n_failed_runs"] = aggregated["n_runs"] - aggregated["n_successful_runs"]
-
-    std_scores = std_scores.rename(columns={c: f"{c}_std" for c in score_cols})
-    aggregated = aggregated.merge(std_scores, on=group_keys)
-
-    # If N=1, std is undefined — annotate rather than leave unexplained NaN
-    if n_readable == 1:
-        warnings.warn(
-            "Only 1 run file aggregated — std columns are NaN (undefined for N=1).",
-            UserWarning, stacklevel=2
-        )
-
-    # Fill NaN (all runs failed) back to sentinel
-    for c in score_cols:
-        aggregated[c] = aggregated[c].fillna(FAIL_SENTINEL)
-
-    aggregated["weighted_score"] = float(FAIL_SENTINEL)
-    aggregated["rank"] = int(FAIL_SENTINEL)
-    arch_score_to_col = {
-        "energy_cost": score_cols[0],
-        "environmental": score_cols[1],
-        "comfort": score_cols[2],
-        "practicality": score_cols[3],
-    }
-    tiebreak_cols = [arch_score_to_col[c] for c in TIE_BREAK_PRIORITY]
-    for sid in aggregated["scenario_id"].unique():
-        sc_mask = aggregated["scenario_id"] == sid
-        sc = aggregated[sc_mask]
-        valid_idx = sc.index[~sc[score_cols].eq(FAIL_SENTINEL).any(axis=1)]
-        if len(valid_idx) > 0:
-            ws = (
-                aggregated.loc[valid_idx, score_cols[0]] * CRITERION_WEIGHTS["energy_cost"] +
-                aggregated.loc[valid_idx, score_cols[1]] * CRITERION_WEIGHTS["environmental"] +
-                aggregated.loc[valid_idx, score_cols[2]] * CRITERION_WEIGHTS["comfort"] +
-                aggregated.loc[valid_idx, score_cols[3]] * CRITERION_WEIGHTS["practicality"]
-            )
-            aggregated.loc[valid_idx, "weighted_score"] = ws
-            sub = aggregated.loc[valid_idx, [*score_cols]].copy()
-            sub["weighted_score"] = ws
-            ranks = _rank_with_deterministic_tiebreak(
-                sub, "weighted_score", tiebreak_cols,
-                log_prefix=f"[aggregate_run_files sid={sid}] "
-            )
-            aggregated.loc[valid_idx, "rank"] = ranks.astype(int)
-
-    return aggregated
 def build_gt_lookup(gt_by_type):
     """Build a lookup like (question, location) -> list of GT scenario entries."""
     gt_lookup = defaultdict(list)
@@ -717,6 +591,9 @@ def compute_criterion_metrics(merged_df):
     Rows where either gt or arch score is NaN (genuinely missing, not sentinel)
     are dropped per-criterion before computing errors so a single bad cell does
     not propagate NaN across the whole result.
+
+    This function only checks for NaN, not the literal sentinel — callers must
+    pass sentinel-filtered or sentinel-to-NaN-converted data.
     """
     results = {}
     all_abs_errors = []
@@ -757,6 +634,9 @@ def compute_ranking_metrics(merged_df):
     Scenarios where any rank value is NaN (genuinely missing) are skipped
     entirely so a single bad row does not turn the whole scenario's tau
     into NaN.
+
+    This function only checks for NaN, not the literal sentinel — callers must
+    pass sentinel-filtered or sentinel-to-NaN-converted data.
     """
     taus = []
     rhos = []
@@ -893,9 +773,8 @@ def impute_failed_scores(merged_df, impute_value=0.5):
 def recompute_arch_ranks(merged_df):
     """Recompute arch_weighted_score and arch_rank after imputation.
 
-    Uses CRITERION_WEIGHTS and TIE_BREAK_PRIORITY from model_config,
-    same logic as aggregate_run_files() so imputed ranks are consistent
-    with non-imputed output.
+    Uses CRITERION_WEIGHTS and TIE_BREAK_PRIORITY from model_config so
+    imputed ranks are consistent with non-imputed output.
     """
     df = merged_df.copy()
     arch_score_cols = [f"arch_{c}" for c in CRITERIA]
@@ -1023,17 +902,9 @@ def evaluate_all(config, include_baselines=False, model_key=None):
     print("\n[2] Loading architectures...")
     arch_dfs = {}
     for name, path in config["architectures"].items():
-        base_path = Path(path)
-        run_paths = sorted(base_path.parent.glob(f"{base_path.stem}_run_*.xlsx"))
-        if run_paths:
-            aggregated = aggregate_run_files(run_paths)
-            arch_dfs[name] = load_architecture(aggregated, name)
-            dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
-            print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc} (aggregated {len(run_paths)} runs)")
-        else:
-            arch_dfs[name] = load_architecture(path, name)
-            dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
-            print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
+        arch_dfs[name] = load_architecture(path, name)
+        dtc = arch_dfs[name]["decision_type"].value_counts().to_dict()
+        print(f"    {name}: {arch_dfs[name]['scenario_id'].nunique()} scenarios {dtc}")
 
     # Load architecture diagnostics JSONs for failure-mode breakdown
     print("\n[2c] Loading architecture diagnostics...")
@@ -1095,17 +966,6 @@ def evaluate_all(config, include_baselines=False, model_key=None):
                     "decision_type": "Overall",
                     "metric": k, "value": v,
                 })
-
-        # n_runs from aggregated dataframe (if available)
-        arch_df_this = arch_dfs[arch_name]
-        if "n_runs" in arch_df_this.columns:
-            n_runs_val = arch_df_this["n_runs"].iloc[0]
-            all_metrics.append({"architecture": arch_name, "decision_type": "Overall",
-                                 "metric": "n_runs", "value": n_runs_val})
-        if "n_successful_runs" in arch_df_this.columns:
-            n_succ_val = arch_df_this["n_successful_runs"].mean()
-            all_metrics.append({"architecture": arch_name, "decision_type": "Overall",
-                                 "metric": "n_successful_runs_mean", "value": round(n_succ_val, 2)})
 
         # Failure rate (all architectures via 1928 sentinel detection)
         fail = compute_failure_rate(arch_dfs[arch_name])

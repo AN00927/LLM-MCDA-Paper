@@ -283,7 +283,6 @@ Main flow:
 evaluate_all()
   -> load_ground_truth()
   -> load_architecture()
-  -> aggregate_run_files() if per-run files exist
   -> _load_diagnostics_json()
   -> build_gt_lookup()
   -> build_gt_id_lookup()
@@ -302,7 +301,6 @@ Important functions:
 - alternative normalization at `Miscellaneous Scripts/evaluate_architecture_metrics.py:170`
 - ground truth loading at `Miscellaneous Scripts/evaluate_architecture_metrics.py:197`
 - architecture loading at `Miscellaneous Scripts/evaluate_architecture_metrics.py:224`
-- per-run aggregation at `Miscellaneous Scripts/evaluate_architecture_metrics.py:257`
 - GT lookup construction at `Miscellaneous Scripts/evaluate_architecture_metrics.py:349`
 - scenario matching at `Miscellaneous Scripts/evaluate_architecture_metrics.py:410`
 - criterion metrics at `Miscellaneous Scripts/evaluate_architecture_metrics.py:607`

@@ -20,7 +20,6 @@ from sentinel_utils import _atomic_write_xlsx
 from evaluate_architecture_metrics import (
     CRITERIA,
     _build_config,
-    aggregate_run_files,
     build_gt_lookup,
     build_gt_id_lookup,
     filter_failed_scenarios,
@@ -235,8 +234,7 @@ def metrics_per_run_then_average(frames: list[pd.DataFrame], weights) -> dict:
 
     This is the protocol used for the headline results, so the design-vector row
     of the sensitivity analysis reproduces the main figure exactly. Averaging the
-    runs before scoring (aggregate-then-evaluate) is a different estimator and is
-    reported separately as a robustness arm.
+    runs before scoring is a different estimator and is not used.
 
     Every numeric key returned by compute_ranking_metrics is averaged, so callers
     that read counts (e.g. n_scenarios_evaluated) keep working.
@@ -268,11 +266,11 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
 
     arch_names = list(CONFIG["architectures"].keys())
     pure_name, rag_name, param_name = arch_names  # Direct_LLM_Scoring, Example-Guided_LLM_Scoring, LLM-Parameterized_Reference_Scoring
-    # Method A (per-run-then-average): keep the runs SEPARATE here and average
-    # metrics across runs later. Aggregating the runs first (average the scores,
-    # then score once) is the aggregate-then-evaluate protocol, which is reported
-    # only as a robustness arm; using it here made the design-vector row disagree
-    # with the headline figure by up to 0.104 in Kendall's tau.
+    # Per-run-then-average: keep the runs SEPARATE here and average metrics
+    # across runs later. Aggregating the runs first (average the scores, then
+    # score once) is a different estimator; using it here made the
+    # design-vector row disagree with the headline figure by up to 0.104 in
+    # Kendall's tau.
     clean_merged: dict[str, list[pd.DataFrame]] = {}
     for name, path in CONFIG["architectures"].items():
         base_path = Path(path)

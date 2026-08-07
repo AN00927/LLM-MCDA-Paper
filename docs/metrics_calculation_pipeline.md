@@ -57,17 +57,12 @@ SENTINEL_FLOAT = 1928.0
 
 ### Handling approaches
 
-There are two primary evaluation handling strategies, plus a standalone per-run imputed robustness check:
+There is one primary evaluation handling strategy, plus a standalone per-run imputed robustness check:
 
 **Filtered mode (scenario-level exclusion — the primary method):**
 - `filter_failed_scenarios()` groups by `arch_scenario_id`, checks if ANY alternative row has ANY criterion sentinel
 - If so, ALL rows for that scenario are removed from metrics computation
 - Used by: `evaluate_all()` filtered mode, `significance_testing.py`, `calculate_per_run_metrics.py`
-
-**Method C (per-cell safe_mean):**
-- `safe_mean(series)` in `generate_method_c_consensus.py`: requires >=3 non-NaN values out of 5 runs
-- If fewer than 3 valid values, the cell stays NaN (row excluded from that criterion)
-- Scores are averaged across runs BEFORE metrics computation
 
 **Per-run imputed robustness check:**
 - Standalone robustness analysis via `paper_pipeline/generate_imputed_robustness_tables.py`
@@ -196,20 +191,7 @@ This is implemented in `calculate_per_run_metrics.py`, which:
 
 ---
 
-## 6. Alternative Aggregation Methods
-
-### 6.1 Method C (mean-aggregate-then-evaluate)
-
-In `generate_method_c_consensus.py`:
-
-1. Load all 5 run xlsx files for an architecture
-2. Coerce scores to numeric, set sentinel 1928 to NaN
-3. Group by `(scenario_id, alternative)`, apply `safe_mean` (requires >=3 valid entries)
-4. Recompute weighted scores and ranks
-5. Compute metrics once on the consensus ranking
-6. Compare to Method A: Method A tau vs Method C tau, with difference column
-
-### 6.2 Per-run imputed robustness building blocks
+## 6. Per-Run Imputed Robustness Building Blocks
 
 In `evaluate_architecture_metrics.py`:
 - `impute_failed_scores(df, impute_value=0.5)` replaces sentinel 1928 in `arch_*` columns with 0.5 (scale midpoint).
@@ -428,7 +410,6 @@ Pairwise comparisons between configurations. Results: retrieval k variants, embe
 | `evaluate_architecture_metrics.py` | Central metrics engine: matching, filtering, all metrics |
 | `calculate_per_run_metrics.py` | Per-run wrapper (Method A) |
 | `generate_paper_results_numbers.py` | Cross-model pooling, numbers_master.csv |
-| `generate_method_c_consensus.py` | Method C comparison (safe_mean, consensus) |
 | `analyze_benchmark_failures.py` | Failure detection, LaTeX tables |
 | `significance_testing.py` | ICC, Wilcoxon, Stouffer, Cliff's delta, mixed model |
 | `run_rag_ablation_experiments.py` | RAG ablation: Friedman, bootstrap, post-hoc |
