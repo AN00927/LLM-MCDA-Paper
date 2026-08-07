@@ -34,6 +34,7 @@ from model_config import (
 
 from sentinel_utils import (
     CRITERIA,
+    SENTINEL_FLOAT,
     appliance_age_to_band_label,
     format_embedding_text,
     gpm_to_flow_rate_label,
@@ -46,7 +47,7 @@ SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-SENTINEL = 1928.0
+SENTINEL = SENTINEL_FLOAT
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 ALTERNATE_EMBEDDING_MODEL = "sentence-transformers/paraphrase-MiniLM-L3-v2"
 TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}

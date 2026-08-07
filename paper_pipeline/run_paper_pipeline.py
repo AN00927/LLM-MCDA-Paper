@@ -61,8 +61,6 @@ STEPS = [
      ["paper_pipeline/generate_imputed_robustness_tables.py"]),
     ("numbers", "Benchmark failure analysis",
      ["paper_pipeline/analyze_benchmark_failures.py"]),
-    ("numbers", "Method C consensus comparison",
-     ["paper_pipeline/generate_method_c_consensus.py"]),
     ("numbers", "Duplication rate analysis",
      ["paper_pipeline/duplication_rate_analysis.py"]),
 

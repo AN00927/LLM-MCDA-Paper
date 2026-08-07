@@ -219,7 +219,6 @@ LLM-MCDA-Paper/
 │   ├── duplication_rate_analysis.py
 │   ├── generate_boxplot_tex.py
 │   ├── generate_imputed_robustness_tables.py
-│   ├── generate_method_c_consensus.py
 │   ├── generate_paper_figures.py
 │   ├── generate_paper_results_numbers.py
 │   ├── generate_variance_plot_tex.py

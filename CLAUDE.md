@@ -151,6 +151,13 @@ boundary in Results and Discussion. Rules:
   without asking the user first. Show per-model breakdowns or at minimum
   strongest+weakest model.
 
+### Reading the user's inline TODOs
+
+A `%TODO`/`[TODO: ...]` marker placed **in the middle of a paragraph refers to the
+text immediately before it**, not to what follows. A marker on its own line
+between paragraphs refers to the section or paragraph that came right before it.
+Resolve the TODO against that antecedent, not against the whole subsection.
+
 When editing text in this file, change the absolute minimum required to
 satisfy the request:
 
@@ -181,3 +188,13 @@ navigation map.
   explain something, they want a direct answer in the chat — not a plan item, not
   a file edit, not a todo. Do NOT add explanatory requests to task lists or plan
   documents. Just answer.
+
+## Subagent usage
+
+- **For resource/context-heavy tasks** (large multi-file edits, long document
+  audits, mechanical relocation work), delegate to well-scoped subagents rather
+  than doing it inline — use a lighter model (sonnet, thinking off) with a
+  precise, self-contained prompt rather than a large reasoning-heavy model with a
+  vague one. A well-defined prompt on a cheaper model outperforms a vague prompt
+  on an expensive one for mechanical/well-specified work.
+  Haiku is also acceptable for extremely boilerplate/boring tasks when it has a strong prompt.
