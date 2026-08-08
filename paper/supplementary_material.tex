@@ -188,7 +188,7 @@ the specific scenario above.
 \label{app:rag_corpus}
 
 The retrieval-augmented generation (RAG) corpus consists of 90 unique
-scenarios (35 HVAC, 35 Appliance, 20 Shower) that are fully disjoint
+scenarios (35 HVAC, 35 Appliance, 20 Shower) that are disjoint
 from the 195 test scenarios. Each RAG scenario has three alternatives,
 yielding 270 total rows across the three source files
 (HVACRagScenarios.xlsx, ApplianceRAGScenarios.xlsx,
@@ -208,7 +208,7 @@ The retrieval index was built using the
 \texttt{sentence-transformers/all-MiniLM-L6-v2} embedding model
 \citep{reimers2019sentencebert}, producing 384-dimensional dense vectors.
 At query time, the single most similar scenario ($k=1$) is retrieved by
-cosine similarity and rendered as a full worked example in the LLM prompt.
+Euclidean (L2) distance, Chroma's default metric, and rendered as a full worked example in the LLM prompt.
 The embedding string includes all household-reported parameters (location,
 square footage, insulation tier, household size, housing type, utility
 budget, outdoor temperature, house age) plus band labels for age and flow
@@ -722,7 +722,48 @@ $\mathcal{A}_{\text{E}}$; these are the same two Gemini MEREC cells that reverse
 on Kendall's~$\tau$.
 \end{tablenotes}
 \end{threeparttable}
-\end{table*}\subsection{RAG Ablation: Full Per-Configuration Table}
+\end{table*}
+
+\subsection{Single-Criterion Perturbation Results}
+\label{app:single_criterion_perturbation}
+
+Table~\ref{tab:single_criterion_perturbation} reports Kendall's $\tau$ under eight single-criterion perturbations referenced in Section~4.7 of the main paper: each of the four criterion weights is shifted by $\pm 0.05$ from its design value, with the remaining three weights rescaled proportionally to keep the vector summing to 1. As with the multi-criterion vectors in Table~\ref{tab:sensitivity_by_model}, both the ground-truth ranking and the architecture rankings are recomputed under each perturbed vector.
+
+\begin{table*}[htbp]
+\begin{threeparttable}
+\footnotesize
+\centering
+\textbf{Single-criterion $\pm 0.05$ perturbations: Kendall's $\tau$ by model}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{} l rrr rrr rrr rrr @{}}
+\toprule
+ & \multicolumn{3}{c}{Gemini} & \multicolumn{3}{c}{DeepSeek} & \multicolumn{3}{c}{GPT-OSS} & \multicolumn{3}{c}{Qwen} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
+\textbf{Perturbation} & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
+\midrule
+Energy cost $+0.05$   & 0.193 & 0.297 & 0.895 & 0.203 & 0.336 & 0.878 & 0.080 & 0.307 & 0.890 & 0.046 & 0.203 & 0.856 \\
+Energy cost $-0.05$   & 0.203 & 0.329 & 0.938 & 0.121 & 0.339 & 0.915 & 0.050 & 0.253 & 0.889 & $-$0.002 & 0.188 & 0.886 \\
+Environmental $+0.05$ & 0.175 & 0.312 & 0.913 & 0.175 & 0.343 & 0.887 & 0.054 & 0.301 & 0.900 & 0.022 & 0.227 & 0.873 \\
+Environmental $-0.05$ & 0.209 & 0.321 & 0.935 & 0.125 & 0.322 & 0.917 & 0.057 & 0.255 & 0.900 & 0.002 & 0.186 & 0.888 \\
+Comfort $+0.05$       & 0.199 & 0.327 & 0.930 & 0.114 & 0.321 & 0.909 & 0.048 & 0.273 & 0.899 & $-$0.005 & 0.201 & 0.889 \\
+Comfort $-0.05$       & 0.204 & 0.322 & 0.892 & 0.199 & 0.342 & 0.865 & 0.068 & 0.305 & 0.886 & 0.053 & 0.197 & 0.829 \\
+Practicality $+0.05$  & 0.205 & 0.321 & 0.937 & 0.118 & 0.311 & 0.904 & 0.048 & 0.252 & 0.899 & $-$0.008 & 0.188 & 0.886 \\
+Practicality $-0.05$  & 0.166 & 0.310 & 0.915 & 0.183 & 0.345 & 0.899 & 0.056 & 0.314 & 0.911 & 0.037 & 0.218 & 0.878 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{6pt}
+\begin{tablenotes}
+\footnotesize
+\item Each row shifts one criterion's design weight by $\pm 0.05$ and rescales the remaining three proportionally. The resulting $\mathcal{A}_{\text{E}} - \mathcal{A}_{\text{D}}$ gap (not tabulated above) ranges from $0.104$ (Gemini, Energy cost $+0.05$) to $0.258$ (GPT-OSS, Practicality $-0.05$) across all 32 model$\times$perturbation cells and never changes sign, the figure cited in Section~4.7 of the main paper.
+\end{tablenotes}
+\end{threeparttable}
+\caption{Kendall's $\tau$ by model and architecture under eight single-criterion $\pm 0.05$ weight perturbations. No value is pooled across models.}
+\label{tab:single_criterion_perturbation}
+\end{table*}
+
+\subsection{RAG Ablation: Full Per-Configuration Table}
 \label{app:rag_ablation_full}
 
 \begin{table}[t]
@@ -765,7 +806,7 @@ Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.172,\, 0.175]$) 
 \end{table}\subsection{RAG Ablation: Test-Family Bookkeeping}
 \label{app:rag_ablation_significance}
 
-A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) across the seven LLM configurations within each model, giving a sixteen-test family of four models by four metrics; the offline nearest-neighbor baseline has no per-model arm and so enters the descriptive bootstrap reported above rather than any omnibus. Holm correction is applied across this family before any omnibus result is treated as significant, and post-hoc pairwise Wilcoxon signed-rank tests, themselves Holm-corrected within their own pairwise family, are computed only for the model--metric cells whose corrected omnibus remains significant.
+A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) across the seven LLM configurations within each model, giving a sixteen-test family of four models by four metrics; the offline nearest-neighbor baseline has no per-model configuration and so enters the descriptive bootstrap reported above rather than any omnibus. Holm correction is applied across this family before any omnibus result is treated as significant, and post-hoc pairwise Wilcoxon signed-rank tests, themselves Holm-corrected within their own pairwise family, are computed only for the model--metric cells whose corrected omnibus remains significant.
 \begin{figure*}[htbp]
 \begin{threeparttable}
 \centering
@@ -891,7 +932,7 @@ A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) 
 \label{fig:violin_rmse}
 \end{figure*}
 
-MAE and Top-1 distribution shapes across runs, and the per-model MAE breakdown, are omitted here because Table~\ref{tab:overall_by_model} (Appendix~\ref{app:numerical_results}) already reports mean $\pm$ std for every metric.\subsection{Statistical Significance Tests}
+MAE and Top-1 distribution shapes across runs, and the per-model MAE breakdown, are omitted here because Table~\ref{tab:overall_by_model} (~\ref{app:numerical_results}) already reports mean $\pm$ std for every metric.\subsection{Statistical Significance Tests}
 \label{app:significance}
 
 All tests use per-scenario metrics computed from the 195 test scenarios, with five independent runs per architecture--model combination.
@@ -1045,7 +1086,7 @@ $\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}\footnotesize
-\item Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and no\_anchors, which use ten runs: no\_anchors was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Gemini cells use three runs; the significance tests below are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation is 0.008--0.021, the lowest of the four models, so three runs resolve its cell means to the precision reported here. Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no no\_anchors arm because its shipped prompt contains no anchors.
+\item Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and no\_anchors, which use ten runs: no\_anchors was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Gemini cells use three runs; the significance tests below are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation is 0.008--0.021, the lowest of the four models, so three runs resolve its cell means to the precision reported here. Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no no\_anchors variant because its shipped prompt contains no anchors.
 \end{tablenotes}
 \end{threeparttable}
 \caption{Prompt-sensitivity ablation. Within each model, every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$, so no prompt perturbation reverses the architecture ordering for a fixed model.}
@@ -1057,7 +1098,7 @@ $\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
 
 The ablation harness re-declares the shipped prompt text locally instead of importing the architecture modules, which keeps an experimental change from altering production code. To prevent the two copies from silently diverging, the harness asserts at startup that its control text matches the deployed prompt and aborts if it does not.
 
-Gemini's prompt-ablation cells use three runs against the five or ten the other three models use; the significance tests are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation of 0.008--0.021 is the lowest of the four models, so three runs resolve its cell means at the precision reported. The no\_anchors variant specifically runs on ten repetitions instead of five for DeepSeek, GPT-OSS, and Qwen, versus five for cot\_scaffold and scale\_0\_10; Gemini runs three repetitions on every variant.
+Gemini's prompt-ablation cells use three runs against the five or ten the other three models use; the significance tests are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation of 0.008--0.021 is the lowest of the four models, so three runs resolve its cell means at the precision reported. The no\_anchors variant runs on ten repetitions instead of five for DeepSeek, GPT-OSS, and Qwen, versus five for cot\_scaffold and scale\_0\_10; Gemini runs three repetitions on every variant.
 
 Table~\ref{tab:prompt_friedman} reports the Friedman omnibus tests for $\mathcal{A}_{\text{E}}$ referenced in Section~4.9 of the main paper, and Table~\ref{tab:prompt_pairwise} reports the pairwise comparisons that reach significance under the two-stage Holm correction (Section~3.7 of the main paper) with a fully reported effect size.
 
@@ -1111,16 +1152,16 @@ $\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ scale\_0\_10 ($\tau$) & $-$0.052 
 \item All five comparisons are significant under the two-stage Holm correction (Section~3.7 of the main paper). Cliff's $\delta$ sign follows $P(\text{config}_i > \text{config}_j) - P(\text{config}_i < \text{config}_j)$; negative values indicate the second-listed configuration scores higher.
 \end{tablenotes}
 \end{threeparttable}
-\end{table}\subsection{Parameter-Provenance Ablation Significance}
+\end{table}\subsection{Parameter-Source Ablation Significance}
 \label{app:paramprov-significance}
 
-Table~\ref{tab:param_provenance} reports the parameter-provenance ablation (Section~4.5 of the main paper) in full: for each model, ranking accuracy with the scenario's true hidden parameters (the ceiling), the LLM's extracted parameters, and a single corpus-median constant per parameter (no per-scenario inference).
+Table~\ref{tab:param_provenance} reports the parameter-source ablation (Section~4.5 of the main paper) in full: for each model, ranking accuracy with the scenario's true hidden parameters (the ceiling), the LLM's extracted parameters, and a single corpus-median constant per parameter (no per-scenario inference).
 
 \begin{table*}[htbp]
 \begin{threeparttable}
 \footnotesize
 \centering
-\textbf{Parameter-provenance ablation}
+\textbf{Parameter-source ablation}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{llccc}
 \toprule
@@ -1145,18 +1186,18 @@ Gemini & Corpus median & 0.641 & 0.769 & 0.122 \\
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
-\item All arms scored by the same reference calculators over the same 195 test scenarios; the arms differ only in the source of the withheld engineering parameters. The true-parameter arm reproduces the reference ranking exactly by construction, which serves as a correctness check on the harness. The corpus-median arm uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows serve as a second correctness check on the harness. Scenarios whose extraction failed are excluded from that arm rather than defaulted; the extracted arm scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
+\item All conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The true-parameter condition reproduces the reference ranking exactly by construction, which serves as a correctness check on the harness. The corpus-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows serve as a second correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
 \end{tablenotes}
 \end{threeparttable}
-\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with true, LLM-extracted, and corpus-median hidden parameters. Headline numbers are discussed in Section~4.5 of the main paper; significance testing on these arms follows.}
+\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with true, LLM-extracted, and corpus-median hidden parameters. Headline numbers are discussed in Section~4.5 of the main paper; significance testing on these conditions follows.}
 \label{tab:param_provenance}
 \end{table*}
 
-Significance for the parameter-provenance ablation is tested within each model rather than pooled across models. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve Holm-corrected Friedman omnibus tests, with post-hoc Wilcoxon testing restricted to the model--metric cells whose corrected result remains significant.
+Significance for the parameter-source ablation is tested within each model rather than pooled across models. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve Holm-corrected Friedman omnibus tests, with post-hoc Wilcoxon testing restricted to the model--metric cells whose corrected result remains significant.
 
-Friedman tests confirm the three arms (true, LLM-extracted, corpus-median) differ from one another across the 195 scenarios for every model on every metric ($\chi^2_2$ ranging from 52.5 to 305.3, all $p_{\text{Holm}} < 10^{-11}$ across the twelve-test family). The omnibus is a weak gate in this design rather than a finding: true\_params reproduces the ground truth by construction and default\_params is a fixed constant, so the contrast between them carries no model output and returns the same p-value for all four models. The claim rests on the post-hoc comparison instead. Post-hoc Wilcoxon signed-rank tests show the extracted arm beats the corpus-median arm on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-6}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-10}$, $\delta$ between 0.35 and 0.48, medium to large); the Top-1 comparison is significant for all four models but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both arms already place the correct alternative first most of the time.
+Friedman tests confirm the three conditions (true, LLM-extracted, corpus-median) differ from one another across the 195 scenarios for every model on every metric ($\chi^2_2$ ranging from 52.5 to 305.3, all $p_{\text{Holm}} < 10^{-11}$ across the twelve-test family). The omnibus is a weak gate in this design rather than a finding: true\_params reproduces the ground truth by construction and default\_params is a fixed constant, so the contrast between them carries no model output and returns the same p-value for all four models. The claim rests on the post-hoc comparison instead. Post-hoc Wilcoxon signed-rank tests show the extracted condition beats the corpus-median condition on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-6}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-10}$, $\delta$ between 0.35 and 0.48, medium to large); the Top-1 comparison is significant for all four models but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both conditions already place the correct alternative first most of the time.
 
-The extracted arm also differs from the true-parameter ceiling significantly on all three metrics for all four models, but on Kendall's $\tau$ and Top-1 the effect size is negligible for every model ($|\delta| \leq 0.118$); only on MAE is the gap large ($\delta > 0.88$ for all four models). With $n=195$ paired scenarios, a small and consistent shortfall is enough to reach significance without being practically large; the shortfall is a score-calibration gap rather than a ranking gap.
+The extracted condition also differs from the true-parameter ceiling significantly on all three metrics for all four models, but on Kendall's $\tau$ and Top-1 the effect size is negligible for every model ($|\delta| \leq 0.118$); only on MAE is the gap large ($\delta > 0.88$ for all four models). With $n=195$ paired scenarios, a small and consistent shortfall is enough to reach significance without being practically large; the shortfall is a score-calibration gap rather than a ranking gap.
 
 \subsection{Alternative-Ordering Ablation: Full Statistics}
 \label{app:alternative-order-full}
@@ -1214,7 +1255,7 @@ $\mathcal{A}_{\text{H}}$ (Qwen) & Top-1 (\%) & 89.7 & 89.5 \\
 \subsection{Inference Footprint and Energy Estimate}
 \label{app:inference_footprint}
 
-The benchmark's own inference footprint was recorded per call (Section~4.10 of the main paper). Summed over the main benchmark, the RAG ablation and the prompt ablation, the four models consumed 26.5 million tokens across 35,028 calls (DeepSeek), 17.2 million across 21,000 (Gemini), 29.0 million across 35,040 (GPT-OSS) and 47.7 million across 35,040 (Qwen), for 120.4 million tokens across 126,108 calls. The main benchmark accounts for 27,288 of those calls (17.5 million input and 3.3 million output tokens), the RAG ablation for 7,560, and the prompt ablation for 91,260 across its 156 runs. The hybrid ablation and the alternative-ordering arm are excluded because their per-call token counts were not retained.
+The benchmark's own inference footprint was recorded per call (Section~4.10 of the main paper). Summed over the main benchmark, the RAG ablation and the prompt ablation, the four models consumed 26.5 million tokens across 35,028 calls (DeepSeek), 17.2 million across 21,000 (Gemini), 29.0 million across 35,040 (GPT-OSS) and 47.7 million across 35,040 (Qwen), for 120.4 million tokens across 126,108 calls. The main benchmark accounts for 27,288 of those calls (17.5 million input and 3.3 million output tokens), the RAG ablation for 7,560, and the prompt ablation for 91,260 across its 156 runs. The hybrid ablation and the alternative-ordering ablation are excluded because their per-call token counts were not retained.
 
 Converting those counts to energy requires an assumption the API does not supply. Production measurements of hosted text inference put a median query at 0.24~Wh across Google's full serving stack, including accelerator power, host system, idle capacity and datacenter overhead \cite{elsworth2025googlescale}, and at 0.31~Wh with an interquartile range of 0.16--0.60~Wh for frontier-scale models on H100 nodes \cite{oviedo2026energy}. Applying that interquartile range to 126,108 calls gives 20--76~kWh, which the IEA's 2024 global average generation intensity of 445~g~CO$_2$/kWh \cite{iea2025electricity} converts to 9.0--34~kg~CO$_2$e, with the two published medians landing at 13 and 17~kg. Two errors of opposite sign sit inside that bracket: the models tested are two small open-weight systems (9B and 20B parameters) and two vendor-designated efficiency tiers, none of them the 200-billion-parameter frontier systems those measurements cover, which pushes the true value down, while the calls here average 955 input-plus-output tokens, longer than the consumer chat queries the measurements are built on, which pushes it up. The grid factor is a generic global average rather than the PJM marginal factors used elsewhere in this paper, because OpenRouter does not disclose which datacenter served each call. The figure is order-of-magnitude only; the token and call counts are the measured quantity, and a reader preferring a different energy or emissions factor can apply it to them.
 
