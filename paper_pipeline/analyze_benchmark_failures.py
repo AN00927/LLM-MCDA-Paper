@@ -109,9 +109,13 @@ print(f"Wrote {len(failure_df)} failure records to {FAILURE_CSV}")
 tex = []
 
 # === Table F1: Total failures per architecture x model ===
+# Count unique scenario-runs (one per scenario per run; the three alternative
+# rows of a failed scenario carry the sentinel together, so raw rows are 3x).
+# Display order must match the header column order.
+DISPLAY_MODELS = ["gemini", "deepseek", "gptoss", "qwen"]
 tex.append(r"\begin{table}[htbp]")
 tex.append(r"\small\centering")
-tex.append(r"\caption{Failure counts per architecture and model (summed across 5 runs).}")
+tex.append(r"\caption{Failure counts per architecture and model (summed across 5 runs). Counts are unique scenario-run failures (one per scenario per run), not raw output rows.}")
 tex.append(r"\label{tab:failure_arch_model}")
 tex.append(r"\begin{tabular}{lccccc}")
 tex.append(r"\toprule")
@@ -123,8 +127,9 @@ for arch in ARCHS:
     arch_fails = failure_df[failure_df["architecture"] == arch]
     row_str = ARCH_SHORT[arch]
     arch_total = 0
-    for model_key in MODELS:
-        n = int(len(arch_fails[arch_fails["model"] == model_key]))
+    for model_key in DISPLAY_MODELS:
+        n = int(arch_fails[arch_fails["model"] == model_key].drop_duplicates(
+            subset=["scenario_id", "run"]).shape[0])
         row_str += f" & {n}"
         arch_total += n
         total_all += n
@@ -136,6 +141,8 @@ tex.append(r"\end{tabular}")
 tex.append(r"\end{table}")
 
 # === Table F2: Failure mode breakdown per architecture ===
+# Diagnostics columns hold per-run totals, replicated on every sentinel row of
+# that run; deduplicate to one record per (architecture, model, run) first.
 tex.append(r"\begin{table}[htbp]")
 tex.append(r"\small\centering")
 tex.append(r"\caption{Failure mode counts per architecture (5-run total across all models).}")
@@ -146,11 +153,12 @@ tex.append(r"\toprule")
 tex.append("Mode & " + " & ".join(all_failure_types) + r" \\")
 tex.append(r"\midrule")
 
+per_run_df = failure_df.drop_duplicates(subset=["architecture", "model", "run"])
 for arch in ARCHS:
-    arch_fails = failure_df[failure_df["architecture"] == arch]
+    arch_fails = per_run_df[per_run_df["architecture"] == arch]
     row_str = ARCH_SHORT[arch]
     for ft in all_failure_types:
-        if ft in failure_df.columns:
+        if ft in per_run_df.columns:
             cnt = int(arch_fails[ft].sum())
             row_str += f" & {cnt}"
         else:
@@ -172,9 +180,10 @@ tex.append(r"Architecture & HVAC & Appliance & Shower \\")
 tex.append(r"\midrule")
 for arch in ARCHS:
     arch_fails = failure_df[failure_df["architecture"] == arch]
-    n_hvac = int(len(arch_fails[arch_fails["decision_type"] == "HVAC"]))
-    n_app = int(len(arch_fails[arch_fails["decision_type"] == "Appliance"]))
-    n_shower = int(len(arch_fails[arch_fails["decision_type"] == "Shower"]))
+    dt_uniq = arch_fails.drop_duplicates(subset=["scenario_id", "run"])
+    n_hvac = int(len(dt_uniq[dt_uniq["decision_type"] == "HVAC"]))
+    n_app = int(len(dt_uniq[dt_uniq["decision_type"] == "Appliance"]))
+    n_shower = int(len(dt_uniq[dt_uniq["decision_type"] == "Shower"]))
     tex.append(f"{ARCH_SHORT[arch]} & {n_hvac} & {n_app} & {n_shower} \\\\")
 tex.append(r"\bottomrule")
 tex.append(r"\end{tabular}")

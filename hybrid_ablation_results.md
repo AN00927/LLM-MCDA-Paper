@@ -35,8 +35,8 @@ Exact label-permutation test, pooled basis, over the 13 runs (5 shipped, 3 contr
 
 | model | n_reversed_runs | perm_choice_separation | perm_choice_p | perm_param_separation | perm_param_p | perm_n_relabelings |
 | --- | --- | --- | --- | --- | --- | --- |
-| qwen | 5 | -0.0012 | 0.6791 | 0.0543 | 0.0008 | 1287 |
 | gptoss | 5 | -0.0039 | 0.8384 | 0.0041 | 0.3023 | 1287 |
+| qwen | 5 | -0.0012 | 0.6791 | 0.0543 | 0.0008 | 1287 |
 | deepseek | 5 | -0.0045 | 0.9534 | -0.0158 | 0.4499 | 1287 |
 | gemini | 5 | 0.0005 | 0.2354 | 0.0471 | 0.0008 | 1287 |
 
@@ -44,7 +44,7 @@ Descriptive agreement bands:
 
 | model | within_shipped_choice_agreement_mean | within_reversed_choice_agreement_mean | between_choice_agreement_mean | within_shipped_param_identity_mean | within_reversed_param_identity_mean | between_param_identity_mean |
 | --- | --- | --- | --- | --- | --- | --- |
-| qwen | 0.9526 | 0.9513 | 0.9521 | 0.5788 | 0.5651 | 0.5155 |
 | gptoss | 0.9253 | 0.9305 | 0.9327 | 0.3800 | 0.3782 | 0.3703 |
+| qwen | 0.9526 | 0.9513 | 0.9521 | 0.5788 | 0.5651 | 0.5155 |
 | deepseek | 0.9563 | 0.9836 | 0.9682 | 0.4230 | 0.6703 | 0.5163 |
 | gemini | 0.9969 | 0.9959 | 0.9936 | 0.8497 | 0.8626 | 0.7996 |

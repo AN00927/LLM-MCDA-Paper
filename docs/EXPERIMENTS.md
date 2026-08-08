@@ -5,8 +5,14 @@ in `Miscellaneous Scripts/` and writes its outputs under `Analysis/`. The main
 benchmark itself is described in [README.md](../README.md); the metrics definitions
 are in [metrics_calculation_pipeline.md](metrics_calculation_pipeline.md).
 
-All ablation runners exclude Gemini by default (roughly 50x the output price of the
-other three models). Pass `--models` to override.
+All ablation runners default `--models` to all four keys, which is the set the paper
+reports, so a default invocation reproduces the shipped ablation. Gemini costs roughly
+50x the output price of the other three; pass the other three keys explicitly to skip
+it, at the cost of no longer matching the paper.
+
+Narrowing `--models` on an **analysis** pass overwrites that suite's workbooks with only
+the models named. The omitted models are not merged back in, so a partial analysis run
+silently drops them from the shipped results.
 
 ---
 
@@ -155,8 +161,9 @@ python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only
 python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only \
     --models <key> --order-arms control --order-run-start 1 --order-runs 3
 
-# Analysis (free, reads existing run outputs)
-python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --models qwen gptoss deepseek gemini
+# Analysis (free, reads existing run outputs). Do NOT narrow --models here: the
+# analysis pass overwrites the workbooks with whatever set it was given.
+python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py"
 ```
 
 ---
@@ -298,7 +305,7 @@ all three metrics, 27 of 27 pairs significant, with medium-to-large Cliff's delt
 # Parameter-provenance ablation (free, zero API calls)
 python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py"
 
-# RAG ablation, full 90-scenario corpus, Gemini excluded by default
+# RAG ablation, full 90-scenario corpus, all four models
 python "Miscellaneous Scripts/run_rag_ablation_experiments.py"
 
 # Prompt ablation. Resume-aware: a completed cell xlsx is skipped, so
