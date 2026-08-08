@@ -4,6 +4,21 @@ Operational guide for working in this repo. The research narrative lives in
 [README.md](README.md); this file is the "how the machine fits together + don't
 break these" reference.
 
+## ABSOLUTE RULE: minimal-diff editing on the paper
+
+When resolving a TODO, fixing a flagged sentence, or making any other targeted
+edit to `paper/paper_draft_working.tex` or `paper/supplementary_material.tex`,
+touch ONLY the exact span identified — the marked sentence/clause, or the
+specific fact being corrected. Do NOT rewrite, rephrase, tighten, or "improve"
+neighboring sentences in the same paragraph, even if they read awkwardly, even
+if a rewrite would clearly read better, and even if you are already editing
+that paragraph for an unrelated reason. If you believe a nearby sentence has a
+problem, say so to the user and stop — do not fix it silently in the same
+pass. This applies to every edit, not only ones explicitly marked with the
+word-level-swap rules already in this file's "Paper editing conventions"
+section — this is the umbrella rule those rules are examples of. Violating
+this is the single most important thing to avoid in this repo.
+
 ## What this is
 
 Benchmarks **three LLM-MCDA architectures** for household energy decisions against
