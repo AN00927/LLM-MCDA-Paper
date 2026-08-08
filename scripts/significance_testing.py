@@ -466,18 +466,24 @@ def load_icc_data():
 
 
 def compute_icc(df, metric):
-    """Compute ICC(2,1) for a single metric within one architecture.
+    """Compute ICC(1,1) for a single metric within one architecture.
 
     What:  One-way random-effects ICC measuring the proportion of total
            variance attributable to differences between models.
     Why:   High ICC means model choice dominates run-to-run noise, so
            architecture rankings are model-dependent rather than stochastic.
     How:   Uses one-way ANOVA decomposition:
-             MS_model  = variance of the 4 model means
+             MS_model  = k * sum((model_mean - grand_mean)^2) / (a - 1)
              MS_error  = mean of the 4 within-model variances (each from 5 runs)
-             ICC(2,1)  = (MS_model - MS_error) /
+             ICC(1,1)  = (MS_model - MS_error) /
                           (MS_model + (k - 1) * MS_error)
-           where k = 5 runs per model.
+           where k = 5 runs per model and a = 4 models. The leading k on
+           MS_model is the group-size factor of the between-groups mean
+           square; omitting it understates the between-model component and
+           drives ICC toward zero.
+           This is a one-way estimator: runs are nested within model, not
+           crossed with it, so there is no MS_runs term and the statistic is
+           ICC(1,1) rather than ICC(2,1).
     Interp: ICC > 0.5 suggests model identity explains more variance than
             residual noise; ICC < 0.15 suggests runs are nearly exchangeable
             across models.
@@ -491,7 +497,7 @@ def compute_icc(df, metric):
     n_models = len(model_means)
     grand_mean = df[metric].mean()
 
-    ms_model = np.sum((model_means - grand_mean) ** 2) / (n_models - 1)
+    ms_model = k * np.sum((model_means - grand_mean) ** 2) / (n_models - 1)
     ms_error = model_vars.mean()
 
     denom = ms_model + (k - 1) * ms_error
@@ -506,7 +512,7 @@ def compute_icc(df, metric):
 
 
 def run_icc(df):
-    """Compute ICC(2,1) for every architecture x metric combination.
+    """Compute ICC(1,1) for every architecture x metric combination.
 
     Returns a DataFrame with columns:
         architecture, metric, ICC, sigma2_model_frac, sigma2_residual_frac
@@ -632,13 +638,13 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
 
     common = sub_a.index.intersection(sub_b.index)
     if len(common) < 10:
-        return np.nan, np.nan, 0
+        return np.nan, np.nan, 0, 0
 
     a_vals = sub_a.loc[common].values.astype(float)
     b_vals = sub_b.loc[common].values.astype(float)
 
     if np.allclose(a_vals, b_vals):
-        return 0.0, 1.0, len(common)
+        return 0.0, 1.0, len(common), 0
 
     diffs = a_vals - b_vals
     nonzero_mask = diffs != 0
@@ -646,7 +652,7 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
     n = len(nonzero_diffs)
 
     if n == 0:
-        return 0.0, 1.0, len(common)
+        return 0.0, 1.0, len(common), 0
 
     abs_diffs = np.abs(nonzero_diffs)
     ranks = stats.rankdata(abs_diffs)
@@ -667,18 +673,27 @@ def wilcoxon_pair_model(per_scenario_df, arch_a, arch_b, metric, model):
     var_T = (n * (n + 1) * (2 * n + 1) - 0.5 * tie_term) / 24.0
     std_T = np.sqrt(var_T) if var_T > 0 else 0.0
 
-    # Continuity correction: shift T toward the mean by 0.5
-    z = (T - mean_T - 0.5 * np.sign(mean_T - T)) / std_T if std_T > 0 else 0.0
+    # Continuity correction: shift T toward the mean by 0.5. T = min(pos, neg)
+    # is always at or below mean_T, so the correction must ADD 0.5, which
+    # shrinks |z|. Subtracting it pushes T further from the mean and makes the
+    # test anti-conservative.
+    z = (T - mean_T + 0.5 * np.sign(mean_T - T)) / std_T if std_T > 0 else 0.0
 
     # Two-sided p-value from Z. norm.sf is used instead of 1 - norm.cdf:
     # the latter underflows to exactly 0.0 once |z| exceeds roughly 8.3,
     # which turns a very small p-value into an impossible one.
     pval = 2 * stats.norm.sf(abs(z))
 
-    if a_vals.sum() < b_vals.sum():
-        z = -z
+    # Sign convention: positive Z means arch_a scores higher than arch_b, so
+    # that Z and Cliff's delta agree in direction. The magnitude comes from
+    # the test; only the sign is set from the direction of the difference.
+    z = -abs(z) if a_vals.sum() < b_vals.sum() else abs(z)
 
-    return z, pval, len(common)
+    # n_nonzero is the number of pairs the signed-rank statistic was actually
+    # computed on. It is what the rank-biserial correlation must be scaled by;
+    # len(common) is the number of paired scenarios and is what the test's
+    # reported n refers to.
+    return z, pval, len(common), n
 
 
 def stouffer_combine(z_scores, ns):
@@ -703,7 +718,10 @@ def stouffer_combine(z_scores, ns):
     ns_arr = np.array(ns, dtype=float)
     w = np.sqrt(ns_arr[mask])
     z_combined = np.sum(w * z_valid) / np.sqrt(np.sum(w ** 2))
-    p_combined = 2 * (1 - stats.norm.cdf(abs(z_combined)))
+    # norm.sf, not 1 - norm.cdf: the latter underflows to exactly 0.0 once
+    # |z| exceeds roughly 8.3, turning a very small p-value into an
+    # impossible one. Same fix as in wilcoxon_signed_rank_manual.
+    p_combined = 2 * stats.norm.sf(abs(z_combined))
     return z_combined, p_combined
 
 
@@ -719,7 +737,7 @@ def run_wilcoxon(per_scenario_df):
         for m in METRICS:
             z_list, p_list, n_list = [], [], []
             for model in models:
-                z, p, n = wilcoxon_pair_model(
+                z, p, n, _ = wilcoxon_pair_model(
                     per_scenario_df, arch_a, arch_b, m, model)
                 z_list.append(z)
                 p_list.append(p)
@@ -736,7 +754,10 @@ def run_wilcoxon(per_scenario_df):
                 f"{ARCH_SHORT[arch_a]} vs {ARCH_SHORT[arch_b]}", m,
                 "Stouffer", np.nan, np.nan, np.nan,
                 round(z_comb, 4) if not np.isnan(z_comb) else np.nan,
-                round(p_comb, 6) if not np.isnan(p_comb) else np.nan,
+                # Not rounded: |Z| here reaches the low twenties, so any fixed
+                # number of decimal places would write these p-values out as
+                # exactly 0.0 and undo the norm.sf fix at the display layer.
+                p_comb,
             ))
     df = pd.DataFrame(rows, columns=[
         "comparison", "metric", "model", "Z_statistic", "p_value",
@@ -747,12 +768,19 @@ def run_wilcoxon(per_scenario_df):
     model_mask = df["model"] != "Stouffer"
     holm_df = df[model_mask].copy()
     holm_df = holm_df.reset_index(drop=True)
-    holm_df["rank"] = holm_df["p_value"].rank(method="min", ascending=True, na_option="keep")
-    k = holm_df["p_value"].notna().sum()
-    holm_df["p_holm"] = holm_df.apply(
-        lambda r: min(r["p_value"] * (k - r["rank"] + 1), 1.0) if pd.notna(r["p_value"]) else np.nan,
-        axis=1
-    )
+    # Holm step-down with the running-maximum pass. Scaling each raw p by
+    # (k - i) alone does not guarantee the adjusted values are monotone in the
+    # raw ones, so without the running max a larger raw p can come out with a
+    # smaller adjusted p. Matches holm_correct() in
+    # run_rag_ablation_experiments.py and holm() in emit_per_model_pvalues.py.
+    k = int(holm_df["p_value"].notna().sum())
+    holm_df["p_holm"] = np.nan
+    ordered = holm_df.loc[holm_df["p_value"].notna(), "p_value"].sort_values(
+        kind="mergesort")
+    running_max = 0.0
+    for i, (idx, p_raw) in enumerate(ordered.items()):
+        running_max = max(running_max, min(p_raw * (k - i), 1.0))
+        holm_df.at[idx, "p_holm"] = running_max
     holm_df["significant_holm"] = holm_df["p_holm"].apply(
         lambda p: p < alpha if pd.notna(p) else False
     )
@@ -857,9 +885,9 @@ def run_effect_sizes(per_scenario_df):
                 mb = mb_df.loc[common_m].values
 
                 d_val = cohens_d(ma, mb)
-                z_w, p_w, n_w = wilcoxon_pair_model(
+                z_w, p_w, n_w, n_nonzero = wilcoxon_pair_model(
                     per_scenario_df, arch_a, arch_b, m, model)
-                rb = rank_biserial(z_w, n_w)
+                rb = rank_biserial(z_w, n_nonzero)
                 cd = cliffs_delta(ma, mb)
                 cd_label = cliffs_delta_interpretation(cd) if not np.isnan(cd) else ""
 

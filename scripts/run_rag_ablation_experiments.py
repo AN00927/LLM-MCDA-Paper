@@ -1669,10 +1669,12 @@ def parse_args():
     parser.add_argument(
         "--models",
         nargs="+",
-        default=[k for k in MODEL_SPECS if k != "gemini"],
+        default=list(MODEL_SPECS.keys()),
         choices=list(MODEL_SPECS.keys()),
-        help="Model keys to evaluate. Default excludes gemini (roughly 50x the output price "
-             "of the other models). Pass explicit keys to override.",
+        help="Model keys to evaluate. Defaults to all four, which is the set the paper "
+             "reports, so a default run reproduces the shipped ablation. Gemini costs "
+             "roughly 50x the output price of the other three; pass the other three keys "
+             "explicitly to skip it, at the cost of no longer matching the paper.",
     )
     parser.add_argument(
         "--workers",
