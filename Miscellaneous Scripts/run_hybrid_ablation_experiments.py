@@ -64,11 +64,11 @@ API CALLS
 ---------
 Analysis makes zero API calls; every arm is read from files already in the repo.
 Collecting the reversed arm costs one extraction call per scenario per run, and
-is a separate, resumable step. Note that --models defaults to the three non-Gemini
-keys, so the full four-model collection has to name them:
+is a separate, resumable step. --models defaults to all four keys, which is the
+set the paper reports:
 
     python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only \
-        --models qwen gptoss deepseek gemini --order-runs 3
+        --order-runs 3
 
 That is 195 x 3 x 4 = 2,340 calls. Run one model per process to parallelise.
 
@@ -76,8 +76,9 @@ Raw prompts and raw model responses are written to a per-model jsonl alongside
 the tidy workbook, so any statistic here can be recomputed later without paying
 for the calls again.
 
-Gemini is excluded from the free arms by default only for consistency with the
-paid ablations; pass --models with all four keys to include it.
+Passing --models with a subset OVERWRITES the analysis workbooks with only those
+models. The omitted models are not merged back in, so a partial run silently
+drops them from the shipped results. Narrow the set only when collecting.
 
 Sentinel handling: a scenario whose extraction failed carries the 1928 sentinel
 and is excluded from that arm's metrics rather than being silently replaced by a
@@ -135,10 +136,13 @@ ORDER_ARM_XLSX = "AH_extraction_order_{arm}_run_{run:02d}.xlsx"
 ORDER_ARM_JSONL = "AH_extraction_order_{arm}_run_{run:02d}_raw.jsonl"
 ORDER_ARMS = ("reversed", "control")
 
-# Repeat runs of the reversed arm. The shipped side has five runs; a single
-# reversed run could only be placed against their spread, never given a spread of
-# its own. Three lets the reversed arm carry its own run-to-run variance, so the
-# comparison is between two distributions instead of a point and a range.
+# Default repeat runs of the reversed arm per invocation. A single reversed run
+# could only be placed against the shipped runs' spread, never given a spread of
+# its own; more than one lets the reversed arm carry its own run-to-run variance,
+# so the comparison is between two distributions instead of a point and a range.
+# This is the per-invocation default, not the shipped total: the reversed arm was
+# extended to five runs via --order-run-start, against eight in the shipped order
+# (the five original runs plus three contemporaneous controls).
 DEFAULT_ORDER_RUNS = 3
 
 # Hidden engineering parameters the LLM is asked to estimate, by decision type.
@@ -890,8 +894,11 @@ def _exchangeability_test(per_tag: Dict[str, Dict[int, object]],
 
     Under the null that alternative order does nothing, a reversed run is just
     another run: which runs carry the 'reversed' label is arbitrary. So relabel
-    every way -- C(8,3)=56 assignments for 3 reversed and 5 shipped runs -- and
-    ask how often the observed separation is matched or beaten.
+    every way -- C(n, k) assignments for k reversed runs among n total -- and
+    ask how often the observed separation is matched or beaten. The shipped
+    collection is 5 reversed against 8 in the shipped order (5 original plus 3
+    contemporaneous controls), so the primary pooled basis has C(13,5) = 1287
+    relabelings.
 
     Statistic: mean within-group agreement minus mean between-group agreement.
     Large and positive means runs agree with their own group more than across
@@ -901,8 +908,11 @@ def _exchangeability_test(per_tag: Dict[str, Dict[int, object]],
     uses all 195 scenarios rather than the 5-15 discordant ones, so it is not
     power-starved. It handles the dependence between comparisons that share a
     run, instead of presenting one correlated signal as several confirmations.
-    And it needs no distributional assumption. The floor is p = 1/56 = 0.018,
-    which bounds how strong a claim this design can support.
+    And it needs no distributional assumption. The floor is p = 1/C(n, k),
+    which on the shipped pooled basis is 1/1287 = 0.00078 and bounds how strong
+    a claim this design can support. The count is derived from the data at run
+    time and recorded in the `*_n_relabelings` columns, so it stays right if
+    the run counts change.
     """
     tags = list(shipped_tags) + list(rev_tags)
     k = len(rev_tags)
@@ -1062,15 +1072,16 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
         # Three bases, all reported, because each answers a different objection.
         #
         #   control : reversed vs the same-session control. Session held fixed,
-        #             so an effect here cannot be provider drift. Only 20
-        #             relabelings, so its floor is p = 0.05.
-        #   shipped : reversed vs the older shipped runs. 56 relabelings, but
-        #             cross-session, so drift and ordering are confounded.
+        #             so an effect here cannot be provider drift. Only C(8,5) =
+        #             56 relabelings, so its floor is p = 0.018.
+        #   shipped : reversed vs the older shipped runs. C(10,5) = 252
+        #             relabelings, but cross-session, so drift and ordering are
+        #             confounded.
         #   pooled  : reversed vs shipped AND control together. Both are the
         #             shipped alternative order -- session is a nuisance factor,
         #             not the manipulation -- so pooling them is grouping by
-        #             condition, not a data-dependent choice. 165 relabelings,
-        #             floor p = 0.006. Pooling across sessions inflates the
+        #             condition, not a data-dependent choice. C(13,5) = 1287
+        #             relabelings, floor p = 0.00078. Pooling inflates the
         #             within-reference spread, which shrinks the separation
         #             statistic, so this is the conservative direction.
         #
@@ -1139,7 +1150,27 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
             "between_net_correct_gain": (btw["c_other_right"] - btw["b_shipped_right"]).mean(),
         })
 
-    return pd.DataFrame(pair_rows), pd.DataFrame(summary_rows)
+    summary = pd.DataFrame(summary_rows)
+
+    # Holm across the whole permutation family. The primary-basis test is run
+    # twice per model, once on the choice statistic and once on the parameter
+    # statistic, so four models give eight tests competing for one alpha
+    # budget. Reporting the raw p-values alone would leave the correction to
+    # the reader; the supplement quotes the adjusted values, so they are
+    # computed here rather than by hand.
+    if not summary.empty:
+        fam = [(i, c) for c in ("perm_choice_p", "perm_param_p")
+               for i in summary.index if pd.notna(summary.at[i, c])]
+        m = len(fam)
+        summary["perm_choice_p_holm"] = np.nan
+        summary["perm_param_p_holm"] = np.nan
+        running = 0.0
+        for step, (i, c) in enumerate(
+                sorted(fam, key=lambda ic: summary.at[ic[0], ic[1]])):
+            running = max(running, min(summary.at[i, c] * (m - step), 1.0))
+            summary.at[i, c + "_holm"] = running
+
+    return pd.DataFrame(pair_rows), summary
 
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
@@ -1172,11 +1203,13 @@ def parse_args():
         description="AH parameter-provenance ablation (true vs extracted vs default). "
                     "Makes zero API calls.")
     p.add_argument("--models", nargs="+",
-                   default=[k for k in MODEL_SPECS if k != "gemini"],
+                   default=list(MODEL_SPECS.keys()),
                    choices=list(MODEL_SPECS.keys()),
-                   help="Model keys whose extracted parameters to evaluate. Default excludes "
-                        "gemini for consistency with the paid ablations; this script is free, "
-                        "so pass all four keys to include it.")
+                   help="Model keys whose extracted parameters to evaluate. Defaults to all "
+                        "four, which is the set the paper reports; this script makes no API "
+                        "calls, so there is no cost reason to narrow it. Passing a subset "
+                        "OVERWRITES the analysis workbooks with that subset, so a partial "
+                        "run silently drops the omitted models from the shipped results.")
     p.add_argument("--collect", action="store_true",
                    help="Collect the alternative-order arm before analysing. This is "
                         "the only mode that calls the API: one extraction per scenario "

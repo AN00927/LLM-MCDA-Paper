@@ -753,7 +753,7 @@ Random exemplars ($k=3$) & 0.127 & 0.139 & 0.163 & 0.141 \\
 Descriptions w/o scores or ranks & 0.131 & 0.143 & 0.158 & 0.151 \\
 \midrule
 \multicolumn{5}{l}{\emph{Nearest-neighbor (offline, no LLM)}} \\
-Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.173,\, 0.175]$) / 0.101} \\
+Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.172,\, 0.175]$) / 0.101} \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -898,33 +898,33 @@ All tests use per-scenario metrics computed from the 195 test scenarios, with fi
 
 \subsection{Intraclass Correlation Coefficient}
 
-Table~\ref{tab:icc} reports ICC(2,1) values decomposing total metric variance into between-model and residual components.
+Table~\ref{tab:icc} reports ICC(1,1) values decomposing total metric variance into between-model and residual components. Runs are nested within model rather than crossed with it, so the decomposition is one-way and the statistic is ICC(1,1).
 
 \begin{table}[t]
 \begin{threeparttable}
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
-\caption{ICC(2,1) variance decomposition: fraction of total variance attributable to between-model differences ($\sigma^2_{\text{model}}$) and residual ($\sigma^2_{\text{residual}}$).}
+\caption{ICC(1,1) variance decomposition: fraction of total variance attributable to between-model differences ($\sigma^2_{\text{model}}$) and residual ($\sigma^2_{\text{residual}}$).}
 \label{tab:icc}
 \begin{tabular}{@{}ll rr@{}}
 \toprule
 Architecture & Metric & $\sigma^2_{\text{model}}$ & $\sigma^2_{\text{residual}}$ \\
 \midrule
 \multirow{3}{*}{$\mathcal{A}_{\text{D}}$}
- & Kendall's $\tau$ & 0.427 & 0.573 \\
- & MAE & 0.814 & 0.186 \\
- & Top-1 & 0.081 & 0.919 \\
+ & Kendall's $\tau$ & 0.819 & 0.181 \\
+ & MAE & 0.958 & 0.042 \\
+ & Top-1 & 0.554 & 0.446 \\
 \midrule
 \multirow{3}{*}{$\mathcal{A}_{\text{E}}$}
- & Kendall's $\tau$ & 0.276 & 0.724 \\
- & MAE & 0.829 & 0.171 \\
- & Top-1 & 0.171 & 0.829 \\
+ & Kendall's $\tau$ & 0.730 & 0.270 \\
+ & MAE & 0.962 & 0.038 \\
+ & Top-1 & 0.646 & 0.354 \\
 \midrule
 \multirow{3}{*}{$\mathcal{A}_{\text{H}}$}
- & Kendall's $\tau$ & 0.448 & 0.552 \\
- & MAE & 0.807 & 0.193 \\
- & Top-1 & 0.267 & 0.733 \\
+ & Kendall's $\tau$ & 0.829 & 0.171 \\
+ & MAE & 0.956 & 0.044 \\
+ & Top-1 & 0.724 & 0.276 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -1154,7 +1154,7 @@ Gemini & Corpus median & 0.641 & 0.769 & 0.122 \\
 
 Significance for the parameter-provenance ablation is tested within each model rather than pooled across models. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve Holm-corrected Friedman omnibus tests, with post-hoc Wilcoxon testing restricted to the model--metric cells whose corrected result remains significant.
 
-Friedman tests confirm the three arms (true, LLM-extracted, corpus-median) differ by more than run-to-run noise for every model on every metric ($\chi^2_2$ ranging from 52.5 to 305.3, all $p_{\text{Holm}} < 10^{-11}$ across the twelve-test family). Post-hoc Wilcoxon signed-rank tests show the extracted arm beats the corpus-median arm on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-6}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-10}$, $\delta$ between 0.35 and 0.48, medium to large); the Top-1 comparison is significant for all four models but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both arms already place the correct alternative first most of the time.
+Friedman tests confirm the three arms (true, LLM-extracted, corpus-median) differ from one another across the 195 scenarios for every model on every metric ($\chi^2_2$ ranging from 52.5 to 305.3, all $p_{\text{Holm}} < 10^{-11}$ across the twelve-test family). The omnibus is a weak gate in this design rather than a finding: true\_params reproduces the ground truth by construction and default\_params is a fixed constant, so the contrast between them carries no model output and returns the same p-value for all four models. The claim rests on the post-hoc comparison instead. Post-hoc Wilcoxon signed-rank tests show the extracted arm beats the corpus-median arm on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-6}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-10}$, $\delta$ between 0.35 and 0.48, medium to large); the Top-1 comparison is significant for all four models but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both arms already place the correct alternative first most of the time.
 
 The extracted arm also differs from the true-parameter ceiling significantly on all three metrics for all four models, but on Kendall's $\tau$ and Top-1 the effect size is negligible for every model ($|\delta| \leq 0.118$); only on MAE is the gap large ($\delta > 0.88$ for all four models). With $n=195$ paired scenarios, a small and consistent shortfall is enough to reach significance without being practically large; the shortfall is a score-calibration gap rather than a ranking gap.
 

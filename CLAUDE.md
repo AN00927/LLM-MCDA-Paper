@@ -174,6 +174,12 @@ satisfy the request:
 5. **When in doubt, do less.** Every character changed beyond what the
    task requires is excess.
 
+### Appendix references
+
+When referring to an appendix in the text, use **only** `\ref{APPENDIXNAME}` — do not
+prepend "appendix" before it. LaTeX will automatically resolve the reference to the
+appendix label; the reader's context already makes clear it's an appendix.
+
 ### Paper reading protocol
 
 When first reading `paper/paper_draft_working.tex`, always dispatch an explore

@@ -822,9 +822,12 @@ def main():
     parser.add_argument("--architectures", nargs="+", default=list(ARCHITECTURES.keys()),
                         choices=list(ARCHITECTURES.keys()))
     parser.add_argument("--models", nargs="+",
-                        default=[k for k in MODEL_SPECS if k != "gemini"],
+                        default=list(MODEL_SPECS.keys()),
                         choices=list(MODEL_SPECS.keys()),
-                        help="Default excludes gemini (roughly 50x the output price).")
+                        help="Model keys to evaluate. Defaults to all four, which is the set "
+                             "the paper reports. Gemini costs roughly 50x the output price of "
+                             "the other three; pass the other three keys explicitly to skip "
+                             "it, at the cost of no longer matching the paper.")
     parser.add_argument("--workers", type=int, default=8,
                         help="Concurrent scenario threads. 1 runs serially.")
     parser.add_argument("--output-dir",
