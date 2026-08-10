@@ -165,23 +165,28 @@ Return ONLY the JSON, no explanation.
 RELEVANT SIMILAR SCENARIOS WITH EXPERT SCORES:
 
 Example 1:
-  Question: What temperature should I set my thermostat to?
-  - Location: Chicago
-  - Outdoor Temp: 95 deg F
-  - Square Footage: 2000 sqft
+  Question: I'm heading out for a quick errand, what AC temperature should I set for the townhouse?
+  - Location: King of Prussia, PA
+  - Outdoor Temp: 93 deg F
+  - Square Footage: 2200 sqft
   - Insulation: Medium
-  - Household Size: 3 occupants
-  - Housing Type: Single-Family
-  - House Age: 6-10 years
-  - R-Value: 13
-  - SEER: 14
-  - HVAC Age: 8 years
-  - Utility Budget: \$200/month
+  - Household Size: 5 occupants
+  - Housing Type: Townhouse
+  - House Age: 11-15 years
+  - R-Value: 17
+  - SEER: 15
+  - HVAC Age: 12 years
+  - Utility Budget: \$285/month
   Expert scores:
-  * 76 F: Energy Cost: 0.4/1, Environmental: 0.3/1,
+  * 75 F: Energy Cost: 0.5/1, Environmental: 0.5/1,
     Comfort: 0.9/1, Practicality: 0.8/1
-    | MAVT: 0.58, Rank: 2
-  * 78 F: Energy Cost: 0.6/1, ...
+    | MAVT: 0.61, Rank: 2
+  * 78 F: Energy Cost: 0.5/1, Environmental: 0.5/1,
+    Comfort: 0.8/1, Practicality: 0.8/1
+    | MAVT: 0.62, Rank: 1
+  * 81 F: Energy Cost: 0.5/1, Environmental: 0.5/1,
+    Comfort: 0.5/1, Practicality: 0.8/1
+    | MAVT: 0.58, Rank: 3
 Use these examples as reference, but score based on
 the specific scenario above.
 \end{alltt}\subsection{RAG Corpus Description}
@@ -300,11 +305,12 @@ Table~\ref{tab:failure_modes} breaks the failure counts of Table~10 (Section~4.1
 \toprule
 Mode & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
-\texttt{EXTRACTION\_INVALID\_JSON} & 27 & 60 & 0 \\
+\texttt{EXTRACTION\_INVALID\_JSON} & 5 & 21 & 0 \\
+\texttt{FAILED\_MISSING\_SCORE} & 1 & 0 & 0 \\
 \texttt{FAILED\_EXTRACTION\_INVALID\_PARAMETERS} & 0 & 0 & 120 \\
 \bottomrule
 \end{tabular}
-\footnotetext{Counts are 5-run totals summed across all four models. Of fifteen possible failure codes, only these two ever fired across all 60 runs; the remaining thirteen were checked and never triggered.}
+\footnotetext{Counts are 5-run totals summed across all four models, on a mode-occurrence basis (one count per failure code firing on a given run). Of fifteen possible failure codes, only these three ever fired across all 60 runs; the remaining twelve were checked and never triggered. These totals (6/21/120) differ from Table~10's unique-scenario-run totals (9/20/120) in the main paper because a unique failed scenario-run does not always map to exactly one mode-occurrence: for $\mathcal{A}_{\text{D}}$, three scenario-run failures have no single attributable mode code recorded; for $\mathcal{A}_{\text{E}}$, one scenario-run failure triggered its mode code twice across its alternative-scoring calls.}
 \end{table}
 \subsection{Pennsylvania Time-of-Use Rate Structure}
 \label{app:tou_rates}
@@ -390,12 +396,7 @@ Because HVAC alternatives carry no explicit run-time, the marginal emissions fac
 \end{equation}
 \noindent where $\varepsilon_{\mathrm{pk}} = 1.041$ and $\varepsilon_{\mathrm{off}} = 0.976$\ (in terms of lbs/kWh) are the PJM peak and off-peak marginal factors and $H$ is hours-away per day \citep{pjm2022emissions}. Occupied-sleep returns the off-peak factor because the home's conditioning runtime falls entirely in the overnight off-peak window.
 
-Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints \citep{ashrae55_2020,vanhoof2008,fanger1970}:
-\begin{equation}
-  C_{\mathrm{comfort}} = \tfrac{1}{10}\max\!\Bigl(0,\; 10 - \lvert T_{\mathrm{in}} - T^{*}\rvert - \tfrac{(n-3)\,0.3\,\lvert T_{\mathrm{in}} - T^{*}\rvert}{3}\Bigr)
-  \label{eq:hvac_comfort}
-\end{equation}
-\noindent where $C_{\mathrm{comfort}}$ is a 0--1 comfort score, $T_{\mathrm{in}}$ is the indoor setpoint, $T^{*}$ is the context-dependent optimal setpoint used as the peak of the tent function ($76$\,\textdegree{}F in cooling mode, $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedentary PMV bands \citep{ashrae55_2020}). The 76\,\textdegree{}F and 70\,\textdegree{}F optima are the midpoints of the ASHRAE\,55-2020 summer band (73--79\,\textdegree{}F at 0.5\,clo) and winter band (68--74\,\textdegree{}F at 1.0\,clo) for sedentary occupants, with the heating optimum 1\,\textdegree{}F below the 71\,\textdegree{}F winter midpoint. The $-1.0$ score-per-degree slope mirrors the rising PPD per degree outside neutrality in Fanger's PMV/PPD model \citep{fanger1970,vanhoof2008}. This PMV/PPD basis applies to mechanically conditioned spaces; the adaptive comfort model \citep{dedear2002} applies to naturally conditioned buildings and is not used. The penalty term applies only for household sizes $n > 3$.
+Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints \citep{ashrae55_2020,vanhoof2008,fanger1970}, given in the main paper. $T^{*}$ is the context-dependent optimal setpoint used as the peak of the tent function ($76$\,\textdegree{}F in cooling mode, $70$\,\textdegree{}F in heating mode, consistent with ASHRAE\,55-2020 sedentary PMV bands \citep{ashrae55_2020}). The 76\,\textdegree{}F and 70\,\textdegree{}F optima are the midpoints of the ASHRAE\,55-2020 summer band (73--79\,\textdegree{}F at 0.5\,clo) and winter band (68--74\,\textdegree{}F at 1.0\,clo) for sedentary occupants, with the heating optimum 1\,\textdegree{}F below the 71\,\textdegree{}F winter midpoint. The $-1.0$ score-per-degree slope mirrors the rising PPD per degree outside neutrality in Fanger's PMV/PPD model \citep{fanger1970,vanhoof2008}. This PMV/PPD basis applies to mechanically conditioned spaces; the adaptive comfort model \citep{dedear2002} applies to naturally conditioned buildings and is not used. The penalty term applies only for household sizes $n > 3$.
 
 \subsubsection{Appliance}
 
@@ -476,135 +477,36 @@ This appendix contains the piecewise value function derivations for the Comfort 
 \subsubsection{Appliance Comfort}
 
 Comfort is a piecewise decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr (dishwashers), 8\,hr (washers), and 6\,hr (dryers), modeling assumptions of the calculator informed by demand-response acceptance research \citep{paetz2012,waseem2020}, plus an additive noise penalty scaled by housing type for runs after 10\,pm \citep{epa1974noise} and a household-size penalty. Apartment and Condo units receive the largest noise multiplier ($\kappa=1.5$), Single-family homes the smallest ($\kappa=0.8$), with Townhouse and Rowhouse intermediate ($\kappa=1.2$). The household-size penalty $\sigma(n)$ steps from 0.0 for fewer than 3 occupants, to 0.8 for 3--4, to 1.5 for 5 or more.
-Delays are computed as the minimum circular distance from the baseline time $t_0$ on a 24-hour clock (avoiding wrap-around artifacts), i.e.,
-\begin{equation}
-  d(t,t_0)=\min\!\bigl((h(t)-h(t_0))\bmod 24,\; (h(t_0)-h(t))\bmod 24\bigr),
-  \label{eq:appliance_delay_circular}
-\end{equation}
-\noindent where $d(t,t_0)$ is delay in hours between run time $t$ and baseline time $t_0$, $h(\cdot)$ maps a time to hour-of-day, and $\bmod 24$ indicates wrap-around on a 24-hour clock.
-The base comfort component uses the following piecewise schedule on delay hours $d$:
-\begin{equation}
-  C_{\mathrm{base}}(d)=
-  \begin{cases}
-    10                                  & d=0 \\[3pt]
-    10-\frac{2}{3}\,d                   & 0<d\le 3 \\[3pt]
-    8-\frac{1}{2}\,(d-3)                & 3<d\le 7 \\[3pt]
-    6-\frac{2}{5}\,(d-7)                & 7<d\le 12 \\[3pt]
-    2                                   & d>12
-  \end{cases}
-  \label{eq:appliance_base_comfort}
-\end{equation}
-\noindent where $C_{\mathrm{base}}(d)$ is the pre-penalty comfort score (0--1) as a function of delay $d$.
-The late-night noise penalty is applied when running between 10pm and 7am and the appliance exceeds a dBA threshold:
-\begin{equation}
-  N(t,\mathrm{type},\mathrm{housing})=
-  \begin{cases}
-    0 & \text{if } h(t)\in[7,22) \text{ or } \mathrm{dBA}(\mathrm{type})\le \theta \\[3pt]
-    2\cdot \kappa(\mathrm{housing}) & \text{otherwise}
-  \end{cases}
-  \label{eq:appliance_noise_penalty}
-\end{equation}
-\noindent where $N(t,\mathrm{type},\mathrm{housing})$ is a nonnegative noise-disruption penalty in comfort-score points, $\mathrm{dBA}(\mathrm{type})$ is the appliance noise level for the appliance type, $\theta = 45$\,dBA is the dBA threshold, and $\kappa(\mathrm{housing})$ is a unitless housing-type multiplier (larger for shared-wall housing). Representative appliance levels are about 45\,dBA for dishwashers \citep{bellingham2026}, 74\,dBA for washers at spin-cycle peak \citep{precision2024}, and 65\,dBA for dryers \citep{coolblue2026}. The 45\,dBA threshold sits above the EPA/WHO 35\,dBA indoor night limit (design rationale in Section~3.5 of the main paper), and only the $>45$\,dBA test reads the values, so washers and dryers incur the penalty regardless of the exact figure.
-The household-size penalty scales with delay relative to the appliance-specific maximum acceptable delay $d_{\max}(\mathrm{type})$:
-\begin{equation}
-  S(d,n,\mathrm{type})=\sigma(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
-  \label{eq:appliance_size_penalty}
-\end{equation}
-\noindent where $S(d,n,\mathrm{type})$ is a nonnegative household-size penalty in comfort-score points, $n$ is occupants, $d_{\max}(\mathrm{type})$ is the maximum acceptable delay (hours) for the appliance type, and $\sigma(n)$ is an occupants-based factor (higher for larger households).
-Final comfort is then
-
-\begin{equation}
-    C_{\mathrm{comfort}}=\mathrm{clip}_{[0,10]}\!\bigl(C_{\mathrm{base}}-N-S\bigr)
-\end{equation}
-
-\noindent where $\mathrm{clip}_{[a,b]}(x)=\min(b,\max(a,x))$ clamps a value to the interval $[a,b]$.
+Delays are computed as the minimum circular distance from the baseline time $t_0$ on a 24-hour clock, avoiding wrap-around artifacts (equation given in the main paper). The base comfort component uses a piecewise schedule on delay hours $d$ (equation given in the main paper).
+The late-night noise penalty is applied when running between 10pm and 7am and the appliance exceeds a dBA threshold (equation given in the main paper). Representative appliance levels are about 45\,dBA for dishwashers \citep{bellingham2026}, 74\,dBA for washers at spin-cycle peak \citep{precision2024}, and 65\,dBA for dryers \citep{coolblue2026}. The 45\,dBA threshold sits above the EPA/WHO 35\,dBA indoor night limit (design rationale in Section~3.5 of the main paper), and only the $>45$\,dBA test reads the values, so washers and dryers incur the penalty regardless of the exact figure.
+The household-size penalty scales with delay relative to the appliance-specific maximum acceptable delay $d_{\max}(\mathrm{type})$ (equation given in the main paper). Final comfort is $C_{\mathrm{comfort}}=\mathrm{clip}_{[0,10]}(C_{\mathrm{base}}-N-S)$, where $\mathrm{clip}_{[a,b]}(x)=\min(b,\max(a,x))$ clamps a value to the interval $[a,b]$.
 
 \subsubsection{Shower Comfort}
 
 Comfort is a piecewise function peaking at the REU2016 average of 7.8\,min \citep{reu2016,harrispoll2024}, with additive penalties for temperature adequacy (CDC Legionella thresholds \citep{cdc2026}, with 120\,\textdegree{}F delivery and 140\,\textdegree{}F storage following CDC guidance and 110 and 130\,\textdegree{}F defined as comfort and scald boundaries, the latter near the 30-second deep-burn level of Moritz and Henriques \citep{moritzhenriques1947}) and household contention.
-The implementation uses a duration-based piecewise base comfort $C_{\mathrm{base}}(\tau)$ (with a short-duration cubic ramp for severely rushed showers), then subtracts a temperature penalty $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ and a household contention penalty $\Delta_{\mathrm{cont}}(\tau,n)$, and clips to $[0,10]$. The comfort-optimal duration is the 7.8\,min REU2016 mean at moderate outdoor temperatures but is shifted upward in cold weather to at most 10.3\,min, from the 11.6 versus 8.8\,min winter/summer field-mean ratio of Ibanez-Rueda et al. (2023), a southern-Spain sample \citep{ibanezrueda2023}. Warm-weather scoring is unchanged:
-\begin{equation}
-  C_{\mathrm{comfort}}(\tau,T_{\mathrm{heater}},n)
-  = \mathrm{clip}_{[0,10]}\!\Bigl(C_{\mathrm{base}}(\tau)
-  -\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})
-  -\Delta_{\mathrm{cont}}(\tau,n)\Bigr).
-  \label{eq:shower_comfort_full}
-\end{equation}
-\noindent where $\tau$ is shower duration (min), $n$ is occupants, $C_{\mathrm{base}}(\tau)$ is the base comfort curve, $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ is a temperature-adequacy penalty, and $\Delta_{\mathrm{cont}}(\tau,n)$ is a household-contention penalty.
+The implementation uses a duration-based piecewise base comfort $C_{\mathrm{base}}(\tau)$ (with a short-duration cubic ramp for severely rushed showers), then subtracts a temperature penalty $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ and a household contention penalty $\Delta_{\mathrm{cont}}(\tau,n)$, and clips to $[0,10]$ (equation given in the main paper). The comfort-optimal duration is the 7.8\,min REU2016 mean at moderate outdoor temperatures but is shifted upward in cold weather to at most 10.3\,min, from the 11.6 versus 8.8\,min winter/summer field-mean ratio of Ibanez-Rueda et al. (2023), a southern-Spain sample \citep{ibanezrueda2023}. Warm-weather scoring is unchanged.
 
 \subsection{Practicality}
 
 \subsubsection{HVAC Practicality}
 
-Practicality starts at 10 and subtracts an asymmetric extremity penalty for setpoints beyond adoption-comfort bounds:
-\begin{equation}
-  \delta(T_{\mathrm{in}}) =
-  \begin{cases}
-    1.0\,(71 - T_{\mathrm{in}}) & \text{cooling, } T_{\mathrm{in}} < 71 \\[3pt]
-    1.5\,(T_{\mathrm{in}} - 82) & \text{cooling, } T_{\mathrm{in}} > 82 \\[3pt]
-    1.8\,(63 - T_{\mathrm{in}}) & \text{heating, } T_{\mathrm{in}} < 63 \\[3pt]
-    0.8\,(T_{\mathrm{in}} - 76) & \text{heating, } T_{\mathrm{in}} > 76 \\[3pt]
-    0                             & \text{otherwise}
-  \end{cases}
-  \label{eq:hvac_practicality}
-\end{equation}
-\noindent where $\delta(T_{\mathrm{in}})$ is the extremity penalty (score points per \textdegree{}F beyond adoption-comfort bounds). The pre-feasibility practicality score is $P_{\mathrm{prac}} = \mathrm{clip}_{[0.5,\,10]}\!\bigl(10 - \delta(T_{\mathrm{in}})\bigr)$.
+Practicality starts at 10 and subtracts an asymmetric extremity penalty for setpoints beyond adoption-comfort bounds (equation given in the main paper). The pre-feasibility practicality score is $P_{\mathrm{prac}} = \mathrm{clip}_{[0.5,\,10]}\!\bigl(10 - \delta(T_{\mathrm{in}})\bigr)$.
 
-The result is then multiplied by an outdoor--indoor $\Delta T$ feasibility factor (1.0, 0.95, 0.85, 0.70 for $\Delta T < 10$, $< 20$, $< 35$, $\ge 35$\,\textdegree{}F). Finally, age- and maintenance-driven efficiency degradation enters here as a reliability factor: the score is scaled by $(1 - D)$ where
-\begin{equation}
-  D = \min\!\Bigl(0.30,\; \delta_{\mathrm{maint}}\bigl[\,1.5\min(a,10) + 0.5\max(a-10,0)\,\bigr]\Bigr)
-  \label{eq:hvac_degradation}
-\end{equation}
-\noindent is the fraction of efficiency lost (capped at 30\%), $a$ is HVAC age in years, and $\delta_{\mathrm{maint}}$ is the base annual loss rate (0.005, 0.010, 0.015 per year for good, moderate, and poor upkeep); the first ten years degrade at $1.5\,\delta_{\mathrm{maint}}$ and later years at $0.5\,\delta_{\mathrm{maint}}$, a modeling assumption of the calculator \citep{domanski2014}. The final practicality score is clipped to $[0.5, 10]$.
+The result is then multiplied by an outdoor--indoor $\Delta T$ feasibility factor (1.0, 0.95, 0.85, 0.70 for $\Delta T < 10$, $< 20$, $< 35$, $\ge 35$\,\textdegree{}F). Finally, age- and maintenance-driven efficiency degradation enters here as a reliability factor: the score is scaled by $(1 - D)$, the fraction of efficiency lost to age and maintenance (equation given in the main paper, capped at 30\%), where $a$ is HVAC age in years and $\delta_{\mathrm{maint}}$ is the base annual loss rate (0.005, 0.010, 0.015 per year for good, moderate, and poor upkeep); the first ten years degrade at $1.5\,\delta_{\mathrm{maint}}$ and later years at $0.5\,\delta_{\mathrm{maint}}$, a modeling assumption of the calculator \citep{domanski2014}. The final practicality score is clipped to $[0.5, 10]$.
 
 \subsubsection{Appliance Practicality}
 
 Practicality mirrors the delay schedule with additional penalties for late-night timing complexity and household coordination difficulty.
-The base practicality component is:
-\begin{equation}
-  P_{\mathrm{base}}(d)=
-  \begin{cases}
-    10                                  & d=0 \\[3pt]
-    10-d                                & 0<d\le 2 \\[3pt]
-    8-\frac{3}{4}\,(d-2)                & 2<d\le 4 \\[3pt]
-    6.5-\frac{1}{2}\,(d-4)              & 4<d\le 8 \\[3pt]
-    4.5-\frac{3}{8}\,(d-8)              & 8<d\le 12 \\[3pt]
-    1.5                                 & d>12
-  \end{cases}
-  \label{eq:appliance_base_practicality}
-\end{equation}
-\noindent where $P_{\mathrm{base}}(d)$ is the pre-penalty practicality score (0--1) as a function of delay $d$.
-Timing complexity applies an additive penalty by run-time hour:
-\begin{equation}
-  T(t)=
-  \begin{cases}
-    2 & 0\le h(t)<6 \\[3pt]
-    1 & 22\le h(t)<24 \\[3pt]
-    0 & \text{otherwise}
-  \end{cases}
-  \label{eq:appliance_timing_penalty}
-\end{equation}
-\noindent where $T(t)$ is a nonnegative timing-complexity penalty in practicality-score points and $h(t)$ is hour-of-day.
-Household coordination difficulty uses the same delay scaling form as in comfort:
-\begin{equation}
-  K(d,n,\mathrm{type})=\kappa_n(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
-  \label{eq:appliance_coordination_penalty}
-\end{equation}
-\noindent where $K(d,n,\mathrm{type})$ is a nonnegative household-coordination penalty in practicality-score points and $\kappa_n(n)$ is an occupants-based factor increasing with occupants.
+The base practicality component is a piecewise schedule on delay hours $d$ (equation given in the main paper).
+Timing complexity applies an additive penalty by run-time hour (equation given in the main paper).
+Household coordination difficulty uses the same delay scaling form as in comfort (equation given in the main paper), where $\kappa_n(n)$ is an occupants-based factor increasing with occupants.
 Final practicality is $C_{\mathrm{prac}}=\mathrm{clip}_{[1.5,10]}\!\bigl(P_{\mathrm{base}}-T-K\bigr)$, with a daytime floor applied for $h(t)\in[7,22)$ and $d\le d_{\max}(\mathrm{type})$.
 
 \subsubsection{Shower Practicality}
 
 Practicality additionally penalizes alternatives that exceed available tank capacity. Unlike comfort, the base practicality curve is not centered on the 7.8\,min comfort optimum: it rises with duration up to a peak near 12\,min before declining, and beyond the 15-minute Harris Poll threshold the tail declines \citep{harrispoll2024,reu2016}.
 
-The practicality model uses a duration-based base practicality $P_{\mathrm{base}}(\tau)$ and a capacity constraint computed from hot-water demand. Hot-water per shower is $\tau\,\dot V\,f_{\mathrm{hot}}$ (gal), total household hot-water need is $n\,\tau\,\dot V\,f_{\mathrm{hot}}$, and available draw is approximated as $0.8$ of nominal tank size $S$:
-\begin{equation}
-  H_{\mathrm{need}} = n\,\tau\,\dot V\,f_{\mathrm{hot}}, \qquad
-  H_{\mathrm{avail}} = 0.8\,S.
-  \label{eq:shower_capacity_need_avail}
-\end{equation}
-\noindent where $H_{\mathrm{need}}$ is total hot-water volume required for the household's showers over the relevant period, $H_{\mathrm{avail}}$ is available hot-water draw volume, and $S$ is nominal tank capacity (all in gallons).
-A fixed penalty is applied when $H_{\mathrm{need}}>H_{\mathrm{avail}}$, yielding a clipped final practicality score.
+The practicality model uses a duration-based base practicality $P_{\mathrm{base}}(\tau)$ and a capacity constraint computed from hot-water demand. Hot-water per shower is $\tau\,\dot V\,f_{\mathrm{hot}}$ (gal), total household hot-water need is $n\,\tau\,\dot V\,f_{\mathrm{hot}}$, and available draw is approximated as $0.8$ of nominal tank size $S$ (equation given in the main paper). A fixed penalty is applied when $H_{\mathrm{need}}>H_{\mathrm{avail}}$, yielding a clipped final practicality score.
 
 \suppsection{Extended Results and Robustness}
 
@@ -777,7 +679,7 @@ Configuration & DeepSeek & Gemini & GPT-OSS & Qwen \\
 \midrule
 \multicolumn{5}{l}{\emph{Kendall's $\tau$}} \\
 Exemplars w/o hidden params & 0.391 & 0.437 & 0.175 & 0.273 \\
-Shipped $k{=}3$ setting (all-MiniLM-L6-v2) & 0.489 & 0.387 & 0.187 & 0.154 \\
+$k{=}3$ control setting (all-MiniLM-L6-v2) & 0.489 & 0.387 & 0.187 & 0.154 \\
 Alt.\ embedding & 0.346 & 0.517 & 0.227 & 0.165 \\
 Retrieval $k=1$ & 0.182 & 0.377 & 0.237 & 0.306 \\
 Retrieval $k=5$ & 0.342 & 0.431 & 0.112 & 0.234 \\
@@ -786,7 +688,7 @@ Descriptions w/o scores or ranks & 0.073 & 0.204 & 0.061 & 0.071 \\
 \midrule
 \multicolumn{5}{l}{\emph{MAE}} \\
 Exemplars w/o hidden params & 0.087 & 0.078 & 0.106 & 0.099 \\
-Shipped $k{=}3$ setting (all-MiniLM-L6-v2) & 0.088 & 0.070 & 0.105 & 0.102 \\
+$k{=}3$ control setting (all-MiniLM-L6-v2) & 0.088 & 0.070 & 0.105 & 0.102 \\
 Alt.\ embedding & 0.088 & 0.071 & 0.113 & 0.104 \\
 Retrieval $k=1$ & 0.098 & 0.097 & 0.118 & 0.097 \\
 Retrieval $k=5$ & 0.084 & 0.069 & 0.102 & 0.088 \\
