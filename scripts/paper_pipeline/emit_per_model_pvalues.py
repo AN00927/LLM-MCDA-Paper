@@ -89,7 +89,13 @@ def main():
     for arch_a, arch_b in _sig.PAIRS:
         for metric in _sig.METRICS:
             for model in models:
-                z, p, n = _sig.wilcoxon_pair_model(
+                # wilcoxon_pair_model now returns a fourth value, n_nonzero: the
+                # number of pairs the signed-rank statistic was actually computed
+                # on, i.e. n_scenarios minus the exact-zero (tied) pairs. Carrying
+                # it makes tie saturation visible instead of silent -- several
+                # comparisons here report significance on a median paired
+                # difference of exactly 0.0000.
+                z, p, n, n_nonzero = _sig.wilcoxon_pair_model(
                     per_scenario, arch_a, arch_b, metric, model)
                 family.append({
                     "comparison": f"{_sig.ARCH_SHORT[arch_a]} vs {_sig.ARCH_SHORT[arch_b]}",
@@ -98,6 +104,8 @@ def main():
                     "Z": z,
                     "p_value": p,
                     "n_scenarios": n,
+                    "n_nonzero_pairs": n_nonzero,
+                    "n_tied_pairs": (n - n_nonzero) if n else 0,
                 })
     fam = pd.DataFrame(family)
     fam["p_holm_family"] = holm(fam["p_value"].values)
@@ -126,6 +134,7 @@ def main():
     sub["significant_holm_family"] = sub["p_holm_family"] < 0.05
 
     cols = ["comparison", "metric", "metric_label", "model", "n_scenarios",
+            "n_nonzero_pairs", "n_tied_pairs",
             "Z", "median_paired_diff", "p_value", "p_holm_subset",
             "p_holm_family", "significant_holm_subset", "significant_holm_family"]
     sub = sub[cols].sort_values(["comparison", "metric", "model"],
