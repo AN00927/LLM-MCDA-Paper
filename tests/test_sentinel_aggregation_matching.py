@@ -640,7 +640,7 @@ class TestRetryPolicy:
         return getattr(mod, "_is_transient_http_status", None)
 
     @pytest.mark.parametrize("arch_file", [
-        "Direct_LLM_Scoring.py", "Eample-Guided_LLM_Scoring.py.py", "LLM-Parameterized_Reference_Scoring.py"
+        "Direct_LLM_Scoring.py", "Example-Guided_LLM_Scoring.py", "LLM-Parameterized_Reference_Scoring.py"
     ])
     def test_transient_codes_retry(self, arch_file):
         arch_path = PROJECT_ROOT / "Architectures" / arch_file
@@ -651,7 +651,7 @@ class TestRetryPolicy:
             assert fn(code), f"Expected {code} to be transient in {arch_file}"
 
     @pytest.mark.parametrize("arch_file", [
-        "Direct_LLM_Scoring.py", "Eample-Guided_LLM_Scoring.py.py", "LLM-Parameterized_Reference_Scoring.py"
+        "Direct_LLM_Scoring.py", "Example-Guided_LLM_Scoring.py", "LLM-Parameterized_Reference_Scoring.py"
     ])
     def test_non_transient_codes_do_not_retry(self, arch_file):
         arch_path = PROJECT_ROOT / "Architectures" / arch_file

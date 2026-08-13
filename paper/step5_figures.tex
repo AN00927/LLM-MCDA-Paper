@@ -15,29 +15,29 @@
 ]
 \nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
     title={\small (a) Energy Cost}, title style={font=\small}]
-\addplot[mark=*, colorGemini] coordinates {(Pure,0.2477) (RAG,0.1782) (Hybrid,0.0698)};
-\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2407) (RAG,0.1748) (Hybrid,0.0683)};
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.2477) (RAG,0.1769) (Hybrid,0.0698)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2407) (RAG,0.1742) (Hybrid,0.0683)};
 \addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2581) (RAG,0.1725) (Hybrid,0.0783)};
-\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2554) (RAG,0.1950) (Hybrid,0.1115)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2554) (RAG,0.1975) (Hybrid,0.1115)};
 \legend{{Gemini 3.5 Flash} & {DeepSeek V4 Flash} & {GPT-OSS 20B} & {Qwen 3.5 9B}}
 \nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
     title={\small (b) Environmental}, title style={font=\small}]
-\addplot[mark=*, colorGemini] coordinates {(Pure,0.2484) (RAG,0.1667) (Hybrid,0.0921)};
-\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2652) (RAG,0.1644) (Hybrid,0.0812)};
-\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2924) (RAG,0.1665) (Hybrid,0.0978)};
-\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2739) (RAG,0.1919) (Hybrid,0.1498)};
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.2484) (RAG,0.1655) (Hybrid,0.0921)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2652) (RAG,0.1645) (Hybrid,0.0812)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2924) (RAG,0.1661) (Hybrid,0.0978)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2739) (RAG,0.1947) (Hybrid,0.1498)};
 \nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
     title={\small (c) Comfort}, title style={font=\small}]
-\addplot[mark=*, colorGemini] coordinates {(Pure,0.1707) (RAG,0.1380) (Hybrid,0.0108)};
-\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.1979) (RAG,0.1745) (Hybrid,0.0167)};
-\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1848) (RAG,0.1536) (Hybrid,0.0127)};
-\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.1947) (RAG,0.1927) (Hybrid,0.0108)};
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.1683) (RAG,0.1400) (Hybrid,0.0091)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.1974) (RAG,0.1779) (Hybrid,0.0089)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1831) (RAG,0.1550) (Hybrid,0.0101)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.1943) (RAG,0.1931) (Hybrid,0.0090)};
 \nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
     title={\small (d) Practicality}, title style={font=\small}]
-\addplot[mark=*, colorGemini] coordinates {(Pure,0.2116) (RAG,0.1523) (Hybrid,0.0197)};
-\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2224) (RAG,0.1531) (Hybrid,0.0208)};
-\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2307) (RAG,0.1830) (Hybrid,0.0213)};
-\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2159) (RAG,0.1858) (Hybrid,0.0168)};
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.2116) (RAG,0.1511) (Hybrid,0.0197)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.2224) (RAG,0.1543) (Hybrid,0.0208)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.2307) (RAG,0.1824) (Hybrid,0.0213)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.2159) (RAG,0.1889) (Hybrid,0.0168)};
 \end{groupplot}
 \end{tikzpicture}%
 }
@@ -72,10 +72,10 @@
 \addplot[mark=diamond*, colorQwen] coordinates {(Pure,-0.0309) (RAG,0.2308) (Hybrid,0.9056)};
 \nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.98,
     title={\small (c) Shower}, title style={font=\small}]
-\addplot[mark=*, colorGemini] coordinates {(Pure,0.6333) (RAG,0.7655) (Hybrid,0.8222)};
-\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.5576) (RAG,0.5645) (Hybrid,0.7867)};
-\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1333) (RAG,0.6222) (Hybrid,0.7845)};
-\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.0689) (RAG,0.2355) (Hybrid,0.8511)};
+\addplot[mark=*, colorGemini] coordinates {(Pure,0.6333) (RAG,0.7667) (Hybrid,0.8222)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(Pure,0.5576) (RAG,0.4956) (Hybrid,0.7867)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(Pure,0.1333) (RAG,0.6289) (Hybrid,0.7867)};
+\addplot[mark=diamond*, colorQwen] coordinates {(Pure,0.0689) (RAG,0.2400) (Hybrid,0.8511)};
 \end{groupplot}
 \end{tikzpicture}%
 }

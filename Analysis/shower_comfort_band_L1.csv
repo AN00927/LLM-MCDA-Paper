@@ -1,0 +1,81 @@
+sheet,scenario_id,signature,setpoint,error,winner_changed,ranking_changed,mean_abs_comfort_delta,base_winner,new_winner,base_ranks,new_ranks
+Test,0,"Pittsburgh, PA|2.0000|40.0000|1.5000|185.0000|Apartment|28.0000|105.0000",105.0,False,False,False,0.0,8,8,321,321
+Test,1,"Philadelphia, PA|3.0000|50.0000|1.5000|220.0000|Townhouse|85.0000|110.0000",110.0,False,False,False,0.16666666666666666,7,7,312,312
+Test,2,"Lancaster, PA|1.0000|40.0000|1.5000|180.0000|Apartment|18.0000|120.0000",120.0,False,False,False,0.0,8,8,213,213
+Test,3,"Harrisburg, PA|2.0000|40.0000|2.5000|190.0000|Townhouse|75.0000|120.0000",120.0,False,False,False,0.0,7,7,213,213
+Test,4,"Allentown, PA|4.0000|60.0000|1.5000|260.0000|Single-family|78.0000|130.0000",130.0,False,False,False,0.0,7,7,213,213
+Test,5,"Erie, PA|4.0000|60.0000|2.5000|300.0000|Single-family|28.0000|120.0000",120.0,False,False,False,0.0,6,6,123,123
+Test,6,"Scranton, PA|2.0000|40.0000|1.5000|180.0000|Apartment|32.0000|120.0000",120.0,False,False,False,0.0,7,7,312,312
+Test,7,"Bethlehem, PA|5.0000|50.0000|1.5000|240.0000|Townhouse|30.0000|120.0000",120.0,False,False,False,0.0,6,6,213,213
+Test,8,"Reading, PA|5.0000|80.0000|2.5000|350.0000|Single-family|82.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,9,"York, PA|5.0000|40.0000|3.5000|320.0000|Single-family|20.0000|135.0000",135.0,False,False,False,0.08333333333333333,8,8,123,123
+Test,10,"West Chester, PA|6.0000|60.0000|3.5000|360.0000|Single-family|82.0000|140.0000",140.0,False,False,False,0.10666666666666665,10,10,123,123
+Test,11,"State College, PA|4.0000|60.0000|2.5000|290.0000|Single-family|30.0000|120.0000",120.0,False,False,False,0.0,6,6,123,123
+Test,12,"Doylestown, PA|3.0000|50.0000|2.5000|310.0000|Single-family|85.0000|120.0000",120.0,False,False,False,0.0,6,6,123,123
+Test,13,"Media, PA|4.0000|50.0000|3.5000|280.0000|Townhouse|25.0000|120.0000",120.0,False,False,False,0.0,6,6,123,123
+Test,14,"Norristown, PA|3.0000|40.0000|3.5000|300.0000|Apartment|90.0000|130.0000",130.0,False,False,False,0.0,7,7,123,123
+Test,15,"King of Prussia, PA|6.0000|40.0000|4.0000|390.0000|Single-family|15.0000|135.0000",135.0,False,False,False,0.09333333333333338,12,12,123,123
+Test,16,"Pottstown, PA|2.0000|40.0000|2.0000|210.0000|Apartment|78.0000|120.0000",120.0,False,False,False,0.0,8,8,213,213
+Test,17,"Exton, PA|5.0000|50.0000|4.0000|410.0000|Townhouse|88.0000|140.0000",140.0,False,False,False,0.10666666666666665,10,10,123,123
+Test,18,"Newtown, PA|4.0000|30.0000|2.0000|230.0000|Apartment|22.0000|105.0000",105.0,False,False,False,0.0,3,3,312,312
+Test,19,"Wilkes-Barre, PA|5.0000|40.0000|2.5000|260.0000|Townhouse|80.0000|110.0000",110.0,False,False,False,0.18000000000000002,3,3,123,123
+Test,20,"Phoenixville, PA|7.0000|50.0000|3.0000|430.0000|Single-family|12.0000|130.0000",130.0,False,False,False,0.0,8,8,123,123
+Test,21,"Greensburg, PA|2.0000|80.0000|2.0000|300.0000|Single-family|92.0000|120.0000",120.0,False,False,False,0.0,8,8,213,213
+Test,22,"Hazleton, PA|3.0000|50.0000|3.5000|250.0000|Townhouse|30.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,23,"Altoona, PA|2.0000|40.0000|3.5000|210.0000|Apartment|70.0000|120.0000",120.0,False,False,False,0.0,4,4,123,123
+Test,24,"Chambersburg, PA|4.0000|65.0000|4.0000|320.0000|Single-family|55.0000|120.0000",120.0,False,False,False,0.0,4,4,123,123
+Test,25,"Johnstown, PA|4.0000|50.0000|2.0000|240.0000|Townhouse|58.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+Test,26,"Lebanon, PA|2.0000|40.0000|2.5000|195.0000|Apartment|65.0000|120.0000",120.0,False,False,False,0.0,4,4,123,123
+Test,27,"Monroeville, PA|4.0000|60.0000|2.0000|280.0000|Single-family|50.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,28,"Stroudsburg, PA|2.0000|40.0000|2.5000|185.0000|Apartment|40.0000|120.0000",120.0,False,False,False,0.0,2,2,123,123
+Test,29,"Carlisle, PA|3.0000|50.0000|2.0000|255.0000|Townhouse|72.0000|120.0000",120.0,False,False,False,0.0,6,6,123,123
+Test,30,"Coatesville, PA|2.0000|40.0000|2.0000|200.0000|Apartment|52.0000|105.0000",105.0,False,False,False,0.0,8,8,213,213
+Test,31,"DuBois, PA|3.0000|50.0000|2.5000|240.0000|Single-family|45.0000|105.0000",105.0,False,False,False,0.0,5,5,123,123
+Test,32,"Gettysburg, PA|2.0000|40.0000|2.0000|205.0000|Townhouse|60.0000|110.0000",110.0,False,False,False,0.16333333333333333,8,8,213,213
+Test,33,"Chester, PA|3.0000|50.0000|2.5000|260.0000|Single-family|55.0000|130.0000",130.0,False,False,False,0.0,5,5,123,123
+Test,34,"Easton, PA|4.0000|60.0000|2.5000|290.0000|Single-family|48.0000|140.0000",140.0,False,False,False,0.08333333333333333,5,5,123,123
+Test,35,"Butler, PA|5.0000|40.0000|2.5000|320.0000|Single-family|55.0000|120.0000",120.0,False,False,False,0.0,8,8,123,123
+Test,36,"Meadville, PA|4.0000|40.0000|3.0000|280.0000|Single-family|50.0000|120.0000",120.0,False,False,False,0.0,8,8,123,123
+Test,37,"Indiana, PA|6.0000|50.0000|2.5000|380.0000|Single-family|60.0000|120.0000",120.0,False,False,False,0.0,8,8,123,123
+Test,38,"Oil City, PA|5.0000|50.0000|2.0000|310.0000|Single-family|55.0000|120.0000",120.0,False,False,False,0.0,8,8,123,123
+Test,39,"Uniontown, PA|7.0000|60.0000|2.5000|430.0000|Single-family|58.0000|120.0000",120.0,False,False,False,0.0,8,8,123,123
+Test,40,"Erie, PA|3.0000|50.0000|2.5000|265.0000|Apartment|10.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,41,"Scranton, PA|2.0000|40.0000|2.0000|200.0000|Single-family|20.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,42,"Stroudsburg, PA|3.0000|50.0000|2.5000|250.0000|Single-family|32.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+RAG,43,"Blue Bell, PA|2.0000|40.0000|2.0000|195.0000|Townhouse|75.0000|120.0000",120.0,False,False,False,0.0,8,8,213,213
+Test,44,"Phoenixville, PA|3.0000|50.0000|2.5000|260.0000|Apartment|92.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,45,"Carlisle, PA|2.0000|40.0000|3.0000|200.0000|Apartment|42.0000|120.0000",120.0,False,False,False,0.0,4,4,123,123
+Test,46,"DuBois, PA|5.0000|65.0000|4.0000|350.0000|Single-family|38.0000|120.0000",120.0,False,False,False,0.0,4,4,123,123
+Test,47,"Gettysburg, PA|3.0000|50.0000|2.0000|235.0000|Townhouse|55.0000|120.0000",120.0,False,False,False,0.0,6,6,213,213
+Test,48,"Easton, PA|2.0000|40.0000|2.5000|190.0000|Apartment|62.0000|120.0000",120.0,False,False,False,0.0,7,7,123,123
+Test,49,"Butler, PA|3.0000|50.0000|2.0000|245.0000|Single-family|50.0000|105.0000",105.0,False,False,False,0.0,5,5,123,123
+Test,50,"Hazleton, PA|2.0000|40.0000|2.5000|205.0000|Apartment|58.0000|135.0000",135.0,False,False,False,0.0766666666666667,5,5,123,123
+Test,51,"Lebanon, PA|4.0000|30.0000|2.5000|260.0000|Townhouse|55.0000|120.0000",120.0,False,False,False,0.0,6,6,123,123
+Test,52,"Monroeville, PA|8.0000|80.0000|2.5000|490.0000|Single-family|58.0000|120.0000",120.0,False,False,False,0.0,8,8,123,123
+Test,53,"Bradford, PA|2.0000|40.0000|2.0000|190.0000|Single-family|5.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+RAG,54,"Media, PA|3.0000|50.0000|2.5000|255.0000|Townhouse|85.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123
+Test,55,"King of Prussia, PA|2.0000|40.0000|2.0000|195.0000|Condo|65.0000|120.0000",120.0,False,False,False,0.0,8,8,231,231
+Test,56,"Blue Bell, PA|3.0000|50.0000|2.5000|245.0000|Condo|78.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+Test,57,"Philadelphia, PA|3.0000|50.0000|2.5000|250.0000|Rowhouse|72.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+Test,58,"Lancaster, PA|2.0000|40.0000|2.0000|195.0000|Rowhouse|58.0000|120.0000",120.0,False,False,False,0.0,3,3,132,132
+Test,59,"State College, PA|1.0000|30.0000|1.5000|145.0000|Apartment|35.0000|105.0000",105.0,False,False,False,0.0,10,10,321,321
+RAG,60,"Indiana, PA|1.0000|30.0000|2.0000|155.0000|Apartment|48.0000|110.0000",110.0,False,False,False,0.17666666666666667,4,4,123,123
+RAG,61,"Pittsburgh, PA|3.0000|50.0000|2.5000|245.0000|Townhouse|62.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,62,"West Mifflin, PA|4.0000|60.0000|3.0000|295.0000|Single-family|70.0000|125.0000",125.0,False,False,False,0.0,3,3,123,123
+RAG,63,"Pittsburgh, PA|2.0000|40.0000|2.0000|185.0000|Single-family|28.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,64,"Exton, PA|3.0000|50.0000|2.5000|260.0000|Condo|62.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,65,"Pottstown, PA|2.0000|40.0000|2.0000|195.0000|Condo|75.0000|115.0000",115.0,False,False,False,0.18000000000000002,8,8,321,321
+RAG,66,"Phoenixville, PA|4.0000|60.0000|2.5000|310.0000|Condo|55.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,67,"Bethlehem, PA|2.0000|40.0000|2.0000|200.0000|Rowhouse|62.0000|115.0000",115.0,False,False,True,0.18333333333333326,8,8,231,321
+RAG,68,"Hazleton, PA|3.0000|50.0000|2.5000|250.0000|Rowhouse|48.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,69,"Wilkes-Barre, PA|4.0000|60.0000|2.0000|280.0000|Rowhouse|70.0000|120.0000",120.0,False,False,False,0.0,7,7,321,321
+RAG,70,"Meadville, PA|1.0000|30.0000|1.5000|140.0000|Apartment|38.0000|105.0000",105.0,False,False,False,0.0,10,10,321,321
+Test,71,"New Castle, PA|1.0000|30.0000|2.0000|150.0000|Apartment|45.0000|110.0000",110.0,False,False,False,0.17666666666666667,4,4,123,123
+RAG,72,"Uniontown, PA|2.0000|40.0000|2.0000|160.0000|Apartment|52.0000|115.0000",115.0,False,True,True,0.18666666666666668,3,8,132,231
+RAG,73,"Williamsport, PA|3.0000|50.0000|2.5000|255.0000|Single-family|48.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,74,"Williamsport, PA|2.0000|40.0000|2.0000|195.0000|Apartment|35.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,75,"West Mifflin, PA|3.0000|50.0000|2.5000|250.0000|Townhouse|60.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+Test,76,"McKeesport, PA|2.0000|40.0000|2.0000|190.0000|Apartment|42.0000|120.0000",120.0,False,False,False,0.0,3,3,123,123
+RAG,77,"Altoona, PA|4.0000|40.0000|3.5000|240.0000|Rowhouse|18.0000|120.0000",120.0,False,False,False,0.0,4,4,123,123
+RAG,78,"Chester, PA|1.0000|30.0000|1.5000|150.0000|Condo|90.0000|115.0000",115.0,False,False,False,0.16666666666666666,7,7,312,312
+RAG,79,"Johnstown, PA|6.0000|50.0000|2.5000|340.0000|Single-family|40.0000|120.0000",120.0,False,False,False,0.0,5,5,123,123

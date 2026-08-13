@@ -111,3 +111,21 @@ Analysis/workstream_f_report.md
 paper/paper_draft_working_DOUBLE.tex
 docs/AUDIT_REPORT_v2.md
 docs/AUDIT_REPORT_v2_FOLLOWUP_PLAN.md
+paper/REVIEW_PANEL_2026-08-11.md
+paper/REVISION_PLAN_2026-08-11.md
+Analysis/float_artifact_map.csv
+Analysis/float_artifact_map.md
+Analysis/gate1_verification_2026-08-12.md
+Analysis/Sensitivity_alpha_sweep_gemini.xlsx
+Analysis/symmetric_gate_metrics.md
+graphical_abstract_concept.html
+
+# --- Markdown: ignore everything except the reader-facing docs -----------------
+# A published repo should ship README, the schema map, CLAUDE.md, and docs/.
+# Every other .md in this tree is a working artifact: revision logs, numbers
+# packs, agent reports, regenerated analysis dumps.
+*.md
+!README.md
+!CLAUDE.md
+!XLSX_Schema_Map.md
+!docs/*.md
