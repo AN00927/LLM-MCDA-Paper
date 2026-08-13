@@ -16,7 +16,7 @@ from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_sc
 class ShowerGroundTruthCalculator:
     """Key sources:
 - DeOreo et al. (2016). Average shower 7.8 min; 0.9 showers/person/day.
-- Hendron & Burch (2008). Mains temp model.
+- Burch & Christensen (2007). Mains temp model.
 - Backman & Hoeschele (2013). Hot water distribution validation.
 - Rheem Manufacturing Company (2025). Electric Tank Water Heaters product specs.
 - CDC (2026). Monitoring Building Water: Legionella control guidance.
@@ -29,7 +29,7 @@ class ShowerGroundTruthCalculator:
     ELECTRICITY_RATE_PA = 0.19
 
     # PA seasonal mains water temperatures.
-    # Sources: Hendron & Burch (2008), NREL/TP-550-40874; Maguire et al. (2013), NREL/TP-5500-58756.
+    # Sources: Burch & Christensen (2007), OSTI 981988; Maguire et al. (2013), NREL/TP-5500-58756.
     # Shoulder-season inlet temperature is interpolated between these two anchors
     # in determine_inlet_temp rather than stored as a third constant.
     INLET_TEMP_WINTER = 45  # F, outdoor <=32F
@@ -70,6 +70,18 @@ class ShowerGroundTruthCalculator:
     HEATER_TEMP_OPTIMAL = 120  # F, standard delivery setpoint (CDC (2026))
     HEATER_TEMP_SCALD_RISK = 130  # F, scald-risk threshold (~30s to a deep burn; Moritz & Henriques (1947))
     HEATER_TEMP_LEGIONELLA_SAFE = 140  # F, CDC minimum storage temp (CDC (2026))
+
+    # Comfort no-penalty band for the water-heater setpoint: [OPTIMAL, LEGIONELLA_SAFE]
+    # = 120-140F. water_heater_temp is a STORAGE temperature, so the band must be
+    # anchored to storage guidance, not to delivery thresholds. Below 120F the tank
+    # cannot deliver the 105F TARGET_SHOWER_TEMP with any mixing margin and sits inside
+    # the CDC Legionella amplification range (77-113F); above 140F adds standby loss and
+    # scald exposure with no comfort benefit, since delivery is fixed at 105F by the
+    # mixing fraction. The earlier band, [MINIMUM, SCALD_RISK] = 110-130F, applied
+    # delivery-oriented thresholds to a storage quantity and gave full comfort credit to
+    # a 110F storage setting.
+    COMFORT_HEATER_TEMP_MIN = HEATER_TEMP_OPTIMAL        # 120F
+    COMFORT_HEATER_TEMP_MAX = HEATER_TEMP_LEGIONELLA_SAFE  # 140F
     # Linear VF for energy cost - equal marginal utility across range
     # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
     # linear utility is appropriate" (Oper. Res. 27(4):810-822)
@@ -86,7 +98,7 @@ class ShowerGroundTruthCalculator:
 
     def determine_inlet_temp(self, outdoor_temp: float) -> float:
         # PA seasonal mains temps, linearly interpolated across the 32-75F outdoor band
-        # between the winter and summer anchors (Hendron & Burch (2008); Backman & Hoeschele (2013)).
+        # between the winter and summer anchors (Burch & Christensen (2007); Backman & Hoeschele (2013)).
         if outdoor_temp <= 32:
             return float(self.INLET_TEMP_WINTER)
         elif outdoor_temp >= 75:
@@ -170,10 +182,10 @@ class ShowerGroundTruthCalculator:
             base_comfort = max(1.0, 8.0 - (duration - float(ShowerGroundTruthCalculator.COMFORT_DURATION_MAX)) * 0.5)
 
         temp_penalty = 0.0
-        if water_heater_temp < ShowerGroundTruthCalculator.HEATER_TEMP_MINIMUM:
-            temp_penalty = 2.0  # Lukewarm, within Legionella growth range
-        elif water_heater_temp > ShowerGroundTruthCalculator.HEATER_TEMP_SCALD_RISK:
-            temp_penalty = 1.0  # Scald risk, no extra comfort benefit
+        if water_heater_temp < ShowerGroundTruthCalculator.COMFORT_HEATER_TEMP_MIN:
+            temp_penalty = 2.0  # No mixing margin above the 105F target; within Legionella growth range
+        elif water_heater_temp > ShowerGroundTruthCalculator.COMFORT_HEATER_TEMP_MAX:
+            temp_penalty = 1.0  # Standby loss and scald exposure, no extra comfort benefit
 
         # Larger households experience pressure to keep showers short
         contention_penalty = 0.0
@@ -257,7 +269,7 @@ class ShowerGroundTruthCalculator:
                 # priced at the PA residential rate ($0.19/kWh). Dataset-percentile
                 # bounds (vs. a theoretical physics envelope) concentrate score
                 # sensitivity over the durations/flows households actually encounter.
-                # Sources: DeOreo et al. (2016); Hendron & Burch (2008) (PA seasonal
+                # Sources: DeOreo et al. (2016); Burch & Christensen (2007) (PA seasonal
                 # inlet temps); EIA Electric Power Annual (2025) (PA residential rate).
                 'min': 0.14,
                 'max': 1.14,
