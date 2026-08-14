@@ -981,7 +981,6 @@ def run_test_set(test_path: str, output_path: str,
         **_init_failure_counters()
     }
 
-    # Archive every raw model response alongside this run's xlsx.
     RAW_LOG.start(output_csv_path.with_name(f"{output_csv_path.stem}_raw.jsonl"))
 
     for i, scenario in enumerate(scenarios):

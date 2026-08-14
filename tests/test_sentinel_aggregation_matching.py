@@ -177,14 +177,6 @@ class TestCoerceScoreSeries:
 # 2. Aggregation tests (via CalculateMetrics.aggregate_run_files)
 # ===========================================================================
 
-def _make_run_xlsx(tmp_path, run_idx, rows):
-    """Write a minimal run CSV and return its Path."""
-    df = pd.DataFrame(rows)
-    p = tmp_path / f"arch_results_run_{run_idx:02d}.xlsx"
-    df.to_excel(p, index=False, engine="openpyxl")
-    return p
-
-
 VALID_ROW_TEMPLATE = {
     "scenario_id": 1, "decision_type": "HVAC", "alternative": "72",
     "question": "Q1", "location": "Loc1",

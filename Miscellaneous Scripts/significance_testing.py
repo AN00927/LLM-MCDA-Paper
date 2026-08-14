@@ -265,20 +265,6 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
 # Per-scenario metric computation
 # ---------------------------------------------------------------------------
 
-def _compute_weighted_score(row):
-    """Compute weighted MAVT score from four criterion scores and standard weights."""
-    try:
-        ws = (
-            CRITERION_WEIGHTS["energy_cost"] * float(row["arch_energy_cost"]) +
-            CRITERION_WEIGHTS["environmental"] * float(row["arch_environmental"]) +
-            CRITERION_WEIGHTS["comfort"] * float(row["arch_comfort"]) +
-            CRITERION_WEIGHTS["practicality"] * float(row["arch_practicality"])
-        )
-        return ws
-    except (ValueError, TypeError):
-        return np.nan
-
-
 def compute_scenario_metrics(matched_df):
     """Compute per-scenario metrics from matched arch-GT data.
 

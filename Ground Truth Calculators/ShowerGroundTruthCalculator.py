@@ -129,7 +129,6 @@ class ShowerGroundTruthCalculator:
 
     def calculate_hot_water_fraction(self, water_heater_temp: float, inlet_temp: float,
                                      target_temp: float) -> float:
-        """Calculate hot-water mixing fraction for a target delivery temperature."""
         # Mixing-energy balance for hot/cold streams.
         # Sources: Hendron & Burch (2008); Backman & Hoeschele (2013); Zhang et al. (2023).
         if water_heater_temp <= inlet_temp:

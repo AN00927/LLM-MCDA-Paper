@@ -668,11 +668,6 @@ def score_scenario(decision_type: str, scenario: Dict) -> Optional[List[Dict]]:
     return rows or None
 
 
-def ranks_from_scores(scored: List[Dict]) -> Tuple[List[str], List[int]]:
-    r = apply_mavt_ranking(scored)
-    return r["ranked_alternatives"], r["ranks"]
-
-
 # ---------------------------------------------------------------------------
 # Metrics
 # ---------------------------------------------------------------------------

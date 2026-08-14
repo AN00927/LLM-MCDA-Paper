@@ -76,7 +76,7 @@ ARCH_SHORT = {
     "Example-Guided_LLM_Scoring": "A_E",
     "LLM-Parameterized_Reference_Scoring": "A_H",
 }
-METRICS = ["kendall_tau", "top1_accuracy", "top2_accuracy"]
+METRICS = ["kendall_tau", "overall_mae", "top1_accuracy", "top2_accuracy"]
 
 N_BOOT = 10000
 SEED = 42
@@ -87,9 +87,13 @@ SEED = 42
 # ---------------------------------------------------------------------------
 
 def scenario_rows(clean, model, arch, run):
-    """Per-scenario tau / top-1 / top-2, using the SAME rules as
+    """Per-scenario tau / MAE / top-1 / top-2, using the SAME rules as
     calculate_per_run_metrics.compute_ranking_metrics_local so the per-run means
-    of this table reproduce the shipped per-run metrics exactly."""
+    of this table reproduce the shipped per-run metrics exactly.
+
+    overall_mae follows significance_testing.compute_per_scenario_metrics_from_raw:
+    the mean absolute gap between arch and ground-truth criterion scores over the
+    4 criteria x 3 alternatives, so the two files agree on what MAE means."""
     rows = []
     for sid in clean["arch_scenario_id"].unique():
         sc = clean[clean["arch_scenario_id"] == sid]
@@ -110,6 +114,18 @@ def scenario_rows(clean, model, arch, run):
         ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
         ar_top2 = set(sc.sort_values("arch_rank")["norm_alternative"].head(2).values)
 
+        abs_errors = []
+        for c in _cm.CRITERIA:
+            gt_col, ar_col = f"gt_{c}", f"arch_{c}"
+            if gt_col not in sc.columns or ar_col not in sc.columns:
+                continue
+            gt_v = pd.to_numeric(sc[gt_col], errors="coerce").values
+            ar_v = pd.to_numeric(sc[ar_col], errors="coerce").values
+            valid = np.isfinite(gt_v) & np.isfinite(ar_v)
+            if valid.any():
+                abs_errors.extend(np.abs(ar_v[valid] - gt_v[valid]).tolist())
+        overall_mae = float(np.mean(abs_errors)) if abs_errors else np.nan
+
         dt = sc["decision_type"].iloc[0] if "decision_type" in sc.columns else ""
         rows.append({
             "model": model,
@@ -118,6 +134,7 @@ def scenario_rows(clean, model, arch, run):
             "decision_type": dt,
             "scenario_id": sid,
             "kendall_tau": tau,
+            "overall_mae": overall_mae,
             "top1_accuracy": 1.0 if gt_top1 == ar_top1 else 0.0,
             "top2_accuracy": 1.0 if gt_top1 in ar_top2 else 0.0,
         })

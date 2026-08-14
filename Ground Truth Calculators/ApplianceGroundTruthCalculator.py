@@ -135,7 +135,6 @@ class ApplianceGroundTruthCalculator:
 
     def calculate_energy_cost(self, kwh_cycle: float, run_time_hour: int,
                               location: str) -> float:
-        """Calculate energy cost using the utility's TOU rates for the given location."""
         utility = self._utility_for_location(location)
         rates = self.UTILITY_RATES[utility]
         period = self.determine_rate_period(run_time_hour, location)
@@ -144,7 +143,6 @@ class ApplianceGroundTruthCalculator:
         return cost
 
     def calculate_environmental_impact(self, kwh_cycle: float, run_time_hour: int) -> float:
-        """Calculate environmental impact using PJM marginal emissions factors."""
         period = self.determine_emissions_period(run_time_hour)
         emissions_factor = self.EMISSIONS_FACTOR_PEAK if period == "peak" else self.EMISSIONS_FACTOR_OFFPEAK
         emissions = kwh_cycle * emissions_factor
@@ -293,7 +291,6 @@ class ApplianceGroundTruthCalculator:
 
         match =re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', time_str, re.IGNORECASE)
         if not match:
-            # Default to 7pm if unparseable
             print(f"  : Could not parse baseline time '{time_str}', defaulting to 7pm")
             return 19
 

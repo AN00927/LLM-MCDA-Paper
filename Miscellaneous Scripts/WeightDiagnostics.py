@@ -48,7 +48,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import CRITERION_WEIGHTS
+from model_config import CRITERIA, CRITERION_WEIGHTS
 from sentinel_utils import _atomic_write_xlsx, read_table_clean
 
 GT_DIR = PROJECT_ROOT / "Ground Truth"
@@ -56,7 +56,6 @@ OUT_DIR = PROJECT_ROOT / "Scoring Logic and Documentation" / "method"
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 SCORE_COLS = {c: f"{c}_score" for c in CRITERIA}
 
 # A criterion counts as non-discriminating in a scenario when its spread

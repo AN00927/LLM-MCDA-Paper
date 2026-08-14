@@ -65,6 +65,8 @@ from model_config import (
     RETRY_BASE_DELAY,
     TEMPERATURE,
     TIE_BREAK_PRIORITY,
+    TRANSIENT_HTTP_STATUS_CODES,
+    _is_transient_http_status,
     get_reasoning_payload,
 )
 from sentinel_utils import (
@@ -83,7 +85,6 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
-TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 logger = logging.getLogger("prompt_ablation")
 
@@ -269,10 +270,6 @@ def _assert_control_matches_shipped() -> None:
 # ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
-
-def _is_transient_http_status(status_code: int) -> bool:
-    return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
-
 
 def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tuple[Optional[str], Dict]:
     """POST to OpenRouter under the shared retry policy from model_config.
