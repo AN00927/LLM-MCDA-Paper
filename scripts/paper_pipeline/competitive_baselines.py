@@ -48,7 +48,7 @@ from scipy import stats
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import MODEL_SPECS  # noqa: E402
+from model_config import CRITERIA, MODEL_SPECS  # noqa: E402
 
 _cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _cm_path)
@@ -62,7 +62,6 @@ OUT_MD = PROJECT_ROOT / "Analysis" / "competitive_baselines.md"
 
 AE = "Example-Guided_LLM_Scoring"
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 
 
 # ---------------------------------------------------------------------------

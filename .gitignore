@@ -59,6 +59,7 @@ docs/cleanuprepo.txt
 
 # Superpowers planning artifacts (ephemeral by convention, see CLAUDE.md)
 docs/superpowers/
+docs/LLM_MCDA_CLEANUP_PLAN.md
 
 # Scenario Files
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx

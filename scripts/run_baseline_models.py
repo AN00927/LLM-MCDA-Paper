@@ -26,9 +26,9 @@ if str(MISC_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(MISC_SCRIPTS_DIR))
 
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores
+from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking
 
-from HVACGroundTruthCalculator import HVACGroundTruthCalculator, apply_mavt_ranking
+from HVACGroundTruthCalculator import HVACGroundTruthCalculator
 from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
 from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
 

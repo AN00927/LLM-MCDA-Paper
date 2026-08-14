@@ -100,10 +100,6 @@ def to_num(v):
     f = float(s)
     return int(f) if f.is_integer() else f
 
-def int_str(v):
-    """Integer rendered as a text string, e.g. 80 -> '80'."""
-    return str(int(round(float(clean_text(v) if isinstance(v, str) else v))))
-
 _TIME_FULL = re.compile(r"^(\d{1,2}):(\d{2})\s*([ap])\.?m\.?$", re.I)
 _TIME_HOUR = re.compile(r"^(\d{1,2})\s*([ap])\.?m\.?$", re.I)
 

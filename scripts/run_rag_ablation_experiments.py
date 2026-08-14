@@ -50,7 +50,6 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 SENTINEL = SENTINEL_FLOAT
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 ALTERNATE_EMBEDDING_MODEL = "sentence-transformers/paraphrase-MiniLM-L3-v2"
-TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
@@ -186,10 +185,6 @@ def _load_sentence_transformer_model(model_name: str):
 def _load_scipy_rank_metrics():
     from scipy.stats import kendalltau, spearmanr
     return kendalltau, spearmanr
-
-
-def _is_transient_http_status(status_code: int) -> bool:
-    return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
 
 def parse_sample_size(value: str) -> Optional[int]:

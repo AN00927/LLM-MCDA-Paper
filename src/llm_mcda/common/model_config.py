@@ -12,6 +12,8 @@ RETRY_BASE_DELAY = 2
 MAX_RETRY_BACKOFF = 60
 
 
+CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
+
 CRITERION_WEIGHTS = {
     "energy_cost": 0.30,
     "environmental": 0.35,
@@ -21,6 +23,12 @@ CRITERION_WEIGHTS = {
 
 
 TIE_BREAK_PRIORITY = ["environmental", "energy_cost", "comfort", "practicality"]
+
+TRANSIENT_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+
+
+def _is_transient_http_status(status_code: int) -> bool:
+    return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
 
 MODEL_SPECS = {
@@ -73,12 +81,6 @@ def get_output_folder_for_model_id(model_id: str) -> str:
             return spec["output_folder"]
     valid_models = ", ".join(sorted(spec["openrouter_id"] for spec in MODEL_SPECS.values()))
     raise ValueError(f"Unknown model id: '{model_id}'. Must be one of: {valid_models}")
-
-
-
-def get_reasoning_effort(model_key: str = MODEL_KEY) -> str:
-    resolved_key = _resolve_model_key(model_key)
-    return MODEL_SPECS[resolved_key]["reasoning_effort"]
 
 
 def get_reasoning_payload(model_key: str = MODEL_KEY) -> dict:
