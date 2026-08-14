@@ -43,7 +43,7 @@ from model_config import (
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
-from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA
+from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',
@@ -127,38 +127,16 @@ def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, lo
     return ranks.reindex(df.index)
 
 
-def _to_float_or_nan(val):
-    """Coerce a value to float; return NaN on any failure (covers strings,
-    None, empty, '1928', 'FAILED'). Used by D6 type-safe sentinel checks."""
-    try:
-        return float(val)
-    except (ValueError, TypeError):
-        return float("nan")
-
-
 def _clean_match_value(value):
     """Coerce a match parameter to a clean string; return '' for blanks/N/A."""
     s = str(value).strip()
     return "" if s.lower() in ("", "n/a", "nan", "none") else s
 
 
-def _numeric_close(a, b, tolerance=0.5):
-    """Return True if both a and b parse as floats and |a - b| <= tolerance."""
-    try:
-        return abs(float(a) - float(b)) <= tolerance
-    except (ValueError, TypeError):
-        return False
-
-
 def is_failed_row(row):
-    """Check if a row has the 1928 failure sentinel in any score column.
-
-    D6 fix: coerce the value via a tolerant helper before comparing — a string
-    "1928" should still register as a sentinel, not silently leak through.
-    """
+    """Check if a row has the 1928 failure sentinel in any score column."""
     for c in CRITERIA:
-        val = _to_float_or_nan(row.get(f"arch_{c}", np.nan))
-        if val == FAIL_SENTINEL:
+        if is_sentinel(row.get(f"arch_{c}")):
             return True
     return False
 

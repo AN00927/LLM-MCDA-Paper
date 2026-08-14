@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import model_config
-from model_config import MODEL_SPECS, get_output_folder
+from model_config import CRITERIA, MODEL_SPECS, get_output_folder
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
@@ -26,7 +26,6 @@ from sentinel_utils import (
 
 TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 ALT_COLS = ["alternative_1", "alternative_2", "alternative_3"]
-CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
 # The shipped arm ran the full corpus. A smaller default would silently

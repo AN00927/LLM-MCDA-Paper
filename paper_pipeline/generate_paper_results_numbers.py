@@ -215,13 +215,6 @@ for _, r in rag.iterrows():
 # LLM rows computed from per-run CSVs as per-type arithmetic means.
 # ────────────────────────────────────────────────────────────────
 
-def per_type_arithmetic_mean(arch, model, metric):
-    sub = per_run[(per_run["architecture"] == arch) &
-                  (per_run["model"] == model) &
-                  (per_run["decision_type"].isin(["HVAC", "Appliance", "Shower"]))]
-    type_means = sub.groupby("run")[metric].mean()
-    return type_means.mean()
-
 # FixedDefault and NearestNeighbor are deterministic. These used to be literals
 # transcribed into this file, which meant they could not be checked and did not
 # follow a change to the baseline code -- and they silently went stale when the

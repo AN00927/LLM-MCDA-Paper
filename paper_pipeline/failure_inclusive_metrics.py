@@ -148,7 +148,6 @@ def main():
                    "top1_accuracy_conditional", "top1_accuracy_inclusive",
                    "top1_accuracy_delta"]].to_string(index=False))
 
-    # The cells that actually move.
     moved = overall[overall["kendall_tau_delta"].abs() >= 0.005]
     print("")
     print("Cells whose Overall tau moves by >= 0.005 when failures are included:")

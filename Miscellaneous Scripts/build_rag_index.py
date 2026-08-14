@@ -63,9 +63,6 @@ def compute_source_table_hash(csv_dir: Path = SCENARIO_DIR) -> str:
 def load_hvac_data(csv_dir: str) -> pd.DataFrame:
     """Load HVAC data (single file contains everything)."""
     gt_path = Path(csv_dir) / RAG_FILES['HVAC']['ground_truth']
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-    from sentinel_utils import read_table_clean
     df = read_table_clean(gt_path)
     df['alternative_num'] = df.groupby('scenario_id').cumcount() + 1
     return df
@@ -74,9 +71,6 @@ def load_hvac_data(csv_dir: str) -> pd.DataFrame:
 def load_appliance_data(csv_dir: str) -> pd.DataFrame:
     """Load Appliance data (GT file contains everything)."""
     gt_path = Path(csv_dir) / RAG_FILES['Appliance']['ground_truth']
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-    from sentinel_utils import read_table_clean
     df = read_table_clean(gt_path)
     return df
 
@@ -84,16 +78,13 @@ def load_appliance_data(csv_dir: str) -> pd.DataFrame:
 def load_shower_data(csv_dir: str) -> pd.DataFrame:
     """Load Shower data (scenario file contains everything)."""
     scenarios_path = Path(csv_dir) / RAG_FILES['Shower']['ground_truth']
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-    from sentinel_utils import read_table_clean
     df = read_table_clean(scenarios_path)
     return df
 
 
 def format_scenario_text(row, decision_type: str) -> str:
     """Embedding document for a scenario (delegates to the shared builder so the
-    index side stays byte-identical to Eample-Guided_LLM_Scoring.py's query side)."""
+    index side stays byte-identical to Example-Guided_LLM_Scoring.py's query side)."""
     return format_embedding_text(decision_type, row)
 
 
@@ -302,7 +293,7 @@ def build_rag_database(csv_dir=SCENARIO_DIR):
     print(f"Total scenarios: {total_scenarios}")
     print(f"Database location: {CHROMA_DB_PATH}")
     print(f"Collection name: {COLLECTION_NAME}")
-    print(f"\nTo use in Eample-Guided_LLM_Scoring.py.py:")
+    print(f"\nTo use in Example-Guided_LLM_Scoring.py:")
     print(f"  client = chromadb.PersistentClient(path='{CHROMA_DB_PATH}')")
     print(f"  collection = client.get_collection('{COLLECTION_NAME}')")
 

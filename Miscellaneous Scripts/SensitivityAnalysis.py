@@ -153,16 +153,16 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, obj
                  "comfort": 0.663, "practicality": 0.071},
         "Appliance": {"energy_cost": 0.208, "environmental": 0.044,
                       "comfort": 0.292, "practicality": 0.456},
-        "Shower": {"energy_cost": 0.248, "environmental": 0.244,
-                   "comfort": 0.203, "practicality": 0.305},
+        "Shower": {"energy_cost": 0.251, "environmental": 0.245,
+                   "comfort": 0.203, "practicality": 0.300},
     }
     entropy_tab = {
         "HVAC": {"energy_cost": 0.336, "environmental": 0.320,
                  "comfort": 0.269, "practicality": 0.074},
         "Appliance": {"energy_cost": 0.193, "environmental": 0.465,
                       "comfort": 0.124, "practicality": 0.218},
-        "Shower": {"energy_cost": 0.334, "environmental": 0.314,
-                   "comfort": 0.127, "practicality": 0.226},
+        "Shower": {"energy_cost": 0.335, "environmental": 0.316,
+                   "comfort": 0.122, "practicality": 0.227},
     }
     for dt in DECISION_TYPES:
         arm = {d: dict(baseline) for d in DECISION_TYPES}
