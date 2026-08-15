@@ -1,13 +1,10 @@
-"""AH parameter-provenance ablation: true vs extracted vs default hidden parameters.
+"""AH parameter-provenance ablation: extracted vs default hidden parameters.
 
 Isolates how much the LLM's parameter extraction contributes to A_H's ranking
 accuracy, beyond the contribution of simply having the deterministic calculator.
-Three arms, all scored by the same reference calculators over the same 195 test
+Two arms, both scored by the same reference calculators over the same 195 test
 scenarios:
 
-  true_params    -- the calculator receives the scenario's true engineering values.
-                    This is the reference ranking itself, so it is the ceiling:
-                    the best A_H could do with perfect extraction.
   extracted      -- the calculator receives the values the LLM actually returned,
                     read from the extracted_* columns of an existing
                     LLM-Parameterized_Reference_Scoring_results.xlsx.
@@ -20,8 +17,12 @@ scenarios:
                     including the alternative order handed to the calculator, is
                     identical to the `extracted` arm. See below.
 
-Extraction's contribution is the gap between default_params and extracted; the
-headroom remaining is the gap between extracted and true_params.
+Both arms are scored against the ranking the reference calculator produces from
+the scenario's true engineering values. That reference is the scoring target,
+not a reported arm: entering it as an arm would only restate tau = 1.0 and
+MAE = 0 for every scenario, which is true by construction and says nothing about
+the LLM. Extraction's contribution is the gap between default_params and
+extracted.
 
 ALTERNATIVE-ORDER ARM
 ---------------------
@@ -170,10 +171,6 @@ SCENARIO_FILES = {
 }
 
 ARM_SPECS = OrderedDict([
-    ("true_params", {
-        "label": "True hidden parameters (reference ceiling)",
-        "source": "truth",
-    }),
     ("extracted", {
         "label": "LLM-extracted hidden parameters (5-run aggregate)",
         "source": "extracted",
@@ -799,7 +796,6 @@ def run(args) -> pd.DataFrame:
             # entry per collected run, so the headline row averages over its
             # runs instead of resting on whichever run happened to be first.
             arm_entries = [
-                ("true_params", "", true_params(gt_row, dtype)),
                 ("extracted", "", extracted_params(by_sid[sid], dtype)
                  if sid in by_sid else None),
                 ("default_params", "", defaults[dtype]),
@@ -1195,7 +1191,7 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="AH parameter-provenance ablation (true vs extracted vs default). "
+        description="AH parameter-provenance ablation (extracted vs default). "
                     "Makes zero API calls.")
     p.add_argument("--models", nargs="+",
                    default=list(MODEL_SPECS.keys()),
@@ -1275,7 +1271,7 @@ def main():
         return "\n".join(out)
 
     lines = ["# AH Parameter-Provenance Ablation", "",
-             "Arms: true (ceiling) / extracted (actual) / order_reversed / default (floor).",
+             "Arms: extracted (actual) / order_reversed / default (floor).",
              "", _md(summary[cols])]
 
     pairs, order_summary = order_reversal_analysis(args.models)

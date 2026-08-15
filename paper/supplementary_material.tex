@@ -454,6 +454,7 @@ Appendix~B, each applied pooled across the corpus and per decision type. No
 value in either table is pooled across models.
 
 \begin{table*}[htbp]
+\centering
 \begin{threeparttable}
 \footnotesize
 \centering
@@ -489,6 +490,7 @@ MEREC HVAC vector  & \textbf{0.676} & 0.600 & 0.985 & 0.333 & 0.413 & 0.984 & 0.
 \end{table*}
 
 \begin{table*}[t]
+\centering
 \begin{threeparttable}
 \footnotesize
 \centering
@@ -536,6 +538,7 @@ We recomputed the shower reference under the corrected band before deciding whet
 \label{app:rag_ablation_full}
 
 \begin{table}[t]
+\centering
 \begin{threeparttable}
 \small
 \centering
@@ -575,8 +578,9 @@ Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.172,\, 0.175]$) 
 \end{table}\subsection{RAG Ablation: Test-Family Bookkeeping}
 \label{app:rag_ablation_significance}
 
-A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) across the seven LLM configurations within each model, giving a sixteen-test family of four models by four metrics; the offline nearest-neighbor baseline has no per-model configuration and so enters the descriptive bootstrap reported above rather than any omnibus. Holm correction is applied across this family before any omnibus result is treated as significant, and post-hoc pairwise Wilcoxon signed-rank tests, themselves Holm-corrected within their own pairwise family, are computed only for the model--metric cells whose corrected omnibus remains significant.
+A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) across the seven LLM configurations within each model, giving a sixteen-test family of four models by four metrics; the offline \texttt{nearest-neighbor} baseline has no per-model configuration and so enters the descriptive bootstrap reported above rather than any omnibus. Holm correction is applied across this family before any omnibus result is treated as significant, and post-hoc pairwise Wilcoxon signed-rank tests, themselves Holm-corrected within their own pairwise family, are computed only for the model--metric cells whose corrected omnibus remains significant.
 \begin{figure*}[htbp]
+\centering
 \begin{threeparttable}
 \centering
 \begin{minipage}{0.24\textwidth}
@@ -717,6 +721,7 @@ Two comparisons carry heavy tie loads, both of them Gemini's $\mathcal{A}_{\text
 Table~\ref{tab:effect_sizes} reports Cliff's $\delta$ for each pairwise comparison.
 
 \begin{table}[t]
+\centering
 \begin{threeparttable}
 \small
 \centering
@@ -749,6 +754,7 @@ Comparison & Model & $\tau$ & MAE & Top-1 \\
 Confidence intervals resample scenarios, not runs. Each of the 10,000 replicates draws 195 scenarios with replacement and carries all five runs of a drawn scenario together, so an interval covers the variation a different draw of households produces rather than the variation a different sampling seed produces. Scenarios are the unit a reader generalizes over, so the resampling treats them as the cluster. Table~\ref{tab:bootstrap_paired} reports paired architecture differences, drawing one scenario index and scoring both arms on it.
 
 \begin{table}[t]
+\centering
 \begin{threeparttable}
 \footnotesize
 \centering
@@ -793,6 +799,7 @@ Comparison & Model & $\tau$ & MAE & Top-1 (pp) \\
 Table~\ref{tab:prompt_ablation} reports Kendall's $\tau$ and Top-1 accuracy for every architecture, model, and prompt variant.
 
 \begin{table*}[htbp]
+\centering
 \begin{threeparttable}
 \footnotesize
 \centering
@@ -829,7 +836,7 @@ $\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}\footnotesize
-\item Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and no\_anchors, which use ten runs: no\_anchors was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Gemini cells use three runs (rationale below). Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no no\_anchors variant because its shipped prompt contains no anchors.
+\item Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and \texttt{no\_anchors}, which use ten runs: \texttt{no\_anchors} was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Gemini cells use three runs (rationale below). Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no \texttt{no\_anchors} variant because its shipped prompt contains no anchors.
 \end{tablenotes}
 \end{threeparttable}
 \caption{Prompt-sensitivity ablation. Within each model, every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$, so no prompt perturbation reverses the architecture ordering for a fixed model.}
@@ -839,11 +846,12 @@ $\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
 \subsection{Prompt Ablation Significance}
 \label{app:prompt-ablation-significance}
 
-Gemini's prompt-ablation cells use three runs against the five or ten the other three models use; the significance tests are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation of 0.008--0.021 is the lowest of the four models, so three runs resolve its cell means at the precision reported. The no\_anchors variant runs on ten repetitions instead of five for DeepSeek, GPT-OSS, and Qwen, versus five for cot\_scaffold and scale\_0\_10; Gemini runs three repetitions on every variant.
+Gemini's prompt-ablation cells use three runs against the five or ten the other three models use; the significance tests are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation of 0.008--0.021 is the lowest of the four models, so three runs resolve its cell means at the precision reported. The \texttt{no\_anchors} variant runs on ten repetitions instead of five for DeepSeek, GPT-OSS, and Qwen, versus five for \texttt{cot\_scaffold} and \texttt{scale\_0\_10}; Gemini runs three repetitions on every variant.
 
 Table~\ref{tab:prompt_friedman} reports the Friedman omnibus tests for $\mathcal{A}_{\text{E}}$, and Table~\ref{tab:prompt_pairwise} reports the pairwise comparisons that reach significance under the two-stage Holm correction with a fully reported effect size.
 
 \begin{table}[t]
+\centering
 \begin{threeparttable}
 \small
 \centering
@@ -871,6 +879,7 @@ Qwen & Top-1 & 9.87 & 0.007 & 0.086 \\
 \end{table}
 
 \begin{table}[t]
+\centering
 \begin{threeparttable}
 \small
 \centering
@@ -881,11 +890,11 @@ Qwen & Top-1 & 9.87 & 0.007 & 0.086 \\
 \toprule
 Arch. & Model & Comparison & Value & $p_{\text{Holm}}$ & Cliff's $\delta$ \\
 \midrule
-$\mathcal{A}_{\text{E}}$ & DeepSeek & control vs.\ cot\_scaffold (Top-1) & 0.552 $\to$ 0.367 & $2.9\times10^{-7}$ & 0.276 (small) \\
-$\mathcal{A}_{\text{E}}$ & DeepSeek & control vs.\ scale\_0\_10 (Top-1) & 0.552 $\to$ 0.478 & 0.003 & 0.116 (negligible) \\
-$\mathcal{A}_{\text{E}}$ & DeepSeek & cot\_scaffold vs.\ scale\_0\_10 (Top-1) & 0.367 $\to$ 0.478 & $2.2\times10^{-4}$ & $-$0.190 (small) \\
-$\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ cot\_scaffold ($\tau$) & $-$0.052 $\to$ 0.092 & $3.8\times10^{-4}$ & $-$0.165 (small) \\
-$\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ scale\_0\_10 ($\tau$) & $-$0.052 $\to$ 0.015 & 0.028 & $-$0.100 (negligible) \\
+$\mathcal{A}_{\text{E}}$ & DeepSeek & control vs.\ \texttt{cot\_scaffold} (Top-1) & 0.552 $\to$ 0.367 & $2.9\times10^{-7}$ & 0.276 (small) \\
+$\mathcal{A}_{\text{E}}$ & DeepSeek & control vs.\ \texttt{scale\_0\_10} (Top-1) & 0.552 $\to$ 0.478 & 0.003 & 0.116 (negligible) \\
+$\mathcal{A}_{\text{E}}$ & DeepSeek & \texttt{cot\_scaffold} vs.\ \texttt{scale\_0\_10} (Top-1) & 0.367 $\to$ 0.478 & $2.2\times10^{-4}$ & $-$0.190 (small) \\
+$\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ \texttt{cot\_scaffold} ($\tau$) & $-$0.052 $\to$ 0.092 & $3.8\times10^{-4}$ & $-$0.165 (small) \\
+$\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ \texttt{scale\_0\_10} ($\tau$) & $-$0.052 $\to$ 0.015 & 0.028 & $-$0.100 (negligible) \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -896,9 +905,10 @@ $\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ scale\_0\_10 ($\tau$) & $-$0.052 
 \end{table}\subsection{Parameter-Source Ablation Significance}
 \label{app:paramprov-significance}
 
-Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: for each model, ranking accuracy with the scenario's true hidden parameters (the ceiling), the LLM's extracted parameters, and a single corpus-median constant per parameter (no per-scenario inference).
+Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: for each model, ranking accuracy with the LLM's extracted parameters and a single corpus-median constant per parameter (no per-scenario inference).
 
 \begin{table*}[htbp]
+\centering
 \begin{threeparttable}
 \footnotesize
 \centering
@@ -908,37 +918,31 @@ Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: 
 \toprule
 Model & Parameter source & $\tau$ & Top-1 & MAE \\
 \midrule
-GPT-OSS & True (ceiling) & 1.000 & 1.000 & 0.000 \\
 GPT-OSS & LLM-extracted & 0.921 & 0.943 & 0.046 \\
 GPT-OSS & Corpus median & 0.641 & 0.769 & 0.122 \\
 \midrule
-Qwen & True (ceiling) & 1.000 & 1.000 & 0.000 \\
 Qwen & LLM-extracted & 0.897 & 0.913 & 0.066 \\
 Qwen & Corpus median & 0.641 & 0.769 & 0.122 \\
 \midrule
-DeepSeek & True (ceiling) & 1.000 & 1.000 & 0.000 \\
-DeepSeek & LLM-extracted & 0.904 & 0.913 & 0.041 \\
+DeepSeek & LLM-extracted & 0.904 & 0.913 & 0.040 \\
 DeepSeek & Corpus median & 0.641 & 0.769 & 0.122 \\
 \midrule
-Gemini & True (ceiling) & 1.000 & 1.000 & 0.000 \\
 Gemini & LLM-extracted & 0.921 & 0.928 & 0.047 \\
 Gemini & Corpus median & 0.641 & 0.769 & 0.122 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \begin{tablenotes}
-\item All conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The true-parameter condition reproduces the reference ranking exactly by construction, which serves as a correctness check on the harness. The corpus-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows serve as a second correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
+\item Both conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The corpus-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows serve as a correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
 \end{tablenotes}
 \end{threeparttable}
-\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with true, LLM-extracted, and corpus-median hidden parameters. Significance testing on these conditions follows.}
+\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with LLM-extracted and corpus-median hidden parameters. Significance testing on these conditions follows.}
 \label{tab:param_provenance}
 \end{table*}
 
-Significance for the parameter-source ablation is tested within each model rather than pooled across models. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve Holm-corrected Friedman omnibus tests, with post-hoc Wilcoxon testing restricted to the model--metric cells whose corrected result remains significant.
+Significance for the parameter-source ablation is tested within each model rather than pooled across models. With two conditions there is exactly one comparison per model--metric cell, so each cell is tested directly with a paired Wilcoxon signed-rank test over the 195 scenarios. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve such tests, Holm-corrected as a single family.
 
-Friedman tests confirm the three conditions (true, LLM-extracted, corpus-median) differ from one another across the 195 scenarios for every model on every metric ($\chi^2_2$ ranging from 52.5 to 305.3, all $p_{\text{Holm}} < 10^{-11}$ across the twelve-test family). The omnibus is a weak gate in this design rather than a finding: true\_params reproduces the ground truth by construction and default\_params is a fixed constant, so the contrast between them carries no model output and returns the same p-value for all four models. The claim rests on the post-hoc comparison instead. Post-hoc Wilcoxon signed-rank tests show the extracted condition beats the corpus-median condition on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-6}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-10}$, $\delta$ between 0.35 and 0.48, medium to large); the Top-1 comparison is significant for all four models but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both conditions already place the correct alternative first most of the time.
-
-The extracted condition also differs from the true-parameter ceiling significantly on all three metrics for all four models, but on Kendall's $\tau$ and Top-1 the effect size is negligible for every model ($|\delta| \leq 0.118$); only on MAE is the gap large ($\delta > 0.88$ for all four models). With $n=195$ paired scenarios, a small and consistent shortfall is enough to reach significance without being practically large; the shortfall is a score-calibration gap rather than a ranking gap.
+All twelve tests are significant after correction. The extracted condition beats the corpus-median condition on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-5}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-9}$, $\delta$ between 0.35 and 0.49, medium to large); the Top-1 comparison is significant for all four models ($p_{\text{Holm}} < 10^{-3}$) but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both conditions already place the correct alternative first most of the time.
 
 \subsection{Alternative-Ordering Ablation: Full Statistics}
 \label{app:alternative-order-full}
@@ -948,6 +952,7 @@ Of the four models tested under the permutation protocol, two separated at the p
 Table~\ref{tab:mcnemar_order} gives the per-model McNemar statistics for $\mathcal{A}_{\text{D}}$ top-1 correctness under order reversal. Each reversed run is compared against all five shipped runs of the same model, so the discordant-pair counts are means over those five comparisons and the table reports the median and maximum $p$ across them.
 
 \begin{table}[t]
+\centering
 \begin{threeparttable}
 \small
 \centering
@@ -981,6 +986,7 @@ No model reaches significance on any comparison, with the smallest median $p$ at
 The main results use per-run-then-average aggregation: failed scenarios are excluded from their run's metric computation, and metrics are averaged across five runs. To test sensitivity to this exclusion, Table~\ref{tab:imputed_comparison} reports an imputed alternative at per-run granularity: within each run, scenarios that carry a failed score receive the scale midpoint (0.5) on the affected criterion scores before that run's metrics are computed, and every run evaluates the full 195-scenario test set.
 
 \begin{table}[htbp]
+\centering
 \begin{threeparttable}
 \small\centering
 \caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ values are means across all four models; $\mathcal{A}_{\text{H}}$ is broken out per model, because imputation moves one model there and leaves the other three unchanged.}
@@ -1029,6 +1035,7 @@ $\mathcal{A}_{\text{H}}$ (Qwen) & Top-1 (\%) & 89.7 & 89.5 \\
 Table~\ref{tab:overall_by_model} reports the full numerical results for each metric, architecture, and model, with five-run means and standard deviations.
 
 \begin{table}[htbp]
+\centering
 \begin{threeparttable}
 \footnotesize
 \centering

@@ -24,12 +24,12 @@ silently drops them from the shipped results.
 
 Isolates how much of the LLM-Parameterized architecture's accuracy comes from LLM
 parameter extraction versus from merely having access to the reference calculator.
-Three arms, all scored by the same reference calculators over the same 195 test
-scenarios:
+Two arms, both scored by the same reference calculators over the same 195 test
+scenarios, against the ranking those calculators produce from each scenario's true
+engineering values:
 
 | Arm | Hidden parameters sourced from | Interpretation |
 | --- | --- | --- |
-| `true_params` | scenario source sheets (these *are* the reference) | ceiling |
 | `extracted` | `extracted_*` columns of `LLM-Parameterized_Reference_Scoring_results.xlsx` | actual |
 | `default_params` | corpus median (numeric) / mode (categorical), one constant per parameter | floor |
 
@@ -37,15 +37,14 @@ scenarios:
 
 | model | arm | n_scored | success_rate | kendall_tau | top1_accuracy | mae |
 | --- | --- | --- | --- | --- | --- | --- |
-| gptoss | true_params | 195 | 1.0000 | 1.0000 | 1.0000 | 0.0000 |
-| gptoss | extracted | 194 | 0.9949 | 0.9210 | 0.9433 | 0.0463 |
-| gptoss | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1222 |
-| qwen | true_params | 195 | 1.0000 | 1.0000 | 1.0000 | 0.0000 |
-| qwen | extracted | 195 | 1.0000 | 0.8974 | 0.9128 | 0.0659 |
-| qwen | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1222 |
-| deepseek | true_params | 195 | 1.0000 | 1.0000 | 1.0000 | 0.0000 |
-| deepseek | extracted | 195 | 1.0000 | 0.9043 | 0.9128 | 0.0411 |
-| deepseek | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1222 |
+| gptoss | extracted | 194 | 0.9949 | 0.9210 | 0.9433 | 0.0465 |
+| gptoss | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1223 |
+| qwen | extracted | 195 | 1.0000 | 0.8974 | 0.9128 | 0.0661 |
+| qwen | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1223 |
+| deepseek | extracted | 195 | 1.0000 | 0.9043 | 0.9128 | 0.0401 |
+| deepseek | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1223 |
+| gemini | extracted | 195 | 1.0000 | 0.9214 | 0.9282 | 0.0470 |
+| gemini | default_params | 195 | 1.0000 | 0.6410 | 0.7692 | 0.1223 |
 
 **Finding.** With no per-scenario inference at all, calculator access alone reaches
 tau = 0.641 / Top-1 = 76.9%. LLM extraction lifts that to tau ~= 0.90 / Top-1 ~= 92%.
@@ -53,8 +52,7 @@ Extraction therefore contributes roughly 0.26 tau *beyond* having the calculator
 architecture's accuracy is not an artifact of errors cancelling inside a deterministic
 scorer. `default_params` is identical across models because it consumes no model output.
 
-**Validity checks.** `true_params` returns exactly tau = 1.0 / MAE = 0.0, which is
-correct by construction. `extracted` tau (0.897-0.921) tracks the published
+**Validity checks.** `extracted` tau (0.897-0.921) tracks the published
 LLM-Parameterized tau (0.880-0.897), validating the harness against known numbers.
 
 ### Implementation notes
@@ -291,11 +289,14 @@ own -- they import `friedman_test_per_metric`, `posthoc_wilcoxon_holm`, `cliff_d
 and `bootstrap_ci_per_config` from `run_rag_ablation_experiments.py`, so all three ablations are
 tested by the same reviewed code. Tests run within strata (architecture x model for the
 prompt ablation, model for the parameter-provenance ablation); pooling would confound
-the manipulation with model identity.
+the manipulation with model identity. The parameter-provenance ablation has only two
+arms, so it runs no Friedman omnibus: with a single comparison per model x metric cell,
+each cell is tested directly with a paired Wilcoxon signed-rank test and the twelve
+resulting p-values are Holm-corrected as one family.
 
-Parameter-provenance result: `extracted` beats `default_params` on all three models and
-all three metrics, 27 of 27 pairs significant, with medium-to-large Cliff's delta on MAE
-(0.35 to 0.48). Extraction contributes real signal over a corpus-median baseline.
+Parameter-provenance result: `extracted` beats `default_params` on all four models and
+all three metrics, 12 of 12 cells significant, with medium-to-large Cliff's delta on MAE
+(0.35 to 0.49). Extraction contributes real signal over a corpus-median baseline.
 
 ---
 
