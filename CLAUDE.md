@@ -165,6 +165,12 @@ boundary in Results and Discussion. Rules:
   across multiple models, do not pool all data into a single aggregate table
   without asking the user first. Show per-model breakdowns or at minimum
   strongest+weakest model.
+- **Table/Figure Centering Troubleshooting:** If an element using `\centering`
+  is not actually centering on the page, check parent environment constraints.
+  A common culprit is `threeparttable` or a similar wrapper missing an explicit
+  `\centering` declaration at its root level, or local alignment blocks
+  overriding the float's global alignment. Ensure `\centering` is placed
+  immediately after `\begin{threeparttable}`.
 
 ### Reading the user's inline TODOs
 
