@@ -6,7 +6,6 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
-\usepackage{threeparttable}
 \usepackage{alltt}
 \usepackage{float}
 \usepackage{textcomp}
@@ -62,9 +61,7 @@
 \suppsection{Extended Methods}
 \label{app:model_routing}
 
-The four models and their exact OpenRouter identifiers are GPT-OSS-20B (\texttt{openai/gpt-oss-20b:exacto}, reasoning, low effort), Qwen 3.5 9B (\texttt{qwen/qwen3.5-9b:exacto}, non-reasoning), DeepSeek V4 Flash (\texttt{deepseek/deepseek-v4-flash:exacto}, hybrid reasoning), and Gemini 3.5 Flash 
-
-\noindent(\texttt{google/gemini-3.5-flash:exacto}, reasoning, minimal effort). The \texttt{:exacto} suffix is an OpenRouter provider-routing variant that restricts serving to providers meeting a fixed accuracy standard; it is part of the model identifier and is required to reproduce these runs.
+The four models and their exact OpenRouter identifiers are GPT-OSS-20B (\texttt{openai/gpt-oss-20b:exacto}, reasoning, low effort), Qwen 3.5 9B (\texttt{qwen/qwen3.5-9b:exacto}, non-reasoning), DeepSeek V4 Flash (\texttt{deepseek/deepseek-v4-flash:exacto}, hybrid reasoning), and Gemini 3.5 Flash (\texttt{google/gemini-3.5-flash:exacto}, reasoning, minimal effort). The \texttt{:exacto} suffix is an OpenRouter provider-routing variant that restricts serving to providers meeting a fixed accuracy standard; it is part of the model identifier and is required to reproduce these runs.
 
 At least two alternatives share a weighted score in 3.2\% of Gemini's $\mathcal{A}_{\text{D}}$ scenarios, 5.9\% of DeepSeek's, 12.6\% of GPT-OSS's and 21.3\% of Qwen's, and in 2.7\%, 19.1\%, 6.4\% and 13.9\% of the same four models' $\mathcal{A}_{\text{E}}$ scenarios. All three alternatives carrying identical scores on all four criteria is rarer, between 0.0\% and 1.2\% in every model--architecture cell, so the tie-break rule usually separates alternatives that already differ on at least one criterion.
 \subsection{Full Prompt Texts}
@@ -72,7 +69,7 @@ At least two alternatives share a weighted score in 3.2\% of Gemini's $\mathcal{
 
 Full verbatim text of the system and extraction prompts, in the order the architectures appear in the framework.
 
-\subsection{\texorpdfstring{$\mathcal{A}_{\text{D}}$}{A\_D} System Prompt}
+\subsubsection{\texorpdfstring{$\mathcal{A}_{\text{D}}$}{A\_D} System Prompt}
 
 \begin{minipage}{\columnwidth}
 \begin{alltt}
@@ -119,7 +116,7 @@ Shower (duration):
 \end{alltt}
 \end{minipage}
 
-\smallskip
+\medskip
 \noindent\textbf{Output format (return ONLY this JSON):}
 \begin{lstlisting}[style=jsonstyle]
 {
@@ -129,11 +126,19 @@ Shower (duration):
   "practicality": X
 }
 \end{lstlisting}
-\noindent where each X is between 0.0 and 1.0. You must distinguish between the criteria: do not assign the same score to all 4 criteria for an alternative unless performance is actually identical across them.
+\begin{minipage}{\columnwidth}
+\begin{alltt}
+\footnotesize
+where each X is between 0.0 and 1.0. You must distinguish between the criteria: do
+  not assign the same score to all 4 criteria for an alternative unless performance
+  is actually identical across them.
+\end{alltt}
+\end{minipage}
 
+\medskip
 \noindent The user prompt includes the other alternatives as reference so that it doesn't assign the same scores to all alternatives.
 
-\subsection{\texorpdfstring{$\mathcal{A}_{\text{E}}$}{A\_E} System Prompt}
+\subsubsection{\texorpdfstring{$\mathcal{A}_{\text{E}}$}{A\_E} System Prompt}
 
 \begin{minipage}{\columnwidth}
 \begin{alltt}
@@ -151,7 +156,7 @@ You consistently utilize all information given in the scenario context. Score al
 \end{alltt}
 \end{minipage}
 
-\smallskip
+\medskip
 \noindent\textbf{Output format (return ONLY this JSON):}
 \begin{lstlisting}[style=jsonstyle]
 {
@@ -161,9 +166,16 @@ You consistently utilize all information given in the scenario context. Score al
   "practicality": X
 }
 \end{lstlisting}
-\noindent where each X is between 0.0 and 1.0. You must distinguish between the criteria: do not assign the same score to all 4 criteria for an alternative unless performance is actually identical across them.
+\begin{minipage}{\columnwidth}
+\begin{alltt}
+\footnotesize
+where each X is between 0.0 and 1.0. You must distinguish between the criteria: do
+  not assign the same score to all 4 criteria for an alternative unless performance
+  is actually identical across them.
+\end{alltt}
+\end{minipage}
 
-\subsection{\texorpdfstring{$\mathcal{A}_{\text{H}}$}{A\_H} Extraction Prompt}
+\subsubsection{\texorpdfstring{$\mathcal{A}_{\text{H}}$}{A\_H} Extraction Prompt}
 
 \begin{minipage}{\columnwidth}
 \begin{alltt}
@@ -188,7 +200,7 @@ INSTRUCTIONS:
 \end{alltt}
 \end{minipage}
 
-\smallskip
+\medskip
 \noindent\textbf{For HVAC decisions:}
 \begin{lstlisting}[style=jsonstyle]
 {
@@ -229,7 +241,12 @@ INSTRUCTIONS:
 }
 \end{lstlisting}
 
-\noindent Return ONLY the JSON, no explanation.
+\begin{minipage}{\columnwidth}
+\begin{alltt}
+\footnotesize
+Return ONLY the JSON, no explanation.
+\end{alltt}
+\end{minipage}
 
 \subsection{Retrieved Exemplar Rendering}
 \noindent A retrieved HVAC exemplar (engineering parameters and ground-truth scores included) is rendered as:
@@ -253,18 +270,14 @@ Example 1:
   - HVAC Age: 12 years
   - Utility Budget: \$285/month
   Expert scores:
-  * 75 F: Energy Cost: 0.5/1, Environmental: 0.5/1,
-    Comfort: 0.9/1, Practicality: 0.8/1
-    | MAVT: 0.61, Rank: 2
-  * 78 F: Energy Cost: 0.5/1, Environmental: 0.5/1,
-    Comfort: 0.8/1, Practicality: 0.8/1
-    | MAVT: 0.62, Rank: 1
-  * 81 F: Energy Cost: 0.5/1, Environmental: 0.5/1,
-    Comfort: 0.5/1, Practicality: 0.8/1
-    | MAVT: 0.58, Rank: 3
+  * 75 F: Energy Cost: 0.5/1, Environmental: 0.5/1, Comfort: 0.9/1, Practicality: 0.8/1 | MAVT: 0.61, Rank: 2
+  * 78 F: Energy Cost: 0.5/1, Environmental: 0.5/1, Comfort: 0.8/1, Practicality: 0.8/1 | MAVT: 0.62, Rank: 1
+  * 81 F: Energy Cost: 0.5/1, Environmental: 0.5/1, Comfort: 0.5/1, Practicality: 0.8/1 | MAVT: 0.58, Rank: 3
 Use these examples as reference, but score based on
 the specific scenario above.
-\end{alltt}\subsection{RAG Corpus Description}
+\end{alltt}
+
+\subsection{RAG Corpus Description}
 \label{app:rag_corpus}
 
 The retrieval-augmented generation (RAG) corpus consists of 90 unique
@@ -277,7 +290,7 @@ ShowerRAGScenarios.xlsx).
 Scenarios were generated from the same parameter distribution as the test
 set but kept separate to prevent any test scenario from appearing in the
 retrieval index. A combinatorial audit ensured that no parameter
-combination was underrepresented: each categorical cross-cell (insulation
+combination was absent: each categorical cross-cell (insulation
 tier $\times$ housing type, appliance type $\times$ flow-rate band, etc.)
 contained at least one scenario, and the 90 RAG scenarios were drawn from
 this audited matrix. The 195 test scenarios were built and rebalanced
@@ -295,8 +308,8 @@ budget, outdoor temperature, house age) plus band labels for age and flow
 rate, but excludes engineering parameters and ground-truth scores, which
 appear only in the display metadata of the retrieved exemplars.
 
-The disjointness of test and RAG sets was verified by construction (the
-rebuild script exports them from separate master-sheet partitions).
+The test and RAG sets are disjoint by construction: the rebuild script
+exports them from separate master-sheet partitions.
 
 \subsection{Parameter Ranges and Band Labels}
 \label{app:parameter_ranges}
@@ -305,7 +318,51 @@ Each insulation tier spans a range of R-values drawn from standard U.S.\ residen
 
 The appliance age presented to the LLM architectures is a band label (1--3, 4--6, 7--9, 10--12, 13--17, and 28--32 years in the test corpus), derived from the scenario's raw integer age by a single shared helper so that the label is byte-identical on the query and index sides of retrieval. The scenario sheets retain both the raw age and an independent per-cycle energy value (kWh/cycle) drawn from the ENERGY STAR certified-products database, and the ground-truth calculator scores kWh/cycle directly without reference to age. Within a single appliance type the band and the per-cycle energy are only moderately associated (Spearman's $\rho = 0.36$ for dishwashers, $0.38$ for dryers, and $0.69$ for washing machines), so two appliances sharing a band can differ materially in energy draw---a 7--9~year dryer ranges from 2.40 to 3.50\,kWh/cycle across the corpus.
 
-For the Flow Rate parameter, the scenario's numeric GPM is bucketed into three qualitative labels: \texttt{low\_flow} ($\le$2.0\,GPM, including EPA WaterSense certified showerheads \citep{epawatersense}), \texttt{standard} (2.5--3.0\,GPM, at or near the Energy Policy Act of 1992 federal maximum of 2.5\,GPM \citep{epawatersense}), and \texttt{high\_flow} ($>$3.0\,GPM). The label is present in the LLM test scenarios only, and is mapped from those ranges to the actual numeric GPM from the actual scenario.
+For the Flow Rate parameter, the scenario's numeric GPM is bucketed into three qualitative labels: \texttt{low\_flow} ($\le$2.0\,GPM, including EPA WaterSense certified showerheads \citep{epawatersense}), \texttt{standard} (2.5--3.0\,GPM, at or near the Energy Policy Act of 1992 federal maximum of 2.5\,GPM \citep{epawatersense}), and \texttt{high\_flow} ($>$3.0\,GPM). The label is present in the LLM test scenarios only; the ground-truth calculator scores the scenario's numeric GPM directly.
+
+Housing type enters two calculators through separate coefficients. In the HVAC load equation it scales exposed envelope area by $m_h$, following ACCA Manual~J exposure conventions \citep{accamanualj}: a mid-unit apartment shares most of its walls and takes the smallest multiplier, a detached single-family home the largest. In the appliance comfort model it scales the late-night noise penalty by $\kappa$, which applies only to cycles run between 10\,p.m.\ and 7\,a.m.\ whose rated sound level exceeds the 45\,dBA threshold; there the ordering inverts, because shared walls transmit vibration to neighbours. Table~\ref{tab:housing_mappings} gives both mappings.
+
+\begin{table}[htbp]
+\centering
+\caption{Housing-type mappings used by the reference calculators.}
+\label{tab:housing_mappings}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Housing type & Envelope multiplier $m_h$ & Noise factor $\kappa$ \\
+\midrule
+Apartment     & 1.2 & 1.5 \\
+Condo         & 1.2 & 1.5 \\
+Townhouse     & 1.5 & 1.2 \\
+Rowhouse      & 1.5 & 1.2 \\
+Single-family & 1.7 & 0.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two coefficients come from independent branches of the calculators. A housing type outside this list falls back to the detached defaults, $m_h = 1.7$ and $\kappa = 0.8$.
+
+\subsection{Monthly-Cost Conversions}
+\label{app:monthly_cost}
+
+Each calculator converts its per-decision energy cost into a monthly figure before the budget-penalty equation of the main text divides that figure by the household's stated budget. All three conversions take the same form, a count of decision events per month times the per-event cost, but draw the count from a different source.
+
+For HVAC the count is fixed at three 8-hour conditioning periods per day across 30 days:
+\begin{equation}
+C_{\mathrm{monthly}} = 90\,C_{\mathrm{8h}}.
+\end{equation}
+
+For Appliance the count is the appliance's cycles per month:
+\begin{equation}
+C_{\mathrm{monthly}} = n_{\mathrm{cycles}}(\text{type})\,C_{\mathrm{cycle}},
+\end{equation}
+with $n_{\mathrm{cycles}} = 18$ for dishwashers, 25 for washers, and 24 for dryers, rounded to whole cycles from the 215, 300, and 283 cycles per year of the ENERGY STAR and DOE test procedures \citep{energystar_dishwasher_criteria2023,energystar_clotheswasher,doe_dryer_tp_2011}.
+
+For Shower the count scales with household size at 0.9 showers per person per day \citep{reu2016}:
+\begin{equation}
+C_{\mathrm{monthly}} = 0.9 \times 30\,n\,C_{\mathrm{shower}} = 27\,n\,C_{\mathrm{shower}},
+\end{equation}
+where $n$ is the household size.
+
 \subsection{Worked Example: \texorpdfstring{$\mathcal{A}_{\text{H}}$}{A_H} HVAC Scenario}
 \label{app:hvac_worked}
 
@@ -329,8 +386,8 @@ before being merged with the household-reported fields above and the fixed
 electricity rate of \$0.19/kWh to produce the full scenario dict passed to
 \texttt{HVACGroundTruthCalculator}.
 
-Carrying that scenario through the HVAC calculator equations above
-for all three alternatives yields:
+Carrying that scenario through the HVAC calculator equations of the main
+text for all three alternatives yields:
 \begin{center}
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
@@ -367,7 +424,7 @@ Table~\ref{tab:failure_modes} breaks the failure counts down by failure mode. Th
 
 \begin{table}[htbp]
 \small\centering
-\caption{Nonzero-firing failure mode counts per architecture (5-run total across all models).\protect\footnotemark}
+\caption{Nonzero-firing failure mode counts per architecture (5-run total across all models).}
 \label{tab:failure_modes}
 \begin{tabular}{lccc}
 \toprule
@@ -378,27 +435,26 @@ Mode & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text
 \texttt{FAILED\_EXTRACTION\_INVALID\_PARAMETERS} & 0 & 0 & 120 \\
 \bottomrule
 \end{tabular}
-\footnotetext{Counts are 5-run totals summed across all four models, on a mode-occurrence basis (one count per failure code firing on a given run). Of fifteen possible failure codes, only these three ever fired across all 60 runs; the remaining twelve were checked and never triggered. These totals (6/11/120) differ from unique-scenario-run totals (9/10/120) because a unique failed scenario-run does not always map to exactly one mode-occurrence: for $\mathcal{A}_{\text{D}}$, three scenario-run failures have no single attributable mode code recorded; for $\mathcal{A}_{\text{E}}$, one scenario-run failure triggered its mode code twice across its alternative-scoring calls.}
 \end{table}
+
+
+Counts are 5-run totals summed across all four models, on a mode-occurrence basis (one count per failure code firing on a given run). Of fifteen possible failure codes, only these three ever fired across all 60 runs; the remaining twelve were checked and never triggered. These totals (6/11/120) differ from unique-scenario-run totals (9/10/120) because a unique failed scenario-run does not always map to exactly one mode-occurrence: for $\mathcal{A}_{\text{D}}$, three scenario-run failures have no single attributable mode code recorded; for $\mathcal{A}_{\text{E}}$, one scenario-run failure triggered its mode code twice across its alternative-scoring calls.
+
 \subsection{Pennsylvania Time-of-Use Rate Structure}
 \label{app:tou_rates}
 
 Table~\ref{tab:tou_rates} lists the six Pennsylvania utilities used by
 the appliance ground-truth calculator, with their TOU peak/off-peak
-windows and energy rates (\$/kWh). All scenarios use weekday summer rates
-year-round; seasonal peak-window shifts (e.g., PPL winter 4--8pm vs.\
-summer 2--6pm) and weekend off-peak pricing are not modeled.
+windows and energy rates (\$/kWh). The residential electricity rate of \$0.19/kWh used for HVAC cost normalization is the
+statewide bundled baseline \citep{eia_epa_2024,paupc2025}.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\caption{Pennsylvania utility TOU rate structure. Peak window is
-24-hour clock (start, end). All rates in \$/kWh. The residential
-electricity rate of \$0.19/kWh used for HVAC cost normalization is the
-statewide bundled baseline \citep{eia_epa_2024,paupc2025}.}
+\caption{Pennsylvania utility TOU rate structure.}
 \label{tab:tou_rates}
-\begin{tabular}{@{}l cc rr@{}}
+\begin{tabular}{@{}l c rr@{}}
 \toprule
 \textbf{Utility} & \textbf{Peak Window} & \textbf{Peak Rate} &
   \textbf{Off-Peak Rate} \\
@@ -415,16 +471,21 @@ Duquesne   & 2--9pm  & 0.1375 & 0.1375 \\
 \end{table}
 
 PECO (Rate R-TOU) \citep{peco2021} and PPL (Rate RTS) \citep{ppl2025} use a 4-hour afternoon peak window (2--6pm weekdays). The three FirstEnergy utilities (West Penn, Penelec, MetEd) use a 7-hour peak window (2--9pm weekdays), with rates derived from the Jun-2025 Price-to-Compare (PTC) multiplied by approved multipliers \citep{firstenergy2025,firstenergy2026}. Duquesne uses a flat default rate (Rate RS) \citep{duquesne2026}. Shifting a dishwasher cycle from peak to off-peak cuts its per-cycle cost by 49--76\% across these five time-of-use utilities.
+
+Emissions are keyed to a separate, system-wide window rather than to any utility's tariff. The PJM marginal factors are 1.041\,lbs\,CO\textsubscript{2}/kWh across the 7\,a.m.--11\,p.m.\ peak and 0.976\,lbs\,CO\textsubscript{2}/kWh off-peak \citep{pjm2022emissions}, so moving the same cycle out of the emissions peak cuts its emissions by 6.2\%. The two differentials are what separate the energy-cost and environmental criteria for Appliance scheduling: the cost differential is an order of magnitude larger than the emissions differential, and the two windows do not coincide, so a cycle run at 8\,a.m.\ is off-peak for cost and on-peak for emissions.
+\suppsection{Extended Results and Robustness}
+
 \subsection{Realized Criterion Swing}
 \label{app:swing_weights}
 
-Table~\ref{tab:swing_weights} reports, for each criterion and decision type, the mean over scenarios of the nominal weight times the within-scenario score range---the quantity each criterion actually contributes to the spread in MAVT score within a choice set, as distinct from its nominal weight.
+Table~\ref{tab:swing_weights} reports, for each criterion and decision type, the mean over scenarios of the nominal weight times the within-scenario score range---the quantity each criterion contributes to the spread in MAVT score within a choice set, as distinct from its nominal weight.
 
 \begin{table*}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
+\caption{Mean within-scenario swing (nominal weight $\times$ within-scenario score range) by criterion and decision type.}
+\label{tab:swing_weights}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lcccc}
 \toprule
@@ -437,9 +498,6 @@ Practicality & 0.15 & 0.015 & 0.095 & 0.053 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\end{threeparttable}
-\caption{Mean within-scenario swing (nominal weight $\times$ within-scenario score range) by criterion and decision type.}
-\label{tab:swing_weights}
 \end{table*}
 
 \subsection{Full Sensitivity Analysis Results}
@@ -452,13 +510,13 @@ $(0.30,\,0.35,\,0.20,\,0.15)$, the equal-weight vector
 $(0.25,\,0.25,\,0.25,\,0.25)$, and the entropy- and MEREC-derived vectors of
 Appendix~B, each applied pooled across the corpus and per decision type. No
 value in either table is pooled across models.
-
+ Both the reference ranking and the architecture ranking are recomputed under each vector, because a MAVT reference is defined by its weights. Bold marks the two cells in which $\mathcal{A}_{\text{D}}$ exceeds $\mathcal{A}_{\text{E}}$; both occur for Gemini under MEREC vectors.
 \begin{table*}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
-\textbf{Sensitivity analysis: Kendall's $\tau$ by model under reweighting}
+\caption{Kendall's $\tau$ by model and architecture under seven weight vectors. No value is pooled across models.}
+\label{tab:sensitivity_by_model}
 \renewcommand{\arraystretch}{1.15}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{} l rrr rrr rrr rrr @{}}
@@ -480,18 +538,9 @@ MEREC HVAC vector  & \textbf{0.676} & 0.600 & 0.985 & 0.333 & 0.413 & 0.984 & 0.
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \setlength{\tabcolsep}{6pt}
-\begin{tablenotes}
-\footnotesize
-\item Both the reference ranking and the architecture ranking are recomputed under each vector, because a MAVT reference is defined by its weights. Bold marks the two cells in which $\mathcal{A}_{\text{D}}$ exceeds $\mathcal{A}_{\text{E}}$; both occur for Gemini under MEREC vectors. Top-1 accuracy for the same cells appears in Table~\ref{tab:sensitivity_top1} below.
-\end{tablenotes}
-\end{threeparttable}
-\caption{Kendall's $\tau$ by model and architecture under seven weight vectors. No value is pooled across models.}
-\label{tab:sensitivity_by_model}
 \end{table*}
-
-\begin{table*}[t]
+\begin{table*}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
 \renewcommand{\arraystretch}{1.10}
@@ -517,31 +566,33 @@ MEREC HVAC vector  & \textbf{80.4} & 71.5 & 98.5 & 53.6 & 56.5 & 97.9 & 49.1 & 6
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \setlength{\tabcolsep}{6pt}
-\begin{tablenotes}
-\footnotesize
-\item Percentage of the 195 test scenarios whose top-ranked alternative matches
+\end{table*}
+
+Percentage of the 195 test scenarios whose top-ranked alternative matches
 the reference. Bold marks cells in which $\mathcal{A}_{\text{D}}$ exceeds
 $\mathcal{A}_{\text{E}}$; these are the same two Gemini MEREC cells that reverse
 on Kendall's~$\tau$.
-\end{tablenotes}
-\end{threeparttable}
-\end{table*}
 
 \subsection{Ablation Data Provenance}
 \label{app:ablation_provenance}
 
-The RAG and prompt-sensitivity ablations reported in this section were collected against an earlier shower comfort function. That function scored the water-heater setpoint, a storage temperature, against a 110--130\,\textdegree{}F no-penalty band taken from delivery-side comfort and scald thresholds. The shipped function uses 120--140\,\textdegree{}F, anchored instead to CDC storage guidance: below 120\,\textdegree{}F a tank cannot deliver the 105\,\textdegree{}F target with mixing margin and sits inside the \textit{Legionella} amplification range, and above 140\,\textdegree{}F adds standby loss without comfort benefit. The main manuscript's Calculator Simplifications subsection discusses the correction.
+The RAG and prompt-sensitivity ablations reported in this section were collected against an earlier shower comfort function. That function scored the water-heater setpoint, a storage temperature, against a 110--130\,\textdegree{}F no-penalty band taken from delivery-side comfort and scald thresholds. The shipped function uses 120--140\,\textdegree{}F, anchored instead to CDC storage guidance: below 120\,\textdegree{}F a tank cannot deliver the 105\,\textdegree{}F target with mixing margin and sits inside the \textit{Legionella} amplification range, and above 140\,\textdegree{}F the tank adds standby loss without comfort benefit. The main manuscript's Calculator Simplifications subsection discusses the correction.
 
-We recomputed the shower reference under the corrected band before deciding whether to re-collect. The setpoint enters comfort as a per-scenario constant shared by all three alternatives, so it moves a ranking only through the criterion balance. Across the 60 test shower scenarios the correction changes the reference winner in none and the full reference ranking in none. In the 20-scenario shower RAG corpus it changes 1 winner and 2 rankings. Both ablation suites test whether a configuration preserves the architecture ordering, and the narrowest ordering margin either suite resolves is 0.13 in Kendall's $\tau$, so a correction that moves no test reference winner cannot reverse either suite's conclusions. Additionally, 799 of 14,400 $\mathcal{A}_{\text{H}}$ Shower comfort cells (5.5\%) failed to reproduce under the uncorrected calculator because shipped scores omitted cold-weather duration elasticity. Realigning elasticity and applying the 120--140\,\textdegree{}F band yields $\tau = 0.8117$ versus shipped $0.8111$, confirming the gap is rank-neutral and affects score errors only. The headline results in the main text use the corrected reference throughout.
+We recomputed the shower reference under the corrected band before deciding whether to re-collect. The setpoint enters comfort as a per-scenario constant shared by all three alternatives, so it moves a ranking only through the criterion balance. Across the 60 test shower scenarios the correction changes no reference winner and no full reference ranking. In the 20-scenario shower RAG corpus it changes 1 winner and 2 rankings. 
+
+Both ablation suites test whether a configuration preserves the architecture ordering, and the narrowest ordering margin either suite resolves is 0.13 in Kendall's $\tau$, so a correction that moves no test reference winner cannot reverse either suite's conclusions. Separately, 799 of 14,400 $\mathcal{A}_{\text{H}}$ Shower comfort cells (5.5\%) failed to reproduce under the uncorrected calculator because shipped scores omitted cold-weather duration elasticity. Realigning elasticity and applying the 120--140\,\textdegree{}F band yields $\tau = 0.8117$ versus shipped $0.8111$, confirming the gap is rank-neutral and affects score errors only. The headline results in the main text use the corrected reference throughout.
 
 \subsection{RAG Ablation: Full Per-Configuration Table}
 \label{app:rag_ablation_full}
 
-\begin{table}[t]
+Table~\ref{tab:rag_ablation_full} reports Kendall's $\tau$ and MAE for every retrieval configuration and model, together with the offline nearest-neighbor baseline.
+
+\begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \small
 \centering
+\caption{RAG ablation: Kendall's $\tau$ and MAE by configuration.}
+\label{tab:rag_ablation_full}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lcccc}
 \toprule
@@ -570,18 +621,21 @@ Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.172,\, 0.175]$) 
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\begin{tablenotes}
-\item Evaluated on the full 90-scenario RAG corpus (35 HVAC / 35 Appliance / 20 Shower) under leave-one-out retrieval, with all four models. Values are per-model bootstrap point estimates; the corresponding per-model 95\% percentile bootstrap intervals are in \texttt{Analysis/RAG\_Ablation/rag\_ablation\_bootstrap\_ci.xlsx} in the repository. Earlier versions of this table reported a single cross-model figure per configuration; those pooled estimates are withdrawn, because pooling reversed the random-exemplar comparison for Qwen and hid a significant $k{=}1$ against $k{=}3$ difference for DeepSeek. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring and uses no LLM, so it has no per-model row. Across all LLM configurations 7,560 scoring calls were made (4 models $\times$ 7 configurations $\times$ 90 scenarios $\times$ 3 alternatives) with 2 failures (0.03\%), both on DeepSeek.
-\end{tablenotes}
-\caption{RAG ablation: Kendall's $\tau$ and MAE by configuration.}
-\end{threeparttable}
-\end{table}\subsection{RAG Ablation: Test-Family Bookkeeping}
+\end{table}
+
+Evaluated on the full 90-scenario RAG corpus (35 HVAC / 35 Appliance / 20 Shower) under leave-one-out retrieval, with all four models. Values are per-model bootstrap point estimates; the corresponding per-model 95\% percentile bootstrap intervals are in \texttt{Analysis/RAG\_Ablation/rag\_ablation\_bootstrap\_ci.xlsx} in the repository. Earlier versions of this table reported a single cross-model figure per configuration; those pooled estimates are withdrawn, because pooling reversed the random-exemplar comparison for Qwen and hid a significant $k{=}1$ against $k{=}3$ difference for DeepSeek. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring and uses no LLM, so it has no per-model row. Across all LLM configurations 7,560 scoring calls were made (4 models $\times$ 7 configurations $\times$ 90 scenarios $\times$ 3 alternatives) with 2 failures (0.03\%), both on DeepSeek.
+
+\subsection{RAG Ablation: Test-Family Bookkeeping}
 \label{app:rag_ablation_significance}
 
 A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) across the seven LLM configurations within each model, giving a sixteen-test family of four models by four metrics; the offline \texttt{nearest-neighbor} baseline has no per-model configuration and so enters the descriptive bootstrap reported above rather than any omnibus. Holm correction is applied across this family before any omnibus result is treated as significant, and post-hoc pairwise Wilcoxon signed-rank tests, themselves Holm-corrected within their own pairwise family, are computed only for the model--metric cells whose corrected omnibus remains significant.
+
+\subsection{Run-to-Run Variance: Full Distributions}
+\label{app:variance}
+
+Figure~\ref{fig:violin_tau} shows the distribution of Kendall's $\tau$ across the five runs for each architecture and model, and Figure~\ref{fig:violin_rmse} the corresponding spread in overall RMSE.
+
 \begin{figure*}[htbp]
-\centering
-\begin{threeparttable}
 \centering
 \begin{minipage}{0.24\textwidth}
 \centering
@@ -635,12 +689,10 @@ A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) 
 \end{tikzpicture}
 \end{minipage}
 \caption{Violin plots of Kendall's $\tau$ across five runs.}
-\end{threeparttable}
 \label{fig:violin_tau}
-\end{figure*}\subsection{Run-to-Run Variance: Full Distributions}
-\label{app:variance}
+\end{figure*}
 
-\begin{figure*}[t]
+\begin{figure*}[htbp]
 \centering
 \begin{minipage}{0.24\textwidth}
 \centering
@@ -705,24 +757,27 @@ A Friedman test is run per metric (Kendall's $\tau$, Top-1 accuracy, MAE, RMSE) 
 \label{fig:violin_rmse}
 \end{figure*}
 
-MAE and Top-1 distribution shapes across runs, and the per-model MAE breakdown, are omitted here because Table~\ref{tab:overall_by_model} (~\ref{app:numerical_results}) already reports mean $\pm$ std for every metric.\subsection{Statistical Significance Tests}
+MAE and Top-1 distribution shapes across runs, and the per-model MAE breakdown, are omitted here because Table~\ref{tab:overall_by_model} (\ref{app:numerical_results}) already reports mean $\pm$ std for every metric.
+
+\subsection{Statistical Significance Tests}
 \label{app:significance}
 
 All tests use per-scenario metrics computed from the 195 test scenarios, with five independent runs per architecture--model combination.
 
-\subsection{Pairwise Wilcoxon Tests, Reported Per Model}
+The Holm correction on the main architecture comparison pools a single family of 56 tests: two adjacent-architecture pairs ($\mathcal{A}_{\text{D}}$ versus $\mathcal{A}_{\text{E}}$, and $\mathcal{A}_{\text{E}}$ versus $\mathcal{A}_{\text{H}}$) crossed with seven metrics and four models. The seven metrics are Kendall's $\tau$, Spearman's $\rho$, Top-1 accuracy, Top-2 accuracy, overall MAE, overall RMSE, and the RMSE/MAE ratio. Three of them, $\tau$, MAE and Top-1, are the primary metrics reported in the manuscript, which is the 24-test subset discussed below; the other four are computed but not reported, and they enter the correction so that every Wilcoxon test run on this benchmark competes for the same $\alpha$ budget. Correcting the 24 reported comparisons against the full 56 rather than against themselves is the more conservative of the two choices, and both are reported in \texttt{paper/per\_model\_pvalues.csv} as \texttt{p\_holm\_subset} and \texttt{p\_holm\_family}.
+
+\subsubsection{Pairwise Wilcoxon Tests, Reported Per Model}
 
 Wilcoxon signed-rank tests compare each pair of adjacent architectures ($\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$) on each of the three primary metrics ($\tau$, MAE, Top-1), applied within each of the four models. All 24 per-model comparisons remain significant under Holm correction, whether corrected across the 24 tests reported here or across the full 56-test family. The largest adjusted values are DeepSeek's and Gemini's $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$ tests on $\tau$ (both $p_{\mathrm{Holm}} = 0.0062$) and Gemini's on Top-1 ($0.0036$); the other 21 fall at or below $1.6 \times 10^{-4}$, and the smallest is $5.2 \times 10^{-31}$. GPT-OSS contributes $n = 194$ rather than 195 on the $\mathcal{A}_{\text{E}}$ vs.\ $\mathcal{A}_{\text{H}}$ comparison, one scenario dropping from the paired set.
 
 Two comparisons carry heavy tie loads, both of them Gemini's $\mathcal{A}_{\text{D}}$ vs.\ $\mathcal{A}_{\text{E}}$: 58 of 195 paired differences are exactly zero on $\tau$, and 102 of 195 on Top-1. Each reports a median paired difference of 0.0000 while the test stays significant, because the signed-rank statistic is computed over the non-tied pairs alone. Read Gemini's effect size for that comparison from Cliff's $\delta$ in Table~\ref{tab:effect_sizes} rather than from the median. Every test uses the asymptotic approximation with tie and continuity corrections; the exact method applies to no cell, since each either exceeds 25 non-zero pairs or carries ties. Per-test $Z$, median paired difference, tied-pair counts, and both Holm-corrected $p$-values are in \texttt{paper/per\_model\_pvalues.csv} in the repository.
 
-\subsection{Effect Sizes}
+\subsubsection{Effect Sizes}
 
 Table~\ref{tab:effect_sizes} reports Cliff's $\delta$ for each pairwise comparison.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
@@ -746,21 +801,19 @@ Comparison & Model & $\tau$ & MAE & Top-1 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\end{threeparttable}
 \end{table}
 
-\subsection{Bootstrap Confidence Intervals}
+\subsubsection{Bootstrap Confidence Intervals}
 
 Confidence intervals resample scenarios, not runs. Each of the 10,000 replicates draws 195 scenarios with replacement and carries all five runs of a drawn scenario together, so an interval covers the variation a different draw of households produces rather than the variation a different sampling seed produces. Scenarios are the unit a reader generalizes over, so the resampling treats them as the cluster. Table~\ref{tab:bootstrap_paired} reports paired architecture differences, drawing one scenario index and scoring both arms on it.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.10}
-\caption{Paired architecture differences from the same cluster bootstrap. Each replicate scores both architectures on one resampled scenario set, so the interval carries the correlation between the two arms.}
+\caption{Paired architecture differences from the same cluster bootstrap.}
 \label{tab:bootstrap_paired}
 \begin{tabular}{@{}l l ccc@{}}
 \toprule
@@ -775,23 +828,20 @@ Comparison & Model & $\tau$ & MAE & Top-1 (pp) \\
 \multirow{4}{*}{$\mathcal{A}_{\text{H}} - \mathcal{A}_{\text{E}}$}
  & DeepSeek & $+$0.591 [$+$0.511, $+$0.672] & $-$0.123 [$-$0.136, $-$0.110] & $+$37.2 [$+$31.3, $+$43.4] \\
  & Gemini & $+$0.614 [$+$0.514, $+$0.714] & $-$0.111 [$-$0.125, $-$0.098] & $+$44.4 [$+$37.0, $+$51.7] \\
- & GPT-OSS\tnote{a} & $+$0.628 [$+$0.547, $+$0.711] & $-$0.118 [$-$0.130, $-$0.106] & $+$44.5 [$+$38.5, $+$50.4] \\
+ & GPT-OSS & $+$0.628 [$+$0.547, $+$0.711] & $-$0.118 [$-$0.130, $-$0.106] & $+$44.5 [$+$38.5, $+$50.4] \\
  & Qwen & $+$0.672 [$+$0.599, $+$0.742] & $-$0.122 [$-$0.138, $-$0.105] & $+$43.2 [$+$37.4, $+$48.8] \\
 \midrule
 \multirow{4}{*}{$\mathcal{A}_{\text{H}} - \mathcal{A}_{\text{D}}$}
  & DeepSeek & $+$0.753 [$+$0.666, $+$0.842] & $-$0.187 [$-$0.197, $-$0.176] & $+$54.1 [$+$47.7, $+$60.4] \\
  & Gemini & $+$0.747 [$+$0.654, $+$0.842] & $-$0.171 [$-$0.185, $-$0.158] & $+$56.9 [$+$50.3, $+$63.5] \\
- & GPT-OSS\tnote{a} & $+$0.857 [$+$0.784, $+$0.928] & $-$0.189 [$-$0.202, $-$0.176] & $+$58.4 [$+$53.2, $+$63.6] \\
+ & GPT-OSS & $+$0.857 [$+$0.784, $+$0.928] & $-$0.189 [$-$0.202, $-$0.176] & $+$58.4 [$+$53.2, $+$63.6] \\
  & Qwen & $+$0.870 [$+$0.797, $+$0.941] & $-$0.163 [$-$0.175, $-$0.151] & $+$59.7 [$+$54.2, $+$65.1] \\
 \bottomrule
 \end{tabular}
-\begin{tablenotes}[flushleft]\footnotesize
-\item Higher $\tau$ and Top-1 favor the first architecture; lower MAE favors it, so a negative MAE difference is an improvement. All 36 intervals exclude zero.
-\item[a] $n = 194$ scenarios; one scenario drops from the paired set on the $\mathcal{A}_{\text{H}}$ comparisons for GPT-OSS. Every other cell uses all 195.
-\end{tablenotes}
 \renewcommand{\arraystretch}{1.0}
-\end{threeparttable}
 \end{table}
+
+Each replicate scores both architectures on one resampled scenario set, so the interval carries the correlation between the two arms. Higher $\tau$ and Top-1 favor the first architecture; lower MAE favors it, so a negative MAE difference is an improvement. All 36 intervals exclude zero. $n = 194$ scenarios; one scenario drops from the paired set on the $\mathcal{A}_{\text{H}}$ comparisons for GPT-OSS. Every other cell uses all 195.
 
 \subsection{Prompt Ablation: Full Results Table}
 \label{app:prompt-ablation-full}
@@ -800,10 +850,10 @@ Table~\ref{tab:prompt_ablation} reports Kendall's $\tau$ and Top-1 accuracy for 
 
 \begin{table*}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
-\textbf{Kendall's $\tau$ and Top-1 accuracy by prompt variant}
+\caption{Prompt-sensitivity ablation: Kendall's $\tau$ and Top-1 accuracy by model and prompt variant.}
+\label{tab:prompt_ablation}
 \renewcommand{\arraystretch}{1.15}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccc}
@@ -835,24 +885,19 @@ $\mathcal{A}_{\text{E}}$ & Qwen     & \textbf{0.474} & --- & 0.399 & 0.407 \\
 \end{tabular}
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.0}
-\begin{tablenotes}\footnotesize
-\item Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and \texttt{no\_anchors}, which use ten runs: \texttt{no\_anchors} was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Gemini cells use three runs (rationale below). Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no \texttt{no\_anchors} variant because its shipped prompt contains no anchors.
-\end{tablenotes}
-\end{threeparttable}
-\caption{Prompt-sensitivity ablation. Within each model, every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$, so no prompt perturbation reverses the architecture ordering for a fixed model.}
-\label{tab:prompt_ablation}
 \end{table*}
+
+Mean over five runs on 195 Test scenarios per cell, except $\mathcal{A}_{\text{D}}$ control and \texttt{no\_anchors}, which use ten runs: \texttt{no\_anchors} was extended from five to ten runs to give a borderline control-vs-no\_anchors comparison enough power to resolve, and control was matched to ten for a balanced comparison. Gemini cells use three runs (rationale below). Bold marks the best variant within each architecture--model row group. $\mathcal{A}_{\text{E}}$ has no \texttt{no\_anchors} variant because its shipped prompt contains no anchors. Within each model, every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$, so no prompt perturbation reverses the architecture ordering for a fixed model.
 
 \subsection{Prompt Ablation Significance}
 \label{app:prompt-ablation-significance}
 
-Gemini's prompt-ablation cells use three runs against the five or ten the other three models use; the significance tests are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation of 0.008--0.021 is the lowest of the four models, so three runs resolve its cell means at the precision reported. The \texttt{no\_anchors} variant runs on ten repetitions instead of five for DeepSeek, GPT-OSS, and Qwen, versus five for \texttt{cot\_scaffold} and \texttt{scale\_0\_10}; Gemini runs three repetitions on every variant.
+Gemini's prompt-ablation cells use three runs against the five or ten the other three models use; the significance tests are over $n=195$ scenarios rather than over runs, and Gemini's run-to-run standard deviation of 0.008--0.021 is the lowest of the four models, so three runs resolve its cell means at the precision reported. For DeepSeek, GPT-OSS, and Qwen the \texttt{no\_anchors} variant runs ten repetitions, against five for \texttt{cot\_scaffold} and \texttt{scale\_0\_10}; Gemini runs three repetitions on every variant.
 
 Table~\ref{tab:prompt_friedman} reports the Friedman omnibus tests for $\mathcal{A}_{\text{E}}$, and Table~\ref{tab:prompt_pairwise} reports the pairwise comparisons that reach significance under the two-stage Holm correction with a fully reported effect size.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
@@ -872,15 +917,12 @@ Qwen & Top-1 & 9.87 & 0.007 & 0.086 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\begin{tablenotes}
-\item Holm adjustment is step-down with monotonicity enforced, so a test with a larger raw $p$ cannot receive a smaller adjusted $p$. The GPT-OSS Top-1 omnibus is part of the 16-test family but is not reported here.
-\end{tablenotes}
-\end{threeparttable}
 \end{table}
 
-\begin{table}[t]
+Holm adjustment is step-down with monotonicity enforced, so a test with a larger raw $p$ cannot receive a smaller adjusted $p$. The GPT-OSS Top-1 omnibus is part of the 16-test family but is not reported here.
+
+\begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
@@ -898,21 +940,21 @@ $\mathcal{A}_{\text{D}}$ & Qwen & control vs.\ \texttt{scale\_0\_10} ($\tau$) & 
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\begin{tablenotes}
-\item All five comparisons are significant under the two-stage Holm correction. Cliff's $\delta$ sign follows $P(\text{config}_i > \text{config}_j) - P(\text{config}_i < \text{config}_j)$; negative values indicate the second-listed configuration scores higher.
-\end{tablenotes}
-\end{threeparttable}
-\end{table}\subsection{Parameter-Source Ablation Significance}
+\end{table}
+
+All five comparisons are significant under the two-stage Holm correction. Cliff's $\delta$ sign follows $P(\text{config}_i > \text{config}_j) - P(\text{config}_i < \text{config}_j)$; negative values indicate the second-listed configuration scores higher.
+
+\subsection{Parameter-Source Ablation Significance}
 \label{app:paramprov-significance}
 
 Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: for each model, ranking accuracy with the LLM's extracted parameters and a single corpus-median constant per parameter (no per-scenario inference).
 
 \begin{table*}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
-\textbf{Parameter-source ablation}
+\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with LLM-extracted and corpus-median hidden parameters. Significance testing on these conditions follows.}
+\label{tab:param_provenance}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{llccc}
 \toprule
@@ -932,13 +974,9 @@ Gemini & Corpus median & 0.641 & 0.769 & 0.122 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\begin{tablenotes}
-\item Both conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The corpus-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows serve as a correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
-\end{tablenotes}
-\end{threeparttable}
-\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with LLM-extracted and corpus-median hidden parameters. Significance testing on these conditions follows.}
-\label{tab:param_provenance}
 \end{table*}
+
+Both conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The corpus-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows are a correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
 
 Significance for the parameter-source ablation is tested within each model rather than pooled across models. With two conditions there is exactly one comparison per model--metric cell, so each cell is tested directly with a paired Wilcoxon signed-rank test over the 195 scenarios. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve such tests, Holm-corrected as a single family.
 
@@ -947,17 +985,16 @@ All twelve tests are significant after correction. The extracted condition beats
 \subsection{Alternative-Ordering Ablation: Full Statistics}
 \label{app:alternative-order-full}
 
-Of the four models tested under the permutation protocol, two separated at the parameter level: Qwen and Gemini, with a separation of $0.054$ and $0.047$ respectively ($p \leq 0.0008$, Holm-adjusted $p \leq 0.006$ across the eight tests), both at the exact permutation floor of $1/1287$. No model separated on the top-1 alternative ($p \geq 0.24$). As a worked illustration of the mechanism, listing the alternatives in a different order moves Gemini's estimate of a dwelling's insulation and equipment age, quantities that have nothing to do with the order the setpoints are printed in; those shifted estimates are what the deterministic calculator absorbs before the ranking stage.
+Of the four models tested under the permutation protocol, two separated at the parameter level: Qwen and Gemini, with a separation of $0.054$ and $0.047$ respectively ($p \leq 0.0008$, Holm-adjusted $p \leq 0.006$ across the eight tests), both at the exact permutation floor of $1/1287$. No model separated on the top-1 alternative ($p \geq 0.24$). Listing the alternatives in a different order moves Gemini's estimate of a dwelling's insulation and equipment age, quantities that have nothing to do with the order the setpoints are printed in; those shifted estimates are what the deterministic calculator absorbs before the ranking stage.
 
 Table~\ref{tab:mcnemar_order} gives the per-model McNemar statistics for $\mathcal{A}_{\text{D}}$ top-1 correctness under order reversal. Each reversed run is compared against all five shipped runs of the same model, so the discordant-pair counts are means over those five comparisons and the table reports the median and maximum $p$ across them.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \small
 \centering
 \renewcommand{\arraystretch}{1.10}
-\caption{Alternative-ordering McNemar tests for $\mathcal{A}_{\text{D}}$ top-1 correctness, per model. Discordant counts are means across the five shipped-versus-reversed comparisons. Positive net values favour the reversed condition. No value is pooled across models.}
+\caption{Alternative-ordering McNemar tests for $\mathcal{A}_{\text{D}}$ top-1 correctness, per model.}
 \label{tab:mcnemar_order}
 \begin{tabular}{@{}l r rr r rr r@{}}
 \toprule
@@ -971,12 +1008,10 @@ GPT-OSS 20B & 193 & 30.2 & 33.6 & $+3.4$ & 0.615 & 0.902 & 0.523 \\
 Qwen3.5 9B & 190 & 32.6 & 34.8 & $+2.2$ & 0.712 & 1.000 & 0.479 \\
 \bottomrule
 \end{tabular}
-\begin{tablenotes}[flushleft]\footnotesize
-\item Ship\,\checkmark: scenarios the shipped order ranked correctly and the reversed order did not. Rev\,\checkmark: the converse. Top-1 agreement is the share of scenarios on which the two orders selected the same alternative, correct or not.
-\end{tablenotes}
 \renewcommand{\arraystretch}{1.0}
-\end{threeparttable}
 \end{table}
+
+Discordant counts are means across the five shipped-versus-reversed comparisons. Positive net values favour the reversed condition. No value is pooled across models. Ship\,\checkmark: scenarios the shipped order ranked correctly and the reversed order did not. Rev\,\checkmark: the converse. Top-1 agreement is the share of scenarios on which the two orders selected the same alternative, correct or not.
 
 No model reaches significance on any comparison, with the smallest median $p$ at 0.477. The discordant counts are large relative to the net difference in every model, which is what a run-to-run instability that swamps any ordering effect looks like: DeepSeek trades roughly 37 scenarios one way against 29 the other to net 8.2, rather than shifting a stable set of scenarios in one direction.
 
@@ -987,9 +1022,8 @@ The main results use per-run-then-average aggregation: failed scenarios are excl
 
 \begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \small\centering
-\caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ values are means across all four models; $\mathcal{A}_{\text{H}}$ is broken out per model, because imputation moves one model there and leaves the other three unchanged.}
+\caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation.}
 \label{tab:imputed_comparison}
 \begin{tabular}{lccc}
 \toprule
@@ -1021,24 +1055,63 @@ $\mathcal{A}_{\text{H}}$ (Qwen) & Top-1 (\%) & 89.7 & 89.5 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\begin{tablenotes}
-\item Mean scenarios imputed per run: DeepSeek $\mathcal{A}_{\text{D}}$ 1.4, DeepSeek $\mathcal{A}_{\text{H}}$ 0.2, Gemini $\mathcal{A}_{\text{E}}$ 2.0, GPT-OSS $\mathcal{A}_{\text{H}}$ 23.4, Qwen $\mathcal{A}_{\text{D}}$ 0.4, Qwen $\mathcal{A}_{\text{H}}$ 0.4; all other cells impute none. GPT-OSS imputes 20--26 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set.
-\item Imputed scenarios receive 0.5 on all four criterion scores; their ranks follow the pipeline's deterministic tie-break (appearance order).
-\item Bold marks the only cells that move materially. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ are reported as four-model means because no model's cell moves by more than 0.006 in either architecture.
-\end{tablenotes}
-\end{threeparttable}
 \end{table}
+
+$\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ values are means across all four models; $\mathcal{A}_{\text{H}}$ is broken out per model, because imputation moves one model there and leaves the other three unchanged. Mean scenarios imputed per run: DeepSeek $\mathcal{A}_{\text{D}}$ 1.4, DeepSeek $\mathcal{A}_{\text{H}}$ 0.2, Gemini $\mathcal{A}_{\text{E}}$ 2.0, GPT-OSS $\mathcal{A}_{\text{H}}$ 23.4, Qwen $\mathcal{A}_{\text{D}}$ 0.4, Qwen $\mathcal{A}_{\text{H}}$ 0.4; all other cells impute none. GPT-OSS imputes 20--26 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set. Imputed scenarios receive 0.5 on all four criterion scores; their ranks follow the pipeline's deterministic tie-break (appearance order). Bold marks the only cells that move materially. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ are reported as four-model means because no model's cell moves by more than 0.006 in either architecture.
+
+\subsection{Criterion Error: Numerical Values}
+\label{app:criterion_mae}
+
+Table~\ref{tab:mae_by_criterion} gives the numerical values behind the criterion-level MAE figure of the main text, for every criterion, model, and architecture. No value is pooled across models.
+
+\begin{table}[htbp]
+\centering
+\caption{MAE by criterion, model, and architecture (five-run mean).}
+\label{tab:mae_by_criterion}
+\begin{tabular}{@{}l l ccc@{}}
+\toprule
+Criterion & Model & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
+\midrule
+\multirow{4}{*}{Energy Cost}
+ & Gemini   & 0.2477 & 0.1769 & 0.0698 \\
+ & DeepSeek & 0.2407 & 0.1748 & 0.0683 \\
+ & GPT-OSS  & 0.2581 & 0.1725 & 0.0783 \\
+ & Qwen     & 0.2554 & 0.1975 & 0.1115 \\
+\midrule
+\multirow{4}{*}{Environmental}
+ & Gemini   & 0.2484 & 0.1655 & 0.0921 \\
+ & DeepSeek & 0.2652 & 0.1644 & 0.0812 \\
+ & GPT-OSS  & 0.2924 & 0.1665 & 0.0978 \\
+ & Qwen     & 0.2739 & 0.1947 & 0.1498 \\
+\midrule
+\multirow{4}{*}{Comfort}
+ & Gemini   & 0.1683 & 0.1400 & 0.0108 \\
+ & DeepSeek & 0.1979 & 0.1745 & 0.0089 \\
+ & GPT-OSS  & 0.1831 & 0.1536 & 0.0127 \\
+ & Qwen     & 0.1947 & 0.1931 & 0.0090 \\
+\midrule
+\multirow{4}{*}{Practicality}
+ & Gemini   & 0.2116 & 0.1511 & 0.0197 \\
+ & DeepSeek & 0.2224 & 0.1531 & 0.0208 \\
+ & GPT-OSS  & 0.2307 & 0.1830 & 0.0213 \\
+ & Qwen     & 0.2159 & 0.1889 & 0.0168 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Comfort and practicality are the criteria on which $\mathcal{A}_{\text{H}}$ separates most sharply from the two scoring architectures, reaching 0.0089--0.0127 on comfort against 0.1400--0.1931 for $\mathcal{A}_{\text{E}}$. Energy cost and environmental impact carry $\mathcal{A}_{\text{H}}$'s largest residual errors, and Qwen is the weakest model on both.
 
 \subsection{Overall Results: Numerical Values}
 \label{app:numerical_results}
 
-Table~\ref{tab:overall_by_model} reports the full numerical results for each metric, architecture, and model, with five-run means and standard deviations.
+Table~\ref{tab:overall_by_model} reports the full numerical results for each metric, architecture, and model, with five-run means and standard deviations. Each cell is computed over $S_{\text{ok}}$, the completed non-sentinel scenarios of that run, rather than over all 195: a scenario carrying the sentinel value is dropped from its own run's metric before the five runs are averaged. $S_{\text{ok}}$ equals 195 in every model--architecture cell except those carrying the failures counted by mode in \ref{app:extraction_failure_analysis}, and the imputed alternative in \ref{app:imputed} reports what changes when those scenarios are retained at the scale midpoint instead of dropped.
 
 \begin{table}[htbp]
 \centering
-\begin{threeparttable}
 \footnotesize
 \centering
+\caption{Overall performance by model (5-run mean $\pm$ std, conditional on successful extraction over the 195 test scenarios).}
+\label{tab:overall_by_model}
 \renewcommand{\arraystretch}{1.10}
 \begin{tabular}{lcccccc}
 \toprule
@@ -1068,10 +1141,9 @@ RMSE & 0.306 $\pm$ 0.002 & 0.242 $\pm$ 0.003 & \textbf{0.101 $\pm$ 0.004} & 0.29
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\caption{Overall performance by model (5-run mean $\pm$ std, conditional on successful extraction over the 195 test scenarios). Bolded values indicate the best architecture per metric per model.}
-\label{tab:overall_by_model}
-\end{threeparttable}
 \end{table}
+
+Bolded values indicate the best architecture per metric per model.
 
 \bibliographystyle{cas-model2-names}
 \bibliography{cas-refs}

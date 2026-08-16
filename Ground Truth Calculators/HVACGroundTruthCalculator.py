@@ -63,14 +63,12 @@ class HVACGroundTruthCalculator:
         # - Single-family (2-story typical): 1.7 (includes roof, walls, floor exposures)
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
-        # twin semi-detached (PA regional term). One shared party wall reduces exposed envelope vs. Single-family (1.7).
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
             "Condo": 1.2,
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
-            "Twin": 1.6,  
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
@@ -106,10 +104,9 @@ class HVACGroundTruthCalculator:
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,
-            "Condo": 1.2,     
+            "Condo": 1.2,
             "Townhouse": 1.5,
             "Rowhouse": 1.5,
-            "Twin": 1.6,
         }
         envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
         envelope_area = square_footage * envelope_multiplier
