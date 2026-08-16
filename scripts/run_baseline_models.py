@@ -48,7 +48,7 @@ HVAC_DEFAULT_SEER = 13
 HVAC_DEFAULT_HVAC_AGE = 13
 HVAC_DEFAULT_SQFT_BY_HOUSING_TYPE = {
     "Single-family": 2000, "Townhouse": 1800, "Rowhouse": 1800,
-    "Twin": 1800, "Apartment": 916, "Condo": 1100,
+    "Apartment": 916, "Condo": 1100,
 }
 HVAC_DEFAULT_SQFT_FALLBACK = 2000
 HVAC_DEFAULT_HOUSEHOLD_SIZE = 2.54
