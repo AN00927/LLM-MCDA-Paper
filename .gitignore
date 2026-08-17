@@ -16,8 +16,15 @@ dist/
 .coverage
 coverage.xml
 
-# Environment
-.env
+# Environment & Credentials
+.env*
+!.env.example
+*.pem
+*.key
+*.token
+*.pfx
+id_rsa*
+*.bak*
 
 # IDE
 .claude/
@@ -129,5 +136,8 @@ graphical_abstract_concept.html
 !README.md
 !CLAUDE.md
 !XLSX_Schema_Map.md
+!SECURITY.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
 !docs/*.md
 docs/LLM_MCDA_CLEANUP_PLAN.md
