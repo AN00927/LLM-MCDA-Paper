@@ -104,8 +104,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-if not OPENROUTER_API_KEY:
-    raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
 
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
@@ -308,8 +306,11 @@ def query_openrouter(messages: List[Dict], model: str = None,
     if temperature is None:
         temperature = API_CONFIG["temperature"]
     url = API_CONFIG["endpoint"]
+    api_key = OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY not found in environment variables!")
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": OPENROUTER_HTTP_REFERER,
         "X-Title": OPENROUTER_APP_TITLE
