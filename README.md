@@ -110,23 +110,23 @@ A sensitivity analysis confirms the LLM-Parameterized architecture's advantage o
 
 ## Results Summary
 
-The LLM-Parameterized architecture dominates across all four models (Kendall's tau 0.880--0.923, Top-1 89.7--93.1%). The example-guided architecture ranks second (tau 0.207--0.328). Direct prompting ranks third, near-random on HVAC and Appliance (tau 0.010--0.176 overall).
+The LLM-Parameterized architecture dominates across all four models (Kendall's tau 0.880--0.923, Top-1 89.7--93.1%). The example-guided architecture ranks second (tau 0.208--0.310). Direct prompting ranks third, near-random on HVAC and Appliance (tau 0.010--0.176 overall).
 
 ### Overall Metrics (5-run mean, 195 scenarios)
 
 | Model | Architecture | Kendall's tau | Top-1 Acc | RMSE | MAE |
 | --- | --- | --- | --- | --- | --- |
-| **Gemini 3.5 Flash** | LLM-Parameterized | **0.923** | **93.1%** | **0.100** | **0.048** |
-| | Example-Guided | 0.305 | 47.2% | 0.233 | 0.159 |
-| | Direct Prompting | 0.176 | 36.2% | 0.296 | 0.220 |
-| **DeepSeek V4 Flash** | LLM-Parameterized | **0.897** | **90.8%** | **0.092** | **0.047** |
-| | Example-Guided | 0.328 | 54.5% | 0.236 | 0.167 |
-| | Direct Prompting | 0.144 | 36.7% | 0.302 | 0.232 |
-| **GPT-OSS 20B** | LLM-Parameterized | **0.897** | **91.6%** | **0.101** | **0.052** |
-| | Example-Guided | 0.270 | 48.0% | 0.244 | 0.169 |
-| | Direct Prompting | 0.041 | 33.3% | 0.307 | 0.242 |
+| **Gemini 3.5 Flash** | LLM-Parameterized | **0.923** | **93.1%** | **0.101** | **0.048** |
+| | Example-Guided | 0.310 | 48.7% | 0.231 | 0.158 |
+| | Direct Prompting | 0.176 | 36.2% | 0.295 | 0.219 |
+| **DeepSeek V4 Flash** | LLM-Parameterized | **0.897** | **90.8%** | **0.092** | **0.045** |
+| | Example-Guided | 0.307 | 53.5% | 0.237 | 0.168 |
+| | Direct Prompting | 0.144 | 36.7% | 0.302 | 0.231 |
+| **GPT-OSS 20B** | LLM-Parameterized | **0.897** | **91.7%** | **0.101** | **0.052** |
+| | Example-Guided | 0.272 | 47.4% | 0.242 | 0.169 |
+| | Direct Prompting | 0.041 | 33.3% | 0.306 | 0.241 |
 | **Qwen 3.5 9B** | LLM-Parameterized | **0.880** | **89.7%** | **0.162** | **0.072** |
-| | Example-Guided | 0.207 | 47.0% | 0.259 | 0.191 |
+| | Example-Guided | 0.208 | 46.6% | 0.261 | 0.194 |
 | | Direct Prompting | 0.010 | 30.0% | 0.295 | 0.235 |
 
 Across models, the LLM-Parameterized architecture's tau spans only 0.043 despite a 45x difference in per-token cost between the cheapest and most expensive model, versus 0.166 for direct prompting -- architecture design matters more than model choice.
@@ -135,17 +135,17 @@ Across models, the LLM-Parameterized architecture's tau spans only 0.043 despite
 
 | Decision Type | Direct Prompting tau | Example-Guided tau | LLM-Parameterized tau |
 | --- | --- | --- | --- |
-| HVAC | -0.102 (GPT-OSS) to 0.135 (GPT-OSS) | -0.116 (Gemini) to 0.265 (GPT-OSS) | 0.881 (Qwen) to 0.977 (Gemini) |
+| HVAC | -0.102 (DeepSeek) to 0.135 (GPT-OSS) | -0.116 (Gemini) to 0.265 (GPT-OSS) | 0.881 (Qwen) to 0.977 (Gemini) |
 | Appliance | -0.147 (GPT-OSS) to 0.029 (DeepSeek) | -0.048 (GPT-OSS) to 0.417 (DeepSeek) | 0.906 (Qwen) to 0.975 (DeepSeek) |
-| Shower | 0.069 (Qwen) to 0.633 (Gemini) | 0.236 (Qwen) to 0.766 (Gemini) | 0.784 (GPT-OSS) to 0.851 (Qwen) |
+| Shower | 0.069 (Qwen) to 0.633 (Gemini) | 0.240 (Qwen) to 0.767 (Gemini) | 0.787 (GPT-OSS, tied with DeepSeek) to 0.851 (Qwen) |
 
 HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-Parameterized and example-guided architectures. Shower is the lowest-dimensional and shows the narrowest gap, because a single well-estimated parameter (flow rate) can carry the ranking on its own.
 
 ### Key Findings
 
-- **Calculator access alone is not enough.** Running the same ground-truth calculator on corpus-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the LLM-Parameterized architecture's 0.880--0.923. LLM extraction itself accounts for 0.26--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
+- **Calculator access alone is not enough.** Running the same ground-truth calculator on corpus-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the LLM-Parameterized architecture's 0.880--0.923. LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
 - **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM), which multiplies against each alternative's own duration rather than scaling all three by a common amount -- it carries the highest top-1 flip probability of any extracted parameter for every model.
-- **Non-LLM baselines rule out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a per-type tau of 0.610 but collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. A Nearest-Neighbor baseline (copying scores from the most similar RAG scenario, no LLM call) reaches tau = 0.371. Both sit well below every LLM architecture's floor.
+- **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a per-type tau of 0.610 but collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule -- well below every LLM architecture's floor. Separately, an offline Nearest-Neighbor baseline (directly assigning a retrieved RAG scenario's scores, no LLM call, leave-one-out on the 90-scenario RAG corpus) reaches tau = 0.001, indistinguishable from random ranking.
 - **In the RAG ablation, exemplar scores matter more than exemplar content.** Removing the ground-truth scores from retrieved exemplars degrades ranking far more than removing their hidden engineering parameters (R-value, SEER, GPM, etc.) -- scored exemplars anchor the LLM's output scale, they don't teach it new physics.
 - **Reversing alternative order in the prompt changed what two of four models extracted, but never changed which alternative any model ranked first** -- a null result at the ranking layer that only means something because the same perturbation is detectably present one layer up, at the LLM's parameter estimates.
 - **Model capability correlates weakly with architecture ranking.** The cheapest model (GPT-OSS 20B, $0.029/M input tokens) achieves comparable LLM-Parameterized performance to the most expensive (Gemini 3.5 Flash, $1.50/M) -- but see the [Limitations](paper/paper_draft_working.tex) section of the paper: all four models are run at their lowest reasoning tier, so this claim is scoped to that regime, not to frontier or reasoning-enabled models.
@@ -252,6 +252,8 @@ LLM-MCDA-Paper/
 ├── CLAUDE.md
 ├── LICENSE
 ├── DATA_LICENSE
+├── CITATION.cff
+├── SECURITY.md
 ├── .env.example
 └── requirements.txt
 ```
@@ -419,8 +421,8 @@ where eta = 0.92 (electric water-heater efficiency). Because `f_hot` and the tem
 
 The reported sensitivity check reweights both the ground-truth ranking and the architecture rankings under the baseline, equal, and the entropy- and MEREC-derived vectors (see [Objective Weight Validation Scripts](#objective-weight-validation-scripts) below), applied pooled and per decision type, per model (never pooled across models -- see the no-pooling convention in `CLAUDE.md`).
 
-- **The LLM-Parameterized architecture's advantage over the example-guided one is unconditional**: it holds in all 28 model x weight-vector cells tested, by a margin of at least 0.305 Kendall's tau.
-- **The example-guided architecture's advantage over direct prompting is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in two of the 28 cells: the MEREC HVAC vector (direct prompting 0.676 vs. example-guided 0.604) and the MEREC pooled vector (0.655 vs. 0.616). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
+- **The LLM-Parameterized architecture's advantage over the example-guided one is unconditional**: it holds in all 28 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
+- **The example-guided architecture's advantage over direct prompting is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in two of the 28 cells: the MEREC HVAC vector (direct prompting 0.676 vs. example-guided 0.600) and the MEREC pooled vector (0.655 vs. 0.632). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
 
 Per the project's no-pooling-across-models convention (see `CLAUDE.md`), sensitivity results are reported and should be read per model, not as a four-model mean.
 
