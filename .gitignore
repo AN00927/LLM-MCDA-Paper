@@ -83,6 +83,8 @@ paper/per_run_metrics/
 paper/Notebook (text format)
 paper/Charts_Significance_Notes.txt
 paper/incremental_contribution_table.tex
+paper\graphicalabstracttable.tex
+paper\highlights.txt
 
 # Paper pipeline outputs
 paper_draft_working.spl
