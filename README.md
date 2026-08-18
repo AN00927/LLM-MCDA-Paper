@@ -23,7 +23,7 @@ The three decision types were chosen for high behavioral plasticity and contribu
 
 ---
 
-
+![image](https://github.com/AN00927/LLM-MCDA-Paper/blob/main/paper/Graphical%20Abstract.png)
 
 ## Setup
 
