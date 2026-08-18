@@ -1,0 +1,116 @@
+\documentclass[final,3p,times]{elsarticle}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{textcomp}
+\usepackage{multirow}
+\usepackage{threeparttable}
+\usepackage{siunitx}
+\usepackage[table]{xcolor}
+\usepackage{xurl}
+\usepackage{hyperref}
+\pdfstringdefDisableCommands{%
+  \def\corref#1{}%
+  \def\cnotenum#1{}%
+  \def\tnoteref#1{}%
+}
+\usepackage{pgfplots}
+\usepgfplotslibrary{colormaps,groupplots,statistics}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,positioning,fit,backgrounds,calc}
+\setlength{\marginparwidth}{2cm}
+\usepackage{todonotes}
+\usepackage{alltt}
+\graphicspath{{./}{Images/}}
+\setlength{\textfloatsep}{10pt plus 2pt minus 4pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\renewcommand{\floatpagefraction}{0.7}
+\renewcommand{\textfraction}{0.15}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.65}
+
+% ---- Palette matched to the graphical-abstract mock ----
+\definecolor{adcol}{RGB}{229,154,165}   % dusty rose : A_D (Direct Scoring)
+\definecolor{aecol}{RGB}{240,238,198}   % cream      : A_E (RAG Enhanced)
+\definecolor{ahcol}{RGB}{126,189,128}   % sage green : A_H (Hybrid)
+
+\begin{document}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={
+        group size=1 by 2,
+        vertical sep=2.5cm
+    },
+    width=0.62\columnwidth,          % narrower = shorter graphs, groups closer
+    height=5cm,
+    ybar,
+    bar width=11pt,
+    enlarge x limits=0.12,           % tighter padding -> bar sets sit closer together
+    symbolic x coords={Gemini, DeepSeek, GPT-OSS, Qwen},
+    xtick=data,
+    x tick label style={font=\small, text=black!70},
+    y tick label style={font=\small, text=black!70},
+    ymajorgrids=true,
+    grid style={dashed, gray!25},
+    axis line style={black!50},
+    title style={                    % explicit placement ABOVE each axis
+        at={(0.5,1.03)}, anchor=south,
+        font=\sffamily\bfseries\Large,   % bold sans, larger than body serif
+        text=black!85
+    },
+    error bars/y dir=both,
+    error bars/y explicit,
+    error bars/error mark options={rotate=90, line width=0.6pt, mark size=2.2pt}
+]
+
+\nextgroupplot[
+    title={Kendall's $\tau$}, ymin=0, ymax=1.1,
+    legend style={
+        at={(0.5,1.24)}, anchor=south,   % raised so it clears the new title
+        legend columns=3, draw=none, fill=none, font=\small
+    }
+]
+\addplot+[fill=adcol, draw=adcol!60!black, thick] coordinates {
+    (Gemini, 0.176) +- (0, 0.014) (DeepSeek, 0.144) +- (0, 0.041)
+    (GPT-OSS, 0.041) +- (0, 0.045) (Qwen, 0.010) +- (0, 0.039)
+};
+\addplot+[fill=aecol, draw=aecol!35!black, thick] coordinates {
+    (Gemini, 0.310) +- (0, 0.019) (DeepSeek, 0.307) +- (0, 0.036)
+    (GPT-OSS, 0.272) +- (0, 0.040) (Qwen, 0.208) +- (0, 0.037)
+};
+\addplot+[fill=ahcol, draw=ahcol!55!black, thick] coordinates {
+    (Gemini, 0.923) +- (0, 0.002) (DeepSeek, 0.897) +- (0, 0.006)
+    (GPT-OSS, 0.897) +- (0, 0.007) (Qwen, 0.880) +- (0, 0.013)
+};
+\legend{$\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, $\mathcal{A}_{\text{H}}$}
+
+\nextgroupplot[title={Top-1 (\%)}, ymin=0, ymax=110]
+\addplot+[fill=adcol, draw=adcol!60!black, thick] coordinates {
+    (Gemini, 36.2) +- (0, 1.5) (DeepSeek, 36.7) +- (0, 3.1)
+    (GPT-OSS, 33.3) +- (0, 2.4) (Qwen, 30.0) +- (0, 3.0)
+};
+\addplot+[fill=aecol, draw=aecol!35!black, thick] coordinates {
+    (Gemini, 48.7) +- (0, 2.0) (DeepSeek, 53.5) +- (0, 3.3)
+    (GPT-OSS, 47.4) +- (0, 2.1) (Qwen, 46.6) +- (0, 1.6)
+};
+\addplot+[fill=ahcol, draw=ahcol!55!black, thick] coordinates {
+    (Gemini, 93.1) +- (0, 0.3) (DeepSeek, 90.8) +- (0, 1.0)
+    (GPT-OSS, 91.7) +- (0, 0.7) (Qwen, 89.7) +- (0, 1.2)
+};
+
+\end{groupplot}
+\end{tikzpicture}
+\caption{Overall performance by model (5-run mean $\pm$ std, conditional on successful extraction over the 195 test scenarios; see Supplementary Material S1 for failure counts). Error bars show standard deviation (std) across five runs.}
+\label{fig:grouped_bars}
+\end{figure}
+\FloatBarrier
+
+\end{document}

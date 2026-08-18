@@ -1,5 +1,25 @@
-LLM-parameterized reference scoring reached tau = 0.899 across 195 scenarios.
-Extraction-plus-calculator design cut the model-quality gap from 0.166 to 0.043.
-Direct and example-guided LLM scoring lagged at tau = 0.093 and 0.277.
-One API call per scenario, versus three, at roughly one-quarter the tokens.
-Cheaper models matched expensive ones once scoring moved to a fixed calculator.
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=1in]{geometry}
+
+\title{Highlights\\[0.5em] \large Benchmarking LLM Integration Strategies for MCDA-Assisted Household Energy Decision Support}
+\author{Ahaan Nigam\textsuperscript{1}, River Huang\textsuperscript{2}\\[0.5em]
+\small \textsuperscript{1}Downingtown East High School, Exton, PA, USA\\
+\small \textsuperscript{2}Paul Scherrer Institut, Villigen, Aargau, Switzerland}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{Highlights}
+\begin{itemize}
+  \item Bridges natural-language user inputs to rigorous physics-based decision models.
+  \item Hybrid LLM-physics framework achieves $\tau$ of 0.88--0.92 and 90--93\% Top-1 accuracy.
+  \item Direct and RAG scoring fail near chance ($\tau = 0.01$--$0.31$), lacking physics laws.
+  \item Physics calculators narrow model capability gap 4$\times$ while cutting costs up to 8$\times$.
+  \item Open-source framework scales rapid, expert-grade decarbonization decision support.
+\end{itemize}
+
+\end{document}
