@@ -296,7 +296,7 @@
             state={Aargau},
             country={Switzerland}}
 \begin{abstract}
-Multi-criteria decision analysis (MCDA) can optimize household energy choices across cost, carbon emissions, comfort, and practicality, but constructing formal value models requires specialized expertise. While large language models (LLMs) offer accessible conversational interfaces, unassisted LLM scoring produces severe arithmetic and calibration biases. We benchmarked three LLM-MCDA architectures---direct scoring ($\mathcal{A}_{\text{D}}$), example-guided scoring ($\mathcal{A}_{\text{E}}$), and hybrid reference scoring ($\mathcal{A}_{\text{H}}$)---across 195 HVAC, appliance, and water-heating scenarios using four LLMs. $\mathcal{A}_{\text{H}}$ extracted engineering parameters for deterministic Multi-Attribute Value Theory (MAVT) calculators, achieving Kendall's $\tau$ of 0.880--0.923 and 89.7--93.1\% Top-1 accuracy. In contrast, $\mathcal{A}_{\text{E}}$ achieved $\tau = 0.208$--$0.310$ and $\mathcal{A}_{\text{D}}$ performed near chance ($\tau = 0.010$--$0.176$). Physics grounding narrowed the cross-model performance gap from 0.166 to 0.043 in $\tau$. This decoupling makes automated environmental decision support accurate, scalable, and cost-effective.\end{abstract}
+Everyday energy decisions like adjusting thermostats or scheduling appliances can significantly lower household carbon footprints, yet evaluating trade-offs across cost, emissions, comfort, and convenience requires multi-criteria expertise most residents lack. Large language models (LLMs) make interaction easy, but unassisted models struggle with physical calculations and numerical scoring. Here, we benchmark three LLM integration strategies---direct scoring ($\mathcal{A}_{\text{D}}$), example-guided scoring ($\mathcal{A}_{\text{E}}$), and hybrid reference scoring ($\mathcal{A}_{\text{H}}$)---across 195 residential scenarios. When an LLM extracts household parameters for deterministic Multi-Attribute Value Theory calculators ($\mathcal{A}_{\text{H}}$), it achieves Kendall's $\tau$ of 0.880--0.923 and 89.7--93.1\% Top-1 accuracy, whereas direct scoring fails near chance ($\tau \le 0.176$). Grounding decisions in physical models bridges conversational ease and mathematical rigor, enabling accessible, reliable household decarbonization.\end{abstract}
 \begin{keyword}
 Large language models \sep Multi-criteria decision analysis \sep Multi-Attribute Value Theory \sep Household energy \sep Decision support systems \sep Retrieval-Augmented Generation \sep Sustainability
 \end{keyword}
@@ -1525,10 +1525,27 @@ Year first available: 2026.
 Program language: Python. 
 
 \paragraph*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
-During the preparation of this work, the authors used Anthropic's Claude (via the Claude Code CLI) and OpenAI's ChatGPT to assist with drafting, copy-editing manuscript text, and conceptualizing/refining the graphical abstract illustrations. No text, data, numbers, or figures were accepted without manual verification. The authors reviewed and edited all content and take full responsibility for the content of the published article.
+During the preparation of this work, the authors used Anthropic's Claude (via the Claude Code CLI) and OpenAI's ChatGPT to assist with drafting, copy-editing manuscript text, graphical refinement, and conceptualizing/refining the graphical abstract illustrations. No text, data, numbers, or figures were accepted without manual verification. The authors reviewed and edited all content and take full responsibility for the content of the published article.
 
 \paragraph*{Supplementary material}
 Supplementary material associated with this article is available online. Part S1 (Extended Methods) contains the full parameter-comparison tables, prompt texts, time-of-use rate structures, failure-mode analysis, and worked examples referenced from the main text; Part S2 (Extended Results and Robustness) contains the sensitivity, RAG-ablation, variance, significance, imputation, aggregation, and numerical results tables and figures.
+
+\bibliographystyle{elsarticle-num}
+\bibliography{cas-refs}
+\newpage
+\appendix
+\cleardoublepage
+\renewcommand{\thetable}{A.\arabic{table}}
+\renewcommand{\theHtable}{A.\arabic{table}}
+\setcounter{table}{0}
+\renewcommand{\thefigure}{A.\arabic{figure}}
+\renewcommand{\theHfigure}{A.\arabic{figure}}
+\setcounter{figure}{0}
+\FloatBarrier
+\section{Weight Robustness: Entropy and MEREC}
+\label{app:weights}
+
+Table~\ref{tab:weight_comparison} compares the a priori subjective weights with entropy and MEREC weights computed on the full reference corpus (195 test + 90 RAG scenarios, 285 total). This scope matches the corpus used to calibrate the value functions (e.g.\ the HVAC energy-cost bounds of \$0.38--\$3.29 in Table~\ref{table:reference_ranges}).
 
 \begin{table}[htpb]
 \small
@@ -1554,24 +1571,6 @@ MEREC (Shower)            & 0.251 & 0.245 & 0.203 & 0.300 \\
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table}
-
-
-\bibliographystyle{elsarticle-num}
-\bibliography{cas-refs}
-\newpage
-\appendix
-\cleardoublepage
-\renewcommand{\thetable}{A.\arabic{table}}
-\renewcommand{\theHtable}{A.\arabic{table}}
-\setcounter{table}{0}
-\renewcommand{\thefigure}{A.\arabic{figure}}
-\renewcommand{\theHfigure}{A.\arabic{figure}}
-\setcounter{figure}{0}
-\FloatBarrier
-\section{Weight Robustness: Entropy and MEREC}
-\label{app:weights}
-
-Table~\ref{tab:weight_comparison} compares the a priori subjective weights with entropy and MEREC weights computed on the full reference corpus (195 test + 90 RAG scenarios, 285 total). This scope matches the corpus used to calibrate the value functions (e.g.\ the HVAC energy-cost bounds of \$0.38--\$3.29 in Table~\ref{table:reference_ranges}).
 
 Entropy weights assign 0.371 to Environmental Impact (a priori: 0.350), 0.161 to Comfort (a priori: 0.200), and 0.199 to Practicality (a priori: 0.150). These small differences preserve the architecture ordering in the sensitivity analysis. MEREC weights diverge for HVAC and Appliance and remain close to the design vector for Shower. For HVAC, Comfort rises from 0.200 to 0.663 while Environmental Impact falls from 0.350 to 0.128. For Appliance, Environmental Impact falls to 0.044 and Practicality rises to 0.456. Applied as sensitivity vectors, the MEREC weights narrow the $\mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ margin and reverse it in two model--vector cells. The sensitivity analysis in Section~\ref{sec:res-sensitivity} reports those results.
 
