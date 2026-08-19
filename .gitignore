@@ -85,6 +85,8 @@ paper/Charts_Significance_Notes.txt
 paper/incremental_contribution_table.tex
 paper\graphicalabstracttable.tex
 paper\highlights.txt
+paper/cover_letter.*
+cover_letter.*
 
 # Paper pipeline outputs
 paper_draft_working.spl
