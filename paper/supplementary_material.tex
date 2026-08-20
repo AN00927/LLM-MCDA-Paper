@@ -277,10 +277,10 @@ Use these examples as reference, but score based on
 the specific scenario above.
 \end{alltt}
 
-\subsection{RAG Corpus Description}
+\subsection{RAG Dataset Description}
 \label{app:rag_corpus}
 
-The retrieval-augmented generation (RAG) corpus consists of 90 unique
+The retrieval-augmented generation (RAG) dataset consists of 90 unique
 scenarios (35 HVAC, 35 Appliance, 20 Shower) that are disjoint
 from the 195 test scenarios. Each RAG scenario has three alternatives,
 yielding 270 total rows across the three source files
@@ -314,9 +314,9 @@ exports them from separate master-sheet partitions.
 \subsection{Parameter Ranges and Band Labels}
 \label{app:parameter_ranges}
 
-Each insulation tier spans a range of R-values drawn from standard U.S.\ residential wall assemblies \citep{cec_ja43_2013,energystar_insulation2023}: Poor scenarios use R-8 to R-12 (minimal 2$\times$4 cavity fill, below current code), Medium scenarios use R-13 to R-18 (standard 2$\times$4 batt through 2$\times$6 mixed), and Good scenarios use R-19 to R-24 (2$\times$6 framing and above). Consecutive tier midpoints differ by 55\% (R-10 to R-15.5) and 39\% (R-15.5 to R-21.5) in wall R-value. SEER ratings in the test corpus span 8--22, covering pre-1992 units (SEER~8--10), standard-efficiency replacements (SEER~13--14), and high-efficiency models (SEER~16--22), consistent with the ENERGY STAR Most Efficient threshold \citep{energystar_ac2023}.
+Each insulation tier spans a range of R-values drawn from standard U.S.\ residential wall assemblies \citep{cec_ja43_2013,energystar_insulation2023}: Poor scenarios use R-8 to R-12 (minimal 2$\times$4 cavity fill, below current code), Medium scenarios use R-13 to R-18 (standard 2$\times$4 batt through 2$\times$6 mixed), and Good scenarios use R-19 to R-24 (2$\times$6 framing and above). Consecutive tier midpoints differ by 55\% (R-10 to R-15.5) and 39\% (R-15.5 to R-21.5) in wall R-value. SEER ratings in the test dataset span 8--22, covering pre-1992 units (SEER~8--10), standard-efficiency replacements (SEER~13--14), and high-efficiency models (SEER~16--22), consistent with the ENERGY STAR Most Efficient threshold \citep{energystar_ac2023}.
 
-The appliance age presented to the LLM architectures is a band label (1--3, 4--6, 7--9, 10--12, 13--17, and 28--32 years in the test corpus), derived from the scenario's raw integer age by a single shared helper so that the label is byte-identical on the query and index sides of retrieval. The scenario sheets retain both the raw age and an independent per-cycle energy value (kWh/cycle) drawn from the ENERGY STAR certified-products database, and the ground-truth calculator scores kWh/cycle directly without reference to age. Within a single appliance type the band and the per-cycle energy are only moderately associated (Spearman's $\rho = 0.36$ for dishwashers, $0.38$ for dryers, and $0.69$ for washing machines), so two appliances sharing a band can differ materially in energy draw---a 7--9-year dryer ranges from 2.40 to 3.50\,kWh/cycle across the corpus.
+The appliance age presented to the LLM architectures is a band label (1--3, 4--6, 7--9, 10--12, 13--17, and 28--32 years in the test dataset), derived from the scenario's raw integer age by a single shared helper so that the label is byte-identical on the query and index sides of retrieval. The scenario sheets retain both the raw age and an independent per-cycle energy value (kWh/cycle) drawn from the ENERGY STAR certified-products database, and the ground-truth calculator scores kWh/cycle directly without reference to age. Within a single appliance type the band and the per-cycle energy are only moderately associated (Spearman's $\rho = 0.36$ for dishwashers, $0.38$ for dryers, and $0.69$ for washing machines), so two appliances sharing a band can differ materially in energy draw---a 7--9-year dryer ranges from 2.40 to 3.50\,kWh/cycle across the dataset.
 
 For the Flow Rate parameter, the scenario's numeric GPM is bucketed into three qualitative labels: \texttt{low\_flow} ($\le$2.0\,GPM, including EPA WaterSense certified showerheads \citep{epawatersense}), \texttt{standard} (2.5--3.0\,GPM, at or near the Energy Policy Act of 1992 federal maximum of 2.5\,GPM \citep{epawatersense}), and \texttt{high\_flow} ($>$3.0\,GPM). The label is present in the LLM test scenarios only; the ground-truth calculator scores the scenario's numeric GPM directly.
 
@@ -508,7 +508,7 @@ architecture and weight vector. Table~\ref{tab:sensitivity_top1} gives Top-1
 accuracy for the same cells. The weight vectors are the design vector
 $(0.30,\,0.35,\,0.20,\,0.15)$, the equal-weight vector
 $(0.25,\,0.25,\,0.25,\,0.25)$, and the entropy- and MEREC-derived vectors of
-Appendix~B, each applied pooled across the corpus and per decision type. No
+Appendix~B, each applied pooled across the dataset and per decision type. No
 value in either table is pooled across models.
  Both the reference ranking and the architecture ranking are recomputed under each vector, because a MAVT reference is defined by its weights. Bold marks the two cells in which $\mathcal{A}_{\text{D}}$ exceeds $\mathcal{A}_{\text{E}}$; both occur for Gemini under MEREC vectors.
 \begin{table*}[htbp]
@@ -578,7 +578,7 @@ on Kendall's~$\tau$.
 
 The RAG and prompt-sensitivity ablations reported in this section were collected against an earlier shower comfort function. That function scored the water-heater setpoint, a storage temperature, against a 110--130\,\textdegree{}F no-penalty band taken from delivery-side comfort and scald thresholds. The shipped function uses 120--140\,\textdegree{}F, anchored instead to CDC storage guidance: below 120\,\textdegree{}F a tank cannot deliver the 105\,\textdegree{}F target with mixing margin and sits inside the \textit{Legionella} amplification range, and above 140\,\textdegree{}F the tank adds standby loss without comfort benefit. The main manuscript's Calculator Simplifications subsection discusses the correction.
 
-We recomputed the shower reference under the corrected band before deciding whether to re-collect. The setpoint enters comfort as a per-scenario constant shared by all three alternatives, so it moves a ranking only through the criterion balance. Across the 60 test shower scenarios the correction changes no reference winner and no full reference ranking. In the 20-scenario shower RAG corpus it changes 1 winner and 2 rankings. 
+We recomputed the shower reference under the corrected band before deciding whether to re-collect. The setpoint enters comfort as a per-scenario constant shared by all three alternatives, so it moves a ranking only through the criterion balance. Across the 60 test shower scenarios the correction changes no reference winner and no full reference ranking. In the 20-scenario shower RAG dataset it changes 1 winner and 2 rankings. 
 
 Both ablation suites test whether a configuration preserves the architecture ordering, and the narrowest ordering margin either suite resolves is 0.13 in Kendall's $\tau$, so a correction that moves no test reference winner cannot reverse either suite's conclusions. Separately, 799 of 14,400 $\mathcal{A}_{\text{H}}$ Shower cells (5.5\%) failed to reproduce under the uncorrected calculator because shipped scores omitted cold-weather duration elasticity. Realigning elasticity and applying the 120--140\,\textdegree{}F band yields $\tau = 0.8117$ versus shipped $0.8111$, confirming the gap is rank-neutral and affects score errors only. The headline results in the main text use the corrected reference throughout.
 
@@ -623,7 +623,7 @@ Kendall's $\tau$ / MAE & \multicolumn{4}{c}{0.001 (95\% CI $[-0.172,\, 0.175]$) 
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-Evaluated on the full 90-scenario RAG corpus (35 HVAC / 35 Appliance / 20 Shower) under leave-one-out retrieval, with all four models. Values are per-model bootstrap point estimates; the corresponding per-model 95\% percentile bootstrap intervals are in \texttt{Analysis/RAG\_Ablation/rag\_ablation\_bootstrap\_ci.xlsx} in the repository. Earlier versions of this table reported a single cross-model figure per configuration; those pooled estimates are withdrawn, because pooling reversed the random-exemplar comparison for Qwen and hid a significant $k{=}1$ against $k{=}3$ difference for DeepSeek. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring and uses no LLM, so it has no per-model row. Across all LLM configurations 7,560 scoring calls were made (4 models $\times$ 7 configurations $\times$ 90 scenarios $\times$ 3 alternatives) with 2 failures (0.03\%), both on DeepSeek.
+Evaluated on the full 90-scenario RAG dataset (35 HVAC / 35 Appliance / 20 Shower) under leave-one-out retrieval, with all four models. Values are per-model bootstrap point estimates; the corresponding per-model 95\% percentile bootstrap intervals are in \texttt{Analysis/RAG\_Ablation/rag\_ablation\_bootstrap\_ci.xlsx} in the repository. Earlier versions of this table reported a single cross-model figure per configuration; those pooled estimates are withdrawn, because pooling reversed the random-exemplar comparison for Qwen and hid a significant $k{=}1$ against $k{=}3$ difference for DeepSeek. Nearest-neighbor assigns retrieved scenario scores directly without LLM rescoring and uses no LLM, so it has no per-model row. Across all LLM configurations 7,560 scoring calls were made (4 models $\times$ 7 configurations $\times$ 90 scenarios $\times$ 3 alternatives) with 2 failures (0.03\%), both on DeepSeek.
 
 \subsection{RAG Ablation: Test-Family Bookkeeping}
 \label{app:rag_ablation_significance}
@@ -947,13 +947,13 @@ All five comparisons are significant under the two-stage Holm correction. Cliff'
 \subsection{Parameter-Source Ablation Significance}
 \label{app:paramprov-significance}
 
-Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: for each model, ranking accuracy with the LLM's extracted parameters and a single corpus-median constant per parameter (no per-scenario inference).
+Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: for each model, ranking accuracy with the LLM's extracted parameters and a single dataset-median constant per parameter (no per-scenario inference).
 
 \begin{table*}[htbp]
 \centering
 \footnotesize
 \centering
-\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with LLM-extracted and corpus-median hidden parameters. Significance testing on these conditions follows.}
+\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with LLM-extracted and dataset-median hidden parameters. Significance testing on these conditions follows.}
 \label{tab:param_provenance}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{llccc}
@@ -961,26 +961,26 @@ Table~\ref{tab:param_provenance} reports the parameter-source ablation in full: 
 Model & Parameter source & $\tau$ & Top-1 & MAE \\
 \midrule
 GPT-OSS & LLM-extracted & 0.921 & 0.943 & 0.046 \\
-GPT-OSS & Corpus median & 0.641 & 0.769 & 0.122 \\
+GPT-OSS & Dataset median & 0.641 & 0.769 & 0.122 \\
 \midrule
 Qwen & LLM-extracted & 0.897 & 0.913 & 0.066 \\
-Qwen & Corpus median & 0.641 & 0.769 & 0.122 \\
+Qwen & Dataset median & 0.641 & 0.769 & 0.122 \\
 \midrule
 DeepSeek & LLM-extracted & 0.904 & 0.913 & 0.040 \\
-DeepSeek & Corpus median & 0.641 & 0.769 & 0.122 \\
+DeepSeek & Dataset median & 0.641 & 0.769 & 0.122 \\
 \midrule
 Gemini & LLM-extracted & 0.921 & 0.928 & 0.047 \\
-Gemini & Corpus median & 0.641 & 0.769 & 0.122 \\
+Gemini & Dataset median & 0.641 & 0.769 & 0.122 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table*}
 
-Both conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The corpus-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows are a correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
+Both conditions scored by the same reference calculators over the same 195 test scenarios; the conditions differ only in the source of the withheld engineering parameters. The dataset-median condition uses one constant per parameter and no model output, so it is identical across models, and the four identical 0.641 / 0.769 / 0.122 rows are a correctness check on the harness. Scenarios whose extraction failed are excluded from that condition rather than defaulted; the extracted condition scored 194 of 195 scenarios for GPT-OSS and 195 for the other three models.
 
 Significance for the parameter-source ablation is tested within each model rather than pooled across models. With two conditions there is exactly one comparison per model--metric cell, so each cell is tested directly with a paired Wilcoxon signed-rank test over the 195 scenarios. Four models times three metrics (Kendall's $\tau$, Top-1 accuracy, MAE) gives twelve such tests, Holm-corrected as a single family.
 
-All twelve tests are significant after correction. The extracted condition beats the corpus-median condition on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-5}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-9}$, $\delta$ between 0.35 and 0.49, medium to large); the Top-1 comparison is significant for all four models ($p_{\text{Holm}} < 10^{-3}$) but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both conditions already place the correct alternative first most of the time.
+All twelve tests are significant after correction. The extracted condition beats the dataset-median condition on Kendall's $\tau$ for all four models ($p_{\text{Holm}} < 10^{-5}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on MAE ($p_{\text{Holm}} < 10^{-9}$, $\delta$ between 0.35 and 0.49, medium to large); the Top-1 comparison is significant for all four models ($p_{\text{Holm}} < 10^{-3}$) but the effect size is small for GPT-OSS ($\delta=-0.175$) and Gemini ($\delta=-0.159$) and negligible for DeepSeek and Qwen ($\delta=-0.144$), since Top-1 is coarser than $\tau$ and both conditions already place the correct alternative first most of the time.
 
 \subsection{Alternative-Ordering Ablation: Full Statistics}
 \label{app:alternative-order-full}

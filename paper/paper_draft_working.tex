@@ -12,6 +12,7 @@
 \usepackage[table]{xcolor}
 \usepackage{xurl}
 \usepackage{hyperref}
+\usepackage{caption}
 \pdfstringdefDisableCommands{%
   \def\corref#1{}%
   \def\cnotenum#1{}%
@@ -79,10 +80,10 @@
 \end{tikzpicture}%
 }
 
-\newcommand{\plotDecisionTypeByModel}{%
+\newcommand{\plotDecisionTypeByModelPartA}{%
 \begin{tikzpicture}
 \begin{groupplot}[
-    group style={group size=3 by 4, vertical sep=1.6cm},
+    group style={group size=3 by 2, vertical sep=1.6cm},
     width=0.31\textwidth, height=3.7cm,
     xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
     xticklabel style={font=\small},
@@ -132,6 +133,26 @@
 \addplot[mark=square*, colorDeepSeek] coordinates {(1,61.9) (2,59.7) (3,81.0)};
 \addplot[mark=triangle*, colorGPTOSS] coordinates {(1,33.0) (2,66.3) (3,82.3)};
 \addplot[mark=diamond*, colorQwen] coordinates {(1,34.3) (2,47.0) (3,89.0)};
+\end{groupplot}
+\end{tikzpicture}%
+}
+
+\newcommand{\plotDecisionTypeByModelPartB}{%
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=3 by 2, vertical sep=1.6cm},
+    width=0.31\textwidth, height=3.7cm,
+    xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
+    xticklabel style={font=\small},
+    enlarge x limits=0.25,
+    grid=major, grid style={gray!30}, ymajorgrids=true,
+    extra y ticks={0.25,0.5,0.75},
+    extra y tick style={grid=major, grid style={gray!50}},
+    extra y tick labels={},
+    legend style={font=\scriptsize, at={(0.5,1.25)}, anchor=south, legend columns=4, draw=none, fill=none},
+    legend cell align={left},
+    every axis plot/.append style={thick, mark size=2pt},
+]
 \nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
     title={\small (g) HVAC}, title style={font=\small}]
 \addplot[mark=*, colorGemini]   coordinates {(1,0.2412) (2,0.2030) (3,0.0296)};
@@ -144,6 +165,7 @@
 \addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2717) (2,0.2067) (3,0.0404)};
 \addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2887) (2,0.2136) (3,0.0515)};
 \addplot[mark=diamond*, colorQwen] coordinates {(1,0.2828) (2,0.2242) (3,0.1176)};
+\legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
 \nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
     title={\small (i) Shower}, title style={font=\small}]
 \addplot[mark=*, colorGemini]   coordinates {(1,0.1357) (2,0.1057) (3,0.0484)};
@@ -315,6 +337,8 @@ Thus, we aimed to answer the following questions: Which LLM-assisted architectur
 \section{Literature Review}
 \label{sec:lit-review}
 
+The gap this study fills becomes visible across three lines of prior work: barriers that keep households from optimizing energy use unaided, evidence that LLMs score numbers unreliably without external grounding, and a thin, unbenchmarked literature on pairing LLMs with MCDA.
+
 \subsection{Household Energy Decision-Making and Adoption Barriers}
 
 Globally, residential buildings account for 18\% of CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}; in the United States, the residential sector consumed 19.2 quadrillion BTU (5,627 TWh) of delivered energy in 2025 and accounted for roughly 20\% of national energy-related CO\textsubscript{2} emissions \cite{eia2022,goldstein2020}.
@@ -333,33 +357,58 @@ Natural-language interfaces can reduce this cognitive tax. In building performan
 
 \subsection{LLMs as Numeric Reasoners and Scorers}
 
-For arithmetic, LLMs ``often provide incorrect answers'' unless self-checked against multiple generated solution paths \cite{imani2023mathprompter}. Expecting LLMs to accurately understand how competing (and often similar) alternatives can have one clear winner is therefore unreliable without external grounding. However, testing a lone-LLM scorer is useful to see exactly how unreliable LLMs are without that grounding.
+For arithmetic, LLMs ``often provide incorrect answers'' unless self-checked against multiple generated solution paths \cite{imani2023mathprompter}. GSM8K, a benchmark of grade-school word problems, shows the same failure at scale: models answer inconsistently unless supplemented with explicit verification \cite{cobbe2021gsm8k}. Expecting LLMs to accurately understand how competing (and often similar) alternatives can have one clear winner is therefore unreliable without external grounding. However, testing a lone-LLM scorer is useful to see exactly how unreliable LLMs are without that grounding.
 
 The most conventional method of LLM assistance is few-shot prompting, which is when the prompt includes examples similar to the solution needed. Retrieval-Augmented Generation (RAG) can do that using a database of examples by injecting external facts into an LLM's context to reduce hallucination in open-domain QA \cite{lewis2020}. An MCDA scoring task is closer to Case-Based Reasoning, which treats problem-solving as retrieving similar prior cases and reusing their recorded solutions \cite{aamodtplaza1994}. \cite{minorkaucher2024} found that retrieved example explanations used as in-context demonstrations improve LLM-generated outputs over zero-shot prompting. Providing pre-scored expert scenarios could reasonably increase accuracy.
 
-However, both implementations have fundamental flaws; \cite{wang2024fairescalers} show that LLMs exhibit positional bias when scoring, ranking the first response higher simply because of its placement (a problem with ranking alternatives), and LLMs also have inaccurate score calibration. \cite{li2026scoringbias} document systematic scoring-bias distortions in LLM-as-a-judge pipelines that persist even in advanced models, and \cite{zhu2026cyclicjudge} trace most of the cross-run score variance on benchmarks like MT-Bench to judge identity rather than response quality. \cite{policar2025bioinformatics} show that different LLM graders carry distinct, model-specific biases. Based on this prior work, we would predict that $\mathcal{A}_{\text{D}}$ fails for one reason: the four criterion scores for all three alternatives cluster into a narrow middle band, missing the sharp, non-linear penalties in the reference value functions, dragging down Kendall's tau even when scores are directionally reasonable.
+However, both implementations have fundamental flaws. \cite{zheng2023judging} formalized the broader LLM-as-judge paradigm, in which a model's own generated scores substitute for human ratings; subsequent audits complicate its reliability for the multi-alternative comparison an MCDA scorer performs. \cite{wang2024fairescalers} show that LLMs exhibit positional bias when scoring, ranking the first response higher simply because of its placement (a problem with ranking alternatives), and LLMs also have inaccurate score calibration. \cite{li2026scoringbias} document systematic scoring-bias distortions in LLM-as-a-judge pipelines that persist even in advanced models, and \cite{zhu2026cyclicjudge} trace most of the cross-run score variance on benchmarks like MT-Bench to judge identity rather than response quality. \cite{policar2025bioinformatics} show that different LLM graders carry distinct, model-specific biases. Based on this prior work, we would predict that $\mathcal{A}_{\text{D}}$ fails for one reason: the four criterion scores for all three alternatives cluster into a narrow middle band, missing the sharp, non-linear penalties in the reference value functions, dragging down Kendall's tau even when scores are directionally reasonable.
 
-An alternative to having the LLM score directly is to have it estimate the missing engineering parameters and let a deterministic calculator handle the scoring. This LLM-parameterized approach preserves the transparency of equation-based evaluation while leveraging the LLM's pattern-matching ability to infer quantitative values from natural-language context. The tradeoff is narrower applicability: a calculator must be built for each decision domain. We test this tradeoff directly through $\mathcal{A}_{\text{H}}$, which pairs single-call LLM parameter extraction with the three reference calculators.
+An alternative to having the LLM score directly is to have it estimate the missing engineering parameters and let a deterministic calculator handle the scoring. This LLM-parameterized approach preserves the transparency of equation-based evaluation while leveraging the LLM's pattern-matching ability to infer quantitative values from natural-language context. The tradeoff is narrower applicability: a calculator must be built for each decision domain. This design mirrors a shift toward program-aided and tool-augmented reasoning: a language model delegates exact computation to an external interpreter or API instead of computing internally \cite{gao2023pal,schick2023toolformer}. We test this tradeoff directly through $\mathcal{A}_{\text{H}}$, which pairs single-call LLM parameter extraction with the three reference calculators.
 
 \subsection{Multi-Criteria Decision Analysis and LLM Integration}
 
-Multi-Criteria Decision Analysis (MCDA) provides formal frameworks to evaluate competing trade-offs across financial, environmental, and technical dimensions \cite{huang2011,loken2007,pohekar2004}. Multi-Attribute Value Theory (MAVT) aggregates single-attribute value functions into a unified score using criterion weights. However, nominal importance weights often fail to reflect effective trade-offs unless scaled by realized attribute ranges within a choice set \cite{vonnitzsch1993}. While MCDA methods traditionally require manual elicitation of parameters and preferences from domain experts, recent studies explore large language models to automate preference elicitation, alternative generation, or direct scoring \cite{svoboda2024,icaart26}. Existing LLM-MCDA applications typically evaluate outputs through subjective human preference or ungrounded qualitative checks. Few studies quantitatively measure how accurately LLM-integrated architectures reproduce formal MAVT reference models constructed from established engineering standards.
+Multi-Criteria Decision Analysis (MCDA) provides formal frameworks to evaluate competing trade-offs across financial, environmental, and technical dimensions \cite{huang2011,loken2007,pohekar2004}. Multi-Attribute Value Theory (MAVT) aggregates single-attribute value functions into a unified score using criterion weights. However, nominal importance weights often fail to reflect effective trade-offs unless scaled by realized attribute ranges within a choice set \cite{vonnitzsch1993}. Before LLMs, MCDA researchers addressed subjective imprecision through fuzzy-set extensions of classical methods: fuzzy AHP and fuzzy TOPSIS represent decision-maker judgments as fuzzy numbers rather than crisp weights \cite{zadeh1965,vanlaarhoven1983,chen2000}. The uncertainty is formalized, but a human still has to supply the judgment. While MCDA methods traditionally require manual elicitation of parameters and preferences from domain experts, recent studies explore large language models to automate preference elicitation, alternative generation, or direct scoring \cite{svoboda2024,icaart26}. Table~\ref{tab:llm-mcda-prior-work} summarizes this thin literature: to our knowledge, only two studies integrate an LLM directly into a named MCDA method, and neither benchmarks its output against an independent, domain-calibrated reference.
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\centering
+\footnotesize
+\caption{Prior work integrating large language models with formal MCDA methods.}
+\label{tab:llm-mcda-prior-work}
+\begin{tabular}{@{}p{0.16\textwidth}p{0.12\textwidth}p{0.42\textwidth}p{0.14\textwidth}@{}}
+\toprule
+\textbf{Study} & \textbf{MCDA method} & \textbf{LLM's role} & \textbf{Ground truth?} \\
+\midrule
+\cite{svoboda2024} & AHP & GPT-4 agents act as virtual experts generating pairwise comparisons & No \\
+\cite{icaart26} & COMET & LLaMA 3.1 8B substitutes for the human expert who scores characteristic objects & No \\
+\cite{huangburgherr2024} & Multi-method DSS & None --- conventional expert-elicited inputs & N/A \\
+This study & MAVT & Direct scorer ($\mathcal{A}_{\text{D}}$), retrieval-augmented scorer ($\mathcal{A}_{\text{E}}$), and parameter extractor for a deterministic calculator ($\mathcal{A}_{\text{H}}$) & Yes \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item ``Ground truth'' indicates evaluation against an independent, domain-calibrated reference model rather than internal consistency checks or qualitative review.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+Existing LLM-MCDA applications typically evaluate outputs through subjective human preference or ungrounded qualitative checks. Few studies quantitatively measure how accurately LLM-integrated architectures reproduce formal MAVT reference models constructed from established engineering standards.
 
 Despite extensive work on LLM numeracy, retrieval-augmented generation, and LLM-as-judge scoring, no prior study has rigorously compared these integration strategies against a deterministic reference calculator calibrated to published engineering standards for household energy decisions. We fill this gap by benchmarking three LLM-MCDA architectures---$\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, and $\mathcal{A}_{\text{H}}$---across 195 test scenarios spanning HVAC, appliance, and shower decisions, using identical MAVT weighting and model access so that the integration strategy is the sole variable under test.
 
 \section{Methodology}
 \label{sec2}
 
-Table~\ref{tab:item1} lists the notation used throughout this paper.
+This section fixes the study's scope first: the three household decision types under test and the dataset that instantiates them. It then covers methodology proper: the MAVT reference framework, the deterministic calculators that ground it, the three LLM-integration architectures under comparison, and the metrics used to score them. Table~\ref{tab:item1} lists the notation used throughout this paper.
 
-\subsection{Decision Types and Scenario Corpus}
+\subsection{Decision Types and Scenario Dataset}
 Three decision types were selected for their high behavioral plasticity and RAER: HVAC (adjusting thermostat setpoints), Appliance (time-of-use [TOU] scheduling), and Shower (duration). HVAC was prioritized because space heating and cooling account for approximately a third of global residential energy consumption and represent the fastest-growing end-use as household incomes rise \cite{GONZALEZTORRES2022112428}.
 
-The scenario corpus has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the reference calculator. The RAG scenarios (detailed in Supplementary Material S1) contain an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture; RAG scenarios are used only in the retrieval index \cite{lewis2020}.
+The scenario dataset has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives scored independently by each architecture and by the reference calculator. The RAG scenarios (detailed in Supplementary Material S1) contain an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture; RAG scenarios are used only in the retrieval index \cite{lewis2020}.
 
 The scenario counts were chosen to ensure full coverage of the parameter space rather than to satisfy a statistical power calculation. Each decision type's scenario set crosses the categorical parameters (insulation tier, housing type, appliance type, flow-rate band) with representative numeric draws (outdoor temperature, square footage, household size, utility budget), with coverage of every categorical cross-cell ensured by a combinatorial audit (detailed in Supplementary Material S1). The 90 RAG scenarios follow the same parameter distribution without excess scenarios in any combination and are kept fully disjoint from the test set, so no test scenario shares an identical parameter signature with a retrieval-index entry.
 
-The test corpus withholds each scenario's exact engineering parameters (R-value, SEER, GPM, kWh/cycle, occupancy flags) behind homeowner-accessible labels for every architecture, while $\mathcal{A}_{\text{E}}$'s retrieved RAG exemplars still expose their own engineering values as worked examples (Table~\ref{tab:parameter_comparison}; Section~\ref{sec:architectures}).
+The test dataset withholds each scenario's exact engineering parameters (R-value, SEER, GPM, kWh/cycle, occupancy flags) behind homeowner-accessible labels for every architecture, while $\mathcal{A}_{\text{E}}$'s retrieved RAG exemplars still expose their own engineering values as worked examples (Table~\ref{tab:parameter_comparison}; Section~\ref{sec:architectures}).
 
 The reference calculators in this study were built on Pennsylvania-specific data (electricity and natural gas rates, utility structures, and PJM marginal emission factors). The models tested were made aware of this through the locations given.
 
@@ -581,7 +630,7 @@ $k$ & number of retrieved scenarios per query in RAG ($k=1$) \\
 
 \subsection{Reference Ranges}
 
-The reference ranges in Table~\ref{table:reference_ranges} are computed as the 5th--95th percentiles of the reference cost distributions over the scenario corpus rather than extreme theoretical limits, so that normalization preserves meaningful spread across typical residential alternatives. The HVAC environmental bounds are derived from the corresponding energy percentile envelope through the PJM marginal emission factors, as detailed below, while the Appliance environmental bounds are percentiles of the realized per-cycle emissions distribution; the comfort and practicality bounds are constructed score bounds (0.0--1.0 and 0.05--1.0), not percentiles.
+The reference ranges in Table~\ref{table:reference_ranges} are computed as the 5th--95th percentiles of the reference cost distributions over the scenario dataset rather than extreme theoretical limits, so that normalization preserves meaningful spread across typical residential alternatives. The HVAC environmental bounds are derived from the corresponding energy percentile envelope through the PJM marginal emission factors, as detailed below, while the Appliance environmental bounds are percentiles of the realized per-cycle emissions distribution; the comfort and practicality bounds are constructed score bounds (0.0--1.0 and 0.05--1.0), not percentiles.
 
 The practicality lower bound of 0.05 rather than 0.0 reflects the design assumption that no household alternative is truly impossible to execute: even the most impractical option (e.g., a 20-minute shower for four occupants sharing a small tank) remains physically performable, merely highly inadvisable, so a residual floor prevents the value function from treating any alternative as categorically infeasible \cite{ariely2001,leclerc1995}. These bounds draw on actual Pennsylvania setpoints and therefore are still based on real-world usage. Using dataset percentiles rather than the full theoretical physics envelope is a choice \cite{roszkowska2026} which comes at the cost of truncating scores for extreme outlier scenarios. The endpoints below are reported to the precision shown in the table.
 
@@ -614,13 +663,13 @@ Using this kWh distribution with PJM marginal emissions factors (0.976 off-peak,
 
 For appliances, the realized per-cycle cost distribution (kWh/cycle multiplied by the resolved time-of-use rate across the six PA utilities) spans \$0.025--\$0.71, and the realized per-cycle emissions distribution (kWh/cycle through the PJM marginal factor at run time) spans 0.288--3.643 lbs CO\textsubscript{2}. The underlying per-cycle energy endpoints remain consistent with the ENERGY STAR certified-products distribution (efficient HE washers near 0.25\,kWh) and include the older non-certified electric resistance dryers \cite{energystar_products,chenyu2018,hustvedt2013,neep2015,porras2020}.
 
-For showers, the realized per-shower cost distribution spans \$0.14--\$1.14. Shower energy follows the mixing-fraction physics targeting a fixed 105\,\textdegree{}F delivery temperature, so it depends only on the rise from the mains inlet (seasonal inlet temperatures from NREL hot-water modeling \cite{burch2007}) to that target and is independent of heater setpoint for setpoints at or above the 105\,\textdegree{}F delivery target, which all corpus setpoints (105--140\,\textdegree{}F) satisfy. 
+For showers, the realized per-shower cost distribution spans \$0.14--\$1.14. Shower energy follows the mixing-fraction physics targeting a fixed 105\,\textdegree{}F delivery temperature, so it depends only on the rise from the mains inlet (seasonal inlet temperatures from NREL hot-water modeling \cite{burch2007}) to that target and is independent of heater setpoint for setpoints at or above the 105\,\textdegree{}F delivery target, which all dataset setpoints (105--140\,\textdegree{}F) satisfy. 
 
 Shower environmental impact is defined as water volume (gallons); the realized distribution of flow rate multiplied by duration spans 6.0--45.0 gallons at the 5th--95th percentile, with flow-rate and duration benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}, REU2016 \cite{reu2016}, and The Harris Poll \cite{harrispoll2024}. Water volume was chosen because it is the major environmental footprint of showering, and showers account for a major share of indoor residential water use. However, this means that models are tested on slightly different grounds between decision types.
 
-The endpoints above were obtained by running every corpus scenario through its decision type's calculator, test and retrieval scenarios alike, pooling the raw quantity across all three alternatives of every scenario of that type, and taking the 5th and 95th percentiles of the pooled distribution.
+The endpoints above were obtained by running every dataset scenario through its decision type's calculator, test and retrieval scenarios alike, pooling the raw quantity across all three alternatives of every scenario of that type, and taking the 5th and 95th percentiles of the pooled distribution.
 
-For HVAC, alternatives carrying zero conditioning load are dropped from the pool, so the normalization floor is set by the cheapest actively conditioning option rather than by a degenerate zero. The one endpoint not read off a realized distribution is the HVAC environmental bound, which is converted from the HVAC energy percentile envelope through the PJM factors as described above, so that the cost and emissions scales for that decision type stay physically consistent with each other. The endpoints are then held as constants inside each calculator's value function rather than recomputed at run time, so that a later change to the scenario corpus cannot move the normalization without the change being made explicitly.
+For HVAC, alternatives carrying zero conditioning load are dropped from the pool, so the normalization floor is set by the cheapest actively conditioning option rather than by a degenerate zero. The one endpoint not read off a realized distribution is the HVAC environmental bound, which is converted from the HVAC energy percentile envelope through the PJM factors as described above, so that the cost and emissions scales for that decision type stay physically consistent with each other. The endpoints are then held as constants inside each calculator's value function rather than recomputed at run time, so that a later change to the scenario dataset cannot move the normalization without the change being made explicitly.
 
 \subsection{Reference Calculators}
 \label{sec:gt-calculators}
@@ -873,7 +922,7 @@ All three suites cover the same four models. Gemini's cells use three runs again
 
 \subsubsection{Prompt ablation}
 \label{sec:prompt-ablation-methods}
-The prompt ablation asks whether the reported ordering reflects the design of $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ or the particular prompts used to implement them. Because that question concerns the shipped comparison, this suite runs on the same 195 Test scenarios that produced it rather than on the 90-scenario RAG corpus. Three perturbations modify one prompt property at a time against the shipped control: removing the anchors that define the endpoints of the scoring scale (\texttt{no\_anchors}), inserting a chain-of-thought scaffold that instructs the model to reason before emitting JSON (\texttt{cot\_scaffold}), and rescaling the response range from 0--1 to 0--10 with scores divided by ten before scoring (\texttt{scale\_0\_10}).
+The prompt ablation asks whether the reported ordering reflects the design of $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ or the particular prompts used to implement them. Because that question concerns the shipped comparison, this suite runs on the same 195 Test scenarios that produced it rather than on the 90-scenario RAG dataset. Three perturbations modify one prompt property at a time against the shipped control: removing the anchors that define the endpoints of the scoring scale (\texttt{no\_anchors}), inserting a chain-of-thought scaffold that instructs the model to reason before emitting JSON (\texttt{cot\_scaffold}), and rescaling the response range from 0--1 to 0--10 with scores divided by ten before scoring (\texttt{scale\_0\_10}).
 
 $\mathcal{A}_{\text{E}}$ ships without anchors, so \texttt{no\_anchors} applies to $\mathcal{A}_{\text{D}}$ alone and the matrix has 28 architecture--model--variant cells rather than 32. $\mathcal{A}_{\text{H}}$ is excluded because its LLM call extracts engineering parameters rather than emitting criterion scores, so none of the three manipulations has a counterpart in its prompt. Cells run five times per model, or three for Gemini. The $\mathcal{A}_{\text{D}}$ control and \texttt{no\_anchors} cells were extended to ten runs for DeepSeek, GPT-OSS and Qwen after a five-run pass left the $\mathcal{A}_{\text{D}}$/Qwen \texttt{no\_anchors} comparison against control close enough to the significance threshold ($\alpha = 0.05$) to warrant more power before drawing a conclusion either way (full run counts in Supplementary Material S2); Section~\ref{sec:prompt-ablation} reports how it resolved.
 
@@ -881,15 +930,15 @@ Point estimates use the per-scenario aggregation defined in Section~\ref{sec:eva
 
 \subsubsection{RAG ablation}
 \label{sec:rag-ablation-methods}
-The RAG ablation runs on the complete 90-scenario RAG corpus under a leave-one-out protocol: each scenario serves as the query with itself excluded from retrieval. The corpus supplies both the query set and the retrieval index here because the manipulations under test change the index itself, and the corpus scenarios are the only ones carrying reference scores in both roles.
+The RAG ablation runs on the complete 90-scenario RAG dataset under a leave-one-out protocol: each scenario serves as the query with itself excluded from retrieval. The dataset supplies both the query set and the retrieval index here because the manipulations under test change the index itself, and the dataset scenarios are the only ones carrying reference scores in both roles.
 
-Seven configurations are compared against the $k=3$ control of the time: retrieval $k$ at 1 and at 5, an embedding swap replacing all-MiniLM-L6-v2 with the smaller paraphrase-MiniLM-L3-v2, exemplars with the hidden engineering parameters removed, exemplar descriptions with the reference scores and ranks removed, random corpus draws in place of similarity-ranked exemplars, and an offline \texttt{nearest-neighbor} configuration that assigns the retrieved scenario's scores directly with no LLM call.
+Seven configurations are compared against the $k=3$ control of the time: retrieval $k$ at 1 and at 5, an embedding swap replacing all-MiniLM-L6-v2 with the smaller paraphrase-MiniLM-L3-v2, exemplars with the hidden engineering parameters removed, exemplar descriptions with the reference scores and ranks removed, random dataset draws in place of similarity-ranked exemplars, and an offline \texttt{nearest-neighbor} configuration that assigns the retrieved scenario's scores directly with no LLM call.
 
 Each configuration answers one question. $k=1$ tests whether a single high-similarity exemplar provides sufficient guidance and $k=5$ whether broader context improves or dilutes the signal. The embedding swap tests how much encoder quality matters. The exemplar-content configurations separate whether the model benefits from seeing the engineering parameters (R-value, SEER, GPM, kWh/cycle) or only the household-reported labels. The score-anchoring configurations test whether the model uses the reference scores as calibration anchors or as noise. Random exemplars control for retrieval quality: if similarity matters, random draws should perform worse than similarity-ranked ones. The \texttt{nearest-neighbor} configuration tests whether unmodified exemplar copying carries ranking signal on its own. On this evidence $k=1$ was adopted as the production retrieval count (Section~\ref{sec:architectures}), since it was not shown to be worse than $k=3$ or $k=5$ in three of the four models, DeepSeek excepted, and carries the lowest token and API cost (full results in Section~\ref{sec:rag-ablation}).
 
 \subsubsection{Parameter-provenance ablation}
 \label{sec:hybrid-ablation-methods}
-The third suite isolates how much of $\mathcal{A}_{\text{H}}$'s ranking accuracy comes from the LLM's parameter extraction step, as opposed to a deterministic calculator scoring the alternatives on its own (motivation and full results in Section~\ref{sec:res-paramprov}). It also runs on the 195 Test scenarios. Both conditions feed the same reference calculators used to build the reference model (Section~\ref{sec:gt-calculators}), are scored against the ranking those calculators produce from each scenario's true engineering values, and differ only in where the withheld engineering parameters come from. \texttt{extracted} supplies the values $\mathcal{A}_{\text{H}}$'s LLM returned for each scenario, read from the existing per-model result files rather than by re-querying any model. \texttt{default\_params} supplies one fixed value per hidden parameter, the corpus median for numeric parameters and the corpus mode for categorical ones, reused for every scenario with no per-scenario inference at all, making it the floor a calculator-only system would reach if extraction contributed nothing beyond a constant guess.
+The third suite isolates how much of $\mathcal{A}_{\text{H}}$'s ranking accuracy comes from the LLM's parameter extraction step, as opposed to a deterministic calculator scoring the alternatives on its own (motivation and full results in Section~\ref{sec:res-paramprov}). It also runs on the 195 Test scenarios. Both conditions feed the same reference calculators used to build the reference model (Section~\ref{sec:gt-calculators}), are scored against the ranking those calculators produce from each scenario's true engineering values, and differ only in where the withheld engineering parameters come from. \texttt{extracted} supplies the values $\mathcal{A}_{\text{H}}$'s LLM returned for each scenario, read from the existing per-model result files rather than by re-querying any model. \texttt{default\_params} supplies one fixed value per hidden parameter, the dataset median for numeric parameters and the dataset mode for categorical ones, reused for every scenario with no per-scenario inference at all, making it the floor a calculator-only system would reach if extraction contributed nothing beyond a constant guess.
 
 The withheld parameters match those described for $\mathcal{A}_{\text{H}}$ in Section~\ref{sec:architectures}: R-value, SEER, HVAC age, and occupancy context for HVAC; appliance type, kWh/cycle, and baseline time for Appliance; GPM, tank size, and water-heater setpoint for Shower. The comparison that carries the paper's claim is \texttt{extracted} against \texttt{default\_params}: the gap between them is what extraction contributes over a no-inference baseline.
 
@@ -1104,11 +1153,11 @@ Table~\ref{tab:incremental-contribution} extends the comparison beyond the three
 \end{table*}
 \FloatBarrier
 
-\texttt{FixedDefault} achieves high HVAC accuracy (the R-15/SEER-13 defaults are close to the corpus optimum for most Pennsylvania scenarios) and strong Shower ranking ($\tau = 0.800$, because the 2.5-GPM, 50-gallon, 120\textdegree{}F defaults are near-optimal for most scenarios), but collapses on Appliance ($\tau = 0.097$), yielding a per-type average of $\tau = 0.610$ and the pooled $\tau = 0.614$ shown in Table~\ref{tab:incremental-contribution}.
+\texttt{FixedDefault} achieves high HVAC accuracy (the R-15/SEER-13 defaults are close to the dataset optimum for most Pennsylvania scenarios) and strong Shower ranking ($\tau = 0.800$, because the 2.5-GPM, 50-gallon, 120\textdegree{}F defaults are near-optimal for most scenarios), but collapses on Appliance ($\tau = 0.097$), yielding a per-type average of $\tau = 0.610$ and the pooled $\tau = 0.614$ shown in Table~\ref{tab:incremental-contribution}.
 
 A second check asks whether any single criterion is enough to recover the reference winner on its own. For each scenario we take the alternative that scores highest on one criterion, ignoring the other three, and record how often that alternative is also the reference top-ranked one; the resulting agreement rate is computed separately for each criterion and decision type. A criterion with a high rate means an architecture could rank correctly there without weighing four criteria at all, so the statistic bounds how much of the ranking task the reference model's own structure already encodes.
 
-No criterion reaches a high rate across all three decision types. Over the 195 Test scenarios, comfort taken alone is the argmax for the reference winner in 85.7\% of HVAC and 92.3\% of Appliance scenarios but only 18.3\% of Shower scenarios, below the 33.3\% chance level for three alternatives; energy cost inverts that pattern at 10.0\% for HVAC and 75.0\% for Shower. Environmental impact tracks energy cost (10.0\%, 46.2\%, 75.0\% for HVAC, Appliance, Shower) and practicality is informative on Appliance alone (27.1\%, 90.8\%, 20.0\%). The same statistic computed on the full 285-scenario corpus preserves every ordering and moves no cell by more than 8.8 points, so the bound does not depend on the Test/RAG split.
+No criterion reaches a high rate across all three decision types. Over the 195 Test scenarios, comfort taken alone is the argmax for the reference winner in 85.7\% of HVAC and 92.3\% of Appliance scenarios but only 18.3\% of Shower scenarios, below the 33.3\% chance level for three alternatives; energy cost inverts that pattern at 10.0\% for HVAC and 75.0\% for Shower. Environmental impact tracks energy cost (10.0\%, 46.2\%, 75.0\% for HVAC, Appliance, Shower) and practicality is informative on Appliance alone (27.1\%, 90.8\%, 20.0\%). The same statistic computed on the full 285-scenario dataset preserves every ordering and moves no cell by more than 8.8 points, so the bound does not depend on the Test/RAG split.
 
 \FloatBarrier
 \subsection{Criterion Error}
@@ -1215,11 +1264,11 @@ Shower GPM is the consistent exception, carrying the highest flip probability fo
 \FloatBarrier
 \subsection{Isolating the Contribution of Extraction}
 \label{sec:res-paramprov}
-The error-cancellation mechanism in Section~\ref{sec:res-extraction} raises a confound: extraction errors that largely cancel in the ranking would theoretically let $\mathcal{A}_{\text{H}}$ rank well from calculator access alone, with the LLM's parameter estimates contributing little. A parameter-source ablation separates the two (design and significance-testing methodology in Section~\ref{sec:hybrid-ablation-methods}). We conducted two conditions on the 195 test scenarios, differing only in where the withheld engineering parameters come from: the values the LLM actually returned, and a single corpus-median constant per parameter reused for every scenario. Both are scored against the ranking the reference calculators produce from the scenario's true values; the second performs no per-scenario inference at all and so isolates what calculator access alone buys. The full per-model, per-condition results table appears in Supplementary Material S2.
+The error-cancellation mechanism in Section~\ref{sec:res-extraction} raises a confound: extraction errors that largely cancel in the ranking would theoretically let $\mathcal{A}_{\text{H}}$ rank well from calculator access alone, with the LLM's parameter estimates contributing little. A parameter-source ablation separates the two (design and significance-testing methodology in Section~\ref{sec:hybrid-ablation-methods}). We conducted two conditions on the 195 test scenarios, differing only in where the withheld engineering parameters come from: the values the LLM actually returned, and a single dataset-median constant per parameter reused for every scenario. Both are scored against the ranking the reference calculators produce from the scenario's true values; the second performs no per-scenario inference at all and so isolates what calculator access alone buys. The full per-model, per-condition results table appears in Supplementary Material S2.
 
 Calculator access alone is not sufficient. With no per-scenario inference, the median-parameter condition reaches $\tau = 0.641$ and Top-1 of 76.9\%, well above chance but far below the $\mathcal{A}_{\text{H}}$ results. LLM extraction lifts this to $\tau = 0.880$--$0.923$ and Top-1 of 89.7--93.1\%, a gain of 0.24--0.28 in $\tau$ attributable to extraction rather than to the calculator. 
 
-Paired Wilcoxon signed-rank tests, Holm-corrected across the twelve model--metric tests, confirm that extraction significantly beats the corpus-median condition on all three metrics for all four models ($p_{\text{Holm}} < 10^{-3}$ throughout, Cliff's $\delta$ from $-0.14$ to $-0.24$ on Kendall's $\tau$ and Top-1 and from 0.35 to 0.49 on MAE; full statistics in Supplementary Material S2).
+Paired Wilcoxon signed-rank tests, Holm-corrected across the twelve model--metric tests, confirm that extraction significantly beats the dataset-median condition on all three metrics for all four models ($p_{\text{Holm}} < 10^{-3}$ throughout, Cliff's $\delta$ from $-0.14$ to $-0.24$ on Kendall's $\tau$ and Top-1 and from 0.35 to 0.49 on MAE; full statistics in Supplementary Material S2).
 
 \FloatBarrier
 \subsection{Performance by Decision Type}
@@ -1291,11 +1340,11 @@ The sensitivity analysis reweights both sides of the comparison: under each weig
 \begin{figure*}[htbp]
 	\centering
 	\plotRagAblation
-	\caption{RAG ablation results: Kendall's $\tau$ by configuration and model on the full 90-scenario RAG corpus. Configurations are ordered by overall $\tau$.}
+	\caption{RAG ablation results: Kendall's $\tau$ by configuration and model on the full 90-scenario RAG dataset. Configurations are ordered by overall $\tau$.}
 \label{fig:rag_ablation}
 \end{figure*}
 
-The RAG ablation (design in Section~\ref{sec:rag-ablation-methods}, full values in Supplementary Material S2) yielded three findings. Its offline \texttt{nearest-neighbor} configuration retrieves the three most similar scenarios from within the 90-scenario RAG corpus under a leave-one-out protocol and directly assigns the similarity-weighted average of their per-criterion scores, with no LLM call. It gives $\tau = 0.001$ (95\% CI: $[-0.172,\, 0.175]$), indistinguishable from random ranking.
+The RAG ablation (design in Section~\ref{sec:rag-ablation-methods}, full values in Supplementary Material S2) yielded three findings. Its offline \texttt{nearest-neighbor} configuration retrieves the three most similar scenarios from within the 90-scenario RAG dataset under a leave-one-out protocol and directly assigns the similarity-weighted average of their per-criterion scores, with no LLM call. It gives $\tau = 0.001$ (95\% CI: $[-0.172,\, 0.175]$), indistinguishable from random ranking.
 
 Exemplar content matters in every model; retrieval depth matters in one. Figure~\ref{fig:rag_ablation} shows that removing scores drops $\tau$ substantially for every model, while removing hidden engineering parameters moves $\tau$ far less and in both directions.
 
@@ -1442,7 +1491,7 @@ $\mathcal{A}_{\text{E}}$ extends Case-Based Reasoning \cite{aamodtplaza1994,wira
 \label{sec:limitations}
 
 \subsubsection{Threats to Internal Validity}
-Prompt design is a potential confound in the architecture comparison. The prompt-sensitivity ablation (Section~\ref{sec:prompt-ablation}) addresses this directly for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, but this narrows rather than eliminates the concern. The $\mathcal{A}_{\text{D}}$--$\mathcal{A}_{\text{E}}$ contrast is not a clean test of retrieval alone: $\mathcal{A}_{\text{D}}$'s prompt gives per-decision-type worked anchors, while $\mathcal{A}_{\text{E}}$'s prompt replaces those anchors with one-line criterion directions and adds retrieved exemplars, so the two architectures differ in criterion framing as well as in retrieval. The \texttt{no\_anchors} variant, which strips $\mathcal{A}_{\text{D}}$'s anchors without adding retrieval, is what bounds how much of the $\mathcal{A}_{\text{D}}$--$\mathcal{A}_{\text{E}}$ gap the anchor wording alone could explain. An extraction prompt that recovered nothing scenario-specific would leave $\mathcal{A}_{\text{H}}$ at the corpus-median condition's $\tau = 0.641$, above the highest $\mathcal{A}_{\text{E}}$ figure recorded under any prompt variant across all four models ($\tau = 0.325$; full per-model table in Supplementary Material S2), so no perturbation of the extraction prompt can reverse the architecture ordering. The RAG ablation (Section~\ref{sec:rag-ablation}) offers separate partial evidence bearing on $\mathcal{A}_{\text{E}}$'s exemplar-related prompt structure.
+Prompt design is a potential confound in the architecture comparison. The prompt-sensitivity ablation (Section~\ref{sec:prompt-ablation}) addresses this directly for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, but this narrows rather than eliminates the concern. The $\mathcal{A}_{\text{D}}$--$\mathcal{A}_{\text{E}}$ contrast is not a clean test of retrieval alone: $\mathcal{A}_{\text{D}}$'s prompt gives per-decision-type worked anchors, while $\mathcal{A}_{\text{E}}$'s prompt replaces those anchors with one-line criterion directions and adds retrieved exemplars, so the two architectures differ in criterion framing as well as in retrieval. The \texttt{no\_anchors} variant, which strips $\mathcal{A}_{\text{D}}$'s anchors without adding retrieval, is what bounds how much of the $\mathcal{A}_{\text{D}}$--$\mathcal{A}_{\text{E}}$ gap the anchor wording alone could explain. An extraction prompt that recovered nothing scenario-specific would leave $\mathcal{A}_{\text{H}}$ at the dataset-median condition's $\tau = 0.641$, above the highest $\mathcal{A}_{\text{E}}$ figure recorded under any prompt variant across all four models ($\tau = 0.325$; full per-model table in Supplementary Material S2), so no perturbation of the extraction prompt can reverse the architecture ordering. The RAG ablation (Section~\ref{sec:rag-ablation}) offers separate partial evidence bearing on $\mathcal{A}_{\text{E}}$'s exemplar-related prompt structure.
 
 Additionally, $\mathcal{A}_{\text{H}}$ is graded against the same calculators that it uses as part of its architecture. However, the comparison is not circular in the sense that matters: $\mathcal{A}_{\text{H}}$ uses the same deterministic calculator as the reference model, with several inputs withheld and estimated from homeowner-accessible text rather than a separate or easier scoring function. The physical validation bounds (R-value, SEER, GPM ranges) derive from ASHRAE and ENERGY STAR literature, not from pilot LLM outputs. Additionally, the second author reviewed the calculator specification and validation bounds before any benchmark results existed (a pre-specification review). Of course, neither fact makes the review independent: he is a co-author and supervisor of the project. An engineer with no connection to this project auditing a separately built calculator, used as the true reference model, would close that gap (Section~\ref{sec:futurework}).
 
@@ -1461,7 +1510,7 @@ The environmental criterion for shower decisions uses water consumption in gallo
 
 \subsubsection{Threats to External Validity}
 
-The scenario corpus was generated by crossing categorical parameters with representative numeric draws. This combinatorial distribution ensures parameter-space coverage but does not reflect real-world joint distributions. For example, in practice, older houses tend to have worse insulation and lower SEER ratings together. The synthetic corpus decouples these correlations, potentially making ranking easier or harder than in household populations. This affects all architectures equally and does not bias the comparison, but it may reduce accuracy during real-world use.
+The scenario dataset was generated by crossing categorical parameters with representative numeric draws. This combinatorial distribution ensures parameter-space coverage but does not reflect real-world joint distributions. For example, in practice, older houses tend to have worse insulation and lower SEER ratings together. The synthetic dataset decouples these correlations, potentially making ranking easier or harder than in household populations. This affects all architectures equally and does not bias the comparison, but it may reduce accuracy during real-world use.
 
 Temperature 0.3 and the five-run-then-average protocol were methodological choices. Lower temperatures reduce variance but may narrow the model's output range; higher temperatures increase diversity but risk incoherent outputs. The reported absolute metric values are specific to this operating point, though the architecture ordering appears robust. At temperature 0 the five runs would be identical, collapsing the repeated-measures design to a single sample and leaving run-to-run variance unestimable; 0.3 preserves enough sampling variation for that design. Temperature was not ablated.
 
@@ -1478,7 +1527,7 @@ The framework assumes a single decision-maker with fixed weights (aside from the
 
 A tool that returns a ranked recommendation invites the household to accept it, but none of the three architectures emits a calibrated confidence estimate. A scenario the model has ranked correctly and one it has inverted arrive in the same form: the same clean top choice, with no signal that lets a homeowner tell when to trust it. The failure concentrates where accuracy is lowest: $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ both fall well short of $\mathcal{A}_{\text{H}}$, whose own residual error concentrates in Shower scenarios where flow rate must be inferred from a coarse label (Section~\ref{sec:res-extraction}). Any deployment of these architectures should expose the estimated parameters and the per-criterion scores alongside the ranking, so the household has something to check rather than a bare recommendation.
 
-The corpus also fixes a narrow population: every scenario sits in one of 48 Pennsylvania municipalities on one of six utility tariffs inside the PJM footprint. It also assumes an occupant free to control the thermostat, appliance run time, and water-heater configuration, so a renter who cannot change the setpoint or replace the heater, or any household outside PJM, is out of scope. The comfort and practicality criteria each encode one account of a reasonable household---ASHRAE\,55 setpoint optima for comfort, and a flat per-hour delay penalty plus an overnight penalty for run times between 22:00 and 07:00 for practicality. A household that deviates for reasons of health, cost, or habit, such as a shift worker who cannot move a wash to daytime hours, is also out of scope.
+The dataset also fixes a narrow population: every scenario sits in one of 48 Pennsylvania municipalities on one of six utility tariffs inside the PJM footprint. It also assumes an occupant free to control the thermostat, appliance run time, and water-heater configuration, so a renter who cannot change the setpoint or replace the heater, or any household outside PJM, is out of scope. The comfort and practicality criteria each encode one account of a reasonable household---ASHRAE\,55 setpoint optima for comfort, and a flat per-hour delay penalty plus an overnight penalty for run times between 22:00 and 07:00 for practicality. A household that deviates for reasons of health, cost, or habit, such as a shift worker who cannot move a wash to daytime hours, is also out of scope.
 
 A separate limitation concerns where the value functions themselves come from. Each criterion's 0--1 scoring curve (Section~\ref{sec:mavt-design}) is calibrated against published engineering standards and population-level data---ASHRAE~55 setpoint optima, EPA WaterSense flow-rate thresholds, ENERGY STAR efficiency bands---rather than elicited from the preferences of any specific household. That choice is what makes the benchmark's reference model reproducible and auditable, but it also means the reference ranking reflects a documented, normative account of a reasonable household's trade-offs, not this household's actual trade-offs. A homeowner who weighs comfort far above the criterion's 20\% weight, or who tolerates a colder shower than ASHRAE~55 predicts, would be ranked against a value function calibrated for someone else. Eliciting value functions from a specific household's stated or revealed preferences, rather than from the literature, is a natural extension (Section~\ref{sec:futurework}).
 
@@ -1500,7 +1549,7 @@ A third, longer-term tier would extend the framework's scope: a neurosymbolic ve
 \label{sec:conclusion}
 This study benchmarked three strategies for integrating an LLM into an MCDA workflow, $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, and $\mathcal{A}_{\text{H}}$, against a deterministic MAVT reference calculator across 195 household energy scenarios. Because the reference calculator defines the reference model, the reported metrics measure fidelity to that specified model rather than real-world decision accuracy. $\mathcal{A}_{\text{H}}$ reproduces the reference most accurately, and the ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds for every model tested. Section~\ref{sec:limitations} states the primary bounds on that claim: the reference calculators have not been validated against observed household behavior directly, and the engineering parameters reflect Pennsylvania's PJM grid.
 
-The contribution is an evaluation framework and an open reference implementation for LLM-fronted MCDA in residential energy, not a new model architecture. It supplies three deterministic MAVT calculators, a 285-scenario corpus split into 195 test and 90 retrieval cases, and a harness that reports Kendall's $\tau$, Top-1, MAE and RMSE per model and per decision type; all three are public, so the comparison can be rerun under a different grid, weight vector, or model without rebuilding the reference. Most of the evidential weight behind the headline ordering sits in this robustness apparatus rather than in the ordering itself: seven weight vectors including entropy- and MEREC-derived ones (Section~\ref{sec:res-sensitivity}), a four-value sweep of the value-function curvature parameter, three ablation suites separating retrieval depth, prompt wording, and parameter source, and an exact permutation test on alternative ordering (Section~\ref{sec:res-order}).
+The contribution is an evaluation framework and an open reference implementation for LLM-fronted MCDA in residential energy, not a new model architecture. It supplies three deterministic MAVT calculators, a 285-scenario dataset split into 195 test and 90 retrieval cases, and a harness that reports Kendall's $\tau$, Top-1, MAE and RMSE per model and per decision type; all three are public, so the comparison can be rerun under a different grid, weight vector, or model without rebuilding the reference. Most of the evidential weight behind the headline ordering sits in this robustness apparatus rather than in the ordering itself: seven weight vectors including entropy- and MEREC-derived ones (Section~\ref{sec:res-sensitivity}), a four-value sweep of the value-function curvature parameter, three ablation suites separating retrieval depth, prompt wording, and parameter source, and an exact permutation test on alternative ordering (Section~\ref{sec:res-order}).
 
 The result that should outlast this domain concerns where a language model belongs in a pipeline that already has, or could have, a deterministic way to check its answer. Asking a model to read a situation and produce a judgment in one step puts it in charge of both understanding the situation and computing the outcome, and the judgment inherits whatever scoring biases and arithmetic weaknesses the model carries into that second task.
 
@@ -1545,13 +1594,13 @@ Supplementary material associated with this article is available online. Part S1
 \section{Weight Robustness: Entropy and MEREC}
 \label{app:weights}
 
-Table~\ref{tab:weight_comparison} compares the a priori subjective weights with entropy and MEREC weights computed on the full reference corpus (195 test + 90 RAG scenarios, 285 total). This scope matches the corpus used to calibrate the value functions (e.g.\ the HVAC energy-cost bounds of \$0.38--\$3.29 in Table~\ref{table:reference_ranges}).
+Table~\ref{tab:weight_comparison} compares the a priori subjective weights with entropy and MEREC weights computed on the full reference dataset (195 test + 90 RAG scenarios, 285 total). This scope matches the dataset used to calibrate the value functions (e.g.\ the HVAC energy-cost bounds of \$0.38--\$3.29 in Table~\ref{table:reference_ranges}).
 
 \begin{table}[htpb]
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
-\caption{Weight comparison: a priori (subjective), entropy, and MEREC weights, all computed over the full 285-scenario corpus. The a priori vector $(0.30,\,0.35,\,0.20,\,0.15)$ is the design choice defended in Section~\ref{sec:mavt-design}.}
+\caption{Weight comparison: a priori (subjective), entropy, and MEREC weights, all computed over the full 285-scenario dataset. The a priori vector $(0.30,\,0.35,\,0.20,\,0.15)$ is the design choice defended in Section~\ref{sec:mavt-design}.}
 \label{tab:weight_comparison}
 \begin{tabular}{@{}l rrrr@{}}
 \toprule
@@ -1587,9 +1636,18 @@ Figure~\ref{app:decision_type_full_figures}.
 
 \begin{figure*}[htbp]
 	\centering
-	\plotDecisionTypeByModel
-	\caption{Kendall's $\tau$ (a--c), Top-1 accuracy (d--f), MAE (g--i), and RMSE (j--l) by decision type and model (5-run mean over completed scenarios within each 195-scenario test set). Each row shows one metric by architecture ($\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, $\mathcal{A}_{\text{H}}$).}
+	\plotDecisionTypeByModelPartA
+	\caption{Kendall's $\tau$ (a--c) and Top-1 accuracy (d--f) by decision type and model (5-run mean over completed scenarios within each 195-scenario test set). Each row shows one metric by architecture ($\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, $\mathcal{A}_{\text{H}}$). Continued on the next page.}
 \label{app:decision_type_full_figures}
+\end{figure*}
+
+\clearpage
+
+\begin{figure*}[htbp]
+	\ContinuedFloat
+	\centering
+	\plotDecisionTypeByModelPartB
+	\caption{(continued) MAE (g--i) and RMSE (j--l) by decision type and model (5-run mean over completed scenarios within each 195-scenario test set). Each row shows one metric by architecture ($\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, $\mathcal{A}_{\text{H}}$).}
 \end{figure*}
 
 \FloatBarrier
