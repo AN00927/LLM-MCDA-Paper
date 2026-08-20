@@ -402,7 +402,7 @@ def emit_recovery_table(test_rec, full_rec, out_path):
                  r" taken alone, over the 195 Test scenarios. With three alternatives"
                  r" per scenario, chance agreement is 33.3\%. Ties are broken by first"
                  r" occurrence, so the statistic is deterministic. Values on the full"
-                 r" 285-scenario corpus, reported in"
+                 r" 285-scenario dataset, reported in"
                  r" \texttt{paper/dispersion\_diagnostics.csv}, are: "
                  + "; ".join(
                      f"{dt} " + ", ".join(f"{crit_labels[c].lower()} {_fmt(full_rec[dt][c][0], 1)}\\%"
