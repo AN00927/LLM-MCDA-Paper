@@ -1,0 +1,657 @@
+
+%% =====================================================================
+%% ITEM 1 -- Notation Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{ll}
+\toprule
+Symbol & Definition \\
+\midrule
+$\tau$ & Kendall's rank correlation coefficient \\
+$\rho$ & Spearman's rank correlation coefficient \\
+$w_i$ & weight of criterion $i$ ($i=1\ldots4$), summing to 1 \\
+$v_i(x)$ & value function score for criterion $i$ at raw value $x$, range $[0,10]$ \\
+$\alpha$ & shape parameter for logarithmic value functions \\
+$s_j$ & MAVT weighted sum score for alternative $j$ \\
+$\text{MAE}$ & Mean Absolute Error on MAVT score (0--10 scale) \\
+$\text{RMSE}$ & Root Mean Squared Error on MAVT score (0--10 scale) \\
+$n$ & number of test scenarios evaluated \\
+$k$ & number of retrieved chunks per query in RAG ($k=3$) \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{Notation used throughout this paper.}
+\label{tab:item1}
+\end{table}
+
+%% =====================================================================
+%% ITEM 2 -- MAVT Equations Block
+%% =====================================================================
+\begin{equation}
+\label{eq:mavt_sum}
+s_j = \sum_{i=1}^{4} w_i \cdot v_i(x_{ij})
+\end{equation}
+
+\begin{equation}
+\label{eq:linear_vf}
+v_i(x) = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \times 10
+\end{equation}
+
+\begin{equation}
+\label{eq:log_vf}
+v_i(x) = \frac{\ln\!\left(1 + \alpha \cdot \frac{x - x_{\min}}{x_{\max} - x_{\min}}\right)}{\ln(1 + \alpha)} \times 10
+\end{equation}
+
+%% =====================================================================
+%% ITEM 3 -- MAVT Framework Specification Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lllll}
+\toprule
+Criterion & Weight (\%) & Value Function & $\alpha$ & Direction \\
+\midrule
+Environmental Impact & 35 & Linear & \textemdash & Lower raw = better \\
+Energy Cost & 30 & Linear & \textemdash & Lower raw = better \\
+Comfort & 20 & Logarithmic & 1.5 & Higher raw = better \\
+Practicality & 15 & Logarithmic & 1.2 & Higher raw = better \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{MAVT criterion specification. Weights sum to 100\% and are held constant across all architectures and the ground truth calculator.}
+\label{tab:item3}
+\end{table}
+
+%% =====================================================================
+%% ITEM 4 -- Scenario Corpus and Parameter Asymmetry Table
+%% =====================================================================
+\begin{table*}[t]
+\footnotesize
+\centering
+\begin{minipage}[t]{0.34\textwidth}
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Decision Type & Test Set ($n$) & RAG Set ($n$) & Total ($n$) \\
+\midrule
+HVAC & 60 & 25 & 85 \\
+Appliance & 25 & 20 & 45 \\
+Shower & 15 & 5 & 20 \\
+\midrule
+Total & 100 & 50 & 150 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{minipage}
+\hspace{2em}
+\begin{minipage}[t]{0.60\textwidth}
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lll}
+\toprule
+Decision Type & GT Calculator Receives & Withheld / Generalized for AI \\
+\midrule
+HVAC & \parbox[t]{0.26\textwidth}{R-value, SEER, HVAC age, sq.\ ft., insulation, occupancy context} & \parbox[t]{0.26\textwidth}{R-value, HVAC age, SEER, occupancy context (insulation $\rightarrow$ good/avg/poor)} \\
+Appliance & \parbox[t]{0.26\textwidth}{kWh/cycle, peak rate, off-peak rate, baseline time, appliance type} & \parbox[t]{0.26\textwidth}{All five: type, rates, kWh/cycle, baseline time} \\
+Shower & \parbox[t]{0.26\textwidth}{Tank size, water heater temp, GPM} & \parbox[t]{0.26\textwidth}{Tank size, water heater temp} \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{minipage}
+\caption{Left: scenario distribution. Right: parameters available to the ground truth calculator but withheld or generalized for AI input, by decision type.}
+\label{tab:item4}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 5 -- Main Performance Summary Table
+%% =====================================================================
+\begin{table*}[t]
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Metric & Pure Prompting & RAG-Enhanced & Hybrid \\
+\midrule
+\multicolumn{4}{l}{\textbf{Ranking Accuracy}} \\
+Kendall's $\tau$ & -0.06 & 0.43 & \textbf{0.80} \\
+Spearman's $\rho$ & -0.055 & 0.49 & \textbf{0.82} \\
+Top-1 Accuracy (\%) & 30.00\% & 58.00\% & \textbf{83.00\%} \\
+Top-2 Accuracy (\%) & 62.00\% & 89.00\% & \textbf{97.00\%} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Score Error}} \\
+Overall MAE & 2.52 & 1.61 & \textbf{0.69} \\
+Overall RMSE & 3.07 & 2.40 & \textbf{1.52} \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\\[2pt]
+{\small Scores on 0--10 MAVT scale. $n = 100$ scenarios.}
+\caption{Overall performance comparison across all 100 test scenarios. Best value per metric in bold.}
+\label{tab:item5}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 6 -- Criterion-Level MAE Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Criterion & Pure Prompting & RAG-Enhanced & Hybrid \\
+\midrule
+Energy Cost & 2.60 & 1.60 & \textbf{0.96} \\
+Environmental Impact & 2.80 & 1.59 & \textbf{1.02} \\
+Comfort & 2.51 & 1.97 & \textbf{0.32} \\
+Practicality & 2.16 & 1.29 & \textbf{0.43} \\
+\midrule
+Overall & 2.52 & 1.61 & \textbf{0.69} \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\\[2pt]
+{\small $^\dagger$Hybrid HVAC Comfort MAE = 0.00 and Practicality MAE = 0.00 (fully deterministic); reported separately in Table~\ref{tab:item7}.}
+\caption{MAE per criterion by architecture (Overall, $n=100$, score 0--10). Best per criterion in bold.}
+\label{tab:item6}
+\end{table}
+
+%% =====================================================================
+%% ITEM 7 -- Per-Decision-Type Full Breakdown Table
+%% =====================================================================
+\begin{table*}[t]
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccccccccc}
+\toprule
+ & \multicolumn{3}{c}{Pure Prompting} & \multicolumn{3}{c}{RAG-Enhanced} & \multicolumn{3}{c}{Hybrid} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Decision Type & $\tau$ & Top-1 (\%) & Top-2 (\%) & $\tau$ & Top-1 (\%) & Top-2 (\%) & $\tau$ & Top-1 (\%) & Top-2 (\%) \\
+\midrule
+HVAC ($n=60$) & -0.11 & 25.00\% & 56.67\% & 0.52 & 63.33\% & 93.33\% & \textbf{0.90} & \textbf{91.67\%} & 100.00\% \\
+Appliance ($n=25$) & 0.09 & 40.00\% & 72.00\% & 0.41 & 56.00\% & 88.00\% & \textbf{0.68} & \textbf{72.00\%} & 92.00\% \\
+Shower ($n=15$) & -0.11 & 33.33\% & 66.67\% & 0.11 & 40.00\% & 73.33\% & \textbf{0.60} & \textbf{66.67\%} & 93.33\% \\
+\midrule
+Overall ($n=100$) & -0.06 & 30.00\% & 62.00\% & 0.43 & 58.00\% & 89.00\% & \textbf{0.80} & \textbf{83.00\%} & 97.00\% \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{Ranking accuracy by decision type. Best $\tau$ and Top-1 per row in bold.}
+\label{tab:item7}
+\end{table*}
+
+%% =====================================================================
+%% ITEM 8 -- Efficiency and API Usage Table
+%% =====================================================================
+\begin{table}[t]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccc}
+\toprule
+Metric & Pure Prompting & RAG-Enhanced & Hybrid \\
+\midrule
+Total API Calls & 300 & 300 & 100 \\
+Input Tokens & 114739 & 295174 & 81741 \\
+Output Tokens & 9970 & 13463 & 16275 \\
+Total Tokens & 124709 & 308637 & \textbf{98016} \\
+\midrule
+Total Latency (s) & 437.1 & 480.8 & \textbf{275.6} \\
+Avg.\ Latency/Call (ms) & 1456.9 & 1602.6 & 2755.9 \\
+\midrule
+Success Rate (\%) & 100.00\% & 100.00\% & 100.00\% \\
+Failure Rate (\%) & 0.00\% & 0.00\% & 0.00\% \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{API usage and efficiency across 100 test scenarios. Token counts cumulative across all API calls per architecture.}
+\label{tab:item8}
+\end{table}
+
+%% =====================================================================
+%% ITEM 9 -- MAE Heatmap (figure*)
+%% =====================================================================
+\begin{figure*}[t]
+\centering
+\pgfplotsset{
+	colormap={maewhitered}{
+		rgb255(0cm)=(255,255,255);
+		rgb255(1cm)=(139,0,0)
+	}
+}
+\begin{tikzpicture}
+\begin{groupplot}[
+	group style={group size=3 by 1, horizontal sep=1.2cm},
+	width=0.29\textwidth,
+	height=0.25\textwidth,
+	xmin=0.5,
+	xmax=3.5,
+	ymin=0.5,
+	ymax=4.5,
+	xtick={1,2,3},
+	xticklabels={HVAC,Appliance,Shower},
+	ytick={1,2,3,4},
+	yticklabels={Practicality,Comfort,Environmental Impact,Energy Cost},
+	tick align=outside,
+	colormap name=maewhitered,
+	point meta min=0,
+	point meta max=5,
+	enlargelimits=false,
+	nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+	every node near coord/.append style={font=\footnotesize, anchor=center, text=black}
+]
+\nextgroupplot[title={\textbf{Pure Prompting}}]
+\addplot[
+	matrix plot*,
+	point meta=explicit,
+	mesh/cols=3
+] coordinates {
+	(1,4) [2.2537] (2,4) [3.0725] (3,4) [3.2227]
+	(1,3) [2.3763] (2,3) [3.0908] (3,3) [4.0384]
+	(1,2) [2.1877] (2,2) [3.5869] (3,2) [2.0349]
+	(1,1) [1.6232] (2,1) [3.4985] (3,1) [2.0891]
+};
+\draw[red, line width=1.5pt] (axis cs:2.5,2.5) rectangle (axis cs:3.5,3.5);
+
+\nextgroupplot[title={\textbf{RAG-Enhanced}}]
+\addplot[
+	matrix plot*,
+	point meta=explicit,
+	mesh/cols=3
+] coordinates {
+	(1,4) [2.0360] (2,4) [0.7987] (3,4) [1.2200]
+	(1,3) [2.0366] (2,3) [0.9119] (3,3) [0.9416]
+	(1,2) [1.4068] (2,2) [3.8840] (3,2) [1.0300]
+	(1,1) [0.3719] (2,1) [2.9940] (3,1) [2.1522]
+};
+\draw[red, line width=1.5pt] (axis cs:1.5,1.5) rectangle (axis cs:2.5,2.5);
+
+\nextgroupplot[title={\textbf{Hybrid}}, colorbar, colorbar style={ylabel={MAE}, ytick={0,1,2,3,4,5}}]
+\addplot[
+	matrix plot*,
+	point meta=explicit,
+	mesh/cols=3
+] coordinates {
+	(1,4) [1.1858] (2,4) [0.7395] (3,4) [0.4393]
+	(1,3) [1.3083] (2,3) [0.7924] (3,3) [0.2711]
+	(1,2) [0.0000] (2,2) [1.2559] (3,2) [0.0573]
+	(1,1) [0.0000] (2,1) [1.0913] (3,1) [1.0693]
+};
+\end{groupplot}
+\end{tikzpicture}
+\caption{MAE heatmap by criterion and decision type (0--10 MAVT scale). Darker = larger error. Red-bordered cells: two worst criterion-level errors.}
+\label{fig:item9}
+\end{figure*}
+%% DATA CHECK (ITEM 9):
+%% Pure HVAC MAE: energy_cost_MAE=2.2537, environmental_MAE=2.3763, comfort_MAE=2.1877, practicality_MAE=1.6232 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Pure Appliance MAE: energy_cost_MAE=3.0725, environmental_MAE=3.0908, comfort_MAE=3.5869, practicality_MAE=3.4985 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Pure Shower MAE: energy_cost_MAE=3.2227, environmental_MAE=4.0384, comfort_MAE=2.0349, practicality_MAE=2.0891 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG HVAC MAE: energy_cost_MAE=2.0360, environmental_MAE=2.0366, comfort_MAE=1.4068, practicality_MAE=0.3719 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG Appliance MAE: energy_cost_MAE=0.7987, environmental_MAE=0.9119, comfort_MAE=3.8840, practicality_MAE=2.9940 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG Shower MAE: energy_cost_MAE=1.2200, environmental_MAE=0.9416, comfort_MAE=1.0300, practicality_MAE=2.1522 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid HVAC MAE: energy_cost_MAE=1.1858, environmental_MAE=1.3083, comfort_MAE=0.0000, practicality_MAE=0.0000 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid Appliance MAE: energy_cost_MAE=0.7395, environmental_MAE=0.7924, comfort_MAE=1.2559, practicality_MAE=1.0913 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid Shower MAE: energy_cost_MAE=0.4393, environmental_MAE=0.2711, comfort_MAE=0.0573, practicality_MAE=1.0693 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Highest two MAE values verified: 4.0384 (Pure, Shower, Environmental), 3.8840 (RAG, Appliance, Comfort)
+
+%% =====================================================================
+%% ITEM 10 -- Grouped Bar Chart: tau by Decision Type
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	ybar,
+	bar width=5pt,
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	symbolic x coords={HVAC,Appliance,Shower,Overall},
+	xtick=data,
+	ymin=-0.20,
+	ymax=1.00,
+	ytick={-0.2,0,0.2,0.4,0.6,0.8,1.0},
+	ylabel={Kendall's $\tau$},
+	enlarge x limits=0.18,
+	legend style={at={(0.02,0.98)}, anchor=north west, font=\footnotesize, draw=none},
+	nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+	point meta=y,
+	every node near coord/.append style={font=\footnotesize}
+]
+\addplot+[
+	draw=colorPure, fill=colorPure, bar shift=-6pt,
+	nodes near coords,
+	every node near coord/.style={
+		font=\footnotesize,
+		/pgfplots/scatter/use mapped color=false,
+		anchor={
+			\ifnum\coordindex=0 north\fi
+			\ifnum\coordindex=1 south\fi
+			\ifnum\coordindex=2 north\fi
+			\ifnum\coordindex=3 north\fi
+		}
+	}
+] coordinates {
+	(HVAC,-0.1111) (Appliance,0.0933) (Shower,-0.1111) (Overall,-0.0600)
+};
+\addlegendentry{Pure Prompting}
+
+\addplot+[draw=colorRAG, fill=colorRAG, bar shift=0pt, nodes near coords, every node near coord/.append style={anchor=south}] coordinates {
+	(HVAC,0.5222) (Appliance,0.4133) (Shower,0.1111) (Overall,0.4333)
+};
+\addlegendentry{RAG-Enhanced}
+
+\addplot+[draw=colorHybrid, fill=colorHybrid, bar shift=6pt, nodes near coords, every node near coord/.append style={anchor=south}] coordinates {
+	(HVAC,0.9000) (Appliance,0.6800) (Shower,0.6000) (Overall,0.8000)
+};
+\addlegendentry{Hybrid}
+
+\addplot[gray, dashed, thick] coordinates {(HVAC,0.00) (Overall,0.00)} node[pos=1, anchor=west, font=\footnotesize]{Random baseline};
+\addplot[darkgray, dotted, thick] coordinates {(HVAC,0.70) (Overall,0.70)} node[pos=1, anchor=west, font=\footnotesize]{Strong correlation};
+\end{axis}
+\end{tikzpicture}
+\caption{Kendall's $\tau$ by decision type and architecture. Dashed: $\tau=0$ (random). Dotted: $\tau=0.7$ (strong threshold).}
+\label{fig:item10}
+\end{figure}
+%% DATA CHECK (ITEM 10):
+%% Pure tau: HVAC=-0.1111, Appliance=0.0933, Shower=-0.1111, Overall=-0.0600 (COMPREHENSIVE METRIC SUMMARY.csv: kendall_tau)
+%% RAG tau: HVAC=0.5222, Appliance=0.4133, Shower=0.1111, Overall=0.4333 (COMPREHENSIVE METRIC SUMMARY.csv: kendall_tau)
+%% Hybrid tau: HVAC=0.9000, Appliance=0.6800, Shower=0.6000, Overall=0.8000 (COMPREHENSIVE METRIC SUMMARY.csv: kendall_tau)
+%% Reference lines: y=0.00, y=0.70 (user-specified thresholds)
+
+%% =====================================================================
+%% ITEM 11 -- Grouped Bar Chart: MAE per Criterion
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	ybar,
+	bar width=5pt,
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	symbolic x coords={Energy Cost,Environmental Impact,Comfort,Practicality},
+	xtick=data,
+	xticklabel style={font=\footnotesize, rotate=20, anchor=east},
+	ymin=0,
+	ymax=4.5,
+	ylabel={MAE},
+	enlarge x limits=0.14,
+	legend style={at={(0.98,0.98)}, anchor=north east, font=\footnotesize, draw=none},
+	nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+	point meta=y,
+	every node near coord/.append style={font=\footnotesize, anchor=south}
+]
+\addplot+[draw=colorPure, fill=colorPure, bar shift=-6pt] coordinates {
+	(Energy Cost,2.6037) (Environmental Impact,2.8042) (Comfort,2.5146) (Practicality,2.1619)
+};
+\addlegendentry{Pure Prompting}
+
+\addplot+[draw=colorRAG, fill=colorRAG, bar shift=0pt] coordinates {
+	(Energy Cost,1.6043) (Environmental Impact,1.5912) (Comfort,1.9696) (Practicality,1.2945)
+};
+\addlegendentry{RAG-Enhanced}
+
+\addplot+[draw=colorHybrid, fill=colorHybrid, bar shift=6pt] coordinates {
+	(Energy Cost,0.9622) (Environmental Impact,1.0238) (Comfort,0.3226) (Practicality,0.4332)
+};
+\addlegendentry{Hybrid}
+\end{axis}
+\end{tikzpicture}
+\caption{MAE per criterion by architecture (Overall, $n=100$, scale 0--10).}
+\label{fig:item11}
+\end{figure}
+%% DATA CHECK (ITEM 11):
+%% Overall Pure MAE: energy_cost=2.6037, environmental=2.8042, comfort=2.5146, practicality=2.1619 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Overall RAG MAE: energy_cost=1.6043, environmental=1.5912, comfort=1.9696, practicality=1.2945 (COMPREHENSIVE METRIC SUMMARY.csv)
+%% Overall Hybrid MAE: energy_cost=0.9622, environmental=1.0238, comfort=0.3226, practicality=0.4332 (COMPREHENSIVE METRIC SUMMARY.csv)
+
+%% =====================================================================
+%% ITEM 12 -- Token and Latency Dual-Axis Figure
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+%% DATA VALUES USED (from diagnostics JSON files):
+%% Pure: input_tokens=114739, output_tokens=9970, total_latency_ms=437083.42933654785 -> latency_s=437.08342933654785
+%% RAG: input_tokens=295174, output_tokens=13463, total_latency_ms=480785.8417034149 -> latency_s=480.7858417034149
+%% Hybrid: input_tokens=81741, output_tokens=16275, total_latency_ms=275591.1343097687 -> latency_s=275.5911343097687
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	axis y line*=left,
+	axis x line*=bottom,
+	ybar stacked,
+	bar width=12pt,
+	symbolic x coords={Pure Prompting,RAG-Enhanced,Hybrid},
+	xtick=data,
+	ymin=0,
+	ymax=330,
+	ylabel={Token Count (thousands)},
+	legend style={at={(0.98,0.98)}, anchor=north east, font=\footnotesize, draw=none}
+]
+\addplot+[draw=colorPure, fill=colorPure, fill opacity=0.5] coordinates {(Pure Prompting,114.739)};
+\addlegendentry{Input Tokens}
+\addplot+[draw=colorRAG, fill=colorRAG, fill opacity=0.5, forget plot] coordinates {(RAG-Enhanced,295.174)};
+\addplot+[draw=colorHybrid, fill=colorHybrid, fill opacity=0.5, forget plot] coordinates {(Hybrid,81.741)};
+
+\addplot+[draw=colorPure, fill=colorPure] coordinates {(Pure Prompting,9.970)};
+\addlegendentry{Output Tokens}
+\addplot+[draw=colorRAG, fill=colorRAG, forget plot] coordinates {(RAG-Enhanced,13.463)};
+\addplot+[draw=colorHybrid, fill=colorHybrid, forget plot] coordinates {(Hybrid,16.275)};
+\addlegendimage{black, thick, mark=*, mark options={fill=black}}
+\addlegendentry{Latency (s)}
+
+\node[font=\footnotesize, anchor=south] at (axis cs:Pure Prompting,124.709) {124.7};
+\node[font=\footnotesize, anchor=south] at (axis cs:RAG-Enhanced,308.637) {308.6};
+\node[font=\footnotesize, anchor=south] at (axis cs:Hybrid,98.016) {98.0};
+\end{axis}
+
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	axis y line*=right,
+	axis x line*=none,
+	symbolic x coords={Pure Prompting,RAG-Enhanced,Hybrid},
+	xtick=data,
+	ymin=240,
+	ymax=500,
+	ylabel={Total Latency (s)},
+	xtick=\empty
+]
+\addplot+[black, thick, mark=*, mark options={fill=black}] coordinates {
+	(Pure Prompting,437.08342933654785)
+	(RAG-Enhanced,480.7858417034149)
+	(Hybrid,275.5911343097687)
+};
+\node[font=\footnotesize, anchor=west] at (axis cs:Pure Prompting,437.08342933654785) {437.1};
+\node[font=\footnotesize, anchor=west] at (axis cs:RAG-Enhanced,480.7858417034149) {480.8};
+\node[font=\footnotesize, anchor=west] at (axis cs:Hybrid,275.5911343097687) {275.6};
+\end{axis}
+\end{tikzpicture}
+\caption{Token usage (stacked bars, left axis) and latency (line, right axis) per architecture across 100 scenarios.}
+\label{fig:item12}
+\end{figure}
+%% DATA CHECK (ITEM 12):
+%% Pure tokens: total_tokens_input=114739, total_tokens_output=9970 (pure_prompting_results_diagnostics.json)
+%% RAG tokens: total_tokens_input=295174, total_tokens_output=13463 (RAGDiagnostics.json)
+%% Hybrid tokens: total_tokens_input=81741, total_tokens_output=16275 (hybrid_diagnostics.json)
+%% Pure latency: total_latency_ms=437083.42933654785 -> 437.08342933654785 s (pure_prompting_results_diagnostics.json)
+%% RAG latency: total_latency_ms=480785.8417034149 -> 480.7858417034149 s (RAGDiagnostics.json)
+%% Hybrid latency: total_latency_ms=275591.1343097687 -> 275.5911343097687 s (hybrid_diagnostics.json)
+
+%% =====================================================================
+%% ITEM 13 -- Accuracy-Efficiency Tradeoff Scatter
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	xmin=0,
+	xmax=350,
+	ymin=-0.15,
+	ymax=1.00,
+	xlabel={Total Token Usage (thousands)},
+	ylabel={Kendall's $\tau$}
+]
+\addplot[gray, dashed, thick] coordinates {(0,0) (350,0)} node[pos=1, anchor=west, font=\footnotesize]{Random baseline};
+
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorPure, fill=colorPure] coordinates {(124.709,-0.0600)};
+\node[font=\footnotesize, anchor=south west] at (axis cs:124.709,-0.0600) {Pure Prompting};
+
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorRAG, fill=colorRAG] coordinates {(308.637,0.4333)};
+\node[font=\footnotesize, anchor=south east] at (axis cs:308.637,0.4333) {RAG-Enhanced};
+
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorHybrid, fill=colorHybrid] coordinates {(98.016,0.8000)};
+\node[font=\footnotesize, anchor=south east] at (axis cs:98.016,0.8000) {Hybrid (Pareto-optimal)};
+\end{axis}
+\end{tikzpicture}
+\caption{Accuracy--efficiency tradeoff. Hybrid is Pareto-dominant: highest $\tau$ at lowest token cost.}
+\label{fig:item13}
+\end{figure}
+%% DATA CHECK (ITEM 13):
+%% Pure point: x=(114739+9970)/1000=124.709, y=kendall_tau_overall=-0.0600 (pure_prompting_results_diagnostics.json + COMPREHENSIVE METRIC SUMMARY.csv)
+%% RAG point: x=(295174+13463)/1000=308.637, y=kendall_tau_overall=0.4333 (RAGDiagnostics.json + COMPREHENSIVE METRIC SUMMARY.csv)
+%% Hybrid point: x=(81741+16275)/1000=98.016, y=kendall_tau_overall=0.8000 (hybrid_diagnostics.json + COMPREHENSIVE METRIC SUMMARY.csv)
+
+%% =====================================================================
+%% ITEM 14 -- Architecture Pipeline Diagram Placeholder
+%% =====================================================================
+\begin{figure*}[t]
+\centering
+\missingfigure[figwidth=\textwidth]{Side-by-side vertical pipeline flowcharts for three LLM integration architectures. Pure Prompting: 3 LLM calls, one per alternative, no external context. RAG-Enhanced: 3 LLM calls each preceded by ChromaDB retrieval (k=3 chunks). Hybrid: 1 LLM call for parameter extraction, output to physics-based calculator, then MAVT weighted sum.}
+%% ELSEVIER FIGURE REQUIREMENTS FOR FIG3:
+%% - Format: EPS or PDF vector preferred; TIFF/JPEG at >=1000 DPI
+%% - Filename: FIG3.EPS or FIG3.PDF at root level (no subfolders)
+%% - Double-column width: 190mm
+%% - Minimum font size: 7pt (Arial or Helvetica)
+%% - Color space: RGB
+%% - Replace \missingfigure{} with \includegraphics[width=\textwidth]{FIG3}
+\caption{Processing pipeline for each architecture. Pure Prompting and RAG-Enhanced require three API calls per scenario; Hybrid requires one.}
+\label{fig:pipeline}
+\end{figure*}
+
+%% =====================================================================
+%% ITEM 15 -- Criterion-Level MAE Reduction vs Pure Baseline
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	ybar,
+	bar width=7pt,
+	width=\columnwidth,
+	height=0.72\columnwidth,
+	symbolic x coords={Energy Cost,Environmental,Comfort,Practicality,Overall},
+	xtick=data,
+	xticklabel style={font=\footnotesize, rotate=20, anchor=east},
+	ymin=0,
+	ymax=95,
+	ytick={0,20,40,60,80},
+	ylabel={MAE Reduction vs Pure (\%)},
+	enlarge x limits=0.10,
+	legend style={at={(0.02,0.98)}, anchor=north west, font=\footnotesize, draw=none},
+	nodes near coords={\pgfmathprintnumber[fixed,precision=1]{\pgfplotspointmeta}},
+	point meta=y,
+	every node near coord/.append style={font=\scriptsize, anchor=south}
+]
+\addplot+[draw=colorRAG, fill=colorRAG, bar shift=-4pt] coordinates {
+	(Energy Cost,38.4)
+	(Environmental,43.3)
+	(Comfort,21.7)
+	(Practicality,40.1)
+	(Overall,36.0)
+};
+\addlegendentry{RAG-Enhanced}
+
+\addplot+[draw=colorHybrid, fill=colorHybrid, bar shift=4pt] coordinates {
+	(Energy Cost,63.0)
+	(Environmental,63.5)
+	(Comfort,87.2)
+	(Practicality,80.0)
+	(Overall,72.8)
+};
+\addlegendentry{Hybrid}
+\end{axis}
+\end{tikzpicture}
+\caption{Relative MAE reduction against Pure Prompting by criterion and overall. This decomposition shows where each architecture's gains originate, not just the aggregate error difference.}
+\label{fig:item15}
+\end{figure}
+
+%% =====================================================================
+%% ITEM 16 -- Robustness Across Decision Types (tau Mean with Min-Max)
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	width=\columnwidth,
+	height=0.66\columnwidth,
+	ylabel={Kendall's $\tau$ (HVAC, Appliance, Shower)},
+	xlabel={Architecture},
+	xmin=0.5,
+	xmax=3.5,
+	ymin=-0.20,
+	ymax=1.00,
+	xtick={1,2,3},
+	xticklabels={Pure,RAG,Hybrid},
+	legend style={at={(0.02,0.98)}, anchor=north west, font=\footnotesize, draw=none}
+]
+\addplot+[only marks, mark=*, mark size=2.5pt, draw=black] coordinates {
+	(1,-0.0430) (2,0.3489) (3,0.7267)
+};
+\addlegendentry{Mean $\tau$}
+
+\addplot+[error bars/.cd, y dir=both, y explicit, draw=black, mark=none, thick] coordinates {
+	(1,-0.0430) +- (0,0.1363) +- (0,0.1363)
+	(2,0.3489) +- (0,0.2378) +- (0,0.1744)
+	(3,0.7267) +- (0,0.1267) +- (0,0.1733)
+};
+\addlegendentry{Min--max range}
+
+\addplot[gray, dashed, thick] coordinates {(0.5,0.00) (3.5,0.00)};
+\node[font=\footnotesize, anchor=west] at (axis cs:3.48,0.00) {Random baseline};
+\end{axis}
+\end{tikzpicture}
+\caption{Robustness profile across decision types using Kendall's $\tau$ only (excluding Overall row). Points indicate mean performance and whiskers show min--max spread.}
+\label{fig:item16}
+\end{figure}
+
+%% =====================================================================
+%% ITEM 17 -- Practical Tradeoff: Top-1 Accuracy vs Total Latency
+%% =====================================================================
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+	width=\columnwidth,
+	height=0.68\columnwidth,
+	xmin=240,
+	xmax=500,
+	ymin=20,
+	ymax=90,
+	xlabel={Total Latency (s) across 100 scenarios},
+	ylabel={Top-1 Accuracy (\%)}
+]
+\addplot+[only marks, mark=*, mark size=4pt, draw=colorPure, fill=colorPure] coordinates {(437.1,30.0)};
+\node[font=\footnotesize, anchor=south west] at (axis cs:437.1,30.0) {Pure};
+
+\addplot+[only marks, mark=*, mark size=6pt, draw=colorRAG, fill=colorRAG] coordinates {(480.8,58.0)};
+\node[font=\footnotesize, anchor=south east] at (axis cs:480.8,58.0) {RAG};
+
+\addplot+[only marks, mark=*, mark size=3pt, draw=colorHybrid, fill=colorHybrid] coordinates {(275.6,83.0)};
+\node[font=\footnotesize, anchor=south west] at (axis cs:275.6,83.0) {Hybrid};
+\end{axis}
+\end{tikzpicture}
+\caption{Deployment-facing tradeoff between recommendation quality and latency. Marker size is proportional to total token usage (largest: RAG, smallest: Hybrid).}
+\label{fig:item17}
+\end{figure}
