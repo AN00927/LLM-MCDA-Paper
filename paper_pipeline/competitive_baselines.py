@@ -50,7 +50,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERIA, MODEL_SPECS  # noqa: E402
 
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)

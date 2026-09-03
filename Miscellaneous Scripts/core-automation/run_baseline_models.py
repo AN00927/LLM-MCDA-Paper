@@ -13,7 +13,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -24,6 +24,10 @@ if str(GT_CALC_DIR) not in sys.path:
 MISC_SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(MISC_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(MISC_SCRIPTS_DIR))
+
+EXPERIMENTS_DIR = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments"
+if str(EXPERIMENTS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXPERIMENTS_DIR))
 
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking

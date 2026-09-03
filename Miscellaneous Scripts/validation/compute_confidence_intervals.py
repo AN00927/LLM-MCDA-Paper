@@ -47,7 +47,7 @@ from scipy import stats
 # Configuration
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 INPUT_CSV = (
     PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"

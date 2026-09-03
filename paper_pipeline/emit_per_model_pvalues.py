@@ -45,7 +45,7 @@ _MISC = PROJECT_ROOT / "Miscellaneous Scripts"
 if str(_MISC) not in sys.path:
     sys.path.insert(0, str(_MISC))
 
-_SIG_PATH = _MISC / "significance_testing.py"
+_SIG_PATH = _MISC / "validation" / "significance_testing.py"
 _spec = spec_from_file_location("significance_testing", _SIG_PATH)
 _sig = module_from_spec(_spec)
 _spec.loader.exec_module(_sig)

@@ -18,7 +18,7 @@ RAG_FILES = {
     }
 }
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
 CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"
 COLLECTION_NAME = 'mcda_scenarios'
