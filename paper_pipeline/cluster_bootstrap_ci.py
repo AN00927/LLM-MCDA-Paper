@@ -56,7 +56,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from model_config import MODEL_SPECS  # noqa: E402
 from sentinel_utils import _is_complete_run_file  # noqa: E402
 
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("CalculateMetrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
@@ -110,6 +110,15 @@ def scenario_rows(clean, model, arch, run):
         else:
             tau = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
 
+        # spearman_rho: same per-scenario rule as kendall_tau above, and the
+        # same rule calculate_per_run_metrics.compute_ranking_metrics_local uses,
+        # so this column's per-run mean reproduces the shipped per-run spearman_rho.
+        if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+            rho, _ = stats.spearmanr(gt_r, ar_r)
+            rho = 0.0 if np.isnan(rho) else float(rho)
+        else:
+            rho = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
+
         gt_top1 = sc.loc[sc["gt_rank"].astype(float).idxmin(), "norm_alternative"]
         ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
         ar_top2 = set(sc.sort_values("arch_rank")["norm_alternative"].head(2).values)
@@ -134,6 +143,7 @@ def scenario_rows(clean, model, arch, run):
             "decision_type": dt,
             "scenario_id": sid,
             "kendall_tau": tau,
+            "spearman_rho": rho,
             "overall_mae": overall_mae,
             "top1_accuracy": 1.0 if gt_top1 == ar_top1 else 0.0,
             "top2_accuracy": 1.0 if gt_top1 in ar_top2 else 0.0,

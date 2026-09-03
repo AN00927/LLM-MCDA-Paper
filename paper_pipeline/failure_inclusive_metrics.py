@@ -51,12 +51,38 @@ ARCH_SHORT = {
 }
 
 # D2: each failure receives the chance value of its own metric.
+#
+# spearman_rho chance value (0.0): derived, not assumed. For n=3 items, Spearman's
+# rho against the fixed ground-truth ranking (1,2,3) over all 3! = 6 equally likely
+# permutations of the system's ranking:
+#   perm      d=(gt-sys)      sum(d^2)   rho = 1 - 6*sum(d^2)/(n(n^2-1)), n=3 -> /24
+#   (1,2,3)   (0,0,0)         0          1.0
+#   (1,3,2)   (0,-1,1)        2          0.5
+#   (2,1,3)   (-1,1,0)        2          0.5
+#   (2,3,1)   (-1,-1,2)       6          -0.5
+#   (3,1,2)   (2,-1,-1)       6          -0.5
+#   (3,2,1)   (2,0,-2)        8          -1.0
+# Mean over the 6 permutations = (1.0+0.5+0.5-0.5-0.5-1.0)/6 = 0.0. This matches the
+# general fact that Spearman's rho has expectation 0 under a uniformly random
+# permutation for any n > 1, confirmed here by direct enumeration for n=3 rather
+# than assumed from the general case.
 CHANCE = {
     "kendall_tau": 0.0,        # expected tau of a random permutation of 3 items
+    "spearman_rho": 0.0,       # see derivation above
     "top1_accuracy": 1.0 / 3,  # 1 correct of 3 alternatives
     "top2_accuracy": 2.0 / 3,  # correct item in a random pair of 3
 }
 METRICS = list(CHANCE)
+
+# MAE/RMSE are deliberately NOT included here. Unlike the rank metrics above,
+# error metrics have no principled "chance" value -- there is no null model whose
+# expected MAE/RMSE is defined the way a random permutation's expected tau/rho/
+# top-k accuracy is. Substituting 0.5, the observed mean, or any other placeholder
+# would be a fabricated number, not a derived one. Coverage gap: this script does
+# NOT produce a chance-imputed overall_mae or overall_rmse. Only
+# generate_imputed_robustness_tables.py (0.5-at-criterion-score imputation)
+# currently reports an availability-inclusive MAE, and that is a different
+# operation (see module docstring), not directly comparable to this one.
 
 TYPE_TOTALS = {"HVAC": 70, "Appliance": 65, "Shower": 60}
 N_ALL = sum(TYPE_TOTALS.values())  # 195
@@ -180,13 +206,21 @@ def main():
 
     md = ["# Failure-inclusive metrics (P1.2)", "",
           "D2 convention: each failed scenario receives the **chance value of its own",
-          "metric** -- tau 0, Top-1 1/3, Top-2 2/3. This is imputation at the metric",
+          "metric** -- tau 0, rho 0, Top-1 1/3, Top-2 2/3 (rho's chance value is",
+          "derived by direct enumeration over all 6 permutations of 3 items in the",
+          "script's `CHANCE` comment, not assumed). This is imputation at the metric",
           "level, not the 0.5-at-criterion-score level used by",
           "`generate_imputed_robustness_tables.py`; the two are different operations,",
           "not two settings of one operation.", "",
           "D1: the inclusive number **pairs with** the conditional number. Neither",
           "replaces the other.", "",
-          "## Overall", "",
+          "**Coverage gap:** MAE/RMSE are NOT reported here under any chance",
+          "convention. Error metrics have no principled chance value the way rank",
+          "metrics do (no null model has a defined expected MAE/RMSE the way a random",
+          "permutation has an expected tau/rho/top-k). An availability-inclusive MAE",
+          "is available only from `generate_imputed_robustness_tables.py`'s 0.5-at-",
+          "criterion-score convention, which is a different operation from this one.",
+          "", "## Overall", "",
           "| Model | Arch | Failed/run | tau S_ok | tau S_all | delta | Top-1 S_ok | Top-1 S_all | delta |",
           "|---|---|---|---|---|---|---|---|---|"]
     for _, r in overall.iterrows():
@@ -196,7 +230,7 @@ def main():
                   f"| {r['top1_accuracy_conditional']:.4f} | {r['top1_accuracy_inclusive']:.4f} "
                   f"| {r['top1_accuracy_delta']:+.4f} |")
 
-    md += ["", "## GPT-OSS A_H by decision type", "",
+    md += ["", "## GPT-OSS A_H by decision type (concentrated-failure cell)", "",
            "| Scope | n | Failed/run | tau S_ok | tau S_all | delta | Top-1 S_ok | Top-1 S_all | delta |",
            "|---|---|---|---|---|---|---|---|---|"]
     for _, r in gpt.iterrows():
@@ -205,6 +239,30 @@ def main():
                   f"| {r['kendall_tau_delta']:+.4f} "
                   f"| {r['top1_accuracy_conditional']:.4f} | {r['top1_accuracy_inclusive']:.4f} "
                   f"| {r['top1_accuracy_delta']:+.4f} |")
+
+    # Full coverage: every model x architecture x scope cell, one table per rank
+    # metric, so this file alone is transcribable into a supplement without
+    # reopening the xlsx. res is already sorted by architecture, model, scope.
+    METRIC_LABEL = {
+        "kendall_tau": "Kendall's tau",
+        "spearman_rho": "Spearman's rho",
+        "top1_accuracy": "Top-1 accuracy",
+        "top2_accuracy": "Top-2 accuracy",
+    }
+    md += ["", "## Full coverage: every model x architecture x scope cell", "",
+           "One table per rank metric. Every row is per-model (no pooling across",
+           "models); `Overall` is the 195-scenario total, not a mean of the three",
+           "decision types."]
+    for m in METRICS:
+        md += ["", f"### {METRIC_LABEL[m]}", "",
+               "| Model | Arch | Scope | n | Failed/run (mean) | Failed/run (max) "
+               f"| {m} S_ok | {m} S_all | delta |",
+               "|---|---|---|---|---|---|---|---|---|"]
+        for _, r in res.iterrows():
+            md.append(f"| {r['model']} | {r['architecture']} | {r['scope']} | {r['n_scope']} "
+                      f"| {r['mean_failed_per_run']} | {r['max_failed_per_run']} "
+                      f"| {r[f'{m}_conditional']:.4f} | {r[f'{m}_inclusive']:.4f} "
+                      f"| {r[f'{m}_delta']:+.4f} |")
     md.append("")
 
     OUT_MD.write_text("\n".join(md), encoding="utf-8")

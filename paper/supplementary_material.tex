@@ -508,14 +508,14 @@ architecture and weight vector. Table~\ref{tab:sensitivity_top1} gives Top-1
 accuracy for the same cells. The weight vectors are the design vector
 $(0.30,\,0.35,\,0.20,\,0.15)$, the equal-weight vector
 $(0.25,\,0.25,\,0.25,\,0.25)$, and the entropy- and MEREC-derived vectors of
-Appendix~B, each applied pooled across the dataset and per decision type. No
+Appendix~B, each applied per decision type. No
 value in either table is pooled across models.
- Both the reference ranking and the architecture ranking are recomputed under each vector, because a MAVT reference is defined by its weights. Bold marks the two cells in which $\mathcal{A}_{\text{D}}$ exceeds $\mathcal{A}_{\text{E}}$; both occur for Gemini under MEREC vectors.
+ Both the reference ranking and the architecture ranking are recomputed under each vector, because a MAVT reference is defined by its weights. Bold marks the one cell in which $\mathcal{A}_{\text{D}}$ exceeds $\mathcal{A}_{\text{E}}$; it occurs for Gemini under the MEREC HVAC vector.
 \begin{table*}[htbp]
 \centering
 \footnotesize
 \centering
-\caption{Kendall's $\tau$ by model and architecture under seven weight vectors. No value is pooled across models.}
+\caption{Kendall's $\tau$ by model and architecture under five weight vectors. No value is pooled across models.}
 \label{tab:sensitivity_by_model}
 \renewcommand{\arraystretch}{1.15}
 \setlength{\tabcolsep}{4pt}
@@ -528,10 +528,8 @@ value in either table is pooled across models.
 Design (baseline)  & 0.176 & 0.310 & 0.923 & 0.144 & 0.307 & 0.897 & 0.041 & 0.272 & 0.897 & 0.010 & 0.208 & 0.880 \\
 Equal              & 0.312 & 0.389 & 0.911 & 0.115 & 0.311 & 0.909 & 0.081 & 0.267 & 0.877 & $-$0.028 & 0.225 & 0.879 \\
 \midrule
-Entropy pooled     & 0.197 & 0.331 & 0.919 & 0.126 & 0.314 & 0.873 & 0.039 & 0.279 & 0.880 & 0.004 & 0.197 & 0.848 \\
 Entropy per-type   & 0.170 & 0.336 & 0.917 & 0.088 & 0.347 & 0.896 & 0.043 & 0.280 & 0.885 & $-$0.007 & 0.218 & 0.886 \\
 \midrule
-MEREC pooled       & \textbf{0.655} & 0.632 & 0.956 & 0.220 & 0.410 & 0.963 & 0.233 & 0.329 & 0.953 & 0.000 & 0.267 & 0.963 \\
 MEREC per-type     & 0.602 & 0.625 & 0.929 & 0.308 & 0.367 & 0.930 & 0.163 & 0.372 & 0.900 & 0.041 & 0.248 & 0.921 \\
 MEREC HVAC vector  & \textbf{0.676} & 0.600 & 0.985 & 0.333 & 0.413 & 0.984 & 0.275 & 0.427 & 0.976 & 0.064 & 0.282 & 0.984 \\
 \bottomrule
@@ -545,7 +543,7 @@ MEREC HVAC vector  & \textbf{0.676} & 0.600 & 0.985 & 0.333 & 0.413 & 0.984 & 0.
 \centering
 \renewcommand{\arraystretch}{1.10}
 \setlength{\tabcolsep}{4pt}
-\caption{Sensitivity analysis: Top-1 accuracy (\%) by model and architecture under seven weight vectors.}
+\caption{Sensitivity analysis: Top-1 accuracy (\%) by model and architecture under five weight vectors.}
 \label{tab:sensitivity_top1}
 \begin{tabular}{@{}l rrr rrr rrr rrr@{}}
 \toprule
@@ -556,10 +554,8 @@ MEREC HVAC vector  & \textbf{0.676} & 0.600 & 0.985 & 0.333 & 0.413 & 0.984 & 0.
 Design (baseline)  & 36.2 & 48.7 & 93.1 & 36.7 & 53.5 & 90.8 & 33.3 & 47.4 & 91.7 & 30.0 & 46.6 & 89.7 \\
 Equal              & 50.0 & 55.0 & 94.4 & 36.8 & 52.5 & 93.7 & 37.7 & 48.5 & 92.7 & 28.8 & 46.2 & 89.5 \\
 \midrule
-Entropy pooled     & 37.5 & 48.9 & 93.7 & 35.5 & 54.2 & 89.8 & 33.7 & 48.5 & 91.7 & 29.6 & 46.5 & 88.4 \\
 Entropy per-type   & 39.0 & 52.1 & 94.6 & 34.2 & 56.0 & 92.4 & 34.7 & 49.3 & 92.4 & 30.1 & 46.1 & 92.7 \\
 \midrule
-MEREC pooled       & \textbf{75.7} & 74.4 & 95.3 & 43.6 & 57.4 & 95.5 & 46.9 & 53.9 & 94.1 & 32.3 & 49.8 & 97.5 \\
 MEREC per-type     & 69.1 & 76.1 & 93.8 & 49.4 & 52.6 & 94.5 & 41.5 & 57.0 & 92.3 & 34.5 & 50.0 & 92.2 \\
 MEREC HVAC vector  & \textbf{80.4} & 71.5 & 98.5 & 53.6 & 56.5 & 97.9 & 49.1 & 61.1 & 96.9 & 37.1 & 51.6 & 99.2 \\
 \bottomrule
@@ -570,7 +566,7 @@ MEREC HVAC vector  & \textbf{80.4} & 71.5 & 98.5 & 53.6 & 56.5 & 97.9 & 49.1 & 6
 
 Percentage of the 195 test scenarios whose top-ranked alternative matches
 the reference. Bold marks cells in which $\mathcal{A}_{\text{D}}$ exceeds
-$\mathcal{A}_{\text{E}}$; these are the same two Gemini MEREC cells that reverse
+$\mathcal{A}_{\text{E}}$; this is the same Gemini MEREC cell that reverses
 on Kendall's~$\tau$.
 
 \subsection{Ablation Data Provenance}
@@ -1025,39 +1021,32 @@ The main results use per-run-then-average aggregation: failed scenarios are excl
 \small\centering
 \caption{Comparison of per-run-then-average (Method A) vs per-run imputed (0.5 midpoint) aggregation.}
 \label{tab:imputed_comparison}
-\begin{tabular}{lccc}
+\begin{tabular}{ll cc cc cc}
 \toprule
-Architecture & Metric & Method A & Imputed (per-run) \\
+ & & \multicolumn{2}{c}{$\tau$} & \multicolumn{2}{c}{MAE} & \multicolumn{2}{c}{Top-1 (\%)} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+Architecture & Model & A & Imputed & A & Imputed & A & Imputed \\
 \midrule
-$\mathcal{A}_{\text{D}}$ (4-model mean) & $\tau$ & 0.093 & 0.094 \\
-$\mathcal{A}_{\text{D}}$ (4-model mean) & MAE & 0.232 & 0.232 \\
-$\mathcal{A}_{\text{D}}$ (4-model mean) & Top-1 (\%) & 34.1 & 34.2 \\
+$\mathcal{A}_{\text{D}}$ & Gemini   & 0.176 & 0.176 & 0.219 & 0.219 & 36.2 & 36.2 \\
+                         & DeepSeek & 0.144 & 0.149 & 0.231 & 0.232 & 36.7 & 37.0 \\
+                         & GPT-OSS  & 0.041 & 0.041 & 0.241 & 0.241 & 33.3 & 33.3 \\
+                         & Qwen     & 0.010 & 0.012 & 0.235 & 0.235 & 30.0 & 30.2 \\
 \addlinespace
-$\mathcal{A}_{\text{E}}$ (4-model mean) & $\tau$ & 0.274 & 0.274 \\
-$\mathcal{A}_{\text{E}}$ (4-model mean) & MAE & 0.172 & 0.173 \\
-$\mathcal{A}_{\text{E}}$ (4-model mean) & Top-1 (\%) & 49.0 & 49.1 \\
+$\mathcal{A}_{\text{E}}$ & Gemini   & 0.310 & 0.309 & 0.158 & 0.160 & 48.7 & 48.8 \\
+                         & DeepSeek & 0.307 & 0.307 & 0.168 & 0.168 & 53.5 & 53.5 \\
+                         & GPT-OSS  & 0.272 & 0.272 & 0.169 & 0.169 & 47.4 & 47.4 \\
+                         & Qwen     & 0.208 & 0.208 & 0.194 & 0.194 & 46.6 & 46.6 \\
 \addlinespace
-$\mathcal{A}_{\text{H}}$ (DeepSeek) & $\tau$ & 0.897 & 0.897 \\
-$\mathcal{A}_{\text{H}}$ (DeepSeek) & MAE & 0.045 & 0.045 \\
-$\mathcal{A}_{\text{H}}$ (DeepSeek) & Top-1 (\%) & 90.8 & 90.7 \\
-\addlinespace
-$\mathcal{A}_{\text{H}}$ (Gemini) & $\tau$ & 0.923 & 0.923 \\
-$\mathcal{A}_{\text{H}}$ (Gemini) & MAE & 0.048 & 0.048 \\
-$\mathcal{A}_{\text{H}}$ (Gemini) & Top-1 (\%) & 93.1 & 93.1 \\
-\addlinespace
-$\mathcal{A}_{\text{H}}$ (GPT-OSS) & $\tau$ & 0.897 & \textbf{0.787} \\
-$\mathcal{A}_{\text{H}}$ (GPT-OSS) & MAE & 0.052 & \textbf{0.077} \\
-$\mathcal{A}_{\text{H}}$ (GPT-OSS) & Top-1 (\%) & 91.7 & \textbf{83.7} \\
-\addlinespace
-$\mathcal{A}_{\text{H}}$ (Qwen) & $\tau$ & 0.880 & 0.877 \\
-$\mathcal{A}_{\text{H}}$ (Qwen) & MAE & 0.072 & 0.072 \\
-$\mathcal{A}_{\text{H}}$ (Qwen) & Top-1 (\%) & 89.7 & 89.5 \\
+$\mathcal{A}_{\text{H}}$ & Gemini   & 0.923 & 0.923 & 0.048 & 0.048 & 93.1 & 93.1 \\
+                         & DeepSeek & 0.897 & 0.897 & 0.045 & 0.045 & 90.8 & 90.7 \\
+                         & GPT-OSS  & 0.897 & \textbf{0.787} & 0.052 & \textbf{0.077} & 91.7 & \textbf{83.7} \\
+                         & Qwen     & 0.880 & 0.877 & 0.072 & 0.072 & 89.7 & 89.5 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-$\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ values are means across all four models; $\mathcal{A}_{\text{H}}$ is broken out per model, because imputation moves one model there and leaves the other three unchanged. Mean scenarios imputed per run: DeepSeek $\mathcal{A}_{\text{D}}$ 1.4, DeepSeek $\mathcal{A}_{\text{H}}$ 0.2, Gemini $\mathcal{A}_{\text{E}}$ 2.0, GPT-OSS $\mathcal{A}_{\text{H}}$ 23.4, Qwen $\mathcal{A}_{\text{D}}$ 0.4, Qwen $\mathcal{A}_{\text{H}}$ 0.4; all other cells impute none. GPT-OSS imputes 20--26 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set. Imputed scenarios receive 0.5 on all four criterion scores; their ranks follow the pipeline's deterministic tie-break (appearance order). Bold marks the only cells that move materially. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ are reported as four-model means because no model's cell moves by more than 0.006 in either architecture.
+Mean scenarios imputed per run: DeepSeek $\mathcal{A}_{\text{D}}$ 1.4, DeepSeek $\mathcal{A}_{\text{H}}$ 0.2, Gemini $\mathcal{A}_{\text{E}}$ 2.0, GPT-OSS $\mathcal{A}_{\text{H}}$ 23.4, Qwen $\mathcal{A}_{\text{D}}$ 0.4, Qwen $\mathcal{A}_{\text{H}}$ 0.4; all other cells impute none. GPT-OSS imputes 20--26 scenarios per run on $\mathcal{A}_{\text{H}}$, 12\% of its test set. Imputed scenarios receive 0.5 on all four criterion scores; their ranks follow the pipeline's deterministic tie-break (appearance order). Bold marks the only cells that move materially. No other cell moves by more than 0.006 on $\tau$, 0.002 on MAE, or 0.4 percentage points on Top-1.
 
 \subsection{Criterion Error: Numerical Values}
 \label{app:criterion_mae}
@@ -1110,7 +1099,7 @@ Table~\ref{tab:overall_by_model} reports the full numerical results for each met
 \centering
 \footnotesize
 \centering
-\caption{Overall performance by model (5-run mean $\pm$ std, conditional on successful extraction over the 195 test scenarios).}
+\caption{Overall performance by model (5-run mean $\pm$ std, conditional on successful extraction over the 195 test scenarios), with the availability-inclusive counterparts of $\tau$ and Top-1 and the per-cell success rate.}
 \label{tab:overall_by_model}
 \renewcommand{\arraystretch}{1.10}
 \begin{tabular}{lcccccc}
@@ -1120,9 +1109,12 @@ Table~\ref{tab:overall_by_model} reports the full numerical results for each met
 Metric & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
 Kendall's $\tau$ & 0.176 $\pm$ 0.014 & 0.310 $\pm$ 0.019 & \textbf{0.923 $\pm$ 0.002} & 0.144 $\pm$ 0.041 & 0.307 $\pm$ 0.036 & \textbf{0.897 $\pm$ 0.006} \\
+Kendall's $\tau$ (inclusive) & 0.176 & 0.307 & 0.923 & 0.143 & 0.307 & 0.896 \\
 Top-1 (\%) & 36.2 $\pm$ 1.5 & 48.7 $\pm$ 2.0 & \textbf{93.1 $\pm$ 0.3} & 36.7 $\pm$ 3.1 & 53.5 $\pm$ 3.3 & \textbf{90.8 $\pm$ 1.0} \\
+Top-1 (\%) (inclusive) & 36.2 & 48.6 & 93.1 & 36.7 & 53.5 & 90.7 \\
 MAE & 0.219 $\pm$ 0.002 & 0.158 $\pm$ 0.001 & \textbf{0.048 $\pm$ 0.001} & 0.231 $\pm$ 0.003 & 0.168 $\pm$ 0.001 & \textbf{0.045 $\pm$ 0.004} \\
 RMSE & 0.295 $\pm$ 0.002 & 0.231 $\pm$ 0.002 & \textbf{0.101 $\pm$ 0.001} & 0.302 $\pm$ 0.003 & 0.237 $\pm$ 0.001 & \textbf{0.092 $\pm$ 0.011} \\
+Success rate (\%) & 100.0 & 99.0 & 100.0 & 99.3 & 100.0 & 99.9 \\
 \bottomrule
 \end{tabular}
 
@@ -1135,15 +1127,18 @@ RMSE & 0.295 $\pm$ 0.002 & 0.231 $\pm$ 0.002 & \textbf{0.101 $\pm$ 0.001} & 0.30
 Metric & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ & $\mathcal{A}_{\text{D}}$ & $\mathcal{A}_{\text{E}}$ & $\mathcal{A}_{\text{H}}$ \\
 \midrule
 Kendall's $\tau$ & 0.041 $\pm$ 0.045 & 0.272 $\pm$ 0.040 & \textbf{0.897 $\pm$ 0.007} & 0.010 $\pm$ 0.039 & 0.208 $\pm$ 0.037 & \textbf{0.880 $\pm$ 0.013} \\
+Kendall's $\tau$ (inclusive) & 0.041 & 0.272 & 0.790 & 0.010 & 0.208 & 0.878 \\
 Top-1 (\%) & 33.3 $\pm$ 2.4 & 47.4 $\pm$ 2.1 & \textbf{91.7 $\pm$ 0.7} & 30.0 $\pm$ 3.0 & 46.6 $\pm$ 1.6 & \textbf{89.7 $\pm$ 1.2} \\
+Top-1 (\%) (inclusive) & 33.3 & 47.4 & 84.7 & 30.0 & 46.6 & 89.6 \\
 MAE & 0.241 $\pm$ 0.002 & 0.169 $\pm$ 0.002 & \textbf{0.052 $\pm$ 0.001} & 0.235 $\pm$ 0.002 & 0.194 $\pm$ 0.003 & \textbf{0.072 $\pm$ 0.002} \\
 RMSE & 0.306 $\pm$ 0.002 & 0.242 $\pm$ 0.003 & \textbf{0.101 $\pm$ 0.004} & 0.295 $\pm$ 0.002 & 0.261 $\pm$ 0.004 & \textbf{0.162 $\pm$ 0.005} \\
+Success rate (\%) & 100.0 & 100.0 & 88.0 & 99.8 & 100.0 & 99.8 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-Bolded values indicate the best architecture per metric per model.
+Bolded values indicate the best architecture per metric per model. The inclusive rows score every one of the 195 scenarios, assigning a failed scenario the value a random ranking would earn ($\tau = 0$, Top-1 $= 1/3$) instead of dropping it; the success rate is the share of the 195 scenarios scored without a failure, averaged over the five runs. No significance test is run on the inclusive rows: every test reported in this paper is computed on the conditional metrics.
 
 \bibliographystyle{cas-model2-names}
 \bibliography{cas-refs}

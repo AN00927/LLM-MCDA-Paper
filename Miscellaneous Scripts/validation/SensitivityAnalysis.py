@@ -6,10 +6,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MISC_DIR = PROJECT_ROOT / "Miscellaneous Scripts"
 
-for p in (str(PROJECT_ROOT), str(MISC_DIR)):
+for p in (str(PROJECT_ROOT), str(MISC_DIR), str(MISC_DIR / "core-automation")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
@@ -127,9 +127,6 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, obj
             print(f"  WARNING: {method} weights not found in {METHOD_DIR}; "
                   f"skipping those arms.")
             continue
-
-        if "Overall" in by_scope:
-            scenarios.append((f"{method} pooled", by_scope["Overall"]))
 
         # Each per-type vector applied globally: the stress test.
         for dt in DECISION_TYPES:

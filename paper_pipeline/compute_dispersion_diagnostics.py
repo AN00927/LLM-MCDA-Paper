@@ -59,7 +59,7 @@ from sentinel_utils import CRITERIA, _is_complete_run_file, read_table_clean
 # ---------------------------------------------------------------------------
 # Reuse the shipped matching / filtering machinery rather than re-implementing.
 # ---------------------------------------------------------------------------
-_CM_PATH = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
+_CM_PATH = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _CM_PATH)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)

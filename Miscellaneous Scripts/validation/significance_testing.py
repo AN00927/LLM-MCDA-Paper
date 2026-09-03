@@ -55,8 +55,12 @@ from statsmodels.regression.mixed_linear_model import MixedLM
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
+MISC_DIR = PROJECT_ROOT / "Miscellaneous Scripts"
+for _p in (MISC_DIR / "core-automation",):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
