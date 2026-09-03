@@ -28,7 +28,7 @@ from model_config import MODEL_KEY, MODEL_SPECS
 from sentinel_utils import _is_complete_run_file, read_table_clean
 
 # ---------- dynamic import of CalculateMetrics ----------
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("CalculateMetrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)

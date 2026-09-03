@@ -67,7 +67,7 @@ from pathlib import Path
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -81,7 +81,7 @@ METRIC_COLS = ["kendall_tau", "top1"]
 
 def _load_rag_module():
     """Import run_rag_ablation_experiments for its reviewed statistical helpers."""
-    path = Path(__file__).resolve().parent / "run_rag_ablation_experiments.py"
+    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_rag_ablations", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

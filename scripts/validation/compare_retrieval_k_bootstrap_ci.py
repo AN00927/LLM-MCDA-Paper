@@ -39,9 +39,12 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+EXPERIMENTS_DIR = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments"
+if str(EXPERIMENTS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXPERIMENTS_DIR))
 
 # Imported rather than re-implemented so the seed-derivation rule cannot drift
 # away from the harness this script says it mirrors. The import is cheap:

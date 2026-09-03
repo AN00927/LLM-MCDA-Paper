@@ -51,24 +51,52 @@ RANK_METRICS = ["kendall_tau", "spearman_rho", "top1_accuracy", "top2_accuracy"]
 CRIT_KEYS = ["energy_cost", "environmental", "comfort", "practicality"]
 TABLE_METRICS = ["kendall_tau", "overall_mae", "top1_accuracy"]
 
-# Supplementary table tab:imputed_comparison targets (pooled means across 4 models).
+# Supplementary table tab:imputed_comparison targets, per model.
+# Keyed (architecture, model, metric); values as printed in the table.
 SUPP_METHOD_A = {
-    ("Direct_LLM_Scoring", "kendall_tau"): 0.093,
-    ("Direct_LLM_Scoring", "overall_mae"): 0.232,
-    ("Direct_LLM_Scoring", "top1_accuracy"): 0.341,
-    ("Example-Guided_LLM_Scoring", "kendall_tau"): 0.277,
-    ("Example-Guided_LLM_Scoring", "overall_mae"): 0.171,
-    ("Example-Guided_LLM_Scoring", "top1_accuracy"): 0.492,
-    ("LLM-Parameterized_Reference_Scoring", "kendall_tau"): 0.899,
-    ("LLM-Parameterized_Reference_Scoring", "overall_mae"): 0.055,
-    ("LLM-Parameterized_Reference_Scoring", "top1_accuracy"): 0.913,
+    ("Direct_LLM_Scoring", "gemini", "kendall_tau"): 0.176,
+    ("Direct_LLM_Scoring", "gemini", "overall_mae"): 0.219,
+    ("Direct_LLM_Scoring", "gemini", "top1_accuracy"): 0.362,
+    ("Direct_LLM_Scoring", "deepseek", "kendall_tau"): 0.144,
+    ("Direct_LLM_Scoring", "deepseek", "overall_mae"): 0.231,
+    ("Direct_LLM_Scoring", "deepseek", "top1_accuracy"): 0.367,
+    ("Direct_LLM_Scoring", "gptoss", "kendall_tau"): 0.041,
+    ("Direct_LLM_Scoring", "gptoss", "overall_mae"): 0.241,
+    ("Direct_LLM_Scoring", "gptoss", "top1_accuracy"): 0.333,
+    ("Direct_LLM_Scoring", "qwen", "kendall_tau"): 0.010,
+    ("Direct_LLM_Scoring", "qwen", "overall_mae"): 0.235,
+    ("Direct_LLM_Scoring", "qwen", "top1_accuracy"): 0.300,
+    ("Example-Guided_LLM_Scoring", "gemini", "kendall_tau"): 0.310,
+    ("Example-Guided_LLM_Scoring", "gemini", "overall_mae"): 0.158,
+    ("Example-Guided_LLM_Scoring", "gemini", "top1_accuracy"): 0.487,
+    ("Example-Guided_LLM_Scoring", "deepseek", "kendall_tau"): 0.307,
+    ("Example-Guided_LLM_Scoring", "deepseek", "overall_mae"): 0.168,
+    ("Example-Guided_LLM_Scoring", "deepseek", "top1_accuracy"): 0.535,
+    ("Example-Guided_LLM_Scoring", "gptoss", "kendall_tau"): 0.272,
+    ("Example-Guided_LLM_Scoring", "gptoss", "overall_mae"): 0.169,
+    ("Example-Guided_LLM_Scoring", "gptoss", "top1_accuracy"): 0.474,
+    ("Example-Guided_LLM_Scoring", "qwen", "kendall_tau"): 0.208,
+    ("Example-Guided_LLM_Scoring", "qwen", "overall_mae"): 0.194,
+    ("Example-Guided_LLM_Scoring", "qwen", "top1_accuracy"): 0.466,
+    ("LLM-Parameterized_Reference_Scoring", "gemini", "kendall_tau"): 0.923,
+    ("LLM-Parameterized_Reference_Scoring", "gemini", "overall_mae"): 0.048,
+    ("LLM-Parameterized_Reference_Scoring", "gemini", "top1_accuracy"): 0.931,
+    ("LLM-Parameterized_Reference_Scoring", "deepseek", "kendall_tau"): 0.897,
+    ("LLM-Parameterized_Reference_Scoring", "deepseek", "overall_mae"): 0.045,
+    ("LLM-Parameterized_Reference_Scoring", "deepseek", "top1_accuracy"): 0.908,
+    ("LLM-Parameterized_Reference_Scoring", "gptoss", "kendall_tau"): 0.897,
+    ("LLM-Parameterized_Reference_Scoring", "gptoss", "overall_mae"): 0.052,
+    ("LLM-Parameterized_Reference_Scoring", "gptoss", "top1_accuracy"): 0.917,
+    ("LLM-Parameterized_Reference_Scoring", "qwen", "kendall_tau"): 0.880,
+    ("LLM-Parameterized_Reference_Scoring", "qwen", "overall_mae"): 0.072,
+    ("LLM-Parameterized_Reference_Scoring", "qwen", "top1_accuracy"): 0.897,
 }
 
 
 def _load_modules():
     """Dynamically import CalculateMetrics and calculate_per_run_metrics
     (same pattern as the pipeline; paths contain spaces / hyphens)."""
-    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "evaluate_architecture_metrics.py"
+    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
     cm_spec = spec_from_file_location("CalculateMetrics", cm_path)
     cm = module_from_spec(cm_spec)
     cm_spec.loader.exec_module(cm)
@@ -282,15 +310,16 @@ def main():
         print(f"  (a) max |per-run diff| vs paper/per_run_metrics_all.csv: {max_diff_a:.6f} "
               f"({n_cmp_a} values compared)")
 
-    # (a) pooled vs supplementary table Method A
-    print("  (a) pooled vs supplementary tab:imputed_comparison 'Method A':")
+    # (a) per-model vs supplementary table Method A
+    print("  (a) per-model vs supplementary tab:imputed_comparison 'Method A':")
     ok_a = True
-    for (arch, m), target in SUPP_METHOD_A.items():
-        vals = [r["value"] for r in variant_a_long if r["architecture"] == arch and r["metric"] == m]
+    for (arch, mk, m), target in SUPP_METHOD_A.items():
+        vals = [r["value"] for r in variant_a_long if r["architecture"] == arch
+                and r["model"] == mk and r["metric"] == m]
         got = float(np.mean(vals)) if vals else np.nan
         flag = "OK" if abs(got - target) <= 0.0006 else "MISMATCH"
         ok_a = ok_a and flag == "OK"
-        print(f"      {arch} {m:16s} got={got:.4f} target={target:.4f} {flag}")
+        print(f"      {arch} {mk:9s} {m:16s} got={got:.4f} target={target:.4f} {flag}")
 
 
 

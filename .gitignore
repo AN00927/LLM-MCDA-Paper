@@ -78,6 +78,7 @@ paper/Images/*
 !paper/Images/LifestyleChangesEmissionImpact.png
 !paper/Images/PA_Residential_Emissions.png
 !paper/Images/ArchitectureFlowcharts.png
+!paper/Images/OverallPerformanceByModel.pdf
 paper/Charts
 paper/per_run_metrics/
 paper/Notebook (text format)
@@ -145,3 +146,5 @@ graphical_abstract_concept.html
 !CODE_OF_CONDUCT.md
 !docs/*.md
 docs/LLM_MCDA_CLEANUP_PLAN.md
+
+docs/TODO_EXECUTION_PLAN.md
