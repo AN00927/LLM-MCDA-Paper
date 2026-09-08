@@ -67,6 +67,7 @@ docs/cleanuprepo.txt
 # Superpowers planning artifacts (ephemeral by convention, see CLAUDE.md)
 docs/superpowers/
 docs/LLM_MCDA_CLEANUP_PLAN.md
+docs/claim_audit/
 
 # Scenario Files
 Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
@@ -148,3 +149,14 @@ graphical_abstract_concept.html
 docs/LLM_MCDA_CLEANUP_PLAN.md
 
 docs/TODO_EXECUTION_PLAN.md
+
+# Reference literature PDFs (downloaded papers, never tracked)
+temppapers/
+
+# Block all PDFs repo-wide — paper drafts must never be committed.
+# Methodology derivation PDFs in Scoring Logic/method/ are excluded below.
+*.pdf
+!Scoring Logic and Documentation/method/Budget_Penalties.pdf
+!Scoring Logic and Documentation/method/Calculator_Examples.pdf
+!Scoring Logic and Documentation/method/Evaluation_Metric_Derivations.pdf
+!Scoring Logic and Documentation/method/Reference_Ranges_for_Value_Functions.pdf
