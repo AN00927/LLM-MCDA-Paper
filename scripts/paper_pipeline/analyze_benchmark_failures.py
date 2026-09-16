@@ -146,7 +146,7 @@ tex.append(r"\end{table}")
 tex.append(r"\begin{table}[htbp]")
 tex.append(r"\small\centering")
 tex.append(r"\caption{Failure mode counts per architecture (5-run total across all models).}")
-tex.append(r"\label{tab:failure_modes}")
+tex.append(r"\label{tab:failure_modes_bymode}")
 all_failure_types = FAILURE_TYPES_SHARED + FAILURE_TYPES_AH
 tex.append(r"\begin{tabular}{l" + "c" * len(all_failure_types) + "}")
 tex.append(r"\toprule")
