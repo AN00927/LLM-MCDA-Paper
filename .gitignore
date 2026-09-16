@@ -145,36 +145,19 @@ graphical_abstract_concept.html
 !SECURITY.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
-!docs/*.md
-docs/LLM_MCDA_CLEANUP_PLAN.md
 
-docs/TODO_EXECUTION_PLAN.md
-
-# Reference literature PDFs (downloaded papers, never tracked)
+# Reference literature PDFs (downloaded papers)
 temppapers/
+paper/Images/LifestyleChangesEmissionImpact.png
+paper_pipeline/analyze_benchmark_failures.py
 
-# Block all PDFs repo-wide — paper drafts must never be committed.
-# Methodology derivation PDFs in Scoring Logic/method/ are excluded below.
 *.pdf
 !Scoring Logic and Documentation/method/Budget_Penalties.pdf
 !Scoring Logic and Documentation/method/Calculator_Examples.pdf
 !Scoring Logic and Documentation/method/Evaluation_Metric_Derivations.pdf
 !Scoring Logic and Documentation/method/Reference_Ranges_for_Value_Functions.pdf
-archive/legacy_working_artifacts/dispersion_table.tex
-archive/legacy_working_artifacts/duplication_table.tex
-archive/legacy_working_artifacts/failure_analysis_tables.tex
-archive/legacy_working_artifacts/highlights.tex
-archive/legacy_working_artifacts/single_criterion_recovery.tex
-archive/legacy_working_artifacts/step5_figures.tex
-paper/cas-refs.bib
-paper/dispersion_table.tex
-paper/graphicalabstracttable.tex
+
+
+
 paper/paper_draft_v2.tex
 paper/paper_draft_working.tex
-paper/single_criterion_recovery.tex
-paper/step5_figures.tex
-paper/supplementary_material.tex
-paper/Images/ArchitectureFlowcharts.png
-paper/Images/FULLFlowMCDA.png
-paper/Images/PA_Residential_Emissions.png
-paper_pipeline/analyze_benchmark_failures.py
