@@ -106,62 +106,62 @@ Weights are constant across all decision types, architectures, and the reference
 | Comfort | 20% | Dominant driver of HVAC behavior even when it conflicts with energy savings; ASHRAE 55 provides a physically interpretable anchor |
 | Practicality | 15% | Constraint on feasibility and long-term adoption |
 
-A sensitivity analysis confirms the hybrid reference scoring architecture's advantage over the example-guided one is unconditional across every weight vector tested. The example-guided architecture's advantage over direct scoring holds under baseline, equal, and entropy-derived weights but narrows -- and reverses for one model -- under MEREC-derived weights, which load heavily onto Comfort rather than cost and emissions (see [Sensitivity Analysis](#sensitivity-analysis) below).
+A sensitivity analysis confirms the LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional across every weight vector tested. The example-guided architecture's advantage over direct LLM scoring holds under baseline, equal, and entropy-derived weights but narrows -- and reverses for one model -- under MEREC-derived weights, which load heavily onto Comfort rather than cost and emissions (see [Sensitivity Analysis](#sensitivity-analysis) below).
 
 ---
 
 ## Results Summary
 
-The hybrid reference scoring architecture dominates across all four models (Kendall's tau 0.880--0.923, Top-1 89.7--93.1%). The example-guided architecture ranks second (tau 0.208--0.310). Direct scoring ranks third, near-random on HVAC and Appliance (tau 0.010--0.176 overall).
+The LLM-parameterized reference scoring architecture dominates across all four models (Kendall's tau 0.880--0.923, Top-1 89.7--93.1%). The example-guided architecture ranks second (tau 0.208--0.310). Direct LLM scoring ranks third, near-random on HVAC and Appliance (tau 0.010--0.176 overall).
 
 ### Overall Metrics (5-run mean, 195 scenarios)
 
 | Model | Architecture | Kendall's tau | Top-1 Acc | RMSE | MAE |
 | --- | --- | --- | --- | --- | --- |
-| **Gemini 3.5 Flash** | Hybrid reference scoring | **0.923** | **93.1%** | **0.101** | **0.048** |
-| | Example-Guided | 0.310 | 48.7% | 0.231 | 0.158 |
-| | Direct scoring | 0.176 | 36.2% | 0.295 | 0.219 |
-| **DeepSeek V4 Flash** | Hybrid reference scoring | **0.897** | **90.8%** | **0.092** | **0.045** |
-| | Example-Guided | 0.307 | 53.5% | 0.237 | 0.168 |
-| | Direct scoring | 0.144 | 36.7% | 0.302 | 0.231 |
-| **GPT-OSS 20B** | Hybrid reference scoring | **0.897** | **91.7%** | **0.101** | **0.052** |
-| | Example-Guided | 0.272 | 47.4% | 0.242 | 0.169 |
-| | Direct scoring | 0.041 | 33.3% | 0.306 | 0.241 |
-| **Qwen 3.5 9B** | Hybrid reference scoring | **0.880** | **89.7%** | **0.162** | **0.072** |
-| | Example-Guided | 0.208 | 46.6% | 0.261 | 0.194 |
-| | Direct scoring | 0.010 | 30.0% | 0.295 | 0.235 |
+| **Gemini 3.5 Flash** | LLM-Parameterized Reference Scoring | **0.923** | **93.1%** | **0.101** | **0.048** |
+| | Example-Guided LLM Scoring | 0.310 | 48.7% | 0.231 | 0.158 |
+| | Direct LLM Scoring | 0.176 | 36.2% | 0.295 | 0.219 |
+| **DeepSeek V4 Flash** | LLM-Parameterized Reference Scoring | **0.897** | **90.8%** | **0.092** | **0.045** |
+| | Example-Guided LLM Scoring | 0.307 | 53.5% | 0.237 | 0.168 |
+| | Direct LLM Scoring | 0.144 | 36.7% | 0.302 | 0.231 |
+| **GPT-OSS 20B** | LLM-Parameterized Reference Scoring | **0.897** | **91.7%** | **0.101** | **0.052** |
+| | Example-Guided LLM Scoring | 0.272 | 47.4% | 0.242 | 0.169 |
+| | Direct LLM Scoring | 0.041 | 33.3% | 0.306 | 0.241 |
+| **Qwen 3.5 9B** | LLM-Parameterized Reference Scoring | **0.880** | **89.7%** | **0.162** | **0.072** |
+| | Example-Guided LLM Scoring | 0.208 | 46.6% | 0.261 | 0.194 |
+| | Direct LLM Scoring | 0.010 | 30.0% | 0.295 | 0.235 |
 
-Across models, the hybrid reference scoring architecture's tau spans only 0.043 despite a roughly 50-fold difference in input-token price between the cheapest and most expensive model, versus 0.166 for direct scoring -- architecture design matters more than model choice.
+Across models, the LLM-parameterized reference scoring architecture's tau spans only 0.043 despite a roughly 50-fold difference in input-token price between the cheapest and most expensive model, versus 0.166 for direct LLM scoring -- architecture design matters more than model choice.
 
 ### By Decision Type (best/worst model per cell, 5-run mean)
 
-| Decision Type | Direct scoring tau | Example-Guided tau | Hybrid reference scoring tau |
+| Decision Type | Direct LLM Scoring tau | Example-Guided LLM Scoring tau | LLM-Parameterized Reference Scoring tau |
 | --- | --- | --- | --- |
 | HVAC | -0.102 (DeepSeek) to 0.135 (GPT-OSS) | -0.116 (Gemini) to 0.265 (GPT-OSS) | 0.881 (Qwen) to 0.977 (Gemini) |
 | Appliance | -0.147 (GPT-OSS) to 0.029 (DeepSeek) | -0.048 (GPT-OSS) to 0.417 (DeepSeek) | 0.906 (Qwen) to 0.975 (DeepSeek) |
 | Shower | 0.069 (Qwen) to 0.633 (Gemini) | 0.240 (Qwen) to 0.767 (Gemini) | 0.787 (GPT-OSS, tied with DeepSeek) to 0.851 (Qwen) |
 
-HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the hybrid reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where hybrid reference scoring is weakest, because a flow-rate (GPM) error multiplies each alternative's own duration and so does not cancel across alternatives.
+HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-parameterized reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where LLM-parameterized reference scoring is weakest, because a flow-rate (GPM) error multiplies each alternative's own duration and so does not cancel across alternatives.
 
 ### Key Findings
 
-- **Calculator access alone is not enough.** Running the same reference calculator on dataset-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the hybrid reference scoring architecture's 0.880--0.923. LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
+- **Calculator access alone is not enough.** Running the same reference calculator on dataset-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the LLM-parameterized reference scoring architecture's 0.880--0.923. LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
 - **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM), which multiplies against each alternative's own duration rather than scaling all three by a common amount -- it carries the highest top-1 flip probability of any extracted parameter for every model.
-- **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a scenario-weighted tau of 0.614, which outranks direct and example-guided scoring for every model; only hybrid reference scoring clears it. It collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. Separately, the RAG ablation's copy-only configuration (assigning the retrieved scenario's scores directly, no LLM call, leave-one-out on the 90-scenario RAG set) reaches tau = 0.001, indistinguishable from a random ranking.
+- **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a scenario-weighted tau of 0.614, which outranks direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it. It collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. Separately, the RAG ablation's copy-only configuration (assigning the retrieved scenario's scores directly, no LLM call, leave-one-out on the 90-scenario RAG set) reaches tau = 0.001, indistinguishable from a random ranking.
 - **In the RAG ablation, exemplar scores matter more than exemplar content.** Removing the reference scores from retrieved exemplars degrades ranking far more than removing their hidden engineering parameters (R-value, SEER, GPM, etc.) -- scored exemplars anchor the LLM's output scale, they don't teach it new physics.
 - **Reversing alternative order in the prompt changed what two of four models extracted, but never changed which alternative any model ranked first** -- a null result at the ranking layer that only means something because the same perturbation is detectably present one layer up, at the LLM's parameter estimates.
-- **Model capability correlates weakly with architecture ranking.** The cheapest model (GPT-OSS 20B, $0.029/M input tokens) achieves comparable hybrid reference scoring performance to the most expensive (Gemini 3.5 Flash, $1.50/M). All four models run at their lowest reasoning tier, so this comparison is scoped to that regime, not to frontier or reasoning-enabled models.
-- **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on the hybrid reference scoring architecture has a 12.0% per-scenario-run extraction failure rate (88.0% success), concentrated in HVAC scenarios where an extracted parameter falls outside its physical validation bounds. Cross-run recovery and per-run imputation both confirm the architecture ordering is unaffected.
+- **Model capability correlates weakly with architecture ranking.** The cheapest model (GPT-OSS 20B, $0.029/M input tokens) achieves comparable LLM-parameterized reference scoring performance to the most expensive (Gemini 3.5 Flash, $1.50/M). All four models run at their lowest reasoning tier, so this comparison is scoped to that regime, not to frontier or reasoning-enabled models.
+- **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on the LLM-parameterized reference scoring architecture has a 12.0% per-scenario-run extraction failure rate (88.0% success), concentrated in HVAC scenarios where an extracted parameter falls outside its physical validation bounds. Cross-run recovery and per-run imputation both confirm the architecture ordering is unaffected.
 
 ### API Costs (per 5-run benchmark)
 
 | Architecture | Calls/run | Gemini | DeepSeek | GPT-OSS | Qwen |
 | --- | --- | --- | --- | --- | --- |
-| Direct scoring | 585 | ~$4.01 | ~$0.44 | ~$0.12 | ~$0.22 |
-| Example-Guided | 585 | ~$5.12 | ~$0.18 | ~$0.12 | ~$0.21 |
-| Hybrid reference scoring | 195 | ~$1.40 | ~$0.06 | ~$0.03 | ~$0.06 |
+| Direct LLM Scoring | 585 | ~$4.01 | ~$0.44 | ~$0.12 | ~$0.22 |
+| Example-Guided LLM Scoring | 585 | ~$5.12 | ~$0.18 | ~$0.12 | ~$0.21 |
+| LLM-Parameterized Reference Scoring | 195 | ~$1.40 | ~$0.06 | ~$0.03 | ~$0.06 |
 
-Priced at OpenRouter list rates as of August 1, 2026. The hybrid reference scoring architecture costs 2.9--7.9x less than direct scoring and 3.3--3.8x less than the example-guided architecture on the same model, from issuing one API call per scenario instead of three.
+Priced at OpenRouter list rates as of August 1, 2026. The LLM-parameterized reference scoring architecture costs 2.9--7.9x less than direct LLM scoring and 3.3--3.8x less than the example-guided architecture on the same model, from issuing one API call per scenario instead of three.
 
 ---
 
@@ -279,9 +279,9 @@ LLM-MCDA-Paper/
 
 The paper refers to these as A_D, A_E, and A_H respectively.
 
-Paper name to script: direct scoring -> [Direct_LLM_Scoring.py](Architectures/Direct_LLM_Scoring.py); example-guided scoring -> [Example-Guided_LLM_Scoring.py](Architectures/Example-Guided_LLM_Scoring.py); hybrid reference scoring -> [LLM-Parameterized_Reference_Scoring.py](Architectures/LLM-Parameterized_Reference_Scoring.py).
+Paper name to script: direct LLM scoring -> [Direct_LLM_Scoring.py](Architectures/Direct_LLM_Scoring.py); example-guided LLM scoring -> [Example-Guided_LLM_Scoring.py](Architectures/Example-Guided_LLM_Scoring.py); LLM-parameterized reference scoring -> [LLM-Parameterized_Reference_Scoring.py](Architectures/LLM-Parameterized_Reference_Scoring.py).
 
-### 1. Direct scoring (`Direct_LLM_Scoring.py`)
+### 1. Direct LLM Scoring (`Direct_LLM_Scoring.py`)
 
 LLM scores all four criteria directly via calibrated system prompts with per-decision-type qualitative anchors (a good/moderate/poor description of each criterion, not numeric targets). Input is a natural-language scenario description with structured context fields. Outputs four 0--1 scores per alternative, then ranks by MAVT.
 
@@ -297,7 +297,7 @@ Retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios) supplies on
 - **API calls per run (195 scenarios):** 585
 - **Vector DB:** ChromaDB (Euclidean/L2 distance, the library default) with sentence-transformers embeddings
 
-### 3. Hybrid Reference Scoring (`LLM-Parameterized_Reference_Scoring.py`)
+### 3. LLM-Parameterized Reference Scoring (`LLM-Parameterized_Reference_Scoring.py`)
 
 A single LLM call extracts the withheld engineering parameters (R-value, SEER, HVAC age, kWh/cycle, GPM, tank size, water-heater setpoint) from the natural-language scenario description. A deterministic MAVT calculator -- the same one that generated the reference -- then scores all three alternatives from those extracted values plus the parameters already known from the scenario sheet.
 
@@ -419,7 +419,7 @@ where eta = 0.92 (electric water-heater efficiency). Because `f_hot` and the tem
 
 ## Sensitivity Analysis
 
-[SensitivityAnalysis.py](Miscellaneous%20Scripts/validation/SensitivityAnalysis.py) still computes ten single-criterion `+/-0.05` perturbation scenarios plus an equal-weight scenario, but these are **not the reported robustness check in the paper**: they move the example-guided-minus-direct-scoring gap only within a narrow range across the four models, narrower than the entropy- and MEREC-derived weight vectors reach, so they cannot establish weight robustness on their own. They are retained here for completeness and are still exercised by the script.
+[SensitivityAnalysis.py](Miscellaneous%20Scripts/validation/SensitivityAnalysis.py) still computes ten single-criterion `+/-0.05` perturbation scenarios plus an equal-weight scenario, but these are **not the reported robustness check in the paper**: they move the example-guided-minus-direct-LLM-scoring gap only within a narrow range across the four models, narrower than the entropy- and MEREC-derived weight vectors reach, so they cannot establish weight robustness on their own. They are retained here for completeness and are still exercised by the script.
 
 | Scenario | w(EnergyCost) | w(Environmental) | w(Comfort) | w(Practicality) |
 | --- | --- | --- | --- | --- |
@@ -438,8 +438,8 @@ where eta = 0.92 (electric water-heater efficiency). Because `f_hot` and the tem
 
 The reported sensitivity check reweights both the reference ranking and the architecture rankings under the baseline, equal, and the entropy- and MEREC-derived vectors (see [Objective Weight Validation Scripts](#objective-weight-validation-scripts) below), applied pooled and per decision type, per model (never pooled across models -- see the no-pooling convention in `CLAUDE.md`).
 
-- **The hybrid reference scoring architecture's advantage over the example-guided one is unconditional**: it holds in all 20 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
-- **The example-guided architecture's advantage over direct scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct scoring 0.676 vs. example-guided 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
+- **The LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional**: it holds in all 20 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
+- **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
 
 Per the project's no-pooling-across-models convention (see `CLAUDE.md`), sensitivity results are reported and should be read per model, not as a four-model mean.
 
@@ -449,10 +449,10 @@ Per the project's no-pooling-across-models convention (see `CLAUDE.md`), sensiti
 
 Three ablation suites, run on top of the main benchmark, test whether the reported architecture ordering depends on design choices inside the architectures rather than on the architectures themselves. All three cover the same four models and use a Holm-corrected nonparametric protocol within each model (never pooled across models). Full methodology and results are in the paper (Sections 4.5 and 5.5) and `docs/EXPERIMENTS.md`.
 
-- **Prompt-sensitivity ablation** (`run_prompt_ablation_experiments.py`, `test_prompt_ablation_significance.py`, `AggregatePromptAblations.py`) -- reruns direct scoring and the example-guided architecture under three prompt perturbations (removing scoring anchors, adding a chain-of-thought scaffold, rescaling the 0--1 response range to 0--10) on the full 195-scenario test set. The architecture ordering survives every variant.
+- **Prompt-sensitivity ablation** (`run_prompt_ablation_experiments.py`, `test_prompt_ablation_significance.py`, `AggregatePromptAblations.py`) -- reruns direct LLM scoring and the example-guided architecture under three prompt perturbations (removing scoring anchors, adding a chain-of-thought scaffold, rescaling the 0--1 response range to 0--10) on the full 195-scenario test set. The architecture ordering survives every variant.
 - **RAG ablation** (`run_rag_ablation_experiments.py`, `compare_retrieval_k_bootstrap_ci.py`, `measure_rag_retrieval_distance.py`) -- runs on the 90-scenario RAG corpus under leave-one-out retrieval, varying retrieval depth (k=1, 3, 5), the embedding model, and what the retrieved exemplar exposes (scores, ranks, hidden engineering parameters). Removing exemplar scores hurts far more than removing hidden parameters.
-- **Parameter-provenance ablation** (`run_hybrid_ablation_experiments.py`, `test_hybrid_ablation_significance.py`) -- isolates how much of the hybrid reference scoring architecture's accuracy comes from LLM extraction versus the calculator alone, by comparing LLM-extracted parameters against a fixed dataset-median parameter set (floor) on the same 195 test scenarios. No new API calls; re-derives results from files already on disk.
-- **Alternative-ordering test** (`run_position_bias_control.py`, `aggregate_position_bias_results.py`) -- reverses the order alternatives are listed in the prompt/extraction call and re-scores all 195 test scenarios, using an exact permutation test for the hybrid reference scoring architecture's extraction layer. Tests whether the reported ranking is sensitive to positional framing rather than to the alternatives themselves.
+- **Parameter-provenance ablation** (`run_hybrid_ablation_experiments.py`, `test_hybrid_ablation_significance.py`) -- isolates how much of the LLM-parameterized reference scoring architecture's accuracy comes from LLM extraction versus the calculator alone, by comparing LLM-extracted parameters against a fixed dataset-median parameter set (floor) on the same 195 test scenarios. No new API calls; re-derives results from files already on disk.
+- **Alternative-ordering test** (`run_position_bias_control.py`, `aggregate_position_bias_results.py`) -- reverses the order alternatives are listed in the prompt/extraction call and re-scores all 195 test scenarios, using an exact permutation test for the LLM-parameterized reference scoring architecture's extraction layer. Tests whether the reported ranking is sensitive to positional framing rather than to the alternatives themselves.
 
 ---
 
@@ -477,18 +477,18 @@ Three scripts independently validate the subjective MAVT weights against the ref
 | [run_rag_ablation_experiments.py](Miscellaneous Scripts/experiments/run_rag_ablation_experiments.py) | Runs the RAG retrieval/exemplar-content ablation configurations described above. Outputs summary tables and a Markdown report. |
 | [compare_retrieval_k_bootstrap_ci.py](Miscellaneous Scripts/validation/compare_retrieval_k_bootstrap_ci.py) | Percentile-bootstrap confidence intervals on the k=1-minus-k=3 Kendall's tau difference, per model, from the RAG ablation output. |
 | [measure_rag_retrieval_distance.py](Miscellaneous Scripts/legacy/measure_rag_retrieval_distance.py) | Computes nearest-neighbor vs. random-draw embedding distances between Test and RAG-corpus scenarios, used to characterize how tightly the retrieval index actually separates a good match from a random one. |
-| [run_prompt_ablation_experiments.py](Miscellaneous Scripts/experiments/run_prompt_ablation_experiments.py) | Runs the prompt-sensitivity ablation (no-anchors, chain-of-thought scaffold, 0--10 rescale) for direct scoring and the example-guided architecture across all four models. |
+| [run_prompt_ablation_experiments.py](Miscellaneous Scripts/experiments/run_prompt_ablation_experiments.py) | Runs the prompt-sensitivity ablation (no-anchors, chain-of-thought scaffold, 0--10 rescale) for direct LLM scoring and the example-guided architecture across all four models. |
 | [test_prompt_ablation_significance.py](Miscellaneous Scripts/validation/test_prompt_ablation_significance.py) / [AggregatePromptAblations.py](Miscellaneous Scripts/legacy/AggregatePromptAblations.py) | Holm-corrected Friedman/Wilcoxon significance testing and aggregation for the prompt ablation. |
-| [run_hybrid_ablation_experiments.py](Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py) | Runs the parameter-provenance ablation (extracted / dataset-median parameters) for the hybrid reference scoring architecture. Re-derives from existing result files; no new API calls. |
+| [run_hybrid_ablation_experiments.py](Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py) | Runs the parameter-provenance ablation (extracted / dataset-median parameters) for the LLM-parameterized reference scoring architecture. Re-derives from existing result files; no new API calls. |
 | [test_hybrid_ablation_significance.py](Miscellaneous Scripts/validation/test_hybrid_ablation_significance.py) | Significance testing for the parameter-provenance ablation. |
-| [run_position_bias_control.py](Miscellaneous Scripts/experiments/run_position_bias_control.py) / [aggregate_position_bias_results.py](Miscellaneous Scripts/legacy/aggregate_position_bias_results.py) | Runs and aggregates the alternative-ordering (position-bias) test, including the exact permutation test on the hybrid reference scoring architecture's extraction layer. |
+| [run_position_bias_control.py](Miscellaneous Scripts/experiments/run_position_bias_control.py) / [aggregate_position_bias_results.py](Miscellaneous Scripts/legacy/aggregate_position_bias_results.py) | Runs and aggregates the alternative-ordering (position-bias) test, including the exact permutation test on the LLM-parameterized reference scoring architecture's extraction layer. |
 | [significance_testing.py](Miscellaneous Scripts/validation/significance_testing.py) / [compute_confidence_intervals.py](Miscellaneous Scripts/validation/compute_confidence_intervals.py) | Shared Holm-corrected Friedman/Wilcoxon and percentile-bootstrap CI utilities used across the ablation suites. |
 | [SensitivityAnalysis.py](Miscellaneous Scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). The paper reports only the baseline/equal/entropy/MEREC arms (see [Sensitivity Analysis](#sensitivity-analysis)); the +/-0.05 arms are still computed but not reported. Outputs `sensitivity_analysis_{MODEL_KEY}.xlsx`. |
 | [WeightDiagnostics.py](Miscellaneous Scripts/validation/WeightDiagnostics.py) | Diagnostic breakdown of within-scenario criterion dispersion and zero-variance rates by decision type, feeding the implied-weights corner-solution discussion. |
 | [EntropyWeights.py](Miscellaneous Scripts/core-automation/EntropyWeights.py) | Computes Shannon entropy weights from reference score distributions overall and by decision type. Outputs `entropy_weights.xlsx`. |
 | [merec_weights.py](Miscellaneous Scripts/core-automation/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Outputs `merec_weights_summary.xlsx`. |
 | [implied_weights.py](Miscellaneous Scripts/core-automation/implied_weights.py) | Recovers implied weights from reference ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Outputs `implied_weights_summary.xlsx`. |
-| [evaluate_parameter_extraction.py](Miscellaneous Scripts/core-automation/evaluate_parameter_extraction.py) | Evaluates the hybrid reference scoring architecture's parameter extraction accuracy vs. reference: numeric params (MAE/RMSE/percentiles), categorical params (accuracy), counterfactual top-1 sensitivity. |
+| [evaluate_parameter_extraction.py](Miscellaneous Scripts/core-automation/evaluate_parameter_extraction.py) | Evaluates the LLM-parameterized reference scoring architecture's parameter extraction accuracy vs. reference: numeric params (MAE/RMSE/percentiles), categorical params (accuracy), counterfactual top-1 sensitivity. |
 | [sync_rag_ground_truth_scores.py](Miscellaneous Scripts/core-automation/sync_rag_ground_truth_scores.py) | Syncs updated reference scores back into the RAG scenario workbooks after re-running a reference calculator. Matches on descriptor columns, time-aware for Appliance. Run after calculator updates, then re-run `build_rag_index.py`. |
 | [CreateRepresentativeSample.py](Miscellaneous Scripts/legacy/CreateRepresentativeSample.py) | Stratifies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation sampling. |
 
