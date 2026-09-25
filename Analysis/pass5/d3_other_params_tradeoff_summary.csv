@@ -1,0 +1,16 @@
+model,decision_type,parameter,n_flips,share_survive_no_budget,share_survive_comfort_prac_flat,median_margin
+deepseek,Appliance,kwh_per_cycle,5,1.0,0.0,0.0134999999999999
+deepseek,HVAC,occupancy_context,5,1.0,0.0,0.0069999999999998
+deepseek,HVAC,r_value,12,1.0,0.0,0.016
+deepseek,HVAC,seer,13,1.0,0.07692307692307693,0.006
+gemini,Appliance,kwh_per_cycle,10,1.0,0.0,0.04624999999999995
+gemini,HVAC,occupancy_context,5,1.0,0.0,0.0069999999999998
+gemini,HVAC,seer,13,1.0,0.0,0.006
+gptoss,Appliance,kwh_per_cycle,4,1.0,0.0,0.0134999999999999
+gptoss,HVAC,occupancy_context,1,1.0,0.0,0.0069999999999998
+gptoss,HVAC,r_value,6,1.0,0.0,0.0069999999999998
+gptoss,HVAC,seer,10,1.0,0.2,0.006
+qwen,Appliance,kwh_per_cycle,23,1.0,0.08695652173913043,0.0679999999999999
+qwen,HVAC,occupancy_context,4,1.0,0.0,0.0069999999999998
+qwen,HVAC,r_value,32,0.875,0.15625,0.020999999999999998
+qwen,HVAC,seer,10,1.0,0.0,0.006

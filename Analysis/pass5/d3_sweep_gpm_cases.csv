@@ -1,0 +1,781 @@
+flip_full,flip_no_clip,flip_no_tank,flip_no_budget,flip_no_round,flip_linear_core,flip_comfort_flat,flip_prac_curve_flat,flip_comfort_and_prac_flat,cross_tank,cross_budget,cross_clip,any_clip_active,tank_hit_any_true,budget_active_any,scenario_id,factor,true_gpm,ref_margin,mechanism
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,136,0.5,1.5,0.030000000000000027,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,136,0.6,1.5,0.030000000000000027,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,136,0.7,1.5,0.030000000000000027,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,136,0.75,1.5,0.030000000000000027,no_flip
+False,False,False,False,False,False,True,True,False,False,False,False,True,False,False,136,0.8,1.5,0.030000000000000027,no_flip
+False,False,False,False,False,False,False,True,False,False,False,False,True,False,False,136,0.9,1.5,0.030000000000000027,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,False,False,136,1.1,1.5,0.030000000000000027,no_flip
+False,True,False,False,False,False,False,False,False,False,False,True,True,False,False,136,1.2,1.5,0.030000000000000027,no_flip
+False,True,False,False,False,True,False,False,False,False,False,True,True,False,False,136,1.25,1.5,0.030000000000000027,no_flip
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,136,1.33,1.5,0.030000000000000027,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,136,1.5,1.5,0.030000000000000027,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,136,1.75,1.5,0.030000000000000027,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,136,2.0,1.5,0.030000000000000027,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,False,False,False,False,True,True,False,False,137,0.5,1.5,0.028000000000000025,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,False,True,True,True,False,True,False,False,False,False,True,True,False,False,137,0.6,1.5,0.028000000000000025,needs_clip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,137,0.7,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,137,0.75,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,137,0.8,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,137,0.9,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,True,False,False,137,1.1,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,False,False,137,1.2,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,False,False,137,1.25,1.5,0.028000000000000025,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,False,False,137,1.33,1.5,0.028000000000000025,no_flip
+True,True,False,True,True,False,False,True,False,True,False,True,True,False,False,137,1.5,1.5,0.028000000000000025,needs_tank
+True,True,False,True,True,False,False,True,False,True,False,True,True,False,False,137,1.75,1.5,0.028000000000000025,needs_tank
+True,True,True,True,True,True,False,True,False,True,False,True,True,False,False,137,2.0,1.5,0.028000000000000025,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,138,0.5,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,138,0.6,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,138,0.7,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,138,0.75,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,138,0.8,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,138,0.9,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,138,1.1,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,138,1.2,1.5,0.02400000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,138,1.25,1.5,0.02400000000000002,no_flip
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,138,1.33,1.5,0.02400000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,138,1.5,1.5,0.02400000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,138,1.75,1.5,0.02400000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,138,2.0,1.5,0.02400000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,True,True,False,True,False,True,True,True,False,139,0.5,2.5,0.007499999999999951,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,139,0.6,2.5,0.007499999999999951,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,139,0.7,2.5,0.007499999999999951,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,139,0.75,2.5,0.007499999999999951,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,139,0.8,2.5,0.007499999999999951,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,139,0.9,2.5,0.007499999999999951,no_flip
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,139,1.1,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,139,1.2,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,139,1.25,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,139,1.33,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,139,1.5,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,139,1.75,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,139,2.0,2.5,0.007499999999999951,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,False,True,True,True,False,True,True,False,False,False,True,True,False,False,140,0.5,1.5,0.035499999999999976,needs_clip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,140,0.6,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,140,0.7,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,140,0.75,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,140,0.8,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,False,False,140,0.9,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,140,1.1,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,140,1.2,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,140,1.25,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,140,1.33,1.5,0.035499999999999976,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,140,1.5,1.5,0.035499999999999976,no_flip
+True,True,True,True,False,False,False,False,False,True,False,False,False,False,False,140,1.75,1.5,0.035499999999999976,needs_round
+True,True,True,True,True,True,False,False,False,True,False,False,False,False,False,140,2.0,1.5,0.035499999999999976,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,141,0.5,2.5,0.09449999999999992,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,141,0.6,2.5,0.09449999999999992,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,141,0.7,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,141,0.75,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,141,0.8,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,141,0.9,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,141,1.1,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,141,1.2,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,141,1.25,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,141,1.33,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,141,1.5,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,141,1.75,2.5,0.09449999999999992,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,141,2.0,2.5,0.09449999999999992,no_flip
+True,True,True,True,True,True,True,True,False,False,False,True,True,False,False,142,0.5,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,False,False,True,True,False,False,142,0.6,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,False,False,False,False,True,True,False,False,142,0.7,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,False,False,False,False,True,True,False,False,142,0.75,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,False,False,False,False,False,False,False,False,142,0.8,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,142,0.9,1.5,0.012000000000000122,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,142,1.1,1.5,0.012000000000000122,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,142,1.2,1.5,0.012000000000000122,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,142,1.25,1.5,0.012000000000000122,no_flip
+False,False,False,False,True,True,False,False,False,False,False,False,False,False,False,142,1.33,1.5,0.012000000000000122,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,False,False,142,1.5,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,False,False,142,1.75,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,False,False,142,2.0,1.5,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,False,True,True,False,True,False,True,True,True,False,143,0.5,1.5,0.02100000000000002,needs_tank
+True,True,False,True,True,False,True,True,False,True,False,True,True,True,False,143,0.6,1.5,0.02100000000000002,needs_tank
+True,True,False,True,True,False,True,True,False,True,False,False,True,True,False,143,0.7,1.5,0.02100000000000002,needs_tank
+False,False,False,False,False,False,True,True,False,False,False,False,True,True,False,143,0.75,1.5,0.02100000000000002,no_flip
+False,False,False,False,False,False,True,True,False,False,False,False,True,True,False,143,0.8,1.5,0.02100000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,143,0.9,1.5,0.02100000000000002,no_flip
+False,True,True,False,False,True,False,False,False,False,False,True,True,True,False,143,1.1,1.5,0.02100000000000002,no_flip
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,143,1.2,1.5,0.02100000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,143,1.25,1.5,0.02100000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,143,1.33,1.5,0.02100000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,143,1.5,1.5,0.02100000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,143,1.75,1.5,0.02100000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,143,2.0,1.5,0.02100000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,144,0.5,2.5,0.04500000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,144,0.6,2.5,0.04500000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,144,0.7,2.5,0.04500000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,144,0.75,2.5,0.04500000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,144,0.8,2.5,0.04500000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,144,0.9,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,144,1.1,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,144,1.2,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,144,1.25,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,144,1.33,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,144,1.5,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,144,1.75,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,144,2.0,2.5,0.04500000000000015,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,145,0.5,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,145,0.6,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,145,0.7,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,145,0.75,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,145,0.8,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,145,0.9,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,145,1.1,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,145,1.2,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,145,1.25,3.5,0.17750000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,145,1.33,3.5,0.17750000000000005,no_flip
+True,False,True,True,True,False,True,False,False,False,True,True,True,True,True,145,1.5,3.5,0.17750000000000005,needs_clip
+True,False,True,True,True,False,True,True,False,False,True,True,True,True,True,145,1.75,3.5,0.17750000000000005,needs_clip
+True,False,True,True,True,False,True,True,False,False,True,True,True,True,True,145,2.0,3.5,0.17750000000000005,needs_clip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,0.5,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,0.6,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,0.7,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,0.75,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,0.8,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,146,0.9,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,1.1,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,1.2,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,1.25,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,146,1.33,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,146,1.5,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,146,1.75,3.5,0.2695,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,146,2.0,3.5,0.2695,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,147,0.5,2.5,0.12549999999999994,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,147,0.6,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,147,0.7,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,147,0.75,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,147,0.8,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,147,0.9,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,147,1.1,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,147,1.2,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,147,1.25,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,147,1.33,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,147,1.5,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,147,1.75,2.5,0.12549999999999994,no_flip
+False,False,False,False,False,False,False,False,False,True,True,True,True,True,True,147,2.0,2.5,0.12549999999999994,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,148,0.5,2.5,0.08050000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,148,0.6,2.5,0.08050000000000002,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,148,0.7,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,148,0.75,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,148,0.8,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,148,0.9,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,148,1.1,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,148,1.2,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,148,1.25,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,148,1.33,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,148,1.5,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,148,1.75,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,148,2.0,2.5,0.08050000000000002,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,149,0.5,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,0.6,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,0.7,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,0.75,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,0.8,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,149,0.9,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,1.1,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,1.2,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,149,1.25,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,149,1.33,3.5,0.14100000000000001,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,149,1.5,3.5,0.14100000000000001,no_flip
+True,False,True,True,True,False,False,False,False,False,True,True,True,True,True,149,1.75,3.5,0.14100000000000001,needs_clip
+True,False,True,True,True,False,True,True,False,False,True,True,True,True,True,149,2.0,3.5,0.14100000000000001,needs_clip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,150,0.5,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,150,0.6,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,150,0.7,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,0.75,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,0.8,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,150,0.9,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,1.1,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,1.2,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,1.25,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,1.33,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,1.5,3.5,0.2134999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,150,1.75,3.5,0.2134999999999999,no_flip
+True,False,False,True,True,False,True,False,False,False,False,True,True,True,False,150,2.0,3.5,0.2134999999999999,needs_clip+tank
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,151,0.5,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,151,0.6,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,151,0.7,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,151,0.75,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,151,0.8,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,True,151,0.9,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,1.1,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,1.2,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,1.25,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,1.33,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,1.5,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,1.75,4.0,0.0665,no_flip
+False,False,False,False,False,False,False,False,False,False,True,False,True,True,True,151,2.0,4.0,0.0665,no_flip
+False,False,False,False,False,False,True,True,False,True,False,True,True,True,False,152,0.5,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,True,True,False,True,False,True,True,True,False,152,0.6,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,152,0.7,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,152,0.75,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,152,0.8,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,152,0.9,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,152,1.1,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,152,1.2,2.0,0.021500000000000075,no_flip
+False,False,False,False,True,True,False,False,False,False,False,False,False,True,False,152,1.25,2.0,0.021500000000000075,no_flip
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,152,1.33,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,152,1.5,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,152,1.75,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,152,2.0,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,0.5,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,0.6,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,0.7,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,0.75,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,0.8,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,153,0.9,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,1.1,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,1.2,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,1.25,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,1.33,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,153,1.5,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,153,1.75,4.0,0.19150000000000003,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,153,2.0,4.0,0.19150000000000003,no_flip
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,154,0.5,2.0,0.043500000000000094,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,154,0.6,2.0,0.043500000000000094,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,True,False,False,True,True,False,False,False,False,True,True,True,False,154,0.7,2.0,0.043500000000000094,no_flip
+False,False,True,False,False,True,True,False,False,False,False,True,True,True,False,154,0.75,2.0,0.043500000000000094,no_flip
+False,False,True,False,False,False,True,False,False,False,False,True,True,True,False,154,0.8,2.0,0.043500000000000094,no_flip
+False,False,False,False,False,False,True,False,False,False,False,True,True,True,False,154,0.9,2.0,0.043500000000000094,no_flip
+False,False,False,False,False,False,False,True,False,True,False,False,True,True,False,154,1.1,2.0,0.043500000000000094,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,True,False,154,1.2,2.0,0.043500000000000094,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,True,False,154,1.25,2.0,0.043500000000000094,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,True,False,154,1.33,2.0,0.043500000000000094,no_flip
+False,False,False,False,False,False,False,True,False,True,False,True,True,True,False,154,1.5,2.0,0.043500000000000094,no_flip
+True,True,False,True,True,False,False,True,False,True,False,True,True,True,False,154,1.75,2.0,0.043500000000000094,needs_tank
+True,True,True,True,True,True,False,True,False,True,False,True,True,True,False,154,2.0,2.0,0.043500000000000094,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,False,True,True,False,True,False,True,True,True,False,155,0.5,2.5,0.021500000000000075,needs_tank
+True,True,False,True,True,False,False,False,False,True,False,True,True,True,False,155,0.6,2.5,0.021500000000000075,needs_tank
+True,True,False,True,True,False,False,False,False,True,False,True,True,True,False,155,0.7,2.5,0.021500000000000075,needs_tank
+True,True,False,True,True,False,False,False,False,True,False,True,True,True,False,155,0.75,2.5,0.021500000000000075,needs_tank
+True,False,False,True,True,False,False,False,False,True,False,True,True,True,False,155,0.8,2.5,0.021500000000000075,needs_clip+tank
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,155,0.9,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,1.1,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,1.2,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,1.25,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,1.33,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,1.5,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,1.75,2.5,0.021500000000000075,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,155,2.0,2.5,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,0.5,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,0.6,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,0.7,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,0.75,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,0.8,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,156,0.9,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,1.1,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,1.2,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,1.25,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,156,1.33,3.0,0.18099999999999994,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,156,1.5,3.0,0.18099999999999994,no_flip
+True,False,True,True,True,False,True,False,False,False,True,True,True,True,True,156,1.75,3.0,0.18099999999999994,needs_clip
+True,False,True,True,True,False,True,True,False,False,True,True,True,True,True,156,2.0,3.0,0.18099999999999994,needs_clip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,157,0.5,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,157,0.6,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,157,0.7,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,157,0.75,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,157,0.8,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,157,0.9,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,157,1.1,2.0,0.021500000000000075,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,157,1.2,2.0,0.021500000000000075,no_flip
+False,False,False,False,True,True,False,False,False,False,False,False,False,False,False,157,1.25,2.0,0.021500000000000075,no_flip
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,157,1.33,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,157,1.5,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,157,1.75,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,157,2.0,2.0,0.021500000000000075,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,158,0.5,3.5,0.10399999999999993,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,158,0.6,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,158,0.7,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,158,0.75,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,158,0.8,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,True,True,False,158,0.9,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,158,1.1,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,158,1.2,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,158,1.25,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,158,1.33,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,158,1.5,3.5,0.10399999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,158,1.75,3.5,0.10399999999999993,no_flip
+True,False,True,True,True,False,False,False,False,False,True,True,True,True,True,158,2.0,3.5,0.10399999999999993,needs_clip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,159,0.5,3.5,0.09799999999999998,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,159,0.6,3.5,0.09799999999999998,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,159,0.7,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,159,0.75,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,159,0.8,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,159,0.9,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,159,1.1,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,159,1.2,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,159,1.25,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,159,1.33,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,159,1.5,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,159,1.75,3.5,0.09799999999999998,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,159,2.0,3.5,0.09799999999999998,no_flip
+False,False,False,False,True,True,False,False,False,True,False,False,False,True,False,160,0.5,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,160,0.6,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,160,0.7,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,160,0.75,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,160,0.8,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,160,0.9,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,160,1.1,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,160,1.2,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,160,1.25,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,160,1.33,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,160,1.5,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,160,1.75,4.0,0.1459999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,160,2.0,4.0,0.1459999999999999,no_flip
+True,True,True,True,True,False,True,True,False,True,False,True,True,True,False,161,0.5,2.0,0.04799999999999982,joint_nonlinear (no single component necessary; linear core does not flip)
+True,True,True,True,True,False,True,True,False,True,False,True,True,True,False,161,0.6,2.0,0.04799999999999982,joint_nonlinear (no single component necessary; linear core does not flip)
+True,True,True,True,True,False,False,False,False,True,False,True,True,True,False,161,0.7,2.0,0.04799999999999982,joint_nonlinear (no single component necessary; linear core does not flip)
+True,True,True,True,True,False,False,False,False,True,False,True,True,True,False,161,0.75,2.0,0.04799999999999982,joint_nonlinear (no single component necessary; linear core does not flip)
+True,True,True,True,True,False,False,False,False,True,False,True,True,True,False,161,0.8,2.0,0.04799999999999982,joint_nonlinear (no single component necessary; linear core does not flip)
+False,False,True,False,False,False,False,False,False,False,False,True,True,True,False,161,0.9,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,False,False,True,False,161,1.1,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,False,False,True,False,161,1.2,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,False,False,True,False,161,1.25,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,False,False,True,False,161,1.33,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,False,False,True,False,161,1.5,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,True,True,True,False,161,1.75,2.0,0.04799999999999982,no_flip
+False,False,False,False,False,True,False,False,False,False,False,True,True,True,False,161,2.0,2.0,0.04799999999999982,no_flip
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,162,0.5,2.5,0.12350000000000005,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,162,0.6,2.5,0.12350000000000005,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,162,0.7,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,162,0.75,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,162,0.8,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,162,0.9,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,1.1,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,1.2,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,1.25,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,1.33,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,1.5,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,1.75,2.5,0.12350000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,162,2.0,2.5,0.12350000000000005,no_flip
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,163,0.5,2.0,0.1499999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,163,0.6,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,163,0.7,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,163,0.75,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,163,0.8,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,163,0.9,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,163,1.1,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,163,1.2,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,163,1.25,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,163,1.33,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,163,1.5,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,163,1.75,2.0,0.1499999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,True,True,True,True,True,163,2.0,2.0,0.1499999999999999,no_flip
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,164,0.5,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,False,False,True,True,True,False,164,0.6,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,False,False,True,True,True,False,164,0.7,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,True,False,164,0.75,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,True,False,164,0.8,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,True,False,164,0.9,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,164,1.1,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,164,1.2,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,164,1.25,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,164,1.33,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,164,1.5,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,164,1.75,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,164,2.0,2.5,0.009999999999999898,no_flip
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,165,0.5,2.0,0.08600000000000008,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,165,0.6,2.0,0.08600000000000008,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,165,0.7,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,165,0.75,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,165,0.8,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,165,0.9,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,165,1.1,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,165,1.2,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,165,1.25,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,165,1.33,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,165,1.5,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,165,1.75,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,165,2.0,2.0,0.08600000000000008,no_flip
+False,False,False,False,False,False,True,True,False,True,False,True,True,True,False,166,0.5,2.0,0.012500000000000067,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,166,0.6,2.0,0.012500000000000067,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,166,0.7,2.0,0.012500000000000067,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,166,0.75,2.0,0.012500000000000067,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,166,0.8,2.0,0.012500000000000067,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,166,0.9,2.0,0.012500000000000067,no_flip
+True,True,False,True,True,False,False,False,False,True,False,False,False,True,False,166,1.1,2.0,0.012500000000000067,needs_tank
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,166,1.2,2.0,0.012500000000000067,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,166,1.25,2.0,0.012500000000000067,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,166,1.33,2.0,0.012500000000000067,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,166,1.5,2.0,0.012500000000000067,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,166,1.75,2.0,0.012500000000000067,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,166,2.0,2.0,0.012500000000000067,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,False,False,True,False,False,False,True,False,167,0.5,2.5,0.061999999999999944,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,167,0.6,2.5,0.061999999999999944,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,167,0.7,2.5,0.061999999999999944,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,167,0.75,2.5,0.061999999999999944,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,167,0.8,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,167,0.9,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,167,1.1,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,167,1.2,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,167,1.25,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,167,1.33,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,167,1.5,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,167,1.75,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,167,2.0,2.5,0.061999999999999944,no_flip
+False,False,False,False,False,False,True,True,False,True,False,True,True,True,False,168,0.5,2.0,0.01750000000000007,no_flip
+False,False,False,False,False,False,True,False,False,True,False,False,False,True,False,168,0.6,2.0,0.01750000000000007,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,168,0.7,2.0,0.01750000000000007,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,168,0.75,2.0,0.01750000000000007,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,168,0.8,2.0,0.01750000000000007,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,168,0.9,2.0,0.01750000000000007,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,168,1.1,2.0,0.01750000000000007,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,168,1.2,2.0,0.01750000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,168,1.25,2.0,0.01750000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,168,1.33,2.0,0.01750000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,168,1.5,2.0,0.01750000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,168,1.75,2.0,0.01750000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,168,2.0,2.0,0.01750000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,False,False,True,False,False,False,True,False,169,0.5,2.5,0.018000000000000016,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,169,0.6,2.5,0.018000000000000016,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,169,0.7,2.5,0.018000000000000016,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,169,0.75,2.5,0.018000000000000016,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,169,0.8,2.5,0.018000000000000016,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,169,0.9,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,169,1.1,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,169,1.2,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,169,1.25,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,169,1.33,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,169,1.5,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,169,1.75,2.5,0.018000000000000016,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,169,2.0,2.5,0.018000000000000016,no_flip
+True,True,True,True,True,True,True,False,False,True,False,False,False,True,False,170,0.5,2.5,0.06800000000000006,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,170,0.6,2.5,0.06800000000000006,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,170,0.7,2.5,0.06800000000000006,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,170,0.75,2.5,0.06800000000000006,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,True,True,False,False,False,True,False,False,False,True,False,170,0.8,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,170,0.9,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,170,1.1,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,170,1.2,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,170,1.25,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,170,1.33,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,170,1.5,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,170,1.75,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,170,2.0,2.5,0.06800000000000006,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,0.5,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,0.6,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,0.7,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,0.75,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,0.8,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,0.9,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,1.1,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,1.2,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,1.25,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,1.33,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,171,1.5,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,171,1.75,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,171,2.0,2.5,0.05300000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,0.5,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,0.6,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,0.7,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,0.75,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,0.8,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,0.9,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,1.1,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,172,1.2,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,172,1.25,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,172,1.33,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,172,1.5,3.0,0.06750000000000012,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,172,1.75,3.0,0.06750000000000012,no_flip
+True,False,True,True,True,False,True,True,False,False,False,True,True,True,False,172,2.0,3.0,0.06750000000000012,needs_clip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,0.5,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,0.6,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,0.7,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,0.75,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,0.8,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,0.9,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,1.1,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,1.2,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,1.25,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,1.33,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,173,1.5,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,173,1.75,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,173,2.0,2.5,0.06099999999999983,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,174,0.5,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,174,0.6,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,0.7,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,0.75,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,0.8,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,0.9,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,1.1,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,1.2,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,1.25,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,1.33,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,1.5,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,174,1.75,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,174,2.0,2.0,0.03649999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,0.5,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,0.6,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,0.7,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,0.75,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,0.8,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,0.9,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,1.1,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,1.2,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,1.25,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,1.33,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,175,1.5,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,175,1.75,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,175,2.0,2.5,0.05900000000000005,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,176,0.5,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,176,0.6,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,176,0.7,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,176,0.75,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,176,0.8,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,176,0.9,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,176,1.1,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,176,1.2,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,176,1.25,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,176,1.33,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,176,1.5,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,176,1.75,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,176,2.0,2.5,0.07899999999999985,no_flip
+True,True,True,True,True,True,True,False,False,True,False,True,True,True,False,177,0.5,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,177,0.6,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,177,0.7,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,177,0.75,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,177,0.8,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,177,0.9,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,177,1.1,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,177,1.2,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,177,1.25,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,177,1.33,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,177,1.5,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,177,1.75,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,177,2.0,2.0,0.008499999999999952,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,178,0.5,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,178,0.6,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,178,0.7,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,178,0.75,2.5,0.07899999999999985,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,178,0.8,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,178,0.9,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,178,1.1,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,178,1.2,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,178,1.25,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,178,1.33,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,178,1.5,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,178,1.75,2.5,0.07899999999999985,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,178,2.0,2.5,0.07899999999999985,no_flip
+True,True,False,True,True,True,True,True,False,True,False,True,True,True,False,179,0.5,2.5,0.04300000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,True,False,False,False,True,False,False,False,True,False,179,0.6,2.5,0.04300000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,True,False,False,False,True,False,False,False,True,False,179,0.7,2.5,0.04300000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,True,False,False,False,True,False,False,False,True,False,179,0.75,2.5,0.04300000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,True,False,False,False,True,False,False,False,True,False,179,0.8,2.5,0.04300000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,True,False,False,False,True,False,False,False,True,False,179,0.9,2.5,0.04300000000000015,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,True,False,False,False,False,False,False,False,False,False,False,True,False,179,1.1,2.5,0.04300000000000015,no_flip
+False,False,True,False,False,False,False,False,False,False,False,False,False,True,False,179,1.2,2.5,0.04300000000000015,no_flip
+False,False,True,False,False,False,False,False,False,False,False,False,False,True,False,179,1.25,2.5,0.04300000000000015,no_flip
+False,False,True,False,False,False,False,False,False,False,False,False,False,True,False,179,1.33,2.5,0.04300000000000015,no_flip
+False,False,True,False,False,False,False,False,False,True,False,False,False,True,False,179,1.5,2.5,0.04300000000000015,no_flip
+False,False,True,False,False,False,False,False,False,True,False,True,True,True,False,179,1.75,2.5,0.04300000000000015,no_flip
+False,False,True,False,False,False,False,False,False,True,False,True,True,True,False,179,2.0,2.5,0.04300000000000015,no_flip
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,180,0.5,3.0,0.11149999999999993,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,180,0.6,3.0,0.11149999999999993,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,180,0.7,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,180,0.75,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,180,0.8,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,180,0.9,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,180,1.1,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,180,1.2,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,180,1.25,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,180,1.33,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,180,1.5,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,180,1.75,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,180,2.0,3.0,0.11149999999999993,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,181,0.5,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,181,0.6,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,181,0.7,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,181,0.75,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,181,0.8,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,181,0.9,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,181,1.1,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,181,1.2,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,181,1.25,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,181,1.33,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,181,1.5,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,181,1.75,4.0,0.1419999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,True,True,True,True,True,181,2.0,4.0,0.1419999999999999,no_flip
+True,True,True,True,False,False,True,False,False,True,False,False,True,True,False,182,0.5,2.0,0.10200000000000009,needs_round
+False,False,False,False,False,False,True,False,False,True,False,False,True,True,False,182,0.6,2.0,0.10200000000000009,no_flip
+False,False,False,False,False,False,True,False,False,True,False,False,True,True,False,182,0.7,2.0,0.10200000000000009,no_flip
+False,False,False,False,False,False,True,False,False,False,False,False,True,True,False,182,0.75,2.0,0.10200000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,182,0.8,2.0,0.10200000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,182,0.9,2.0,0.10200000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,182,1.1,2.0,0.10200000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,182,1.2,2.0,0.10200000000000009,no_flip
+False,True,False,False,False,True,False,False,False,False,False,False,True,True,False,182,1.25,2.0,0.10200000000000009,no_flip
+False,True,False,False,False,True,False,True,False,False,False,False,True,True,False,182,1.33,2.0,0.10200000000000009,no_flip
+True,True,False,True,True,True,False,True,False,True,False,False,True,True,False,182,1.5,2.0,0.10200000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,True,False,False,True,True,False,182,1.75,2.0,0.10200000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,True,False,True,True,True,False,182,2.0,2.0,0.10200000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,183,0.5,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,183,0.6,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,183,0.7,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,183,0.75,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,183,0.8,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,183,0.9,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,183,1.1,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,True,True,False,183,1.2,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,True,True,False,183,1.25,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,183,1.33,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,183,1.5,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,183,1.75,2.5,0.2859999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,183,2.0,2.5,0.2859999999999999,no_flip
+True,True,False,True,True,False,True,True,False,True,False,True,True,True,False,184,0.5,2.0,0.03749999999999998,needs_tank
+True,True,False,True,True,False,True,False,False,True,False,False,False,True,False,184,0.6,2.0,0.03749999999999998,needs_tank
+True,True,False,True,True,False,False,False,False,True,False,False,False,True,False,184,0.7,2.0,0.03749999999999998,needs_tank
+True,True,False,True,True,False,False,False,False,True,False,False,False,True,False,184,0.75,2.0,0.03749999999999998,needs_tank
+True,True,False,True,True,False,False,False,False,True,False,False,False,True,False,184,0.8,2.0,0.03749999999999998,needs_tank
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,184,0.9,2.0,0.03749999999999998,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,184,1.1,2.0,0.03749999999999998,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,184,1.2,2.0,0.03749999999999998,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,184,1.25,2.0,0.03749999999999998,no_flip
+False,False,True,False,False,True,False,False,False,False,False,False,False,True,False,184,1.33,2.0,0.03749999999999998,no_flip
+False,False,True,False,False,True,False,False,False,True,False,False,False,True,False,184,1.5,2.0,0.03749999999999998,no_flip
+False,False,True,False,False,True,False,False,False,True,False,False,False,True,False,184,1.75,2.0,0.03749999999999998,no_flip
+False,False,True,False,False,True,False,False,False,True,False,True,True,True,False,184,2.0,2.0,0.03749999999999998,no_flip
+True,True,True,True,True,True,True,False,False,True,False,False,False,True,False,185,0.5,2.5,0.015000000000000013,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,185,0.6,2.5,0.015000000000000013,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,185,0.7,2.5,0.015000000000000013,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,185,0.75,2.5,0.015000000000000013,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,185,0.8,2.5,0.015000000000000013,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,185,0.9,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,185,1.1,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,185,1.2,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,185,1.25,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,185,1.33,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,185,1.5,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,185,1.75,2.5,0.015000000000000013,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,185,2.0,2.5,0.015000000000000013,no_flip
+False,False,True,False,False,True,False,False,False,True,False,False,False,True,False,186,0.5,2.5,0.009999999999999898,no_flip
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,186,0.6,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,186,0.7,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,186,0.75,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,False,True,True,True,False,False,False,False,False,False,False,True,False,186,0.8,2.5,0.009999999999999898,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,True,False,False,False,False,False,False,False,False,True,False,186,0.9,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,186,1.1,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,186,1.2,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,186,1.25,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,186,1.33,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,186,1.5,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,186,1.75,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,186,2.0,2.5,0.009999999999999898,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,187,0.5,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,0.6,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,0.7,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,0.75,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,0.8,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,0.9,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,1.1,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,1.2,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,1.25,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,1.33,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,187,1.5,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,187,1.75,2.5,0.05900000000000005,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,True,False,187,2.0,2.5,0.05900000000000005,no_flip
+True,True,True,True,True,True,True,False,False,True,False,True,True,True,False,188,0.5,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,188,0.6,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,188,0.7,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,188,0.75,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,188,0.8,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,True,False,188,0.9,2.0,0.008499999999999952,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,188,1.1,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,188,1.2,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,188,1.25,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,188,1.33,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,188,1.5,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,188,1.75,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,False,False,False,True,False,True,True,True,False,188,2.0,2.0,0.008499999999999952,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,189,0.5,2.0,0.012000000000000122,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,189,0.6,2.0,0.012000000000000122,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,189,0.7,2.0,0.012000000000000122,no_flip
+False,False,False,False,False,False,False,True,False,False,False,True,True,False,False,189,0.75,2.0,0.012000000000000122,no_flip
+False,False,False,False,False,False,False,True,False,False,False,True,True,False,False,189,0.8,2.0,0.012000000000000122,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,False,False,189,0.9,2.0,0.012000000000000122,no_flip
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,189,1.1,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,189,1.2,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,189,1.25,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,189,1.33,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,189,1.5,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,189,1.75,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,False,False,189,2.0,2.0,0.012000000000000122,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,190,0.5,2.5,0.010000000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,190,0.6,2.5,0.010000000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,True,False,True,True,True,False,190,0.7,2.5,0.010000000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,190,0.75,2.5,0.010000000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,190,0.8,2.5,0.010000000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,190,0.9,2.5,0.010000000000000009,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,190,1.1,2.5,0.010000000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,190,1.2,2.5,0.010000000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,190,1.25,2.5,0.010000000000000009,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,190,1.33,2.5,0.010000000000000009,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,190,1.5,2.5,0.010000000000000009,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,190,1.75,2.5,0.010000000000000009,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,190,2.0,2.5,0.010000000000000009,no_flip
+True,True,True,True,True,True,True,True,False,True,False,True,True,True,False,191,0.5,2.5,0.0119999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,True,False,True,True,True,False,191,0.6,2.5,0.0119999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,True,False,True,True,True,False,191,0.7,2.5,0.0119999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,191,0.75,2.5,0.0119999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,True,True,True,False,191,0.8,2.5,0.0119999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,True,False,191,0.9,2.5,0.0119999999999999,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,191,1.1,2.5,0.0119999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,191,1.2,2.5,0.0119999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,191,1.25,2.5,0.0119999999999999,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,True,False,191,1.33,2.5,0.0119999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,191,1.5,2.5,0.0119999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,191,1.75,2.5,0.0119999999999999,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,True,False,191,2.0,2.5,0.0119999999999999,no_flip
+True,True,True,True,False,False,True,True,False,False,False,True,True,False,False,192,0.5,2.0,0.0029999999999998916,needs_round
+True,True,True,True,False,False,True,True,False,False,False,True,True,False,False,192,0.6,2.0,0.0029999999999998916,needs_round
+True,True,True,True,False,False,False,True,False,False,False,True,True,False,False,192,0.7,2.0,0.0029999999999998916,needs_round
+True,True,True,True,False,False,False,True,False,False,False,True,True,False,False,192,0.75,2.0,0.0029999999999998916,needs_round
+True,True,True,True,False,False,False,True,False,False,False,True,True,False,False,192,0.8,2.0,0.0029999999999998916,needs_round
+True,True,True,True,False,False,False,False,False,False,False,True,True,False,False,192,0.9,2.0,0.0029999999999998916,needs_round
+False,False,False,False,True,True,False,False,False,False,False,False,False,False,False,192,1.1,2.0,0.0029999999999998916,no_flip
+False,False,False,False,True,True,False,False,False,False,False,False,False,False,False,192,1.2,2.0,0.0029999999999998916,no_flip
+False,False,False,False,True,True,False,False,False,False,False,False,False,False,False,192,1.25,2.0,0.0029999999999998916,no_flip
+False,False,False,False,True,True,False,False,False,True,False,False,False,False,False,192,1.33,2.0,0.0029999999999998916,no_flip
+False,False,False,False,True,True,False,False,False,True,False,False,False,False,False,192,1.5,2.0,0.0029999999999998916,no_flip
+False,False,False,False,True,True,False,False,False,True,False,False,False,False,False,192,1.75,2.0,0.0029999999999998916,no_flip
+False,False,False,False,True,True,False,False,False,True,False,False,False,False,False,192,2.0,2.0,0.0029999999999998916,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,193,0.5,1.5,0.0050000000000000044,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,193,0.6,1.5,0.0050000000000000044,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,193,0.7,1.5,0.0050000000000000044,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,193,0.75,1.5,0.0050000000000000044,no_flip
+False,False,False,False,False,False,True,True,False,False,False,True,True,False,False,193,0.8,1.5,0.0050000000000000044,no_flip
+False,False,False,False,False,False,False,False,False,False,False,True,True,False,False,193,0.9,1.5,0.0050000000000000044,no_flip
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,193,1.1,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,193,1.2,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,193,1.25,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,193,1.33,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,193,1.5,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,False,False,193,1.75,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,True,False,False,False,False,False,193,2.0,1.5,0.0050000000000000044,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,False,False,True,True,False,False,194,0.5,2.0,0.000500000000000167,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,False,False,True,True,False,False,194,0.6,2.0,0.000500000000000167,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,194,0.7,2.0,0.000500000000000167,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,194,0.75,2.0,0.000500000000000167,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,194,0.8,2.0,0.000500000000000167,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,False,False,False,False,194,0.9,2.0,0.000500000000000167,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,194,1.1,2.0,0.000500000000000167,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,194,1.2,2.0,0.000500000000000167,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,194,1.25,2.0,0.000500000000000167,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,194,1.33,2.0,0.000500000000000167,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,194,1.5,2.0,0.000500000000000167,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,194,1.75,2.0,0.000500000000000167,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,194,2.0,2.0,0.000500000000000167,no_flip
+True,True,True,True,True,True,True,True,False,False,False,True,True,False,False,195,0.5,2.0,0.01650000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,True,True,False,False,False,True,True,False,False,195,0.6,2.0,0.01650000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,True,False,False,False,True,True,False,False,195,0.7,2.0,0.01650000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,195,0.75,2.0,0.01650000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,True,True,True,True,True,False,False,False,False,False,True,True,False,False,195,0.8,2.0,0.01650000000000007,"tradeoff_rate (survives with clip, tank, budget, rounding all off)"
+True,False,True,True,True,False,False,False,False,False,False,True,True,False,False,195,0.9,2.0,0.01650000000000007,needs_clip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,195,1.1,2.0,0.01650000000000007,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,195,1.2,2.0,0.01650000000000007,no_flip
+False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,195,1.25,2.0,0.01650000000000007,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,195,1.33,2.0,0.01650000000000007,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,195,1.5,2.0,0.01650000000000007,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,195,1.75,2.0,0.01650000000000007,no_flip
+False,False,False,False,False,False,False,False,False,True,False,False,False,False,False,195,2.0,2.0,0.01650000000000007,no_flip

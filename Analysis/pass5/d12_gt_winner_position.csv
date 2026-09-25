@@ -1,0 +1,5 @@
+decision_type,n_scenarios,gt_winner_pos1,gt_winner_pos2,gt_winner_pos3,gt_top_tied_share,note
+Overall,195,0.6205128205128205,0.26153846153846155,0.11794871794871795,0.0,all matched scenarios of deepseek A_D run 1 (before failure filtering)
+HVAC,70,0.24285714285714285,0.5285714285714286,0.22857142857142856,0.0,all matched scenarios of deepseek A_D run 1 (before failure filtering)
+Appliance,65,0.9076923076923077,0.03076923076923077,0.06153846153846154,0.0,all matched scenarios of deepseek A_D run 1 (before failure filtering)
+Shower,60,0.75,0.2,0.05,0.0,all matched scenarios of deepseek A_D run 1 (before failure filtering)

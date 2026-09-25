@@ -1,0 +1,191 @@
+item,proposal_line,file,stated,actual,status,old
+A1.1,228,supp,1305,1305,OK,\caption{Ranking accuracy of $\mathcal{A}_{\text{H}}$ with LLM-extracted and dataset-media
+A1.2,232,supp,"1312,1315,1318,1321",1312,OK,GPT-OSS & LLM-extracted & 0.921 & 0.943 & 0.046 \\
+A1.2,233,supp,"1312,1315,1318,1321",1315,OK,Qwen & LLM-extracted & 0.897 & 0.913 & 0.066 \\
+A1.2,234,supp,"1312,1315,1318,1321",1318,OK,DeepSeek & LLM-extracted & 0.904 & 0.913 & 0.040 \\
+A1.2,235,supp,"1312,1315,1318,1321",1321,OK,Gemini & LLM-extracted & 0.921 & 0.928 & 0.047 \\
+A1.3,238,supp,1328,1328,OK,Scenarios whose extraction failed are excluded from that condition rather than defaulted; 
+A1.4,242,supp,1330,1330,OK,so each cell is tested directly with a paired Wilcoxon signed-rank test over the 195 scena
+A1.5,246,supp,1332,1332,OK,"($p_{\text{Holm}} < 10^{-5}$, Cliff's $\delta$ between $-0.22$ and $-0.24$, small) and on "
+A1.6,250,main,808,808,OK,Extraction therefore adds 0.24--0.28 in $\tau$ beyond what the calculator provides.
+A1.7,257,main,808,808,OK,Cliff's $\delta$ from $-0.14$ to $-0.24$ on Kendall's $\tau$ and Top-1 and from 0.35 to 0.
+A1.8,261,main,909,909,OK,"GPT-OSS accounts for 117 of the 120 $\mathcal{A}_{\text{H}}$ failures, most of them on HVA"
+A1.8,263,main,909,909,OK,"When we recover each failed scenario from a run in which it succeeded, the reported figure"
+A1.9,267,main,889,889,OK,lowers its success-weighted $\tau$ from 0.897 to 0.790 and its Top-1 from 91.7\% to 84.7\%
+A1.10,278,readme,"148,154",154,OK,concentrated in HVAC scenarios
+A2.1,332,main,745,745,OK,We compare the architectures with two non-LLM baselines
+A2.2,336,main,749,749,OK,We run two non-LLM conditions through the calculators that $\mathcal{A}_{\text{H}}$ uses.
+A2.2,338,main,749,749,OK,so it tests whether a household needs an LLM at all.
+A2.3,342,main,775,775,OK,"With no LLM at all, it outranks direct and example-guided LLM scoring for every model, and"
+A2.7,360,main,1048,1048,OK,"Third, a calculator driven by fixed constants, with no LLM at all, already comes close on "
+A2.8,365,main,1112,1112,OK,so where a calculator exists we see no reason to use it.
+A2.8,367,main,1112,1112,OK,The language model adds value only where a single average input would be badly wrong for t
+A2.8,370,main,1112,1112,OK,"An LLM is worth using as an interpreter once a deterministic calculator exists,"
+A2.9,374,main,1083,1083,OK,"at 75.4\% for GPT-OSS, 78.6\% for Qwen, 80.0\% for Gemini and 81.4\% for DeepSeek (Section"
+A2.10,379,main,945,945,OK,"All four models recover appliance baseline run time exactly, and three"
+A2.12,452,readme,148,148,OK,LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the cal
+A2.12,454,readme,"148,150,152",150,OK,only LLM-parameterized reference scoring clears it.
+A3.1,521,main,1057,1057,OK,Shower GPM is that parameter (Section~\ref{sec:res-extraction}): GPM multiplies against ea
+A3.2,526,main,1057,,AFTER-OTHER-EDIT,"when the reference winner leads narrowly, the rescaled gaps are enough to change it. We wo"
+A3.3,531,readme,144,144,OK,because a flow-rate (GPM) error multiplies each alternative's own duration and so does not
+A3.3,533,readme,149,149,OK,"The one consistent exception is shower flow rate (GPM), which multiplies against each alte"
+A3.4,537,main,945,945,OK,The models misestimate HVAC equipment age by 6.1--8.5 years on average
+A3.4,539,main,945,945,OK,"at 75.4\% for GPT-OSS, 78.6\% for Qwen, 80.0\% for Gemini and 81.4\% for DeepSeek, because"
+A3.4,541,main,945,945,OK,"For most parameters, the probability that an extraction error changes the top-ranked alter"
+A3.5,546,main,"931,932,933,934,935,936...",931,OK,HVAC & R-value & 3.594 & 3.699 & 2.312 & 1.766 & 0.015 & 0.086 & 0.015 & 0.000 \\ | HVAC & S
+A3.5,567,main,917,917,OK,"\caption{Extraction error and its effect on the top-ranked alternative, by numeric hidden "
+A4.2,631,main,1112,1112,OK,so where a calculator exists we see no reason to use it.
+A4.3,636,main,461,461,OK,score the current situation on its own merits rather than copy the example's scores. On to
+A4.6,650,main,998,998,OK,"Under $\mathcal{A}_{\text{D}}$, the two significant comparisons, both for Qwen and both fa"
+A4.7,659,main,757,757,OK,"one removes the anchors that define the ends of the scoring scale,"
+A4.9,705,main,740,740,OK,from its own knowledge. The embedding model
+A5,754,main,328,328,OK,against a physics-based multi-attribute value theory (MAVT) reference
+A5,755,main,330,330,OK,"into the inputs of a validated calculator,"
+A5,756,main,415,415,OK,so that it applies to any decision for which a validated calculator exists.
+A5,757,main,873,873,OK,separates the alternatives more than the physics warrants.
+A5,758,readme,"18,328",18,OK,against a physics-based Multi-Attribute Value Theory (MAVT) reference calculator
+A5,779,main,1108,1108,OK,across 195 household energy scenarios.
+A6.1,812,supp,203,203,OK,"and in 2.7\%, 19.1\%, 6.4\% and 13.9\% of the same four models' $\mathcal{A}_{\text{E}}$ s"
+A6.4,851,main,837,837,OK,"Top-1 30.0--36.7\%, against 33.3\% for a random choice)"
+A7.1,887,main,404,404,OK,"several generated solution paths \cite{imani2023mathprompter}, so averaging several scorin"
+A7.4,967,main,1020,1020,OK,"\caption{Cost per run (USD) and total tokens per run (thousands, input+output).}"
+A7.5,971,main,1017,1017,OK,$\mathcal{A}_{\text{D}}$ costs 2.9--7.9 times as much as $\mathcal{A}_{\text{H}}$ on the s
+A8.1,1034,main,320,320,OK,but researchers have tested tool augmentation only on calculations with a single correct v
+A8.2,1040,main,408,408,OK,"the model translates natural language into the inputs of an external tool, and the tool do"
+A8.3,1044,main,476,476,OK,"We evaluate accuracy on both scores and rankings. For score error,"
+A9.1,1182,readme,73,73,OK,"Each run also writes `*_results_diagnostics_run_NN.json` (token counts, latency, failure-t"
+A9.2,1186,main,1136,1136,OK,"The repository includes the per-run outputs of every model, so every table, figure and sta"
+A11.1,1271,main,614,614,OK,"We evaluate all three alternatives of an HVAC or Shower scenario at a single time, so thei"
+A11.3,1280,main,1094,1094,OK,"because PJM's marginal emissions intensity does not vary independently of retail price, th"
+A11.4,1285,supp,779,779,OK,\caption{Mean within-scenario swing (nominal weight $\times$ within-scenario score range) 
+A11.4,1291,main,1101,1101,OK,would address the PJM specificity noted in Section~\ref{sec:limitations}.
+B1,1518,main,1000,1000,OK,but costs DeepSeek $0.32$ in $\tau$.
+B1,1524,supp,935,935,OK,while DeepSeek lost 0.32 in Kendall's $\tau$ at $k=1$.
+B2,1558,supp,930,930,OK,"Both ablation suites test whether a configuration preserves the architecture ordering, and"
+B3,1579,main,998,998,OK,"Under $\mathcal{A}_{\text{E}}$, no perturbation improved on the original prompt."
+B4,1600,main,996,996,OK,"but changed no model's top-ranked alternative, and the two conditions differ"
+B4,1606,readme,152,152,OK,but never changed which alternative any model ranked first
+B5,1631,main,1077,1077,OK,had low-variance scores while still being far from correct
+B6,1656,supp,"898,899,900,901,902,903...",903,OK,"Impact, which use the linear value function, do not change with $\alpha$."
+B7,1684,main,1012,1012,OK,"The MEREC vectors load onto Comfort, the one criterion that $\mathcal{A}_{\text{D}}$ estim"
+B7,1690,readme,442,442,OK,MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.20
+B8,1713,main,"612,1012",612,OK,ahead of example-guided LLM scoring in all 20 model--weight-vector cells (Section~\ref{sec
+B8,1719,main,"612,1012",1012,OK,"in all 20 model--weight-vector cells, by at least $0.304$ in Kendall's $\tau$."
+B8,1725,readme,"441,442",441,OK,it holds in all 20 model x weight-vector cells tested
+B8,1731,readme,"441,442",442,OK,reverse it for Gemini in one of the 20 cells
+B9,1753,main,"761,1000",761,OK,and compared seven configurations with a $k=3$ control:
+B9,1759,main,"761,1000",1000,OK,for GPT-OSS and Qwen the seven configurations are indistinguishable after Holm correction.
+B10,1780,main,610,610,OK,"a priori to introduce mild concavity, adjusting them only to keep values inside the 0--1 r"
+B11,1804,main,341,341,OK,of delivered energy in 2025
+B12,1826,main,523,523,OK,Indoor Temp (alt.)  & ---        & \checkmark \\
+B13,1849,main,496,496,OK,"(R-value, SEER, GPM, kWh per cycle and occupancy flags)"
+B14,1870,main,"519,521,574",519,OK,House Age$^{b}$     & \checkmark & \checkmark \\
+B14,1876,main,"519,521,574",521,OK,SEER Rating         & ---        & \checkmark \\
+B14,1883,main,"519,521,574",574,OK,"$^{b}$LLMs receive a building-age range label (e.g., ``20+ Years''); the calculator uses e"
+B15,1909,main,740,740,OK,We chose the retrieval count from the ablation described in Section~\ref{sec:ablation-desi
+B16,1931,main,1048,1048,OK,"already comes close on two of the three decision types, which limits how much the language"
+B17,1955,main,1116,1116,OK,"is the more plausible route to a system a household could adopt unchanged, and from our re"
+B18,1977,main,"322,323,324,325,326,327...",322,OK,We pose two research questions:
+B18,1983,main,"322,323,324,325,326,327...",324,OK,\item \textbf{RQ1}: What are the possible architectures for integrating an LLM into an MCD
+B18,1991,main,"322,323,324,325,326,327...",328,OK,We answer both questions by benchmarking the three architectures
+B18,1997,main,"322,323,324,325,326,327...",837,OK,"With that floor in place, we turn to RQ2 and compare the architectures model by model."
+B19,2022,main,1083,1083,OK,\citet{goodell2025} argue that such independent agreement is evidence both that
+B20,2045,main,1077,1077,OK,"Where that literature predicts compressed scores, $\mathcal{A}_{\text{D}}$'s within-scenar"
+B21,2068,main,606,606,OK,"Cost is also the criterion households estimate worst (Section~\ref{sec:lit-barriers}), so "
+B22,2089,main,369,369,OK,by representing them as fuzzy numbers rather than crisp weights \cite{zadeh1965}.
+B23,2108,main,1069,1069,OK,must perform in a single forward pass
+B24,2131,main,734,734,OK,"(low effort for GPT-OSS, minimal for Gemini)"
+B24,2137,supp,201,201,OK,"DeepSeek V4 Flash (\texttt{deepseek/deepseek-v4-flash:exacto}, hybrid reasoning)"
+B24,2143,supp,201,201,OK,"We report API costs at OpenRouter's published prices as of August 1, 2026."
+B26,2231,main,672,672,OK,divides it by an effective EER derived from SEER (both rating quantities as AHRI defines t
+B26,2249,readme,392,392,OK,EER comes from rated SEER via the AHRI 210/240 quadratic (`EER = -0.02*SEER^2 + 1.12*SEER`
+B27,2273,main,696,696,OK,"Solar gain enters only in cooling season, and internal gain reverses sign in heating seaso"
+B28,2302,main,1088,1088,OK,but the absolute MAE and RMSE values combine LLM extraction error with calculator imputati
+B28,2308,bib,377,377,OK,"  title = {2018--2022 {CO2, SO2} and {NOX} Emission Rates},"
+B29,2334,main,670,670,OK,"The values 0.80, 2.5 and 1.5 and the exponential form are our own choices."
+B30,2358,main,696,696,OK,"Solar gain enters only in cooling season, and internal gain reverses sign in heating seaso"
+B31,2390,supp,576,576,OK,following ACCA Manual~J exposure conventions \citep{accamanualj}:
+B31,2396,main,696,696,OK,"$m_h$ the housing-type envelope multiplier (1.2 apartment and condo, 1.5 townhouse and row"
+B32,2417,main,698,698,OK,"($76\,^\circ$F in cooling mode, $70\,^\circ$F in heating mode)"
+B33,2444,main,703,703,OK,is the context-dependent optimal setpoint used as the peak of the tent function.
+B34,2464,main,722,722,OK,and $\delta_{\mathrm{maint}}$ is the base annual loss rate.
+B35,2487,main,624,624,OK,these endpoints are the 5th and 95th percentiles of the scenario set's own distribution ra
+B36,2508,main,726,726,OK,the realized per-cycle cost spans \$0.025--\$0.71 and emissions 0.288--3.643 lbs CO\textsu
+B37,2531,main,728,728,OK,the realized per-shower cost spans \$0.14--\$1.14 and the water volume 6.0--45.0 gallons \
+B38,2558,main,726,726,OK,"\cite{peco2021,ppl2025,firstenergy2025,firstenergy2026,duquesne2026}"
+B38,2564,supp,765,765,OK,PECO (Rate R-TOU) \citep{peco2021}
+B38,2570,supp,765,765,OK,"\citep{firstenergy2025,firstenergy2026}"
+B39,2619,supp,"755,765",765,OK,and PPL (Rate RTS) \citep{ppl2025}
+B39,2625,supp,"755,765",765,OK,Shifting a dishwasher cycle from peak to off-peak cuts its per-cycle cost by 49--76\% acro
+B40,2644,main,726,726,OK,The calculator applies weekday summer rates year-round
+B41,2667,main,726,726,OK,Comfort and Practicality both decline with delay from the household's baseline run time ag
+B42,2687,bib,222,222,OK,"  author = {A. Paetz and E. Dutschke and W. Fichtner},"
+B43,2709,supp,572,572,OK,an independent per-cycle energy value (kWh/cycle) drawn from the ENERGY STAR certified-pro
+B43,2715,supp,572,572,OK,"(Spearman's $\rho = 0.36$ for dishwashers, $0.38$ for dryers, and $0.69$ for washing machi"
+B44,2734,supp,759,759,OK,Duquesne   & 2--9pm  & 0.1375 & 0.1375 \\
+B45,2758,main,608,608,OK,and penalizes heater setpoints below the CDC's \textit{Legionella} threshold \cite{cdc2026
+B45,2764,supp,926,926,OK,"The original function uses 120--140\,\textdegree{}F, anchored instead to CDC storage guida"
+B45,2770,supp,926,926,OK,"and above 140\,\textdegree{}F the tank adds standby loss without comfort benefit."
+B46,2793,main,728,728,OK,Comfort penalizes duration away from a season-dependent optimum \cite{reu2016}
+B47,2827,main,"728,1088",728,OK,"derives the mains inlet temperature from the outdoor temperature \cite{burch2007,zhang2023"
+B47,2833,main,"728,1088",1088,OK,mains water temperature interpolated linearly from outdoor temperature \cite{burch2007}
+B48,2855,main,728,728,OK,"to reach a 105\,\textdegree{}F delivery target."
+B48,2861,main,728,728,OK,Practicality penalizes duration on a separate curve calibrated to adoption likelihood
+B49,2879,main,608,608,OK,against the roughly 40 gallons the tank can usefully supply
+B50,2899,main,620,620,OK,give their full derivations in Supplementary Material S1
+B51,2921,supp,574,574,OK,"\texttt{standard} (2.5--3.0\,GPM, at or near"
+B51,2927,supp,574,574,OK,"and \texttt{high\_flow} ($>$3.0\,GPM)."
+B52,2948,supp,565,565,OK,(\ref{app:rag_corpus}).
+B53,2970,supp,570,570,OK,consistent with the ENERGY STAR Most Efficient threshold \citep{energystar_ac2023}.
+B53,2976,supp,570,570,OK,Each insulation tier spans a range of R-values drawn from standard U.S.\ residential wall 
+B54,2996,main,1071,1071,OK,sits near the typical values of the Pennsylvania housing stock these scenarios draw on.
+B55,3017,supp,779,779,OK,\caption{Mean within-scenario swing (nominal weight $\times$ within-scenario score range) 
+B56,3045,supp,1246,1246,OK,The reasoning-scaffold variant also has the lowest success rate in the matrix (0.961 for $
+B57,3063,supp,"1342,1343",1342,OK,"five reversed-order extraction runs, per the main text's timestamp | convention. \texttt{Mis"
+B58,3085,supp,142,142,OK,"    group style={group size=3 by 1, horizontal sep=1.6cm},"
+B59,3103,supp,655,655,OK,\subsection{Worked Example: \texorpdfstring{$\mathcal{A}_{\text{H}}$}{A_H} HVAC Scenario}
+B60,3134,supp,930,930,OK,The headline results in the main text use the corrected reference throughout.
+B61,3155,supp,"176,201,463,464,465,718...",176,OK,\usepackage[hidelinks]{hyperref}
+B61,3162,supp,"176,201,463,464,465,718...",973,OK,\texttt{Analysis/RAG\_Ablation/rag\_ablation\_bootstrap\_ci.xlsx}
+B62,3191,main,"22,23,30,31,349",23,OK,"%todo*:As said, you shouldn't have subsection right after a section title without any text"
+B62,3196,main,"22,23,30,31,349",30,OK,\setlength{\marginparwidth}{2cm} | \usepackage{todonotes}
+B62,3202,main,"22,23,30,31,349",349,OK,%todo: ask about formatting (huang) and whether there shoud be a title
+B63,3223,supp,"177,1556",177,OK,"\usepackage[authoryear,longnamesfirst]{natbib}"
+B63,3229,supp,"177,1556",1556,OK,\bibliographystyle{cas-model2-names}
+B64,3252,main,346,346,OK,"\caption{Pennsylvania residential emissions from on-site fuel combustion, by fuel, 2005--2"
+B66,3288,bib,"456,459,474,477",459,OK,"  booktitle = {Advances in Neural Information Processing Systems (NeurIPS) 33},"
+B66,3295,bib,"456,459,474,477",477,OK,"  booktitle = {Advances in Neural Information Processing Systems (NeurIPS) 35},"
+B68,3326,readme,"3,5,513,514,515",3,OK,**Author:** Ahaan Nigam
+B68,3332,readme,"3,5,513,514,515",5,OK,"**Collaborator:** River Huang, Paul Scherrer Institut (PSI), Switzerland"
+B68,3337,readme,"3,5,513,514,515",513,OK,## Citation / Collaborator
+B69,3352,readme,33,33,OK,git clone <repository-url>
+B70,3368,readme,327,327,OK,| **HVAC - Insulation** | Poor / Medium / Good | R-11 / R-13 / R-19 | CEC JA4.3; ENERGY ST
+B71,3384,readme,329,329,OK,| **Appliance - Age** | banded age label | true age in years -> kWh/cycle | ENERGY STAR ce
+B72,3397,readme,"345,392,404,416",345,OK,### Reference Ranges (5th-95th percentile of scenario distributions)
+B72,3403,readme,"345,392,404,416",404,OK,"(45 F winter to 65 F summer, NREL seasonal model)"
+B72,3409,readme,"345,392,404,416",416,OK,where eta = 0.92 (electric water-heater efficiency).
+B73,3426,readme,"444,450",450,OK,"Three ablation suites, run on top of the main benchmark,"
+B73,3432,readme,"444,450",450,OK,All three cover the same four models
+B73,3438,readme,"444,450",444,OK,"Per the project's no-pooling-across-models convention (see `CLAUDE.md`),"
+B75,3467,req,"2,3,13",2,OK,chromadb==1.5.2 | numpy==2.4.2
+B75,3476,req,"2,3,13",13,OK,tabulate==0.10.0
+B76,3494,hvac,136,136,OK,# EER = -0.02 * SEER^2 + 1.12 * SEER  (Source: AHRI Standard 210/240)
+B76,3501,hvac,35,35,OK,# modern/average-construction default (also the ASHRAE 62.1-1989 whole-house baseline).
+B76,3508,hvac,"28,29,30",29,OK,    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to |     # ~19-21 c/kWh thr
+B76,3517,hvac,62,62,OK,# Adjust by housing type. Typical multipliers from ACCA Manual J:
+B76,3525,hvac,"82,83,84,85,86,87...",82,OK,"        # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1 |         internal_ga"
+B76,3537,hvac,"82,83,84,85,86,87...",118,OK,        # Same formula as cooling load: occupants + lighting/equipment + baseline |         
+B76,3546,hvac,435,435,OK,Sources: de Dear & Brager (2002) / ASHRAE 55-2020 (free-running adaptive
+B76,3553,shower,18,18,OK,- DeOreo et al. (2016). Average shower 7.8 min; 0.9 showers/person/day.
+B76,3560,shower,447,447,OK,showers_per_person_per_day=0.9  # Q21: REU2016 average
+B76,3567,shower,"27,28",27,OK,    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to |     # ~19-21 c/kWh thr
+B76,3576,shower,32,32,OK,"# Sources: Burch & Christensen (2007), OSTI 981988; Maguire et al. (2013), NREL/TP-5500-58"
+B76,3583,shower,40,40,OK,#         Product Specifications (electric models 40-55 gal). Midpoint: 0.92.
+B76,3591,shower,42,42,OK,"# F, upper end of the comfortable shower delivery band (~98-105F); Zhang et al. (2023)"
+B76,3598,appl,"440,441",440,OK,# appliance type the dataset's per-cycle energy is strongly
+B76,3605,appl,36,36,OK,# PPL Rate RTS: summer peak 2-6pm modeled;
+B76,3612,appl,32,32,OK,# Jun-2025 PTCs (FirstEnergy Corp. (2025)) x fixed multipliers (FirstEnergy Corp. (2026))
+B77,3631,claude,66,66,OK,(Poor/Medium/Good) ⟷ `r_value` (R-11/13/19)
+B78,3648,status,"1,13,14,15,16,17...",1,OK,# Paper status — single source of truth
+B78,3657,status,"1,13,14,15,16,17...",13,OK,## 1. Where things stand
+B78,3663,status,"1,13,14,15,16,17...",164,OK,## 6. Open items

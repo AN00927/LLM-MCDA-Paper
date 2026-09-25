@@ -1,0 +1,3 @@
+check,n,max_abs_dtau,max_abs_dtop1,max_abs_dmae
+FD_vs_pipeline_per_scenario,195,0.0,0.0,
+DM_vs_published_per_scenario,195,5.551115123125783e-17,0.0,5.551115123125783e-17

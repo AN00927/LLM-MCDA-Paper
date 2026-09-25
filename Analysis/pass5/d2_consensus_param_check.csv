@@ -1,0 +1,5 @@
+model,scenarios,scenarios_with_consensus,first_row_is_failed_group,max_abs_param_diff_consensus_vs_aggregate_file,aggregate_file_rows
+deepseek,195,195,0,4.440892098500626e-16,588
+gemini,195,195,0,4.440892098500626e-16,585
+gptoss,195,194,1,7.105427357601002e-15,744
+qwen,195,195,0,4.440892098500626e-16,591

@@ -1,0 +1,1171 @@
+baseline,scenario_id,decision_type,p_r_value,p_seer,p_hvac_age,p_occupancy_context,p_appliance,p_kwh_per_cycle,p_baseline_time,p_gpm,p_tank_size,p_water_heater_temp
+FD,1,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,2,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,3,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,4,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,5,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,6,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,7,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,8,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,9,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,10,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,11,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,12,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,13,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,14,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,15,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,16,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,17,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,18,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,19,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,20,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,21,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,22,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,23,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,24,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,25,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,26,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,27,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,28,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,29,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,30,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,31,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,32,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,33,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,34,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,35,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,36,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,37,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,38,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,39,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,40,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,41,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,42,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,43,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,44,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,45,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,46,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,47,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,48,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,49,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,50,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,51,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,52,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,53,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,54,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,55,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,56,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,57,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,58,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,59,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,60,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,61,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,62,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,63,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,64,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,65,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,66,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,67,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,68,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,69,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,70,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD,71,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,72,Appliance,,,,,dryer,2.1,7pm,,,
+FD,73,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,74,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,75,Appliance,,,,,dryer,2.1,7pm,,,
+FD,76,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,77,Appliance,,,,,dryer,2.1,7pm,,,
+FD,78,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,79,Appliance,,,,,dryer,2.1,7pm,,,
+FD,80,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,81,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,82,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,83,Appliance,,,,,dryer,2.1,7pm,,,
+FD,84,Appliance,,,,,dryer,2.1,7pm,,,
+FD,85,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,86,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,87,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,88,Appliance,,,,,dryer,2.1,7pm,,,
+FD,89,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,90,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,91,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,92,Appliance,,,,,dryer,2.1,7pm,,,
+FD,93,Appliance,,,,,dryer,2.1,7pm,,,
+FD,94,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,95,Appliance,,,,,dryer,2.1,7pm,,,
+FD,96,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,97,Appliance,,,,,dryer,2.1,7pm,,,
+FD,98,Appliance,,,,,dryer,2.1,7pm,,,
+FD,99,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,100,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,101,Appliance,,,,,dryer,2.1,7pm,,,
+FD,102,Appliance,,,,,dryer,2.1,7pm,,,
+FD,103,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,104,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,105,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,106,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,107,Appliance,,,,,dryer,2.1,7pm,,,
+FD,108,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,109,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,110,Appliance,,,,,dryer,2.1,7pm,,,
+FD,111,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,112,Appliance,,,,,dryer,2.1,7pm,,,
+FD,113,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,114,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,115,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,116,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,117,Appliance,,,,,dryer,2.1,7pm,,,
+FD,118,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,119,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,120,Appliance,,,,,dryer,2.1,7pm,,,
+FD,121,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,122,Appliance,,,,,dryer,2.1,7pm,,,
+FD,123,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,124,Appliance,,,,,dryer,2.1,7pm,,,
+FD,125,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,126,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,127,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,128,Appliance,,,,,dryer,2.1,7pm,,,
+FD,129,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,130,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,131,Appliance,,,,,dryer,2.1,7pm,,,
+FD,132,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,133,Appliance,,,,,washing_machine,0.55,7pm,,,
+FD,134,Appliance,,,,,dryer,2.1,7pm,,,
+FD,135,Appliance,,,,,dishwasher,1.0,7pm,,,
+FD,136,Shower,,,,,,,,2.5,50.0,120.0
+FD,137,Shower,,,,,,,,2.5,50.0,120.0
+FD,138,Shower,,,,,,,,2.5,50.0,120.0
+FD,139,Shower,,,,,,,,2.5,50.0,120.0
+FD,140,Shower,,,,,,,,2.5,50.0,120.0
+FD,141,Shower,,,,,,,,2.5,50.0,120.0
+FD,142,Shower,,,,,,,,2.5,50.0,120.0
+FD,143,Shower,,,,,,,,2.5,50.0,120.0
+FD,144,Shower,,,,,,,,2.5,50.0,120.0
+FD,145,Shower,,,,,,,,2.5,50.0,120.0
+FD,146,Shower,,,,,,,,2.5,50.0,120.0
+FD,147,Shower,,,,,,,,2.5,50.0,120.0
+FD,148,Shower,,,,,,,,2.5,50.0,120.0
+FD,149,Shower,,,,,,,,2.5,50.0,120.0
+FD,150,Shower,,,,,,,,2.5,50.0,120.0
+FD,151,Shower,,,,,,,,2.5,50.0,120.0
+FD,152,Shower,,,,,,,,2.5,50.0,120.0
+FD,153,Shower,,,,,,,,2.5,50.0,120.0
+FD,154,Shower,,,,,,,,2.5,50.0,120.0
+FD,155,Shower,,,,,,,,2.5,50.0,120.0
+FD,156,Shower,,,,,,,,2.5,50.0,120.0
+FD,157,Shower,,,,,,,,2.5,50.0,120.0
+FD,158,Shower,,,,,,,,2.5,50.0,120.0
+FD,159,Shower,,,,,,,,2.5,50.0,120.0
+FD,160,Shower,,,,,,,,2.5,50.0,120.0
+FD,161,Shower,,,,,,,,2.5,50.0,120.0
+FD,162,Shower,,,,,,,,2.5,50.0,120.0
+FD,163,Shower,,,,,,,,2.5,50.0,120.0
+FD,164,Shower,,,,,,,,2.5,50.0,120.0
+FD,165,Shower,,,,,,,,2.5,50.0,120.0
+FD,166,Shower,,,,,,,,2.5,50.0,120.0
+FD,167,Shower,,,,,,,,2.5,50.0,120.0
+FD,168,Shower,,,,,,,,2.5,50.0,120.0
+FD,169,Shower,,,,,,,,2.5,50.0,120.0
+FD,170,Shower,,,,,,,,2.5,50.0,120.0
+FD,171,Shower,,,,,,,,2.5,50.0,120.0
+FD,172,Shower,,,,,,,,2.5,50.0,120.0
+FD,173,Shower,,,,,,,,2.5,50.0,120.0
+FD,174,Shower,,,,,,,,2.5,50.0,120.0
+FD,175,Shower,,,,,,,,2.5,50.0,120.0
+FD,176,Shower,,,,,,,,2.5,50.0,120.0
+FD,177,Shower,,,,,,,,2.5,50.0,120.0
+FD,178,Shower,,,,,,,,2.5,50.0,120.0
+FD,179,Shower,,,,,,,,2.5,50.0,120.0
+FD,180,Shower,,,,,,,,2.5,50.0,120.0
+FD,181,Shower,,,,,,,,2.5,50.0,120.0
+FD,182,Shower,,,,,,,,2.5,50.0,120.0
+FD,183,Shower,,,,,,,,2.5,50.0,120.0
+FD,184,Shower,,,,,,,,2.5,50.0,120.0
+FD,185,Shower,,,,,,,,2.5,50.0,120.0
+FD,186,Shower,,,,,,,,2.5,50.0,120.0
+FD,187,Shower,,,,,,,,2.5,50.0,120.0
+FD,188,Shower,,,,,,,,2.5,50.0,120.0
+FD,189,Shower,,,,,,,,2.5,50.0,120.0
+FD,190,Shower,,,,,,,,2.5,50.0,120.0
+FD,191,Shower,,,,,,,,2.5,50.0,120.0
+FD,192,Shower,,,,,,,,2.5,50.0,120.0
+FD,193,Shower,,,,,,,,2.5,50.0,120.0
+FD,194,Shower,,,,,,,,2.5,50.0,120.0
+FD,195,Shower,,,,,,,,2.5,50.0,120.0
+DM,1,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,2,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,3,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,4,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,5,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,6,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,7,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,8,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,9,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,10,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,11,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,12,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,13,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,14,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,15,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,16,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,17,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,18,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,19,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,20,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,21,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,22,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,23,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,24,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,25,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,26,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,27,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,28,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,29,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,30,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,31,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,32,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,33,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,34,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,35,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,36,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,37,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,38,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,39,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,40,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,41,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,42,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,43,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,44,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,45,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,46,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,47,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,48,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,49,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,50,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,51,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,52,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,53,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,54,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,55,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,56,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,57,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,58,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,59,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,60,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,61,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,62,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,63,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,64,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,65,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,66,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,67,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,68,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,69,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,70,HVAC,16.0,13.0,18.0,occupied_all_day,,,,,,
+DM,71,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,72,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,73,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,74,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,75,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,76,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,77,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,78,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,79,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,80,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,81,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,82,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,83,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,84,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,85,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,86,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,87,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,88,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,89,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,90,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,91,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,92,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,93,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,94,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,95,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,96,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,97,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,98,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,99,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,100,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,101,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,102,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,103,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,104,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,105,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,106,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,107,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,108,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,109,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,110,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,111,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,112,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,113,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,114,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,115,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,116,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,117,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,118,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,119,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,120,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,121,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,122,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,123,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,124,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,125,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,126,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,127,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,128,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,129,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,130,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,131,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,132,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,133,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,134,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,135,Appliance,,,,,dryer,1.15,2:00 PM,,,
+DM,136,Shower,,,,,,,,2.5,50.0,120.0
+DM,137,Shower,,,,,,,,2.5,50.0,120.0
+DM,138,Shower,,,,,,,,2.5,50.0,120.0
+DM,139,Shower,,,,,,,,2.5,50.0,120.0
+DM,140,Shower,,,,,,,,2.5,50.0,120.0
+DM,141,Shower,,,,,,,,2.5,50.0,120.0
+DM,142,Shower,,,,,,,,2.5,50.0,120.0
+DM,143,Shower,,,,,,,,2.5,50.0,120.0
+DM,144,Shower,,,,,,,,2.5,50.0,120.0
+DM,145,Shower,,,,,,,,2.5,50.0,120.0
+DM,146,Shower,,,,,,,,2.5,50.0,120.0
+DM,147,Shower,,,,,,,,2.5,50.0,120.0
+DM,148,Shower,,,,,,,,2.5,50.0,120.0
+DM,149,Shower,,,,,,,,2.5,50.0,120.0
+DM,150,Shower,,,,,,,,2.5,50.0,120.0
+DM,151,Shower,,,,,,,,2.5,50.0,120.0
+DM,152,Shower,,,,,,,,2.5,50.0,120.0
+DM,153,Shower,,,,,,,,2.5,50.0,120.0
+DM,154,Shower,,,,,,,,2.5,50.0,120.0
+DM,155,Shower,,,,,,,,2.5,50.0,120.0
+DM,156,Shower,,,,,,,,2.5,50.0,120.0
+DM,157,Shower,,,,,,,,2.5,50.0,120.0
+DM,158,Shower,,,,,,,,2.5,50.0,120.0
+DM,159,Shower,,,,,,,,2.5,50.0,120.0
+DM,160,Shower,,,,,,,,2.5,50.0,120.0
+DM,161,Shower,,,,,,,,2.5,50.0,120.0
+DM,162,Shower,,,,,,,,2.5,50.0,120.0
+DM,163,Shower,,,,,,,,2.5,50.0,120.0
+DM,164,Shower,,,,,,,,2.5,50.0,120.0
+DM,165,Shower,,,,,,,,2.5,50.0,120.0
+DM,166,Shower,,,,,,,,2.5,50.0,120.0
+DM,167,Shower,,,,,,,,2.5,50.0,120.0
+DM,168,Shower,,,,,,,,2.5,50.0,120.0
+DM,169,Shower,,,,,,,,2.5,50.0,120.0
+DM,170,Shower,,,,,,,,2.5,50.0,120.0
+DM,171,Shower,,,,,,,,2.5,50.0,120.0
+DM,172,Shower,,,,,,,,2.5,50.0,120.0
+DM,173,Shower,,,,,,,,2.5,50.0,120.0
+DM,174,Shower,,,,,,,,2.5,50.0,120.0
+DM,175,Shower,,,,,,,,2.5,50.0,120.0
+DM,176,Shower,,,,,,,,2.5,50.0,120.0
+DM,177,Shower,,,,,,,,2.5,50.0,120.0
+DM,178,Shower,,,,,,,,2.5,50.0,120.0
+DM,179,Shower,,,,,,,,2.5,50.0,120.0
+DM,180,Shower,,,,,,,,2.5,50.0,120.0
+DM,181,Shower,,,,,,,,2.5,50.0,120.0
+DM,182,Shower,,,,,,,,2.5,50.0,120.0
+DM,183,Shower,,,,,,,,2.5,50.0,120.0
+DM,184,Shower,,,,,,,,2.5,50.0,120.0
+DM,185,Shower,,,,,,,,2.5,50.0,120.0
+DM,186,Shower,,,,,,,,2.5,50.0,120.0
+DM,187,Shower,,,,,,,,2.5,50.0,120.0
+DM,188,Shower,,,,,,,,2.5,50.0,120.0
+DM,189,Shower,,,,,,,,2.5,50.0,120.0
+DM,190,Shower,,,,,,,,2.5,50.0,120.0
+DM,191,Shower,,,,,,,,2.5,50.0,120.0
+DM,192,Shower,,,,,,,,2.5,50.0,120.0
+DM,193,Shower,,,,,,,,2.5,50.0,120.0
+DM,194,Shower,,,,,,,,2.5,50.0,120.0
+DM,195,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,1,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,2,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,3,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,4,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,5,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,6,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,7,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,8,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,9,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,10,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,11,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,12,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,13,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,14,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,15,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,16,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,17,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,18,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,19,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,20,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,21,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,22,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,23,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,24,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,25,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,26,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,27,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,28,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,29,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,30,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,31,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,32,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,33,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,34,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,35,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,36,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,37,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,38,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,39,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,40,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,41,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,42,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,43,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,44,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,45,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,46,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,47,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,48,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,49,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,50,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,51,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,52,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,53,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,54,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,55,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,56,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,57,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,58,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,59,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,60,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,61,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,62,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,63,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,64,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,65,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,66,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,67,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,68,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,69,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,70,HVAC,15.0,13.0,13.0,occupied_all_day,,,,,,
+FD+time,71,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+FD+time,72,Appliance,,,,,dryer,2.1,7:00 PM,,,
+FD+time,73,Appliance,,,,,dishwasher,1.0,11:00 PM,,,
+FD+time,74,Appliance,,,,,washing_machine,0.55,10:00 AM,,,
+FD+time,75,Appliance,,,,,dryer,2.1,5:00 PM,,,
+FD+time,76,Appliance,,,,,washing_machine,0.55,1:00 AM,,,
+FD+time,77,Appliance,,,,,dryer,2.1,3:00 PM,,,
+FD+time,78,Appliance,,,,,dishwasher,1.0,2:00 PM,,,
+FD+time,79,Appliance,,,,,dryer,2.1,2:00 PM,,,
+FD+time,80,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+FD+time,81,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+FD+time,82,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+FD+time,83,Appliance,,,,,dryer,2.1,1:00 AM,,,
+FD+time,84,Appliance,,,,,dryer,2.1,3:00 PM,,,
+FD+time,85,Appliance,,,,,dishwasher,1.0,5:00 PM,,,
+FD+time,86,Appliance,,,,,washing_machine,0.55,12:00 AM,,,
+FD+time,87,Appliance,,,,,washing_machine,0.55,5:00 PM,,,
+FD+time,88,Appliance,,,,,dryer,2.1,4:00 PM,,,
+FD+time,89,Appliance,,,,,washing_machine,0.55,4:00 PM,,,
+FD+time,90,Appliance,,,,,dishwasher,1.0,5:00 PM,,,
+FD+time,91,Appliance,,,,,washing_machine,0.55,7:00 PM,,,
+FD+time,92,Appliance,,,,,dryer,2.1,5:00 PM,,,
+FD+time,93,Appliance,,,,,dryer,2.1,4:00 PM,,,
+FD+time,94,Appliance,,,,,dishwasher,1.0,2:00 PM,,,
+FD+time,95,Appliance,,,,,dryer,2.1,1:00 AM,,,
+FD+time,96,Appliance,,,,,washing_machine,0.55,8:00 PM,,,
+FD+time,97,Appliance,,,,,dryer,2.1,1:00 AM,,,
+FD+time,98,Appliance,,,,,dryer,2.1,12:00 AM,,,
+FD+time,99,Appliance,,,,,dishwasher,1.0,12:00 AM,,,
+FD+time,100,Appliance,,,,,washing_machine,0.55,4:00 PM,,,
+FD+time,101,Appliance,,,,,dryer,2.1,3:00 PM,,,
+FD+time,102,Appliance,,,,,dryer,2.1,2:00 PM,,,
+FD+time,103,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+FD+time,104,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+FD+time,105,Appliance,,,,,dishwasher,1.0,7:00 AM,,,
+FD+time,106,Appliance,,,,,washing_machine,0.55,8:00 AM,,,
+FD+time,107,Appliance,,,,,dryer,2.1,5:00 PM,,,
+FD+time,108,Appliance,,,,,washing_machine,0.55,8:00 AM,,,
+FD+time,109,Appliance,,,,,washing_machine,0.55,9:00 AM,,,
+FD+time,110,Appliance,,,,,dryer,2.1,9:00 AM,,,
+FD+time,111,Appliance,,,,,dishwasher,1.0,10:00 AM,,,
+FD+time,112,Appliance,,,,,dryer,2.1,8:00 AM,,,
+FD+time,113,Appliance,,,,,dishwasher,1.0,10:00 AM,,,
+FD+time,114,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+FD+time,115,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+FD+time,116,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+FD+time,117,Appliance,,,,,dryer,2.1,3:00 PM,,,
+FD+time,118,Appliance,,,,,washing_machine,0.55,11:00 PM,,,
+FD+time,119,Appliance,,,,,washing_machine,0.55,12:00 AM,,,
+FD+time,120,Appliance,,,,,dryer,2.1,1:00 AM,,,
+FD+time,121,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+FD+time,122,Appliance,,,,,dryer,2.1,3:00 AM,,,
+FD+time,123,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+FD+time,124,Appliance,,,,,dryer,2.1,4:00 PM,,,
+FD+time,125,Appliance,,,,,washing_machine,0.55,5:00 PM,,,
+FD+time,126,Appliance,,,,,dishwasher,1.0,9:00 AM,,,
+FD+time,127,Appliance,,,,,washing_machine,0.55,6:00 PM,,,
+FD+time,128,Appliance,,,,,dryer,2.1,10:00 AM,,,
+FD+time,129,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+FD+time,130,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+FD+time,131,Appliance,,,,,dryer,2.1,7:00 PM,,,
+FD+time,132,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+FD+time,133,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+FD+time,134,Appliance,,,,,dryer,2.1,7:00 PM,,,
+FD+time,135,Appliance,,,,,dishwasher,1.0,11:00 AM,,,
+FD+time,136,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,137,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,138,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,139,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,140,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,141,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,142,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,143,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,144,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,145,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,146,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,147,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,148,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,149,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,150,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,151,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,152,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,153,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,154,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,155,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,156,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,157,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,158,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,159,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,160,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,161,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,162,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,163,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,164,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,165,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,166,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,167,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,168,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,169,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,170,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,171,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,172,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,173,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,174,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,175,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,176,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,177,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,178,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,179,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,180,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,181,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,182,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,183,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,184,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,185,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,186,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,187,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,188,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,189,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,190,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,191,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,192,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,193,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,194,Shower,,,,,,,,2.5,50.0,120.0
+FD+time,195,Shower,,,,,,,,2.5,50.0,120.0
+LU,1,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU,2,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU,3,HVAC,15.5,9.0,35.5,occupied_all_day,,,,,,
+LU,4,HVAC,15.5,9.0,35.5,occupied_all_day,,,,,,
+LU,5,HVAC,21.5,9.0,45.5,unoccupied_8hr,,,,,,
+LU,6,HVAC,10.0,9.0,45.5,occupied_all_day,,,,,,
+LU,7,HVAC,10.0,9.0,45.5,occupied_all_day,,,,,,
+LU,8,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU,9,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU,10,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU,11,HVAC,15.5,14.0,3.0,unoccupied_8hr,,,,,,
+LU,12,HVAC,15.5,14.0,3.0,unoccupied_8hr,,,,,,
+LU,13,HVAC,10.0,14.0,3.0,unoccupied_8hr,,,,,,
+LU,14,HVAC,21.5,14.0,3.0,occupied_all_day,,,,,,
+LU,15,HVAC,10.0,14.0,3.0,unoccupied_4hr,,,,,,
+LU,16,HVAC,10.0,14.0,3.0,unoccupied_4hr,,,,,,
+LU,17,HVAC,15.5,13.0,8.0,unoccupied_8hr,,,,,,
+LU,18,HVAC,10.0,13.0,8.0,unoccupied_8hr,,,,,,
+LU,19,HVAC,21.5,13.0,8.0,occupied_all_day,,,,,,
+LU,20,HVAC,15.5,13.0,13.0,unoccupied_4hr,,,,,,
+LU,21,HVAC,10.0,13.0,13.0,occupied_all_day,,,,,,
+LU,22,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU,23,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU,24,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU,25,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU,26,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU,27,HVAC,15.5,9.0,60.0,occupied_sleep,,,,,,
+LU,28,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU,29,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU,30,HVAC,15.5,13.0,18.0,unoccupied_4hr,,,,,,
+LU,31,HVAC,21.5,13.0,8.0,unoccupied_4hr,,,,,,
+LU,32,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU,33,HVAC,10.0,10.0,25.5,unoccupied_8hr,,,,,,
+LU,34,HVAC,15.5,9.0,35.5,unoccupied_4hr,,,,,,
+LU,35,HVAC,10.0,10.0,25.5,unoccupied_8hr,,,,,,
+LU,36,HVAC,15.5,13.0,13.0,occupied_all_day,,,,,,
+LU,37,HVAC,15.5,13.0,8.0,occupied_all_day,,,,,,
+LU,38,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU,39,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU,40,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU,41,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU,42,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU,43,HVAC,15.5,10.0,25.5,unoccupied_8hr,,,,,,
+LU,44,HVAC,21.5,13.0,13.0,unoccupied_8hr,,,,,,
+LU,45,HVAC,21.5,13.0,8.0,occupied_sleep,,,,,,
+LU,46,HVAC,21.5,13.0,18.0,occupied_sleep,,,,,,
+LU,47,HVAC,15.5,10.0,25.5,occupied_sleep,,,,,,
+LU,48,HVAC,21.5,14.0,3.0,occupied_all_day,,,,,,
+LU,49,HVAC,21.5,14.0,3.0,occupied_sleep,,,,,,
+LU,50,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU,51,HVAC,10.0,9.0,45.5,occupied_all_day,,,,,,
+LU,52,HVAC,15.5,13.0,13.0,occupied_all_day,,,,,,
+LU,53,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU,54,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU,55,HVAC,21.5,13.0,13.0,unoccupied_8hr,,,,,,
+LU,56,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU,57,HVAC,21.5,13.0,8.0,occupied_all_day,,,,,,
+LU,58,HVAC,10.0,9.0,60.0,occupied_all_day,,,,,,
+LU,59,HVAC,15.5,9.0,45.5,unoccupied_4hr,,,,,,
+LU,60,HVAC,21.5,13.0,13.0,occupied_all_day,,,,,,
+LU,61,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU,62,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU,63,HVAC,10.0,9.0,35.5,unoccupied_8hr,,,,,,
+LU,64,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU,65,HVAC,21.5,13.0,18.0,occupied_sleep,,,,,,
+LU,66,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU,67,HVAC,15.5,10.0,25.5,unoccupied_4hr,,,,,,
+LU,68,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU,69,HVAC,21.5,13.0,13.0,occupied_all_day,,,,,,
+LU,70,HVAC,15.5,10.0,25.5,unoccupied_8hr,,,,,,
+LU,71,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+LU,72,Appliance,,,,,dryer,2.1,7:00 PM,,,
+LU,73,Appliance,,,,,dishwasher,1.0,11:00 PM,,,
+LU,74,Appliance,,,,,washing_machine,0.55,10:00 AM,,,
+LU,75,Appliance,,,,,dryer,2.1,5:00 PM,,,
+LU,76,Appliance,,,,,washing_machine,0.55,1:00 AM,,,
+LU,77,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU,78,Appliance,,,,,dishwasher,1.0,2:00 PM,,,
+LU,79,Appliance,,,,,dryer,2.1,2:00 PM,,,
+LU,80,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+LU,81,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+LU,82,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+LU,83,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU,84,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU,85,Appliance,,,,,dishwasher,1.0,5:00 PM,,,
+LU,86,Appliance,,,,,washing_machine,0.55,12:00 AM,,,
+LU,87,Appliance,,,,,washing_machine,0.55,5:00 PM,,,
+LU,88,Appliance,,,,,dryer,2.1,4:00 PM,,,
+LU,89,Appliance,,,,,washing_machine,0.55,4:00 PM,,,
+LU,90,Appliance,,,,,dishwasher,1.0,5:00 PM,,,
+LU,91,Appliance,,,,,washing_machine,0.55,7:00 PM,,,
+LU,92,Appliance,,,,,dryer,2.1,5:00 PM,,,
+LU,93,Appliance,,,,,dryer,2.1,4:00 PM,,,
+LU,94,Appliance,,,,,dishwasher,1.0,2:00 PM,,,
+LU,95,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU,96,Appliance,,,,,washing_machine,0.55,8:00 PM,,,
+LU,97,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU,98,Appliance,,,,,dryer,2.1,12:00 AM,,,
+LU,99,Appliance,,,,,dishwasher,1.0,12:00 AM,,,
+LU,100,Appliance,,,,,washing_machine,0.55,4:00 PM,,,
+LU,101,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU,102,Appliance,,,,,dryer,2.1,2:00 PM,,,
+LU,103,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+LU,104,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+LU,105,Appliance,,,,,dishwasher,1.0,7:00 AM,,,
+LU,106,Appliance,,,,,washing_machine,0.55,8:00 AM,,,
+LU,107,Appliance,,,,,dryer,2.1,5:00 PM,,,
+LU,108,Appliance,,,,,washing_machine,0.55,8:00 AM,,,
+LU,109,Appliance,,,,,washing_machine,0.55,9:00 AM,,,
+LU,110,Appliance,,,,,dryer,2.1,9:00 AM,,,
+LU,111,Appliance,,,,,dishwasher,1.0,10:00 AM,,,
+LU,112,Appliance,,,,,dryer,2.1,8:00 AM,,,
+LU,113,Appliance,,,,,dishwasher,1.0,10:00 AM,,,
+LU,114,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+LU,115,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+LU,116,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+LU,117,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU,118,Appliance,,,,,washing_machine,0.55,11:00 PM,,,
+LU,119,Appliance,,,,,washing_machine,0.55,12:00 AM,,,
+LU,120,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU,121,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+LU,122,Appliance,,,,,dryer,2.1,3:00 AM,,,
+LU,123,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+LU,124,Appliance,,,,,dryer,2.1,4:00 PM,,,
+LU,125,Appliance,,,,,washing_machine,0.55,5:00 PM,,,
+LU,126,Appliance,,,,,dishwasher,1.0,9:00 AM,,,
+LU,127,Appliance,,,,,washing_machine,0.55,6:00 PM,,,
+LU,128,Appliance,,,,,dryer,2.1,10:00 AM,,,
+LU,129,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+LU,130,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+LU,131,Appliance,,,,,dryer,2.1,7:00 PM,,,
+LU,132,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+LU,133,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+LU,134,Appliance,,,,,dryer,2.1,7:00 PM,,,
+LU,135,Appliance,,,,,dishwasher,1.0,11:00 AM,,,
+LU,136,Shower,,,,,,,,1.5,50.0,120.0
+LU,137,Shower,,,,,,,,1.5,50.0,120.0
+LU,138,Shower,,,,,,,,1.5,50.0,120.0
+LU,139,Shower,,,,,,,,2.5,50.0,120.0
+LU,140,Shower,,,,,,,,1.5,50.0,120.0
+LU,141,Shower,,,,,,,,2.5,50.0,120.0
+LU,142,Shower,,,,,,,,1.5,50.0,120.0
+LU,143,Shower,,,,,,,,1.5,50.0,120.0
+LU,144,Shower,,,,,,,,2.5,50.0,120.0
+LU,145,Shower,,,,,,,,4.0,50.0,120.0
+LU,146,Shower,,,,,,,,4.0,50.0,120.0
+LU,147,Shower,,,,,,,,2.5,50.0,120.0
+LU,148,Shower,,,,,,,,2.5,50.0,120.0
+LU,149,Shower,,,,,,,,4.0,50.0,120.0
+LU,150,Shower,,,,,,,,4.0,50.0,120.0
+LU,151,Shower,,,,,,,,4.0,50.0,120.0
+LU,152,Shower,,,,,,,,1.5,50.0,120.0
+LU,153,Shower,,,,,,,,4.0,50.0,120.0
+LU,154,Shower,,,,,,,,1.5,50.0,120.0
+LU,155,Shower,,,,,,,,2.5,50.0,120.0
+LU,156,Shower,,,,,,,,2.5,50.0,120.0
+LU,157,Shower,,,,,,,,1.5,50.0,120.0
+LU,158,Shower,,,,,,,,4.0,50.0,120.0
+LU,159,Shower,,,,,,,,4.0,50.0,120.0
+LU,160,Shower,,,,,,,,4.0,50.0,120.0
+LU,161,Shower,,,,,,,,1.5,50.0,120.0
+LU,162,Shower,,,,,,,,2.5,50.0,120.0
+LU,163,Shower,,,,,,,,1.5,50.0,120.0
+LU,164,Shower,,,,,,,,2.5,50.0,120.0
+LU,165,Shower,,,,,,,,1.5,50.0,120.0
+LU,166,Shower,,,,,,,,1.5,50.0,120.0
+LU,167,Shower,,,,,,,,2.5,50.0,120.0
+LU,168,Shower,,,,,,,,1.5,50.0,120.0
+LU,169,Shower,,,,,,,,2.5,50.0,120.0
+LU,170,Shower,,,,,,,,2.5,50.0,120.0
+LU,171,Shower,,,,,,,,2.5,50.0,120.0
+LU,172,Shower,,,,,,,,2.5,50.0,120.0
+LU,173,Shower,,,,,,,,2.5,50.0,120.0
+LU,174,Shower,,,,,,,,1.5,50.0,120.0
+LU,175,Shower,,,,,,,,2.5,50.0,120.0
+LU,176,Shower,,,,,,,,2.5,50.0,120.0
+LU,177,Shower,,,,,,,,1.5,50.0,120.0
+LU,178,Shower,,,,,,,,2.5,50.0,120.0
+LU,179,Shower,,,,,,,,2.5,50.0,120.0
+LU,180,Shower,,,,,,,,2.5,50.0,120.0
+LU,181,Shower,,,,,,,,4.0,50.0,120.0
+LU,182,Shower,,,,,,,,1.5,50.0,120.0
+LU,183,Shower,,,,,,,,2.5,50.0,120.0
+LU,184,Shower,,,,,,,,1.5,50.0,120.0
+LU,185,Shower,,,,,,,,2.5,50.0,120.0
+LU,186,Shower,,,,,,,,2.5,50.0,120.0
+LU,187,Shower,,,,,,,,2.5,50.0,120.0
+LU,188,Shower,,,,,,,,1.5,50.0,120.0
+LU,189,Shower,,,,,,,,1.5,50.0,120.0
+LU,190,Shower,,,,,,,,2.5,50.0,120.0
+LU,191,Shower,,,,,,,,2.5,50.0,120.0
+LU,192,Shower,,,,,,,,1.5,50.0,120.0
+LU,193,Shower,,,,,,,,1.5,50.0,120.0
+LU,194,Shower,,,,,,,,1.5,50.0,120.0
+LU,195,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,1,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,2,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,3,HVAC,15.5,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,4,HVAC,15.5,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,5,HVAC,21.5,9.0,45.5,occupied_all_day,,,,,,
+LU-literal,6,HVAC,10.0,9.0,45.5,occupied_all_day,,,,,,
+LU-literal,7,HVAC,10.0,9.0,45.5,occupied_all_day,,,,,,
+LU-literal,8,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,9,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,10,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,11,HVAC,15.5,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,12,HVAC,15.5,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,13,HVAC,10.0,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,14,HVAC,21.5,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,15,HVAC,10.0,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,16,HVAC,10.0,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,17,HVAC,15.5,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,18,HVAC,10.0,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,19,HVAC,21.5,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,20,HVAC,15.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,21,HVAC,10.0,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,22,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,23,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,24,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,25,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,26,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,27,HVAC,15.5,9.0,60.0,occupied_all_day,,,,,,
+LU-literal,28,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,29,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,30,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,31,HVAC,21.5,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,32,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,33,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,34,HVAC,15.5,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,35,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,36,HVAC,15.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,37,HVAC,15.5,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,38,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,39,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,40,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,41,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,42,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,43,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,44,HVAC,21.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,45,HVAC,21.5,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,46,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,47,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,48,HVAC,21.5,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,49,HVAC,21.5,14.0,3.0,occupied_all_day,,,,,,
+LU-literal,50,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,51,HVAC,10.0,9.0,45.5,occupied_all_day,,,,,,
+LU-literal,52,HVAC,15.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,53,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,54,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,55,HVAC,21.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,56,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,57,HVAC,21.5,13.0,8.0,occupied_all_day,,,,,,
+LU-literal,58,HVAC,10.0,9.0,60.0,occupied_all_day,,,,,,
+LU-literal,59,HVAC,15.5,9.0,45.5,occupied_all_day,,,,,,
+LU-literal,60,HVAC,21.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,61,HVAC,21.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,62,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,63,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,64,HVAC,15.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,65,HVAC,21.5,13.0,18.0,occupied_all_day,,,,,,
+LU-literal,66,HVAC,10.0,9.0,35.5,occupied_all_day,,,,,,
+LU-literal,67,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,68,HVAC,10.0,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,69,HVAC,21.5,13.0,13.0,occupied_all_day,,,,,,
+LU-literal,70,HVAC,15.5,10.0,25.5,occupied_all_day,,,,,,
+LU-literal,71,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+LU-literal,72,Appliance,,,,,dryer,2.1,7:00 PM,,,
+LU-literal,73,Appliance,,,,,dishwasher,1.0,11:00 PM,,,
+LU-literal,74,Appliance,,,,,washing_machine,0.55,10:00 AM,,,
+LU-literal,75,Appliance,,,,,dryer,2.1,5:00 PM,,,
+LU-literal,76,Appliance,,,,,washing_machine,0.55,1:00 AM,,,
+LU-literal,77,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU-literal,78,Appliance,,,,,dishwasher,1.0,2:00 PM,,,
+LU-literal,79,Appliance,,,,,dryer,2.1,2:00 PM,,,
+LU-literal,80,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+LU-literal,81,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+LU-literal,82,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+LU-literal,83,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU-literal,84,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU-literal,85,Appliance,,,,,dishwasher,1.0,5:00 PM,,,
+LU-literal,86,Appliance,,,,,washing_machine,0.55,12:00 AM,,,
+LU-literal,87,Appliance,,,,,washing_machine,0.55,5:00 PM,,,
+LU-literal,88,Appliance,,,,,dryer,2.1,4:00 PM,,,
+LU-literal,89,Appliance,,,,,washing_machine,0.55,4:00 PM,,,
+LU-literal,90,Appliance,,,,,dishwasher,1.0,5:00 PM,,,
+LU-literal,91,Appliance,,,,,washing_machine,0.55,7:00 PM,,,
+LU-literal,92,Appliance,,,,,dryer,2.1,5:00 PM,,,
+LU-literal,93,Appliance,,,,,dryer,2.1,4:00 PM,,,
+LU-literal,94,Appliance,,,,,dishwasher,1.0,2:00 PM,,,
+LU-literal,95,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU-literal,96,Appliance,,,,,washing_machine,0.55,8:00 PM,,,
+LU-literal,97,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU-literal,98,Appliance,,,,,dryer,2.1,12:00 AM,,,
+LU-literal,99,Appliance,,,,,dishwasher,1.0,12:00 AM,,,
+LU-literal,100,Appliance,,,,,washing_machine,0.55,4:00 PM,,,
+LU-literal,101,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU-literal,102,Appliance,,,,,dryer,2.1,2:00 PM,,,
+LU-literal,103,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+LU-literal,104,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+LU-literal,105,Appliance,,,,,dishwasher,1.0,7:00 AM,,,
+LU-literal,106,Appliance,,,,,washing_machine,0.55,8:00 AM,,,
+LU-literal,107,Appliance,,,,,dryer,2.1,5:00 PM,,,
+LU-literal,108,Appliance,,,,,washing_machine,0.55,8:00 AM,,,
+LU-literal,109,Appliance,,,,,washing_machine,0.55,9:00 AM,,,
+LU-literal,110,Appliance,,,,,dryer,2.1,9:00 AM,,,
+LU-literal,111,Appliance,,,,,dishwasher,1.0,10:00 AM,,,
+LU-literal,112,Appliance,,,,,dryer,2.1,8:00 AM,,,
+LU-literal,113,Appliance,,,,,dishwasher,1.0,10:00 AM,,,
+LU-literal,114,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+LU-literal,115,Appliance,,,,,dishwasher,1.0,7:00 PM,,,
+LU-literal,116,Appliance,,,,,washing_machine,0.55,2:00 PM,,,
+LU-literal,117,Appliance,,,,,dryer,2.1,3:00 PM,,,
+LU-literal,118,Appliance,,,,,washing_machine,0.55,11:00 PM,,,
+LU-literal,119,Appliance,,,,,washing_machine,0.55,12:00 AM,,,
+LU-literal,120,Appliance,,,,,dryer,2.1,1:00 AM,,,
+LU-literal,121,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+LU-literal,122,Appliance,,,,,dryer,2.1,3:00 AM,,,
+LU-literal,123,Appliance,,,,,dishwasher,1.0,8:00 PM,,,
+LU-literal,124,Appliance,,,,,dryer,2.1,4:00 PM,,,
+LU-literal,125,Appliance,,,,,washing_machine,0.55,5:00 PM,,,
+LU-literal,126,Appliance,,,,,dishwasher,1.0,9:00 AM,,,
+LU-literal,127,Appliance,,,,,washing_machine,0.55,6:00 PM,,,
+LU-literal,128,Appliance,,,,,dryer,2.1,10:00 AM,,,
+LU-literal,129,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+LU-literal,130,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+LU-literal,131,Appliance,,,,,dryer,2.1,7:00 PM,,,
+LU-literal,132,Appliance,,,,,dishwasher,1.0,8:00 AM,,,
+LU-literal,133,Appliance,,,,,washing_machine,0.55,3:00 PM,,,
+LU-literal,134,Appliance,,,,,dryer,2.1,7:00 PM,,,
+LU-literal,135,Appliance,,,,,dishwasher,1.0,11:00 AM,,,
+LU-literal,136,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,137,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,138,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,139,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,140,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,141,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,142,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,143,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,144,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,145,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,146,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,147,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,148,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,149,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,150,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,151,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,152,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,153,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,154,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,155,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,156,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,157,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,158,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,159,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,160,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,161,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,162,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,163,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,164,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,165,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,166,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,167,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,168,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,169,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,170,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,171,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,172,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,173,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,174,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,175,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,176,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,177,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,178,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,179,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,180,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,181,Shower,,,,,,,,4.0,50.0,120.0
+LU-literal,182,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,183,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,184,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,185,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,186,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,187,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,188,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,189,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,190,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,191,Shower,,,,,,,,2.5,50.0,120.0
+LU-literal,192,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,193,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,194,Shower,,,,,,,,1.5,50.0,120.0
+LU-literal,195,Shower,,,,,,,,1.5,50.0,120.0
+LU-corpus,1,HVAC,22.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,2,HVAC,22.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,3,HVAC,16.0,13.0,26.0,occupied_all_day,,,,,,
+LU-corpus,4,HVAC,16.0,13.0,26.0,occupied_all_day,,,,,,
+LU-corpus,5,HVAC,22.0,13.0,16.0,unoccupied_8hr,,,,,,
+LU-corpus,6,HVAC,9.0,13.0,16.0,occupied_all_day,,,,,,
+LU-corpus,7,HVAC,9.0,13.0,16.0,occupied_all_day,,,,,,
+LU-corpus,8,HVAC,22.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,9,HVAC,22.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,10,HVAC,22.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,11,HVAC,16.0,16.0,5.0,unoccupied_8hr,,,,,,
+LU-corpus,12,HVAC,16.0,16.0,5.0,unoccupied_8hr,,,,,,
+LU-corpus,13,HVAC,9.0,16.0,5.0,unoccupied_8hr,,,,,,
+LU-corpus,14,HVAC,22.0,16.0,5.0,occupied_all_day,,,,,,
+LU-corpus,15,HVAC,9.0,16.0,5.0,unoccupied_4hr,,,,,,
+LU-corpus,16,HVAC,9.0,16.0,5.0,unoccupied_4hr,,,,,,
+LU-corpus,17,HVAC,16.0,16.0,5.0,unoccupied_8hr,,,,,,
+LU-corpus,18,HVAC,9.0,16.0,5.0,unoccupied_8hr,,,,,,
+LU-corpus,19,HVAC,22.0,16.0,5.0,occupied_all_day,,,,,,
+LU-corpus,20,HVAC,16.0,15.0,10.0,unoccupied_4hr,,,,,,
+LU-corpus,21,HVAC,9.0,15.0,10.0,occupied_all_day,,,,,,
+LU-corpus,22,HVAC,16.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,23,HVAC,16.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,24,HVAC,9.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,25,HVAC,16.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,26,HVAC,9.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,27,HVAC,16.0,12.0,18.0,occupied_sleep,,,,,,
+LU-corpus,28,HVAC,9.0,13.0,26.0,occupied_all_day,,,,,,
+LU-corpus,29,HVAC,9.0,13.0,26.0,occupied_all_day,,,,,,
+LU-corpus,30,HVAC,16.0,14.0,15.0,unoccupied_4hr,,,,,,
+LU-corpus,31,HVAC,22.0,16.0,5.0,unoccupied_4hr,,,,,,
+LU-corpus,32,HVAC,9.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,33,HVAC,9.0,13.0,21.0,unoccupied_8hr,,,,,,
+LU-corpus,34,HVAC,16.0,13.0,26.0,unoccupied_4hr,,,,,,
+LU-corpus,35,HVAC,9.0,13.0,21.0,unoccupied_8hr,,,,,,
+LU-corpus,36,HVAC,16.0,15.0,10.0,occupied_all_day,,,,,,
+LU-corpus,37,HVAC,16.0,16.0,5.0,occupied_all_day,,,,,,
+LU-corpus,38,HVAC,22.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,39,HVAC,16.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,40,HVAC,16.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,41,HVAC,16.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,42,HVAC,9.0,13.0,26.0,occupied_all_day,,,,,,
+LU-corpus,43,HVAC,16.0,13.0,21.0,unoccupied_8hr,,,,,,
+LU-corpus,44,HVAC,22.0,15.0,10.0,unoccupied_8hr,,,,,,
+LU-corpus,45,HVAC,22.0,16.0,5.0,occupied_sleep,,,,,,
+LU-corpus,46,HVAC,22.0,14.0,15.0,occupied_sleep,,,,,,
+LU-corpus,47,HVAC,16.0,13.0,21.0,occupied_sleep,,,,,,
+LU-corpus,48,HVAC,22.0,16.0,5.0,occupied_all_day,,,,,,
+LU-corpus,49,HVAC,22.0,16.0,5.0,occupied_sleep,,,,,,
+LU-corpus,50,HVAC,9.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,51,HVAC,9.0,13.0,16.0,occupied_all_day,,,,,,
+LU-corpus,52,HVAC,16.0,15.0,10.0,occupied_all_day,,,,,,
+LU-corpus,53,HVAC,16.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,54,HVAC,16.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,55,HVAC,22.0,15.0,10.0,unoccupied_8hr,,,,,,
+LU-corpus,56,HVAC,22.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,57,HVAC,22.0,16.0,5.0,occupied_all_day,,,,,,
+LU-corpus,58,HVAC,9.0,12.0,18.0,occupied_all_day,,,,,,
+LU-corpus,59,HVAC,16.0,13.0,16.0,unoccupied_4hr,,,,,,
+LU-corpus,60,HVAC,22.0,15.0,10.0,occupied_all_day,,,,,,
+LU-corpus,61,HVAC,22.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,62,HVAC,16.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,63,HVAC,9.0,13.0,26.0,unoccupied_8hr,,,,,,
+LU-corpus,64,HVAC,16.0,14.0,15.0,occupied_all_day,,,,,,
+LU-corpus,65,HVAC,22.0,14.0,15.0,occupied_sleep,,,,,,
+LU-corpus,66,HVAC,9.0,13.0,26.0,occupied_all_day,,,,,,
+LU-corpus,67,HVAC,16.0,13.0,21.0,unoccupied_4hr,,,,,,
+LU-corpus,68,HVAC,9.0,13.0,21.0,occupied_all_day,,,,,,
+LU-corpus,69,HVAC,22.0,15.0,10.0,occupied_all_day,,,,,,
+LU-corpus,70,HVAC,16.0,13.0,21.0,unoccupied_8hr,,,,,,
+LU-corpus,71,Appliance,,,,,washing_machine,0.435,2:00 PM,,,
+LU-corpus,72,Appliance,,,,,dryer,3.3,7:00 PM,,,
+LU-corpus,73,Appliance,,,,,dishwasher,1.1,11:00 PM,,,
+LU-corpus,74,Appliance,,,,,washing_machine,0.2,10:00 AM,,,
+LU-corpus,75,Appliance,,,,,dryer,2.8,5:00 PM,,,
+LU-corpus,76,Appliance,,,,,washing_machine,0.35,1:00 AM,,,
+LU-corpus,77,Appliance,,,,,dryer,2.6,3:00 PM,,,
+LU-corpus,78,Appliance,,,,,dishwasher,1.15,2:00 PM,,,
+LU-corpus,79,Appliance,,,,,dryer,3.3,2:00 PM,,,
+LU-corpus,80,Appliance,,,,,dishwasher,0.91,7:00 PM,,,
+LU-corpus,81,Appliance,,,,,dishwasher,1.1,8:00 PM,,,
+LU-corpus,82,Appliance,,,,,washing_machine,0.365,2:00 PM,,,
+LU-corpus,83,Appliance,,,,,dryer,2.5,1:00 AM,,,
+LU-corpus,84,Appliance,,,,,dryer,3.3,3:00 PM,,,
+LU-corpus,85,Appliance,,,,,dishwasher,1.15,5:00 PM,,,
+LU-corpus,86,Appliance,,,,,washing_machine,0.365,12:00 AM,,,
+LU-corpus,87,Appliance,,,,,washing_machine,0.35,5:00 PM,,,
+LU-corpus,88,Appliance,,,,,dryer,3.3,4:00 PM,,,
+LU-corpus,89,Appliance,,,,,washing_machine,0.435,4:00 PM,,,
+LU-corpus,90,Appliance,,,,,dishwasher,1.15,5:00 PM,,,
+LU-corpus,91,Appliance,,,,,washing_machine,0.2,7:00 PM,,,
+LU-corpus,92,Appliance,,,,,dryer,2.5,5:00 PM,,,
+LU-corpus,93,Appliance,,,,,dryer,2.8,4:00 PM,,,
+LU-corpus,94,Appliance,,,,,dishwasher,1.1,2:00 PM,,,
+LU-corpus,95,Appliance,,,,,dryer,3.3,1:00 AM,,,
+LU-corpus,96,Appliance,,,,,washing_machine,0.435,8:00 PM,,,
+LU-corpus,97,Appliance,,,,,dryer,3.3,1:00 AM,,,
+LU-corpus,98,Appliance,,,,,dryer,2.8,12:00 AM,,,
+LU-corpus,99,Appliance,,,,,dishwasher,1.7,12:00 AM,,,
+LU-corpus,100,Appliance,,,,,washing_machine,0.35,4:00 PM,,,
+LU-corpus,101,Appliance,,,,,dryer,2.8,3:00 PM,,,
+LU-corpus,102,Appliance,,,,,dryer,2.5,2:00 PM,,,
+LU-corpus,103,Appliance,,,,,dishwasher,1.1,7:00 PM,,,
+LU-corpus,104,Appliance,,,,,dishwasher,1.1,8:00 PM,,,
+LU-corpus,105,Appliance,,,,,dishwasher,1.7,7:00 AM,,,
+LU-corpus,106,Appliance,,,,,washing_machine,0.2,8:00 AM,,,
+LU-corpus,107,Appliance,,,,,dryer,2.6,5:00 PM,,,
+LU-corpus,108,Appliance,,,,,washing_machine,0.35,8:00 AM,,,
+LU-corpus,109,Appliance,,,,,washing_machine,0.365,9:00 AM,,,
+LU-corpus,110,Appliance,,,,,dryer,3.3,9:00 AM,,,
+LU-corpus,111,Appliance,,,,,dishwasher,1.1,10:00 AM,,,
+LU-corpus,112,Appliance,,,,,dryer,2.5,8:00 AM,,,
+LU-corpus,113,Appliance,,,,,dishwasher,1.1,10:00 AM,,,
+LU-corpus,114,Appliance,,,,,washing_machine,0.365,3:00 PM,,,
+LU-corpus,115,Appliance,,,,,dishwasher,1.15,7:00 PM,,,
+LU-corpus,116,Appliance,,,,,washing_machine,0.2,2:00 PM,,,
+LU-corpus,117,Appliance,,,,,dryer,2.8,3:00 PM,,,
+LU-corpus,118,Appliance,,,,,washing_machine,0.365,11:00 PM,,,
+LU-corpus,119,Appliance,,,,,washing_machine,0.365,12:00 AM,,,
+LU-corpus,120,Appliance,,,,,dryer,2.6,1:00 AM,,,
+LU-corpus,121,Appliance,,,,,dishwasher,1.1,8:00 AM,,,
+LU-corpus,122,Appliance,,,,,dryer,2.5,3:00 AM,,,
+LU-corpus,123,Appliance,,,,,dishwasher,0.91,8:00 PM,,,
+LU-corpus,124,Appliance,,,,,dryer,2.6,4:00 PM,,,
+LU-corpus,125,Appliance,,,,,washing_machine,0.35,5:00 PM,,,
+LU-corpus,126,Appliance,,,,,dishwasher,1.1,9:00 AM,,,
+LU-corpus,127,Appliance,,,,,washing_machine,0.365,6:00 PM,,,
+LU-corpus,128,Appliance,,,,,dryer,2.6,10:00 AM,,,
+LU-corpus,129,Appliance,,,,,dishwasher,1.15,8:00 AM,,,
+LU-corpus,130,Appliance,,,,,washing_machine,0.365,3:00 PM,,,
+LU-corpus,131,Appliance,,,,,dryer,3.3,7:00 PM,,,
+LU-corpus,132,Appliance,,,,,dishwasher,0.91,8:00 AM,,,
+LU-corpus,133,Appliance,,,,,washing_machine,0.365,3:00 PM,,,
+LU-corpus,134,Appliance,,,,,dryer,2.5,7:00 PM,,,
+LU-corpus,135,Appliance,,,,,dishwasher,1.1,11:00 AM,,,
+LU-corpus,136,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,137,Shower,,,,,,,,2.0,50.0,120.0
+LU-corpus,138,Shower,,,,,,,,2.0,30.0,120.0
+LU-corpus,139,Shower,,,,,,,,2.5,40.0,120.0
+LU-corpus,140,Shower,,,,,,,,2.0,60.0,120.0
+LU-corpus,141,Shower,,,,,,,,2.5,60.0,120.0
+LU-corpus,142,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,143,Shower,,,,,,,,2.0,45.0,120.0
+LU-corpus,144,Shower,,,,,,,,2.5,45.0,120.0
+LU-corpus,145,Shower,,,,,,,,3.5,45.0,120.0
+LU-corpus,146,Shower,,,,,,,,3.5,50.0,120.0
+LU-corpus,147,Shower,,,,,,,,2.5,60.0,120.0
+LU-corpus,148,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,149,Shower,,,,,,,,3.5,60.0,120.0
+LU-corpus,150,Shower,,,,,,,,3.5,50.0,120.0
+LU-corpus,151,Shower,,,,,,,,3.5,50.0,120.0
+LU-corpus,152,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,153,Shower,,,,,,,,3.5,45.0,120.0
+LU-corpus,154,Shower,,,,,,,,2.0,60.0,120.0
+LU-corpus,155,Shower,,,,,,,,2.5,45.0,120.0
+LU-corpus,156,Shower,,,,,,,,2.5,45.0,120.0
+LU-corpus,157,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,158,Shower,,,,,,,,3.5,50.0,120.0
+LU-corpus,159,Shower,,,,,,,,3.5,40.0,120.0
+LU-corpus,160,Shower,,,,,,,,3.5,60.0,120.0
+LU-corpus,161,Shower,,,,,,,,2.0,60.0,120.0
+LU-corpus,162,Shower,,,,,,,,2.5,40.0,120.0
+LU-corpus,163,Shower,,,,,,,,2.0,60.0,120.0
+LU-corpus,164,Shower,,,,,,,,2.5,40.0,120.0
+LU-corpus,165,Shower,,,,,,,,2.0,50.0,120.0
+LU-corpus,166,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,167,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,168,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,169,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,170,Shower,,,,,,,,2.5,60.0,120.0
+LU-corpus,171,Shower,,,,,,,,2.5,45.0,120.0
+LU-corpus,172,Shower,,,,,,,,2.5,60.0,120.0
+LU-corpus,173,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,174,Shower,,,,,,,,2.0,45.0,120.0
+LU-corpus,175,Shower,,,,,,,,2.5,45.0,120.0
+LU-corpus,176,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,177,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,178,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,179,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,180,Shower,,,,,,,,2.5,40.0,120.0
+LU-corpus,181,Shower,,,,,,,,3.5,45.0,120.0
+LU-corpus,182,Shower,,,,,,,,2.0,50.0,120.0
+LU-corpus,183,Shower,,,,,,,,2.5,40.0,120.0
+LU-corpus,184,Shower,,,,,,,,2.0,50.0,120.0
+LU-corpus,185,Shower,,,,,,,,2.5,40.0,120.0
+LU-corpus,186,Shower,,,,,,,,2.5,60.0,120.0
+LU-corpus,187,Shower,,,,,,,,2.5,45.0,120.0
+LU-corpus,188,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,189,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,190,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,191,Shower,,,,,,,,2.5,50.0,120.0
+LU-corpus,192,Shower,,,,,,,,2.0,40.0,120.0
+LU-corpus,193,Shower,,,,,,,,2.0,30.0,120.0
+LU-corpus,194,Shower,,,,,,,,2.0,30.0,120.0
+LU-corpus,195,Shower,,,,,,,,2.0,40.0,120.0

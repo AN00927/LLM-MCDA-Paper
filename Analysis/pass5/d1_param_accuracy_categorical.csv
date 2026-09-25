@@ -1,0 +1,13 @@
+model,decision_type,param,llm_match,lu_match,fd_match
+deepseek,Appliance,appliance,1.0,1.0,1.0
+deepseek,Appliance,baseline_time,1.0,0.9846153846153847,0.10769230769230771
+deepseek,HVAC,occupancy_context,0.822360248447205,0.9426915113871637,0.6160662525879917
+gemini,Appliance,appliance,0.9384615384615385,1.0,1.0
+gemini,Appliance,baseline_time,1.0,0.9846153846153847,0.10769230769230771
+gemini,HVAC,occupancy_context,0.8,0.9428571428571428,0.6142857142857143
+gptoss,Appliance,appliance,1.0,1.0,1.0
+gptoss,Appliance,baseline_time,1.0,0.9846153846153847,0.10769230769230771
+gptoss,HVAC,occupancy_context,0.7376450216450217,0.9270270047412904,0.6011139971139972
+qwen,Appliance,appliance,1.0,1.0,1.0
+qwen,Appliance,baseline_time,0.9969230769230769,0.9846153846153847,0.10769230769230771
+qwen,HVAC,occupancy_context,0.7873291925465838,0.9425258799171843,0.6120496894409938

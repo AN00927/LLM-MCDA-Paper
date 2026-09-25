@@ -1,0 +1,136 @@
+param,scenario_id,parsed,true,match
+occupancy_context,1,occupied_all_day,occupied_all_day,True
+occupancy_context,2,occupied_all_day,occupied_all_day,True
+occupancy_context,3,occupied_all_day,occupied_all_day,True
+occupancy_context,4,occupied_all_day,occupied_all_day,True
+occupancy_context,5,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,6,occupied_all_day,occupied_all_day,True
+occupancy_context,7,occupied_all_day,occupied_all_day,True
+occupancy_context,8,occupied_all_day,occupied_all_day,True
+occupancy_context,9,occupied_all_day,occupied_all_day,True
+occupancy_context,10,occupied_all_day,occupied_all_day,True
+occupancy_context,11,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,12,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,13,unoccupied_8hr,unoccupied_12hr,False
+occupancy_context,14,occupied_all_day,occupied_all_day,True
+occupancy_context,15,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,16,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,17,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,18,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,19,occupied_all_day,occupied_all_day,True
+occupancy_context,20,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,21,occupied_all_day,occupied_all_day,True
+occupancy_context,22,occupied_all_day,standard,True
+occupancy_context,23,occupied_all_day,standard,True
+occupancy_context,24,occupied_all_day,standard,True
+occupancy_context,25,occupied_all_day,standard,True
+occupancy_context,26,occupied_all_day,standard,True
+occupancy_context,27,occupied_sleep,overnight_sleep,True
+occupancy_context,28,occupied_all_day,occupied_all_day,True
+occupancy_context,29,occupied_all_day,occupied_all_day,True
+occupancy_context,30,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,31,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,32,occupied_all_day,occupied_all_day,True
+occupancy_context,33,unoccupied_8hr,unoccupied_12hr,False
+occupancy_context,34,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,35,unoccupied_8hr,unoccupied_12hr,False
+occupancy_context,36,occupied_all_day,standard,True
+occupancy_context,37,occupied_all_day,standard,True
+occupancy_context,38,occupied_all_day,standard,True
+occupancy_context,39,occupied_all_day,occupied_all_day,True
+occupancy_context,40,occupied_all_day,standard,True
+occupancy_context,41,occupied_all_day,occupied_all_day,True
+occupancy_context,42,occupied_all_day,occupied_all_day,True
+occupancy_context,43,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,44,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,45,occupied_sleep,overnight_sleep,True
+occupancy_context,46,occupied_sleep,overnight_sleep,True
+occupancy_context,47,occupied_sleep,overnight_sleep,True
+occupancy_context,48,occupied_all_day,standard,True
+occupancy_context,49,occupied_sleep,overnight_sleep,True
+occupancy_context,50,occupied_all_day,occupied_all_day,True
+occupancy_context,51,occupied_all_day,standard,True
+occupancy_context,52,occupied_all_day,standard,True
+occupancy_context,53,occupied_all_day,occupied_all_day,True
+occupancy_context,54,occupied_all_day,occupied_all_day,True
+occupancy_context,55,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,56,occupied_all_day,occupied_all_day,True
+occupancy_context,57,occupied_all_day,occupied_all_day,True
+occupancy_context,58,occupied_all_day,occupied_all_day,True
+occupancy_context,59,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,60,occupied_all_day,occupied_all_day,True
+occupancy_context,61,occupied_all_day,occupied_all_day,True
+occupancy_context,62,occupied_all_day,standard,True
+occupancy_context,63,unoccupied_8hr,unoccupied_8hr,True
+occupancy_context,64,occupied_all_day,occupied_all_day,True
+occupancy_context,65,occupied_sleep,overnight_sleep,True
+occupancy_context,66,occupied_all_day,occupied_all_day,True
+occupancy_context,67,unoccupied_4hr,unoccupied_4hr,True
+occupancy_context,68,occupied_all_day,standard,True
+occupancy_context,69,occupied_all_day,occupied_all_day,True
+occupancy_context,70,unoccupied_8hr,unoccupied_12hr,False
+baseline_time,71,2:00 PM,2:00 PM,True
+baseline_time,72,7:00 PM,7:00 PM,True
+baseline_time,73,11:00 PM,11:00 PM,True
+baseline_time,74,10:00 AM,10:00 AM,True
+baseline_time,75,5:00 PM,5:00 PM,True
+baseline_time,76,1:00 AM,1:00 AM,True
+baseline_time,77,3:00 PM,3:00 PM,True
+baseline_time,78,2:00 PM,2:00 PM,True
+baseline_time,79,2:00 PM,2:00 PM,True
+baseline_time,80,7:00 PM,7:00 PM,True
+baseline_time,81,8:00 PM,8:00 PM,True
+baseline_time,82,2:00 PM,2:00 PM,True
+baseline_time,83,1:00 AM,1:00 AM,True
+baseline_time,84,3:00 PM,3:00 PM,True
+baseline_time,85,5:00 PM,5:00 PM,True
+baseline_time,86,12:00 AM,11:00 PM,False
+baseline_time,87,5:00 PM,5:00 PM,True
+baseline_time,88,4:00 PM,4:00 PM,True
+baseline_time,89,4:00 PM,4:00 PM,True
+baseline_time,90,5:00 PM,5:00 PM,True
+baseline_time,91,7:00 PM,7:00 PM,True
+baseline_time,92,5:00 PM,5:00 PM,True
+baseline_time,93,4:00 PM,4:00 PM,True
+baseline_time,94,2:00 PM,2:00 PM,True
+baseline_time,95,1:00 AM,1:00 AM,True
+baseline_time,96,8:00 PM,8:00 PM,True
+baseline_time,97,1:00 AM,1:00 AM,True
+baseline_time,98,12:00 AM,12:00 AM,True
+baseline_time,99,12:00 AM,12:00 AM,True
+baseline_time,100,4:00 PM,4:00 PM,True
+baseline_time,101,3:00 PM,3:00 PM,True
+baseline_time,102,2:00 PM,2:00 PM,True
+baseline_time,103,7:00 PM,7:00 PM,True
+baseline_time,104,8:00 PM,8:00 PM,True
+baseline_time,105,7:00 AM,7:00 AM,True
+baseline_time,106,8:00 AM,8:00 AM,True
+baseline_time,107,5:00 PM,5:00 PM,True
+baseline_time,108,8:00 AM,8:00 AM,True
+baseline_time,109,9:00 AM,9:00 AM,True
+baseline_time,110,9:00 AM,9:00 AM,True
+baseline_time,111,10:00 AM,10:00 AM,True
+baseline_time,112,8:00 AM,8:00 AM,True
+baseline_time,113,10:00 AM,10:00 AM,True
+baseline_time,114,3:00 PM,3:00 PM,True
+baseline_time,115,7:00 PM,7:00 PM,True
+baseline_time,116,2:00 PM,2:00 PM,True
+baseline_time,117,3:00 PM,3:00 PM,True
+baseline_time,118,11:00 PM,11:00 PM,True
+baseline_time,119,12:00 AM,12:00 AM,True
+baseline_time,120,1:00 AM,1:00 AM,True
+baseline_time,121,8:00 AM,8:00 AM,True
+baseline_time,122,3:00 AM,3:00 AM,True
+baseline_time,123,8:00 PM,8:00 PM,True
+baseline_time,124,4:00 PM,4:00 PM,True
+baseline_time,125,5:00 PM,5:00 PM,True
+baseline_time,126,9:00 AM,9:00 AM,True
+baseline_time,127,6:00 PM,6:00 PM,True
+baseline_time,128,10:00 AM,10:00 AM,True
+baseline_time,129,8:00 AM,8:00 AM,True
+baseline_time,130,3:00 PM,3:00 PM,True
+baseline_time,131,7:00 PM,7:00 PM,True
+baseline_time,132,8:00 AM,8:00 AM,True
+baseline_time,133,3:00 PM,3:00 PM,True
+baseline_time,134,7:00 PM,7:00 PM,True
+baseline_time,135,11:00 AM,11:00 AM,True

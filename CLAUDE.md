@@ -27,27 +27,6 @@ a physics MAVT ground truth, over **195 Test scenarios** (70 HVAC / 65 Appliance
 decision types: HVAC setpoint, Appliance schedule time, Shower duration. Four
 criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
-## Layout
-
-- `Architectures/` — `Direct_LLM_Scoring.py`, `Example-Guided_LLM_Scoring.py`, `LLM-Parameterized_Reference_Scoring.py`. Each
-  runs the benchmark via `run_multi_and_aggregate` and writes to the model's output
-  folder.
-- `Ground Truth Calculators/` — `{HVAC,Appliance,Shower}GroundTruthCalculator.py`. The
-  deterministic physics. LLM-Parameterized_Reference_Scoring imports these at runtime; run a file directly to
-  regenerate its `Ground Truth/ground_truth_*.xlsx`.
-- `Scenario Files/` — masters live in `ConsolidatedforSimaltaneousediting.xlsx`;
-  `build_consolidated_scenario_workbooks.py` derives `TestScenarios.xlsx` + the 3 `*RAGScenarios.xlsx`
-  from it (audited, deterministic, backs up first).
-- `Miscellaneous Scripts/` — `build_rag_index.py` (Chroma index), `sync_rag_ground_truth_scores.py`
-  (refresh RAG scores from GT), `evaluate_architecture_metrics.py`, weight scripts,
-  `run_benchmarks.py`.
-- `paper_pipeline/` — `run_paper_pipeline.py` (master pipeline), `generate_paper_figures.py`,
-  `generate_paper_results_numbers.py`, per-run metrics + LaTeX snippet generators.
-- `model_config.py`, `sentinel_utils.py` — shared config + shared utilities.
-- `docs/` — `CODEBASE_GUIDE.md`, `PROVENANCE_AUDIT_PROMPT.md`, `EXPERIMENTS.md`,
-  `metrics_calculation_pipeline.md`.
-- `chroma_rag_db/` — built RAG vector index (gitignored).
-
 ## Running
 
 - **Compilation happens in Overleaf, by the user** — not in this repo/sandbox. The
