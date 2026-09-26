@@ -1,5 +1,13 @@
+import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from model_config import MODEL_SPECS  # noqa: E402
 
 per_run_frames = []
 for f in ["deepseek", "gemini", "gptoss", "qwen"]:
@@ -28,8 +36,8 @@ CRITERION_MAP = {
 }
 MODEL_ORDER = ["gemini", "deepseek", "gptoss", "qwen"]
 MODEL_LABELS = {
-    "gemini": "Gemini 3.5 Flash",
-    "deepseek": "DeepSeek V4 Flash",
+    "gemini": MODEL_SPECS["gemini"]["output_folder"].replace("Output Files ", ""),
+    "deepseek": MODEL_SPECS["deepseek"]["output_folder"].replace("Output Files ", ""),
     "gptoss": "GPT-OSS 20B",
     "qwen": "Qwen 3.5 9B",
 }

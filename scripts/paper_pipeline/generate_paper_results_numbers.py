@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Generate numbers_master.csv from raw data sources."""
+import argparse
 import pandas as pd
 import numpy as np
 import os
 
-OUT = "paper/numbers_master.csv"
+_ap = argparse.ArgumentParser(description="Generate numbers_master.csv from raw data sources.")
+_ap.add_argument("--output", default="paper/numbers_master.csv",
+                 help="CSV to write (default paper/numbers_master.csv)")
+OUT = _ap.parse_args().output
 rows = []
 
 def add(category, architecture, model_or_pooled, decision_type, metric, value, sd=None):
@@ -38,42 +42,19 @@ imputed = pd.read_excel("Analysis/MetricsSummary/metrics_summary_all_models_impu
 rag = pd.read_excel("Analysis/RAG_Ablation/rag_ablation_summary.xlsx")
 
 # ────────────────────────────────────────────────────────────────
-# TABLE 5: Pooled Overall  (per-run CSVs, 4 models x 5 runs = 20 values)
-# ────────────────────────────────────────────────────────────────
-metric_map_5 = {
-    "kendall_tau": "tau",
-    "top1_accuracy": "Top-1",
-    "overall_mae": "MAE",
-    "overall_rmse": "RMSE",
-    "overall_rmse_mae_ratio": "RMSE/MAE",
-}
-
-for arch in LLM_ARCHS:
-    sub = per_run[per_run["architecture"] == arch]
-    for raw_m, nice_m in metric_map_5.items():
-        vals = sub[raw_m].dropna().values
-        if len(vals) > 0:
-            add("Table5_pooled_overall", arch, "pooled", "Overall", nice_m,
-                np.mean(vals), np.std(vals, ddof=1))
-
-# ────────────────────────────────────────────────────────────────
-# TABLE 6: Per-criterion MAE (per-run CSVs, Overall, pooled + best/worst model)
+# TABLES 5-7: no rows pooled across models
+#
+# This file used to write Table5_pooled_overall, the pooled half of
+# Table6_per_criterion_mae and Table7_per_decision_type_pooled: means over the
+# 20 per-run values of all four models. Neither the paper nor the supplement
+# prints any of them (checked 2026-09-25; both state that no value is pooled
+# across models), and a four-model mean can hide a per-model reversal, so they
+# were removed. The per-model best/worst rows below are kept.
 # ────────────────────────────────────────────────────────────────
 criterion_mae_keys = ["energy_cost_mae", "environmental_mae", "comfort_mae", "practicality_mae"]
 criterion_mae_labels = ["EnergyCost", "Environmental", "Comfort", "Practicality"]
 
-for arch in LLM_ARCHS:
-    sub = per_run[(per_run["architecture"] == arch) & (per_run["decision_type"] == "Overall")]
-    for raw_key, nice_label in zip(criterion_mae_keys, criterion_mae_labels):
-        vals = sub[raw_key].dropna().values
-        if len(vals) > 0:
-            add("Table6_per_criterion_mae", arch, "pooled", "Overall", nice_label,
-                np.mean(vals), np.std(vals, ddof=1))
-    vals_mae = sub["overall_mae"].dropna().values
-    if len(vals_mae) > 0:
-        add("Table6_per_criterion_mae", arch, "pooled", "Overall", "Overall",
-            np.mean(vals_mae), np.std(vals_mae, ddof=1))
-
+# TABLE 6: Per-criterion MAE (per-run CSVs, Overall, best/worst model)
 for arch in LLM_ARCHS:
     arch_data = per_run[per_run["architecture"] == arch]
     model_means = {}
@@ -99,23 +80,8 @@ for arch in LLM_ARCHS:
                     np.mean(vals_mae), np.std(vals_mae, ddof=1))
 
 # ────────────────────────────────────────────────────────────────
-# TABLE 7: Per-decision-type (per-run CSVs, pooled + best/worst model)
+# TABLE 7: Per-decision-type (per-run CSVs, best/worst model)
 # ────────────────────────────────────────────────────────────────
-for arch in LLM_ARCHS:
-    for dt in ["HVAC", "Appliance", "Shower"]:
-        sub = per_run[(per_run["architecture"] == arch) & (per_run["decision_type"] == dt)]
-        for raw_m, nice_m in [("kendall_tau", "tau"), ("top1_accuracy", "Top-1")]:
-            vals = sub[raw_m].dropna().values
-            if len(vals) > 0:
-                add("Table7_per_decision_type_pooled", arch, "pooled", dt, nice_m,
-                    np.mean(vals), np.std(vals, ddof=1))
-    sub_overall = per_run[(per_run["architecture"] == arch) & (per_run["decision_type"] == "Overall")]
-    for raw_m, nice_m in [("kendall_tau", "tau"), ("top1_accuracy", "Top-1")]:
-        vals = sub_overall[raw_m].dropna().values
-        if len(vals) > 0:
-            add("Table7_per_decision_type_pooled", arch, "pooled", "Overall", nice_m,
-                np.mean(vals), np.std(vals, ddof=1))
-
 for arch in LLM_ARCHS:
     for dt in ["HVAC", "Appliance", "Shower"]:
         model_means = {}
@@ -297,9 +263,23 @@ for arch in LLM_ARCHS:
 
 # ────────────────────────────────────────────────────────────────
 # GPT-OSS RECOVERY: with and without multi-run recovery
+#
+# Both variants are on the per-run basis: every run is scored on its own and
+# the metrics are averaged over runs.
+#   run_k / pooled_5run / best / worst  -- WITHOUT recovery: the main-text
+#       values, a failed scenario-run dropped from its run.
+#   recovered_5run -- WITH recovery: in each run, a scenario that failed takes
+#       its rows from the first other run (in run order) in which it succeeded,
+#       then the run is scored by the same functions as the main text. A
+#       scenario that failed in every run stays out.
+# "pooled_5run" is the mean over GPT-OSS's five runs, not a pool across models.
+# The rows are filtered to decision_type == "Overall": before, the block also
+# swept in the three per-type rows of each run and labelled them "Overall",
+# which put the mean of 20 mixed rows (0.8985) into pooled_5run.
 # ────────────────────────────────────────────────────────────────
 gptoss_runs = per_run[(per_run["model"] == "gptoss") &
-                      (per_run["architecture"] == "LLM-Parameterized_Reference_Scoring")]
+                      (per_run["architecture"] == "LLM-Parameterized_Reference_Scoring") &
+                      (per_run["decision_type"] == "Overall")]
 
 for _, r in gptoss_runs.iterrows():
     run_id = int(r["run"])
@@ -322,6 +302,70 @@ add("GPTOSS_recovery", "AH", "worst_single_run", "Overall", "tau", worst_tau)
 add("GPTOSS_recovery", "AH", "best_single_run", "Overall", "tau", best_tau)
 add("GPTOSS_recovery", "AH", "worst_single_run", "Overall", "MAE", worst_mae)
 add("GPTOSS_recovery", "AH", "best_single_run", "Overall", "MAE", best_mae)
+
+
+def _recovered_per_run(model_key, arch="LLM-Parameterized_Reference_Scoring"):
+    """Per-run metrics with each failed scenario-run backfilled from the first
+    other run in which that scenario succeeded. Uses the same loading,
+    matching, sentinel filtering and metric functions as
+    calculate_per_run_metrics.py, so without backfill it reproduces the
+    per-run CSVs exactly."""
+    import importlib.util as _ilu
+    import contextlib as _cl
+    import io as _io
+    _spec = _ilu.spec_from_file_location(
+        "calculate_per_run_metrics",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "calculate_per_run_metrics.py"))
+    _prm = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_prm)
+    config = _prm._build_config(model_key)
+    folder = os.path.dirname(config["output_csv"])
+    with _cl.redirect_stdout(_io.StringIO()):
+        gt = _prm.load_ground_truth(config)
+    gt_lookup, gt_id_lookup = _prm.build_gt_lookup(gt), _prm.build_gt_id_lookup(gt)
+    from pathlib import Path as _P
+    clean_by_run = {}
+    for rp in _prm._discover_run_files(_P(folder), arch):
+        run_num = int(rp.stem.split("_run_")[-1])
+        with _cl.redirect_stdout(_io.StringIO()):
+            arch_df = _prm.load_architecture(rp, arch)
+            merged, _ = _prm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch)
+        clean, _, _ = _prm.filter_failed_scenarios(merged)
+        clean_by_run[run_num] = (clean, set(merged["arch_scenario_id"].unique()))
+    out = []
+    runs = sorted(clean_by_run)
+    for r in runs:
+        clean, all_sids = clean_by_run[r]
+        parts = [clean]
+        n_recovered = 0
+        for sid in sorted(all_sids - set(clean["arch_scenario_id"].unique())):
+            for o in runs:
+                donor = clean_by_run[o][0]
+                if o != r and sid in set(donor["arch_scenario_id"]):
+                    parts.append(donor[donor["arch_scenario_id"] == sid])
+                    n_recovered += 1
+                    break
+        rec = pd.concat(parts, ignore_index=True)
+        rk = _prm.compute_ranking_metrics_local(rec)
+        cr = _prm.compute_criterion_metrics(rec)
+        out.append({"run": r, "kendall_tau": rk["kendall_tau"],
+                    "top1_accuracy": rk["top1_accuracy"], "overall_mae": cr["overall_MAE"],
+                    "n_scenarios": rk["n_scenarios_evaluated"], "n_recovered": n_recovered})
+    return pd.DataFrame(out)
+
+
+_rec = _recovered_per_run("gptoss")
+if len(_rec):
+    add("GPTOSS_recovery", "AH", "recovered_5run", "Overall", "tau",
+        _rec["kendall_tau"].mean(), _rec["kendall_tau"].std(ddof=1))
+    add("GPTOSS_recovery", "AH", "recovered_5run", "Overall", "MAE",
+        _rec["overall_mae"].mean(), _rec["overall_mae"].std(ddof=1))
+    add("GPTOSS_recovery", "AH", "recovered_5run", "Overall", "Top-1",
+        _rec["top1_accuracy"].mean(), _rec["top1_accuracy"].std(ddof=1))
+    add("GPTOSS_recovery", "AH", "recovered_5run", "Overall", "n_scenarios_per_run",
+        _rec["n_scenarios"].mean())
+    add("GPTOSS_recovery", "AH", "recovered_5run", "Overall", "n_recovered_per_run",
+        _rec["n_recovered"].mean())
 
 for arch in LLM_ARCHS:
     for model in MODELS:

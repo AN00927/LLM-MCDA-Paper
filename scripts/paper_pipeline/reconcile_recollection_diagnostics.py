@@ -38,10 +38,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from sentinel_utils import is_sentinel  # noqa: E402
+from model_config import MODEL_SPECS  # noqa: E402
 
 ARCH = "Example-Guided_LLM_Scoring"
 CRIT = ["energy_cost", "environmental", "comfort", "practicality"]
-FOLDERS = ["Output Files DeepSeek V4 Flash", "Output Files Gemini 3.5 Flash",
+FOLDERS = [MODEL_SPECS["deepseek"]["output_folder"], MODEL_SPECS["gemini"]["output_folder"],
            "Output Files GPT-OSS 20B", "Output Files Qwen3.5 9B"]
 
 # Fields that count failures and must shrink; token/latency fields are untouched.

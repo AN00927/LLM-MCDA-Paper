@@ -6,11 +6,22 @@ Two arms, both scored by the same reference calculators over the same 195 test
 scenarios:
 
   extracted      -- the calculator receives the values the LLM actually returned,
-                    read from the extracted_* columns of an existing
-                    LLM-Parameterized_Reference_Scoring_results.xlsx.
-  default_params -- the calculator receives a fixed corpus-median value per
-                    parameter, with no per-scenario inference at all. This is the
-                    floor: calculator access without meaningful LLM contribution.
+                    read from the extracted_* columns of each shipped per-run
+                    LLM-Parameterized_Reference_Scoring_results_run_NN.xlsx.
+                    Every run is scored on its own and a scenario that failed in
+                    a run is dropped from that run only, so this arm measures
+                    A_H as benchmarked (one extraction call per scenario) and
+                    reproduces the main-text A_H numbers. The five-run aggregate
+                    workbook is NOT read: its extracted_* columns are the mean /
+                    mode of the parameters over the runs that succeeded, a
+                    five-call parameter ensemble rather than A_H.
+  default_params -- the calculator receives one constant per hidden parameter:
+                    the median (numeric) or mode (categorical) over the 90
+                    retrieval (RAG) scenarios, with no per-scenario inference at
+                    all. The 195 test scenarios are excluded from those
+                    statistics, and nothing is read from the question. This is
+                    the floor: calculator access without meaningful LLM
+                    contribution.
 
   order_reversed -- the calculator receives values extracted from a prompt whose
                     alternative_1/2/3 values were reversed. Everything else,
@@ -84,6 +95,9 @@ drops them from the shipped results. Narrow the set only when collecting.
 Sentinel handling: a scenario whose extraction failed carries the 1928 sentinel
 and is excluded from that arm's metrics rather than being silently replaced by a
 neutral default. Per-arm scenario counts are reported so any exclusion is visible.
+
+Aggregation: a multi-run arm is summarised the way the main text summarises A_H:
+each run's metric over the scenarios that run scored, then the mean over runs.
 """
 
 import argparse
@@ -112,6 +126,7 @@ from sentinel_utils import (
     CRITERIA,
     SENTINEL_FLOAT,
     _atomic_write_xlsx,
+    _is_complete_run_file,
     apply_mavt_ranking,
     is_sentinel,
     read_table_clean,
@@ -170,20 +185,26 @@ SCENARIO_FILES = {
     "Shower": "ShowerScenarios.xlsx",
 }
 
+# The retrieval (RAG) corpus, one sheet per decision type (long format, three
+# rows per scenario). The master sheets above hold test AND retrieval rows; the
+# dataset-median condition takes its statistics over the retrieval rows only.
+# Note the filename casing: HVACRagScenarios.xlsx, not HVACRAG...
+RAG_SCENARIO_FILES = {
+    "HVAC": "HVACRagScenarios.xlsx",
+    "Appliance": "ApplianceRAGScenarios.xlsx",
+    "Shower": "ShowerRAGScenarios.xlsx",
+}
+
 ARM_SPECS = OrderedDict([
+    # `extracted` and the two order arms are the like-for-like set: all three
+    # are scored run by run with failed scenario-runs dropped. The arm used to
+    # read the five-run aggregate workbook, which resolves a scenario that
+    # failed in one run using the others and averages the parameters across
+    # runs; that is a parameter ensemble, not A_H, and gptoss showed the
+    # artefact (194/195 aggregate against 858/975 per run).
     ("extracted", {
-        "label": "LLM-extracted hidden parameters (5-run aggregate)",
+        "label": "LLM-extracted hidden parameters (per run, shipped runs)",
         "source": "extracted",
-    }),
-    # The three per-run arms below are the like-for-like set. `extracted` reads
-    # the aggregate workbook, which resolves a scenario that failed in one run
-    # using the others, so its success rate is structurally higher than any
-    # single run's and it must not be compared directly against a per-run arm.
-    # gptoss made that concrete: 194/195 aggregate against 516/585 per-run, an
-    # artefact of the aggregation, not of the manipulation.
-    ("extracted_per_run", {
-        "label": "LLM-extracted, shipped order, per shipped run",
-        "source": "extracted_per_run",
     }),
     ("order_control", {
         "label": "LLM-extracted, shipped order, same session as reversed",
@@ -194,7 +215,7 @@ ARM_SPECS = OrderedDict([
         "source": "order_reversed",
     }),
     ("default_params", {
-        "label": "Corpus-median hidden parameters (no inference)",
+        "label": "Retrieval-set median hidden parameters (no inference)",
         "source": "default",
     }),
 ])
@@ -570,21 +591,96 @@ def load_order_arm(model_key: str, arm: str = "reversed") -> Dict[str, Dict[int,
 
 
 # ---------------------------------------------------------------------------
-# Default (corpus-median) parameter values
+# Default (retrieval-set median) parameter values
 # ---------------------------------------------------------------------------
+
+# Master-row <-> RAG-sheet identity check. These homeowner-facing fields exist
+# in both sheets with the same raw values, and together they are unique per
+# scenario in every decision type.
+RAG_CHECK_KEYS = ["location", "household_size", "utility_budget", "housing_type"]
+
+
+def _canon(value):
+    """Canonical form for the identity check: numbers as rounded floats, text
+    cleaned. The two sheets store the same value as int in one and float in
+    the other."""
+    text = _clean_text(value)
+    try:
+        return round(float(text), 6)
+    except ValueError:
+        return text
+
+
+def _canonical_clock(value) -> str:
+    """'6pm' / '6:00 PM' / '6:00pm' -> '6:00 PM', so the mode counts one run
+    time once however the master sheet happens to spell it."""
+    import re
+    text = _clean_text(value)
+    m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))?\s*([AaPp])\.?\s*[Mm]\.?", text)
+    if not m:
+        return text
+    return f"{int(m.group(1))}:{m.group(2) or '00'} {m.group(3).upper()}M"
+
+
+def retrieval_set_rows(decision_type: str) -> pd.DataFrame:
+    """The master-sheet rows of the retrieval (RAG) scenarios for one type.
+
+    The master sheet holds test and retrieval scenarios together, and the
+    consolidated-workbook rebuild defines Test as the master rows the RAG
+    sheet does not claim. The retrieval rows are therefore the master rows no
+    Test row matches. The RAG sheet itself cannot supply the statistics: it
+    omits occupancy_context and baseline_time. The result is checked against
+    the RAG sheet (same scenario count and the same RAG_CHECK_KEYS values) and
+    the function raises rather than return a partial or mixed set.
+    """
+    gt = load_ground_truth(decision_type)
+    test_df = load_test_scenarios()
+    test_df = test_df[test_df["decision_type"].map(_clean_text) == decision_type]
+    claimed = set()
+    for _, test_row in test_df.iterrows():
+        gt_row = match_ground_truth(test_row, gt, decision_type)
+        if gt_row is None:
+            raise RuntimeError(
+                f"{decision_type}: a Test scenario has no master row "
+                f"({_clean_text(test_row.get('question'))!r}); cannot separate "
+                f"the retrieval rows from the test rows.")
+        claimed.add(gt_row.name)
+    if len(claimed) != len(test_df):
+        raise RuntimeError(f"{decision_type}: {len(test_df)} Test scenarios matched "
+                           f"only {len(claimed)} distinct master rows.")
+    rag_rows = gt.drop(index=sorted(claimed))
+
+    rag_sheet = read_table_clean(SCENARIO_DIR / RAG_SCENARIO_FILES[decision_type],
+                                 keep_str_cols=["question", "location", "housing_type"])
+    rag_sheet = rag_sheet.drop_duplicates(subset=["scenario_id"])
+    got = sorted(tuple(_canon(r[k]) for k in RAG_CHECK_KEYS) for _, r in rag_rows.iterrows())
+    want = sorted(tuple(_canon(r[k]) for k in RAG_CHECK_KEYS) for _, r in rag_sheet.iterrows())
+    if got != want:
+        raise RuntimeError(
+            f"{decision_type}: the {len(got)} master rows left after removing the "
+            f"Test scenarios do not match the {len(want)} scenarios of "
+            f"{RAG_SCENARIO_FILES[decision_type]}. Rebuild the scenario workbooks "
+            f"before computing the dataset-median defaults.")
+    return rag_rows
+
 
 def compute_defaults() -> Dict[str, Dict[str, object]]:
     """Median numeric / modal categorical value per hidden parameter, over the
-    full source corpus for that decision type. These are the 'no inference'
-    values: a single constant reused for every scenario."""
+    retrieval (RAG) scenarios of that decision type only: 35 HVAC, 35 Appliance
+    and 20 Shower. The 195 test scenarios are excluded, so no scored scenario
+    contributes to the value it is scored with. These are the 'no inference'
+    values: a single constant reused for every scenario, including the
+    categorical ones (appliance type, baseline time, occupancy), and nothing is
+    read from the question. A tied mode resolves to the first value in sorted
+    order, so the result is deterministic."""
     defaults = {}
     for dtype, groups in HIDDEN_PARAMS.items():
-        gt = load_ground_truth(dtype)
+        rag = retrieval_set_rows(dtype)
         d = {}
         for p in groups["numeric"]:
-            d[p] = float(pd.to_numeric(gt[p], errors="coerce").median())
+            d[p] = float(pd.to_numeric(rag[p], errors="coerce").median())
         for p in groups["categorical"]:
-            vals = gt[p].map(_clean_text)
+            vals = rag[p].map(_canonical_clock if p == "baseline_time" else _clean_text)
             vals = vals[vals != ""]
             d[p] = vals.mode().iloc[0] if not vals.empty else ""
         defaults[dtype] = d
@@ -738,36 +834,50 @@ def true_params(gt_row: pd.Series, decision_type: str) -> Dict[str, object]:
     return out
 
 
+def _sentinel_failed_sids(df: pd.DataFrame) -> set:
+    """Scenario ids with a 1928 sentinel in any stored criterion score.
+
+    The main pipeline (filter_failed_scenarios) drops a scenario-run on exactly
+    this test, which also catches a run whose extraction succeeded but whose
+    calculator step failed. Order-arm files store no scores, so they return an
+    empty set and rely on extraction_failed alone."""
+    cols = [c for c in CRITERIA if c in df.columns]
+    if not cols:
+        return set()
+    bad = df[df[cols].apply(lambda r: any(is_sentinel(v) for v in r), axis=1)]
+    return {int(s) for s in bad["scenario_id"]}
+
+
 def run(args) -> pd.DataFrame:
     test_df = load_test_scenarios()
     gt_cache = {d: load_ground_truth(d) for d in SCENARIO_FILES}
     defaults = compute_defaults()
 
-    print("Corpus-median default parameters (the 'no inference' arm):")
+    print("Retrieval-set median default parameters (the 'no inference' arm):")
     for d, params in defaults.items():
         print(f"  {d}: " + ", ".join(f"{k}={v}" for k, v in params.items()))
     print()
 
     records = []
     for model_key in args.models:
-        folder = PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"]
-        results_path = folder / "LLM-Parameterized_Reference_Scoring_results.xlsx"
-        if not results_path.exists():
-            print(f"SKIP {model_key}: {results_path.name} not found")
-            continue
-        res = read_table_clean(results_path)
-        # One row per scenario; the file repeats scenarios per alternative.
-        res = res.drop_duplicates(subset=["scenario_id"])
-        by_sid = {int(r["scenario_id"]): r for _, r in res.iterrows()}
-        print(f"{model_key}: {len(by_sid)} scenarios in results file")
-
         rev_runs = load_order_arm(model_key, "reversed")
         ctrl_runs = load_order_arm(model_key, "control")
+        # The `extracted` arm: every shipped per-run file, one entry per run.
+        # A scenario-run is failed if extraction failed or any stored score is
+        # the sentinel; it is dropped from that run only.
         shipped_runs = {}
+        shipped_failed = {}
         for p in _shipped_run_paths(model_key):
             tag = "shippedrun_" + p.stem.rsplit("_", 1)[-1]
-            sr = read_table_clean(p).drop_duplicates(subset=["scenario_id"])
+            full = read_table_clean(p)
+            shipped_failed[tag] = _sentinel_failed_sids(full)
+            sr = full.drop_duplicates(subset=["scenario_id"])
             shipped_runs[tag] = {int(r["scenario_id"]): r for _, r in sr.iterrows()}
+        if not shipped_runs:
+            print(f"SKIP {model_key}: no per-run "
+                  f"LLM-Parameterized_Reference_Scoring_results_run_*.xlsx found")
+            continue
+        print(f"{model_key}: {len(shipped_runs)} shipped per-run file(s)")
 
         if not rev_runs:
             print(f"  (no order-reversed arm collected; run with --collect "
@@ -792,22 +902,18 @@ def run(args) -> pd.DataFrame:
             ref_scored = score_scenario(dtype, build_scenario(
                 dtype, test_row, gt_row, true_params(gt_row, dtype)))
 
-            # (arm_id, source_run, params). The reversed arm contributes one
-            # entry per collected run, so the headline row averages over its
-            # runs instead of resting on whichever run happened to be first.
-            arm_entries = [
-                ("extracted", "", extracted_params(by_sid[sid], dtype)
-                 if sid in by_sid else None),
-                ("default_params", "", defaults[dtype]),
-            ]
-            for arm_id, runs in (("extracted_per_run", shipped_runs),
-                                 ("order_control", ctrl_runs),
-                                 ("order_reversed", rev_runs)):
+            # (arm_id, source_run, params). The multi-run arms contribute one
+            # entry per run, so the headline row averages over runs instead of
+            # resting on whichever run happened to be first.
+            arm_entries = [("default_params", "", defaults[dtype])]
+            for arm_id, runs, failed in (("extracted", shipped_runs, shipped_failed),
+                                         ("order_control", ctrl_runs, {}),
+                                         ("order_reversed", rev_runs, {})):
                 for tag in sorted(runs):
+                    ok = sid in runs[tag] and sid not in failed.get(tag, set())
                     arm_entries.append(
                         (arm_id, tag,
-                         extracted_params(runs[tag][sid], dtype)
-                         if sid in runs[tag] else None))
+                         extracted_params(runs[tag][sid], dtype) if ok else None))
 
             for arm_id, source_run, p in arm_entries:
                 if p is None:
@@ -833,8 +939,12 @@ def run(args) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 def _shipped_run_paths(model_key: str) -> List[Path]:
+    # Same discovery rule as paper_pipeline/calculate_per_run_metrics.py, so a
+    # half-written run file is skipped here exactly as it is there.
     folder = PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"]
-    return sorted(folder.glob("LLM-Parameterized_Reference_Scoring_results_run_*.xlsx"))
+    return [p for p in sorted(folder.glob(
+                "LLM-Parameterized_Reference_Scoring_results_run_*.xlsx"))
+            if _is_complete_run_file(p)]
 
 
 def _params_by_sid(df: pd.DataFrame, test_df: pd.DataFrame) -> Dict[int, object]:
@@ -1164,29 +1274,88 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
     return pd.DataFrame(pair_rows), summary
 
 
-def summarize(df: pd.DataFrame) -> pd.DataFrame:
+def _run_means(g: pd.DataFrame) -> pd.DataFrame:
+    """One row per source run: that run's metrics over the scenarios it scored.
+    Failed scenario-runs are dropped from their own run and nowhere else."""
     rows = []
-    for (model, arm), g in df.groupby(["model", "arm"], sort=False):
-        ok = g[~g["failed"]]
-        # The reversed arm contributes several runs, so per-run counts are
-        # reported rather than a row count that silently triples.
-        n_runs = max(1, g["source_run"].nunique()) if "source_run" in g else 1
+    for tag, r in g.groupby(g["source_run"].fillna(""), sort=True):
+        ok = r[~r["failed"].astype(bool)]
+        rows.append({"source_run": tag, "n": len(r), "n_scored": len(ok),
+                     "kendall_tau": ok["kendall_tau"].mean(),
+                     "top1": ok["top1"].mean(), "mae": ok["mae"].mean()})
+    return pd.DataFrame(rows)
+
+
+def summarize(df: pd.DataFrame, by_type: bool = False) -> pd.DataFrame:
+    """Per model x arm (x decision type if by_type). Metrics are the main
+    text's estimator: per-run mean over the scenarios that run scored, then the
+    mean over runs. A single-run arm reduces to a plain mean."""
+    rows = []
+    keys = ["model", "arm"] + (["decision_type"] if by_type else [])
+    for key, g in df.groupby(keys, sort=False):
+        key = dict(zip(keys, key))
+        R = _run_means(g)
+        # Per-run counts are reported rather than a row count that silently
+        # multiplies by the number of runs.
         rows.append({
-            "model": model,
-            "arm": arm,
-            "label": ARM_SPECS[arm]["label"],
-            "n_runs": n_runs,
-            "n_scenarios": len(g) // n_runs,
-            "n_scored": len(ok),
-            "success_rate": len(ok) / len(g) if len(g) else np.nan,
-            "kendall_tau": ok["kendall_tau"].mean(),
-            "top1_accuracy": ok["top1"].mean(),
-            "mae": ok["mae"].mean(),
+            **key,
+            "label": ARM_SPECS[key["arm"]]["label"],
+            "n_runs": len(R),
+            "n_scenarios": int(R["n"].iloc[0]) if len(R) else 0,
+            "n_scored": int(R["n_scored"].sum()),
+            "success_rate": R["n_scored"].sum() / R["n"].sum() if len(R) else np.nan,
+            "kendall_tau": R["kendall_tau"].mean(),
+            "kendall_tau_run_sd": R["kendall_tau"].std(ddof=1) if len(R) > 1 else np.nan,
+            "top1_accuracy": R["top1"].mean(),
+            "mae": R["mae"].mean(),
         })
     out = pd.DataFrame(rows)
     arm_order = {a: i for i, a in enumerate(ARM_SPECS)}
+    sort_cols = ["model", "_a"] + (["decision_type"] if by_type else [])
     return (out.assign(_a=out["arm"].map(arm_order))
-               .sort_values(["model", "_a"]).drop(columns=["_a"]))
+               .sort_values(sort_cols).drop(columns=["_a"]))
+
+
+def like_for_like(df: pd.DataFrame) -> pd.DataFrame:
+    """Extraction gain over the dataset median on the same scenarios.
+
+    For each run of the `extracted` arm, the dataset-median arm is averaged
+    over exactly the scenarios that run scored, and the gain is taken run by
+    run, then averaged over runs. Subtracting the all-scenario median from the
+    per-run A_H mean instead mixes two scenario bases whenever a model has
+    failures (for gptoss the median drops from 0.641 to 0.597 on the scenarios
+    its runs scored)."""
+    rows = []
+    for model, g in df.groupby("model", sort=False):
+        ext = g[g["arm"] == "extracted"]
+        dm = g[g["arm"] == "default_params"].set_index("scenario_id")
+        if ext.empty or dm.empty:
+            continue
+        for dtype in ["Overall"] + list(HIDDEN_PARAMS):
+            per_run = []
+            for tag, r in ext.groupby("source_run", sort=True):
+                r = r if dtype == "Overall" else r[r["decision_type"] == dtype]
+                ok = r[~r["failed"].astype(bool)]
+                sids = ok["scenario_id"].values
+                per_run.append({
+                    "ext_tau": ok["kendall_tau"].mean(), "ext_top1": ok["top1"].mean(),
+                    "dm_tau": dm.loc[sids, "kendall_tau"].mean(),
+                    "dm_top1": dm.loc[sids, "top1"].mean(),
+                    "n_scored": len(ok)})
+            R = pd.DataFrame(per_run)
+            gain = R["ext_tau"] - R["dm_tau"]
+            rows.append({
+                "model": model, "decision_type": dtype, "n_runs": len(R),
+                "n_scored": int(R["n_scored"].sum()),
+                "extracted_tau": R["ext_tau"].mean(),
+                "default_params_tau_same_scenarios": R["dm_tau"].mean(),
+                "tau_gain": gain.mean(), "tau_gain_run_min": gain.min(),
+                "tau_gain_run_max": gain.max(),
+                "extracted_top1": R["ext_top1"].mean(),
+                "default_params_top1_same_scenarios": R["dm_top1"].mean(),
+                "top1_gain": (R["ext_top1"] - R["dm_top1"]).mean(),
+            })
+    return pd.DataFrame(rows)
 
 
 def parse_args():
@@ -1248,11 +1417,15 @@ def main():
         print("No records produced.")
         return
     summary = summarize(df)
+    summary_by_type = summarize(df, by_type=True)
+    lfl = like_for_like(df)
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(out_dir / "hybrid_ablation_summary.xlsx") as xl:
         summary.to_excel(xl, sheet_name="summary", index=False)
+        summary_by_type.to_excel(xl, sheet_name="summary_by_type", index=False)
+        lfl.to_excel(xl, sheet_name="like_for_like", index=False)
         df.to_excel(xl, sheet_name="per_scenario", index=False)
 
     print("\n=== AH parameter-provenance ablation ===")
@@ -1271,8 +1444,14 @@ def main():
         return "\n".join(out)
 
     lines = ["# AH Parameter-Provenance Ablation", "",
-             "Arms: extracted (actual) / order_reversed / default (floor).",
-             "", _md(summary[cols])]
+             "Arms: extracted (per shipped run) / order_control / order_reversed "
+             "/ default (retrieval-set median, the floor). Multi-run arms: "
+             "per-run mean over scored scenarios, then mean over runs.",
+             "", _md(summary[cols]), "",
+             "Extraction gain over the dataset median, same scenarios per run:",
+             "", _md(lfl[["model", "decision_type", "extracted_tau",
+                          "default_params_tau_same_scenarios", "tau_gain",
+                          "top1_gain"]])]
 
     pairs, order_summary = order_reversal_analysis(args.models)
     if not order_summary.empty:

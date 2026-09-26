@@ -66,8 +66,8 @@ _cm_spec.loader.exec_module(_cm)
 
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
 MODEL_LABELS = {
-    "deepseek": "DeepSeek V4 Flash",
-    "gemini": "Gemini 3.5 Flash",
+    "deepseek": MODEL_SPECS["deepseek"]["output_folder"].replace("Output Files ", ""),
+    "gemini": MODEL_SPECS["gemini"]["output_folder"].replace("Output Files ", ""),
     "gptoss": "GPT-OSS 20B",
     "qwen": "Qwen3.5 9B",
 }

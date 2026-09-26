@@ -2,6 +2,7 @@
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 
@@ -48,7 +49,7 @@ RESULT_COLUMNS = [
     "scenario_id", "decision_type", "question", "location", "outdoor_temp",
     "appliance_age", "flow_rate", "alternative",
     "energy_cost", "environmental", "comfort", "practicality",
-    "rank", "weighted_score",
+    "rank", "weighted_score", "collected_utc",
 ]
 
 
@@ -301,16 +302,24 @@ def run_reversed_arm(model_key, n_total, seed, n_runs=1):
             print(f"  [RESUME] {len(done_ids)} scenarios already checkpointed")
 
         todo = [s for s in sampled if s["scenario_id"] not in done_ids]
+        mod = None
         if not todo:
             print("  [INFO] all scenarios checkpointed; writing final file")
         else:
             mod = load_architecture_module(arch_name, model_key)
+            # Reuse the architecture's own RAW_LOG (sentinel_utils.RawCallLog):
+            # driving run_scenario directly, as this script does, archives
+            # nothing unless .start() is called explicitly (see its docstring).
+            mod.RAW_LOG.start(out_dir / f"{arch_name}_{suffix}_run_{run_idx:02d}_raw.jsonl",
+                              run=run_idx)
 
+        collected_utc = datetime.now(timezone.utc).isoformat()
         n_failed_scenarios = 0
         for i, scenario in enumerate(todo, 1):
             reversed_scenario = reverse_alternatives(scenario)
             print(f"  [{i}/{len(todo)}] sid={scenario['scenario_id']} "
                   f"{scenario.get('decision_type', '')}", flush=True)
+            mod.RAW_LOG.set_scenario(scenario["scenario_id"])
             try:
                 result = mod.run_scenario(reversed_scenario)
             except Exception as e:
@@ -318,10 +327,15 @@ def run_reversed_arm(model_key, n_total, seed, n_runs=1):
                 result = {"alternatives_scores": [], "diagnostics": {"scenario_failed": True}}
                 n_failed_scenarios += 1
             new_rows = normalize_result(result, reversed_scenario)
+            for row in new_rows:
+                row["collected_utc"] = collected_utc
             rows.extend(new_rows)
             with open(ckpt_path, "a", encoding="utf-8") as f:
                 for row in new_rows:
                     f.write(json.dumps(row) + "\n")
+
+        if mod is not None:
+            mod.RAW_LOG.stop()
 
         df = pd.DataFrame(rows).reindex(columns=RESULT_COLUMNS)
         df = df.sort_values("scenario_id", kind="mergesort")

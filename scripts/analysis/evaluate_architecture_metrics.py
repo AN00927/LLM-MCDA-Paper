@@ -44,6 +44,7 @@ from model_config import (
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
 from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
+from sentinel_utils import MAVT_ROUND_DECIMALS
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',
@@ -111,8 +112,13 @@ def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, lo
     weighted_score are broken by `tiebreak_cols` (each desc, in order). When
     ties on weighted_score are detected, emits a UserWarning so reviewers can
     inspect cases where the tie-break rule changed the outcome.
+
+    The weighted score is rounded to MAVT_ROUND_DECIMALS first (the same rule
+    as sentinel_utils.apply_mavt_ranking), so an exact tie that floating-point
+    noise splits in the 16th digit still reaches the tie-break columns.
     """
     df = scores_df.copy()
+    df[weighted_col] = df[weighted_col].astype(float).round(MAVT_ROUND_DECIMALS)
     if df[weighted_col].duplicated().any():
         tied_groups = df.groupby(weighted_col).size()
         n_tied = (tied_groups > 1).sum()

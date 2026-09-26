@@ -73,6 +73,12 @@ STEPS = [
      ["paper_pipeline/symmetric_gate_metrics.py"]),
     ("numbers", "Per-model p-values export",
      ["paper_pipeline/emit_per_model_pvalues.py"]),
+    ("numbers", "Tie rates (share of scenario-runs tied before the tie-break)",
+     ["paper_pipeline/compute_tie_rates.py"]),
+    ("numbers", "Decision regret (A_D/A_E/A_H vs reference MAVT)",
+     ["paper_pipeline/compute_regret.py"]),
+    ("numbers", "Numbers-of-record regeneration check",
+     ["paper_pipeline/build_numbers_of_record.py"]),
 
     ("figures", "Variance plot snippet",
      ["paper_pipeline/generate_variance_plot_tex.py"]),
