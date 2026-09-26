@@ -1,0 +1,1481 @@
+{
+ "rag_scenario_ids": [
+  19,
+  25,
+  27,
+  28,
+  32,
+  35,
+  36,
+  38,
+  40,
+  42,
+  47,
+  52,
+  53,
+  54,
+  63,
+  64,
+  66,
+  70,
+  72,
+  73,
+  74,
+  76,
+  77,
+  79,
+  80,
+  81,
+  83,
+  87,
+  88,
+  89,
+  90,
+  101,
+  102,
+  103,
+  104
+ ],
+ "gate_all_reverted_mismatches": {},
+ "modes": {
+  "agree_with_wording": 105,
+  "n": 105,
+  "heat": 51,
+  "cool": 54,
+  "none": 0,
+  "heat_outdoor_range": [
+   5.0,
+   62.0
+  ],
+  "cool_outdoor_range": [
+   68.0,
+   102.0
+  ],
+  "by_set": {
+   "RAG/cool": 17,
+   "RAG/heat": 18,
+   "test/cool": 37,
+   "test/heat": 33
+  }
+ },
+ "bounds_shipped_recomputed": {
+  "n_active": 289,
+  "cost_p5": 0.382,
+  "cost_p95": 3.291999999999999,
+  "kwh_p5": 2.0105263157894737,
+  "kwh_p95": 17.32631578947368,
+  "env_min": 1.9622736842105264,
+  "env_max": 18.036694736842097,
+  "cost_min_r": 0.38,
+  "cost_max_r": 3.29,
+  "env_min_r": 1.96,
+  "env_max_r": 18.04
+ },
+ "bounds_new": {
+  "n_active": 306,
+  "cost_p5": 0.59,
+  "cost_p95": 3.2675,
+  "kwh_p5": 3.1052631578947367,
+  "kwh_p95": 17.19736842105263,
+  "env_min": 3.030736842105263,
+  "env_max": 17.902460526315785,
+  "cost_min_r": 0.59,
+  "cost_max_r": 3.27,
+  "env_min_r": 3.03,
+  "env_max_r": 17.9
+ },
+ "new_class_matches_new_bounds_variant": {},
+ "impact": [
+  {
+   "variant": "(a) heating at HSPF alone, old bounds",
+   "test_winner": 3,
+   "test_full": 8,
+   "rag_winner": 4,
+   "rag_full": 6,
+   "test_winner_ids": [
+    29,
+    55,
+    71
+   ],
+   "test_full_ids": [
+    3,
+    11,
+    15,
+    21,
+    29,
+    55,
+    69,
+    71
+   ],
+   "rag_winner_ids": [
+    25,
+    27,
+    73,
+    103
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    64,
+    73,
+    103
+   ],
+   "exemplar_cells_changed": 140,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 46,
+   "exemplar_scenarios_changed": 16,
+   "exemplar_per_col": {
+    "energy_cost_score": 42,
+    "environmental_score": 40,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 46,
+    "rank": 12
+   }
+  },
+  {
+   "variant": "(a) heating at HSPF alone, own recomputed bounds",
+   "test_winner": 3,
+   "test_full": 7,
+   "rag_winner": 5,
+   "rag_full": 7,
+   "test_winner_ids": [
+    29,
+    55,
+    56
+   ],
+   "test_full_ids": [
+    3,
+    11,
+    15,
+    21,
+    29,
+    55,
+    56
+   ],
+   "rag_winner_ids": [
+    25,
+    27,
+    47,
+    81,
+    103
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    47,
+    64,
+    81,
+    103
+   ],
+   "exemplar_cells_changed": 211,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 89,
+   "exemplar_scenarios_changed": 32,
+   "exemplar_per_col": {
+    "energy_cost_score": 59,
+    "environmental_score": 50,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 88,
+    "rank": 14
+   },
+   "bounds": [
+    0.55,
+    3.38,
+    2.84,
+    18.52
+   ]
+  },
+  {
+   "variant": "(b) mode from question, load capped by mode alone, old bounds",
+   "test_winner": 3,
+   "test_full": 3,
+   "rag_winner": 3,
+   "rag_full": 3,
+   "test_winner_ids": [
+    45,
+    68,
+    75
+   ],
+   "test_full_ids": [
+    45,
+    68,
+    75
+   ],
+   "rag_winner_ids": [
+    47,
+    77,
+    81
+   ],
+   "rag_full_ids": [
+    47,
+    77,
+    81
+   ],
+   "exemplar_cells_changed": 42,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 14,
+   "exemplar_scenarios_changed": 8,
+   "exemplar_per_col": {
+    "energy_cost_score": 8,
+    "environmental_score": 8,
+    "comfort_score": 3,
+    "practicality_score": 5,
+    "mavt_score": 11,
+    "rank": 7
+   }
+  },
+  {
+   "variant": "(b) mode from question, load capped by mode alone, own recomputed bounds",
+   "test_winner": 3,
+   "test_full": 3,
+   "rag_winner": 3,
+   "rag_full": 3,
+   "test_winner_ids": [
+    45,
+    68,
+    75
+   ],
+   "test_full_ids": [
+    45,
+    68,
+    75
+   ],
+   "rag_winner_ids": [
+    47,
+    77,
+    81
+   ],
+   "rag_full_ids": [
+    47,
+    77,
+    81
+   ],
+   "exemplar_cells_changed": 71,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 37,
+   "exemplar_scenarios_changed": 21,
+   "exemplar_per_col": {
+    "energy_cost_score": 10,
+    "environmental_score": 12,
+    "comfort_score": 3,
+    "practicality_score": 5,
+    "mavt_score": 34,
+    "rank": 7
+   },
+   "bounds": [
+    0.41,
+    3.27,
+    2.09,
+    17.92
+   ]
+  },
+  {
+   "variant": "(c) heating optimum 71 F alone, old bounds",
+   "test_winner": 8,
+   "test_full": 16,
+   "rag_winner": 6,
+   "rag_full": 6,
+   "test_winner_ids": [
+    3,
+    11,
+    15,
+    21,
+    48,
+    59,
+    69,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    8,
+    11,
+    15,
+    20,
+    21,
+    23,
+    29,
+    48,
+    49,
+    59,
+    60,
+    62,
+    68,
+    69,
+    86
+   ],
+   "rag_winner_ids": [
+    25,
+    35,
+    38,
+    64,
+    74,
+    76
+   ],
+   "rag_full_ids": [
+    25,
+    35,
+    38,
+    64,
+    74,
+    76
+   ],
+   "exemplar_cells_changed": 113,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 54,
+   "exemplar_scenarios_changed": 20,
+   "exemplar_per_col": {
+    "energy_cost_score": 0,
+    "environmental_score": 0,
+    "comfort_score": 46,
+    "practicality_score": 0,
+    "mavt_score": 54,
+    "rank": 13
+   }
+  },
+  {
+   "variant": "(c) heating optimum 71 F alone, own recomputed bounds",
+   "test_winner": 8,
+   "test_full": 16,
+   "rag_winner": 6,
+   "rag_full": 6,
+   "test_winner_ids": [
+    3,
+    11,
+    15,
+    21,
+    48,
+    59,
+    69,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    8,
+    11,
+    15,
+    20,
+    21,
+    23,
+    29,
+    48,
+    49,
+    59,
+    60,
+    62,
+    68,
+    69,
+    86
+   ],
+   "rag_winner_ids": [
+    25,
+    35,
+    38,
+    64,
+    74,
+    76
+   ],
+   "rag_full_ids": [
+    25,
+    35,
+    38,
+    64,
+    74,
+    76
+   ],
+   "exemplar_cells_changed": 113,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 54,
+   "exemplar_scenarios_changed": 20,
+   "exemplar_per_col": {
+    "energy_cost_score": 0,
+    "environmental_score": 0,
+    "comfort_score": 46,
+    "practicality_score": 0,
+    "mavt_score": 54,
+    "rank": 13
+   },
+   "bounds": [
+    0.38,
+    3.29,
+    1.96,
+    18.04
+   ]
+  },
+  {
+   "variant": "(d) occupant gain 220 Btu/h alone, old bounds",
+   "test_winner": 2,
+   "test_full": 2,
+   "rag_winner": 1,
+   "rag_full": 1,
+   "test_winner_ids": [
+    56,
+    71
+   ],
+   "test_full_ids": [
+    56,
+    71
+   ],
+   "rag_winner_ids": [
+    81
+   ],
+   "rag_full_ids": [
+    81
+   ],
+   "exemplar_cells_changed": 132,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 84,
+   "exemplar_scenarios_changed": 32,
+   "exemplar_per_col": {
+    "energy_cost_score": 25,
+    "environmental_score": 22,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 83,
+    "rank": 2
+   }
+  },
+  {
+   "variant": "(d) occupant gain 220 Btu/h alone, own recomputed bounds",
+   "test_winner": 1,
+   "test_full": 1,
+   "rag_winner": 2,
+   "rag_full": 2,
+   "test_winner_ids": [
+    56
+   ],
+   "test_full_ids": [
+    56
+   ],
+   "rag_winner_ids": [
+    73,
+    81
+   ],
+   "rag_full_ids": [
+    73,
+    81
+   ],
+   "exemplar_cells_changed": 128,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 80,
+   "exemplar_scenarios_changed": 32,
+   "exemplar_per_col": {
+    "energy_cost_score": 22,
+    "environmental_score": 24,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 78,
+    "rank": 4
+   },
+   "bounds": [
+    0.41,
+    3.23,
+    2.08,
+    17.67
+   ]
+  },
+  {
+   "variant": "(g) continuous budget penalty alone, old bounds",
+   "test_winner": 0,
+   "test_full": 0,
+   "rag_winner": 0,
+   "rag_full": 0,
+   "test_winner_ids": [],
+   "test_full_ids": [],
+   "rag_winner_ids": [],
+   "rag_full_ids": [],
+   "exemplar_cells_changed": 3,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 3,
+   "exemplar_scenarios_changed": 3,
+   "exemplar_per_col": {
+    "energy_cost_score": 0,
+    "environmental_score": 0,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 3,
+    "rank": 0
+   }
+  },
+  {
+   "variant": "(g) continuous budget penalty alone, own recomputed bounds",
+   "test_winner": 0,
+   "test_full": 0,
+   "rag_winner": 0,
+   "rag_full": 0,
+   "test_winner_ids": [],
+   "test_full_ids": [],
+   "rag_winner_ids": [],
+   "rag_full_ids": [],
+   "exemplar_cells_changed": 3,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 3,
+   "exemplar_scenarios_changed": 3,
+   "exemplar_per_col": {
+    "energy_cost_score": 0,
+    "environmental_score": 0,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 3,
+    "rank": 0
+   },
+   "bounds": [
+    0.38,
+    3.29,
+    1.96,
+    18.04
+   ]
+  },
+  {
+   "variant": "(0) nothing changed, current sentinel_utils MAVT rounding",
+   "test_winner": 0,
+   "test_full": 0,
+   "rag_winner": 0,
+   "rag_full": 0,
+   "test_winner_ids": [],
+   "test_full_ids": [],
+   "rag_winner_ids": [],
+   "rag_full_ids": [],
+   "exemplar_cells_changed": 3,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 3,
+   "exemplar_scenarios_changed": 3,
+   "exemplar_per_col": {
+    "energy_cost_score": 0,
+    "environmental_score": 0,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 3,
+    "rank": 0
+   }
+  },
+  {
+   "variant": "(f) new bounds alone (shipped model)",
+   "test_winner": 1,
+   "test_full": 4,
+   "rag_winner": 2,
+   "rag_full": 2,
+   "test_winner_ids": [
+    56
+   ],
+   "test_full_ids": [
+    4,
+    49,
+    56,
+    62
+   ],
+   "rag_winner_ids": [
+    47,
+    81
+   ],
+   "rag_full_ids": [
+    47,
+    81
+   ],
+   "exemplar_cells_changed": 167,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 87,
+   "exemplar_scenarios_changed": 32,
+   "exemplar_per_col": {
+    "energy_cost_score": 40,
+    "environmental_score": 37,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 86,
+    "rank": 4
+   }
+  },
+  {
+   "variant": "all combined, old bounds",
+   "test_winner": 11,
+   "test_full": 14,
+   "rag_winner": 10,
+   "rag_full": 10,
+   "test_winner_ids": [
+    3,
+    15,
+    29,
+    45,
+    55,
+    56,
+    59,
+    68,
+    69,
+    75,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    15,
+    20,
+    23,
+    29,
+    45,
+    55,
+    56,
+    59,
+    62,
+    68,
+    69,
+    75,
+    86
+   ],
+   "rag_winner_ids": [
+    25,
+    27,
+    35,
+    47,
+    64,
+    73,
+    74,
+    76,
+    77,
+    81
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    47,
+    64,
+    73,
+    74,
+    76,
+    77,
+    81
+   ],
+   "exemplar_cells_changed": 301,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 103,
+   "exemplar_scenarios_changed": 35,
+   "exemplar_per_col": {
+    "energy_cost_score": 65,
+    "environmental_score": 62,
+    "comfort_score": 47,
+    "practicality_score": 5,
+    "mavt_score": 101,
+    "rank": 21
+   }
+  },
+  {
+   "variant": "ALL COMBINED, new bounds (the new calculator)",
+   "test_winner": 13,
+   "test_full": 17,
+   "rag_winner": 10,
+   "rag_full": 10,
+   "test_winner_ids": [
+    3,
+    15,
+    29,
+    39,
+    45,
+    48,
+    55,
+    56,
+    59,
+    68,
+    69,
+    75,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    4,
+    15,
+    20,
+    23,
+    29,
+    39,
+    45,
+    48,
+    55,
+    56,
+    59,
+    62,
+    68,
+    69,
+    75,
+    86
+   ],
+   "rag_winner_ids": [
+    25,
+    27,
+    35,
+    47,
+    73,
+    74,
+    76,
+    77,
+    81,
+    103
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    47,
+    73,
+    74,
+    76,
+    77,
+    81,
+    103
+   ],
+   "exemplar_cells_changed": 327,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 105,
+   "exemplar_scenarios_changed": 35,
+   "exemplar_per_col": {
+    "energy_cost_score": 77,
+    "environmental_score": 73,
+    "comfort_score": 47,
+    "practicality_score": 5,
+    "mavt_score": 104,
+    "rank": 21
+   }
+  },
+  {
+   "variant": "sensitivity: occupant gain 230 instead of 220, own bounds, vs shipped",
+   "test_winner": 13,
+   "test_full": 16,
+   "rag_winner": 9,
+   "rag_full": 9,
+   "test_winner_ids": [
+    3,
+    15,
+    29,
+    39,
+    45,
+    48,
+    55,
+    56,
+    59,
+    68,
+    69,
+    75,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    15,
+    20,
+    23,
+    29,
+    39,
+    45,
+    48,
+    55,
+    56,
+    59,
+    62,
+    68,
+    69,
+    75,
+    86
+   ],
+   "rag_winner_ids": [
+    25,
+    27,
+    35,
+    47,
+    73,
+    74,
+    76,
+    77,
+    81
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    47,
+    73,
+    74,
+    76,
+    77,
+    81
+   ],
+   "exemplar_cells_changed": 324,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 105,
+   "exemplar_scenarios_changed": 35,
+   "exemplar_per_col": {
+    "energy_cost_score": 76,
+    "environmental_score": 73,
+    "comfort_score": 47,
+    "practicality_score": 5,
+    "mavt_score": 104,
+    "rank": 19
+   },
+   "bounds": [
+    0.58,
+    3.27,
+    2.99,
+    17.92
+   ]
+  },
+  {
+   "variant": "sensitivity: occupant gain 230 instead of 220, own bounds, vs the new calculator",
+   "test_winner": 0,
+   "test_full": 1,
+   "rag_winner": 1,
+   "rag_full": 1,
+   "test_winner_ids": [],
+   "test_full_ids": [
+    4
+   ],
+   "rag_winner_ids": [
+    103
+   ],
+   "rag_full_ids": [
+    103
+   ],
+   "exemplar_cells_changed": 19,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 18,
+   "exemplar_scenarios_changed": 16,
+   "exemplar_per_col": {
+    "energy_cost_score": 1,
+    "environmental_score": 1,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 15,
+    "rank": 2
+   },
+   "bounds": [
+    0.58,
+    3.27,
+    2.99,
+    17.92
+   ]
+  },
+  {
+   "variant": "sensitivity: solar credited in heat mode too, own bounds, vs shipped",
+   "test_winner": 11,
+   "test_full": 17,
+   "rag_winner": 8,
+   "rag_full": 9,
+   "test_winner_ids": [
+    3,
+    11,
+    15,
+    21,
+    45,
+    48,
+    49,
+    59,
+    68,
+    75,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    8,
+    11,
+    15,
+    20,
+    21,
+    23,
+    44,
+    45,
+    48,
+    49,
+    50,
+    59,
+    62,
+    68,
+    75,
+    86
+   ],
+   "rag_winner_ids": [
+    27,
+    35,
+    47,
+    64,
+    74,
+    76,
+    77,
+    81
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    47,
+    64,
+    74,
+    76,
+    77,
+    81
+   ],
+   "exemplar_cells_changed": 247,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 97,
+   "exemplar_scenarios_changed": 34,
+   "exemplar_per_col": {
+    "energy_cost_score": 42,
+    "environmental_score": 45,
+    "comfort_score": 47,
+    "practicality_score": 5,
+    "mavt_score": 89,
+    "rank": 19
+   },
+   "bounds": [
+    0.19,
+    3.21,
+    0.97,
+    17.59
+   ]
+  },
+  {
+   "variant": "sensitivity: solar credited in heat mode too, own bounds, vs the new calculator",
+   "test_winner": 8,
+   "test_full": 12,
+   "rag_winner": 4,
+   "rag_full": 4,
+   "test_winner_ids": [
+    11,
+    21,
+    29,
+    39,
+    49,
+    55,
+    56,
+    69
+   ],
+   "test_full_ids": [
+    4,
+    8,
+    11,
+    21,
+    29,
+    39,
+    44,
+    49,
+    50,
+    55,
+    56,
+    69
+   ],
+   "rag_winner_ids": [
+    25,
+    64,
+    73,
+    103
+   ],
+   "rag_full_ids": [
+    25,
+    64,
+    73,
+    103
+   ],
+   "exemplar_cells_changed": 283,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 95,
+   "exemplar_scenarios_changed": 32,
+   "exemplar_per_col": {
+    "energy_cost_score": 91,
+    "environmental_score": 89,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 94,
+    "rank": 9
+   },
+   "bounds": [
+    0.19,
+    3.21,
+    0.97,
+    17.59
+   ]
+  },
+  {
+   "variant": "sensitivity: budget cliff kept (all other changes), own bounds, vs shipped",
+   "test_winner": 13,
+   "test_full": 17,
+   "rag_winner": 10,
+   "rag_full": 10,
+   "test_winner_ids": [
+    3,
+    15,
+    29,
+    39,
+    45,
+    48,
+    55,
+    56,
+    59,
+    68,
+    69,
+    75,
+    86
+   ],
+   "test_full_ids": [
+    3,
+    4,
+    15,
+    20,
+    23,
+    29,
+    39,
+    45,
+    48,
+    55,
+    56,
+    59,
+    62,
+    68,
+    69,
+    75,
+    86
+   ],
+   "rag_winner_ids": [
+    25,
+    27,
+    35,
+    47,
+    73,
+    74,
+    76,
+    77,
+    81,
+    103
+   ],
+   "rag_full_ids": [
+    25,
+    27,
+    35,
+    47,
+    73,
+    74,
+    76,
+    77,
+    81,
+    103
+   ],
+   "exemplar_cells_changed": 327,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 105,
+   "exemplar_scenarios_changed": 35,
+   "exemplar_per_col": {
+    "energy_cost_score": 77,
+    "environmental_score": 73,
+    "comfort_score": 47,
+    "practicality_score": 5,
+    "mavt_score": 104,
+    "rank": 21
+   },
+   "bounds": [
+    0.59,
+    3.27,
+    3.03,
+    17.9
+   ]
+  },
+  {
+   "variant": "sensitivity: budget cliff kept (all other changes), own bounds, vs the new calculator",
+   "test_winner": 0,
+   "test_full": 0,
+   "rag_winner": 0,
+   "rag_full": 0,
+   "test_winner_ids": [],
+   "test_full_ids": [],
+   "rag_winner_ids": [],
+   "rag_full_ids": [],
+   "exemplar_cells_changed": 0,
+   "exemplar_cells": 630,
+   "exemplar_rows_changed": 0,
+   "exemplar_scenarios_changed": 0,
+   "exemplar_per_col": {
+    "energy_cost_score": 0,
+    "environmental_score": 0,
+    "comfort_score": 0,
+    "practicality_score": 0,
+    "mavt_score": 0,
+    "rank": 0
+   },
+   "bounds": [
+    0.59,
+    3.27,
+    3.03,
+    17.9
+   ]
+  }
+ ],
+ "branches": {
+  "branch_changed": {
+   "test": 9,
+   "rag": 8
+  },
+  "branch_changed_excl_off": {
+   "test": 7,
+   "rag": 8
+  },
+  "old_zero_load": {
+   "test": 9,
+   "rag": 17
+  },
+  "new_zero_load": {
+   "test": 0,
+   "rag": 7
+  },
+  "new_zero_load_excl_off": {
+   "test": 0,
+   "rag": 7
+  },
+  "zero_load_status_changed": {
+   "test": 9,
+   "rag": 10
+  },
+  "comfort_mode_changed": {
+   "test": 6,
+   "rag": 3
+  },
+  "practicality_mode_changed": {
+   "test": 9,
+   "rag": 8
+  },
+  "detail_changed": [
+   {
+    "scenario_id": 45,
+    "rag": false,
+    "alt": "79",
+    "outdoor": 78.0,
+    "setpoint": 79.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 47,
+    "rag": true,
+    "alt": "80",
+    "outdoor": 79.0,
+    "setpoint": 80.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 56,
+    "rag": false,
+    "alt": "Off",
+    "outdoor": 92.0,
+    "setpoint": 97.0,
+    "off": true,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 57,
+    "rag": false,
+    "alt": "Off",
+    "outdoor": 88.0,
+    "setpoint": 93.0,
+    "off": true,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 63,
+    "rag": true,
+    "alt": "77",
+    "outdoor": 77.0,
+    "setpoint": 77.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 63,
+    "rag": true,
+    "alt": "80",
+    "outdoor": 77.0,
+    "setpoint": 80.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 68,
+    "rag": false,
+    "alt": "68",
+    "outdoor": 68.0,
+    "setpoint": 68.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 68,
+    "rag": false,
+    "alt": "70",
+    "outdoor": 68.0,
+    "setpoint": 70.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 68,
+    "rag": false,
+    "alt": "72",
+    "outdoor": 68.0,
+    "setpoint": 72.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 72,
+    "rag": true,
+    "alt": "69",
+    "outdoor": 50.0,
+    "setpoint": 69.0,
+    "off": false,
+    "mode": "heat",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 75,
+    "rag": false,
+    "alt": "66",
+    "outdoor": 68.0,
+    "setpoint": 66.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "cool",
+    "old_zero_load": false,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 75,
+    "rag": false,
+    "alt": "72",
+    "outdoor": 68.0,
+    "setpoint": 72.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 75,
+    "rag": false,
+    "alt": "78",
+    "outdoor": 68.0,
+    "setpoint": 78.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 76,
+    "rag": true,
+    "alt": "72",
+    "outdoor": 59.0,
+    "setpoint": 72.0,
+    "off": false,
+    "mode": "heat",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 77,
+    "rag": true,
+    "alt": "68",
+    "outdoor": 72.0,
+    "setpoint": 68.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "cool",
+    "old_zero_load": false,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 77,
+    "rag": true,
+    "alt": "72",
+    "outdoor": 72.0,
+    "setpoint": 72.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 77,
+    "rag": true,
+    "alt": "76",
+    "outdoor": 72.0,
+    "setpoint": 76.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "heat"
+   },
+   {
+    "scenario_id": 78,
+    "rag": false,
+    "alt": "79",
+    "outdoor": 78.0,
+    "setpoint": 79.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 79,
+    "rag": true,
+    "alt": "83",
+    "outdoor": 82.0,
+    "setpoint": 83.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 80,
+    "rag": true,
+    "alt": "81",
+    "outdoor": 80.0,
+    "setpoint": 81.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   },
+   {
+    "scenario_id": 81,
+    "rag": true,
+    "alt": "84",
+    "outdoor": 83.0,
+    "setpoint": 84.0,
+    "off": false,
+    "mode": "cool",
+    "old_branch": "heat",
+    "old_zero_load": true,
+    "new_zero_load": false,
+    "old_comfort_mode": "cool"
+   }
+  ]
+ },
+ "budget": {
+  "new_u_ge_1_5": 3,
+  "new_u_1_to_1_5": 9,
+  "new_u_0_8_to_1": 24,
+  "new_u_max": 1.842127659574468,
+  "shipped_u_ge_1_5": 0,
+  "shipped_u_max": 1.3863829787234043,
+  "bradford": [
+   {
+    "scenario_id": 96,
+    "alternative": "62",
+    "raw_cost": 4.29,
+    "utility_budget": 235,
+    "energy_cost_score": 0.0,
+    "mavt_score": 0.1035,
+    "rank": 3
+   },
+   {
+    "scenario_id": 96,
+    "alternative": "65",
+    "raw_cost": 4.55,
+    "utility_budget": 235,
+    "energy_cost_score": 0.0,
+    "mavt_score": 0.1905,
+    "rank": 2
+   },
+   {
+    "scenario_id": 96,
+    "alternative": "68",
+    "raw_cost": 4.81,
+    "utility_budget": 235,
+    "energy_cost_score": 0.0,
+    "mavt_score": 0.2445,
+    "rank": 1
+   }
+  ],
+  "bradford_shipped": [
+   {
+    "scenario_id": 96,
+    "alternative": "62",
+    "raw_cost": 3.22,
+    "energy_cost_score": 0.01,
+    "rank": 3
+   },
+   {
+    "scenario_id": 96,
+    "alternative": "65",
+    "raw_cost": 3.42,
+    "energy_cost_score": 0.0,
+    "rank": 2
+   },
+   {
+    "scenario_id": 96,
+    "alternative": "68",
+    "raw_cost": 3.62,
+    "energy_cost_score": 0.0,
+    "rank": 1
+   }
+  ]
+ },
+ "stroudsburg": {
+  "shipped_calc": {},
+  "new_calc": {},
+  "is_rag": false
+ }
+}

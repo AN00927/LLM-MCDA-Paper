@@ -22,16 +22,17 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 from sentinel_utils import is_sentinel  # noqa: E402
+from model_config import MODEL_SPECS  # noqa: E402
 
 N_RUNS = 5
 # Column order matches the task brief's run-01 example table.
 DECISION_TYPES = ["HVAC", "Shower", "Appliance"]
 
 MODEL_FOLDERS = [
-    ("Gemini 3.5 Flash", "Output Files Gemini 3.5 Flash"),
+    (MODEL_SPECS["gemini"]["output_folder"].replace("Output Files ", ""), MODEL_SPECS["gemini"]["output_folder"]),
     ("GPT-OSS 20B", "Output Files GPT-OSS 20B"),
     ("Qwen3.5 9B", "Output Files Qwen3.5 9B"),
-    ("DeepSeek V4 Flash", "Output Files DeepSeek V4 Flash"),
+    (MODEL_SPECS["deepseek"]["output_folder"].replace("Output Files ", ""), MODEL_SPECS["deepseek"]["output_folder"]),
 ]
 
 # C6's paper table lists A_D and A_E only.

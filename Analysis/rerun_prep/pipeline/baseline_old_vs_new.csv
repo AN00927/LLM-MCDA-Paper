@@ -1,0 +1,121 @@
+baseline,model,decision_type,metric,old,new,delta
+dataset_median,all (model-independent),Overall,kendall_tau,0.6410256410256411,0.6410256410256411,0.0
+dataset_median,all (model-independent),Overall,top1,0.7692307692307693,0.7589743589743589,-0.010256410256410331
+dataset_median,all (model-independent),Overall,mae,0.1223461538461538,0.1327393162393162,0.010393162393162403
+dataset_median,all (model-independent),HVAC,kendall_tau,0.9333333333333332,0.9333333333333332,0.0
+dataset_median,all (model-independent),HVAC,top1,0.9571428571428572,0.9571428571428572,0.0
+dataset_median,all (model-independent),HVAC,mae,0.0701547619047619,0.070297619047619,0.00014285714285709739
+dataset_median,all (model-independent),Appliance,kendall_tau,0.1794871794871795,0.1897435897435897,0.01025641025641022
+dataset_median,all (model-independent),Appliance,top1,0.4923076923076923,0.4923076923076923,0.0
+dataset_median,all (model-independent),Appliance,mae,0.2367564102564102,0.2606794871794872,0.02392307692307699
+dataset_median,all (model-independent),Shower,kendall_tau,0.8000000000000002,0.788888888888889,-0.011111111111111183
+dataset_median,all (model-independent),Shower,top1,0.85,0.8166666666666667,-0.033333333333333326
+dataset_median,all (model-independent),Shower,mae,0.0592916666666666,0.0669861111111111,0.007694444444444497
+fixed_default,all (model-independent),Overall,kendall_tau,0.6137,0.6274,0.013699999999999934
+fixed_default,all (model-independent),Overall,top1,0.7026,0.7077,0.005099999999999993
+fixed_default,all (model-independent),Overall,mae,0.0974,0.1294,0.03199999999999999
+fixed_default,all (model-independent),HVAC,kendall_tau,0.9333,0.9333,0.0
+fixed_default,all (model-independent),HVAC,top1,0.9571,0.9571,0.0
+fixed_default,all (model-independent),HVAC,mae,0.0707,0.0707,0.0
+fixed_default,all (model-independent),Appliance,kendall_tau,0.0974,0.1385,0.04110000000000001
+fixed_default,all (model-independent),Appliance,top1,0.2923,0.3077,0.01539999999999997
+fixed_default,all (model-independent),Appliance,mae,0.1612,0.2572,0.09599999999999997
+fixed_default,all (model-independent),Shower,kendall_tau,0.8,0.8,0.0
+fixed_default,all (model-independent),Shower,top1,0.85,0.85,0.0
+fixed_default,all (model-independent),Shower,mae,0.0593,0.0593,0.0
+dataset_median_same_scenarios,deepseek,Overall,kendall_tau,0.6406555643669045,0.6406555643669045,0.0
+dataset_median_same_scenarios,deepseek,Overall,top1,0.7689928628072958,0.7587258789320644,-0.010266983875231395
+dataset_median_same_scenarios,deepseek,Overall,tau_gain_AH_minus_DM,0.2566675478015684,0.2566675478015684,0.0
+dataset_median_same_scenarios,deepseek,HVAC,kendall_tau,0.9331400966183574,0.9331400966183574,0.0
+dataset_median_same_scenarios,deepseek,HVAC,top1,0.9570186335403728,0.9570186335403728,0.0
+dataset_median_same_scenarios,deepseek,HVAC,tau_gain_AH_minus_DM,-0.0133885438233264,-0.0133885438233264,0.0
+dataset_median_same_scenarios,deepseek,Appliance,kendall_tau,0.1794871794871795,0.1897435897435897,0.01025641025641022
+dataset_median_same_scenarios,deepseek,Appliance,top1,0.4923076923076923,0.4923076923076923,0.0
+dataset_median_same_scenarios,deepseek,Appliance,tau_gain_AH_minus_DM,0.7958974358974359,0.7856410256410257,-0.01025641025641022
+dataset_median_same_scenarios,deepseek,Shower,kendall_tau,0.8000000000000002,0.788888888888889,-0.011111111111111183
+dataset_median_same_scenarios,deepseek,Shower,top1,0.85,0.8166666666666667,-0.033333333333333326
+dataset_median_same_scenarios,deepseek,Shower,tau_gain_AH_minus_DM,-0.0133333333333335,-0.0022222222222223,0.0111111111111112
+dataset_median_same_scenarios,gemini,Overall,kendall_tau,0.6410256410256411,0.6410256410256411,0.0
+dataset_median_same_scenarios,gemini,Overall,top1,0.7692307692307693,0.7589743589743589,-0.010256410256410331
+dataset_median_same_scenarios,gemini,Overall,tau_gain_AH_minus_DM,0.2823931623931622,0.2789743589743588,-0.0034188034188034067
+dataset_median_same_scenarios,gemini,HVAC,kendall_tau,0.9333333333333332,0.9333333333333332,0.0
+dataset_median_same_scenarios,gemini,HVAC,top1,0.9571428571428572,0.9571428571428572,0.0
+dataset_median_same_scenarios,gemini,HVAC,tau_gain_AH_minus_DM,0.0438095238095238,0.0342857142857143,-0.009523809523809497
+dataset_median_same_scenarios,gemini,Appliance,kendall_tau,0.1794871794871795,0.1897435897435897,0.01025641025641022
+dataset_median_same_scenarios,gemini,Appliance,top1,0.4923076923076923,0.4923076923076923,0.0
+dataset_median_same_scenarios,gemini,Appliance,tau_gain_AH_minus_DM,0.7794871794871795,0.7692307692307693,-0.01025641025641022
+dataset_median_same_scenarios,gemini,Shower,kendall_tau,0.8000000000000002,0.788888888888889,-0.011111111111111183
+dataset_median_same_scenarios,gemini,Shower,top1,0.85,0.8166666666666667,-0.033333333333333326
+dataset_median_same_scenarios,gemini,Shower,tau_gain_AH_minus_DM,0.022222222222222,0.0333333333333332,0.0111111111111112
+dataset_median_same_scenarios,gptoss,Overall,kendall_tau,0.5974348572320175,0.5974348572320175,0.0
+dataset_median_same_scenarios,gptoss,Overall,top1,0.741212866293222,0.7295555551745284,-0.011657311118693614
+dataset_median_same_scenarios,gptoss,Overall,tau_gain_AH_minus_DM,0.299984515822244,0.299984515822244,0.0
+dataset_median_same_scenarios,gptoss,HVAC,kendall_tau,0.919674568817426,0.919674568817426,0.0
+dataset_median_same_scenarios,gptoss,HVAC,top1,0.948422593279736,0.948422593279736,0.0
+dataset_median_same_scenarios,gptoss,HVAC,tau_gain_AH_minus_DM,0.0231784511784511,0.0231784511784511,0.0
+dataset_median_same_scenarios,gptoss,Appliance,kendall_tau,0.1794871794871795,0.1897435897435897,0.01025641025641022
+dataset_median_same_scenarios,gptoss,Appliance,top1,0.4923076923076923,0.4923076923076923,0.0
+dataset_median_same_scenarios,gptoss,Appliance,tau_gain_AH_minus_DM,0.7876923076923077,0.7774358974358975,-0.01025641025641022
+dataset_median_same_scenarios,gptoss,Shower,kendall_tau,0.8000000000000002,0.788888888888889,-0.011111111111111183
+dataset_median_same_scenarios,gptoss,Shower,top1,0.85,0.8166666666666667,-0.033333333333333326
+dataset_median_same_scenarios,gptoss,Shower,tau_gain_AH_minus_DM,-0.0133333333333334,-0.0022222222222223,0.0111111111111111
+dataset_median_same_scenarios,qwen,Overall,kendall_tau,0.6409727729315358,0.6409727729315359,1.1102230246251565e-16
+dataset_median_same_scenarios,qwen,Overall,top1,0.769785884218874,0.7595083267248215,-0.010277557494052458
+dataset_median_same_scenarios,qwen,Overall,tau_gain_AH_minus_DM,0.2391400123358886,0.2391400123358885,-1.1102230246251565e-16
+dataset_median_same_scenarios,qwen,HVAC,kendall_tau,0.93487922705314,0.93487922705314,0.0
+dataset_median_same_scenarios,qwen,HVAC,top1,0.959792960662526,0.959792960662526,0.0
+dataset_median_same_scenarios,qwen,HVAC,tau_gain_AH_minus_DM,-0.0535817805383022,-0.0535817805383022,0.0
+dataset_median_same_scenarios,qwen,Appliance,kendall_tau,0.1794871794871795,0.1897435897435897,0.01025641025641022
+dataset_median_same_scenarios,qwen,Appliance,top1,0.4923076923076923,0.4923076923076923,0.0
+dataset_median_same_scenarios,qwen,Appliance,tau_gain_AH_minus_DM,0.7261538461538463,0.715897435897436,-0.01025641025641022
+dataset_median_same_scenarios,qwen,Shower,kendall_tau,0.8000000000000002,0.788888888888889,-0.011111111111111183
+dataset_median_same_scenarios,qwen,Shower,top1,0.85,0.8166666666666667,-0.033333333333333326
+dataset_median_same_scenarios,qwen,Shower,tau_gain_AH_minus_DM,0.0511111111111109,0.0622222222222221,0.011111111111111203
+fixed_default_same_scenarios,deepseek,Overall,kendall_tau,0.6132769406996211,0.6269662525332629,0.013689311833641749
+fixed_default_same_scenarios,deepseek,Overall,top1,0.7022574676182923,0.707390959555908,0.005133491937615697
+fixed_default_same_scenarios,deepseek,Overall,tau_gain_AH_minus_FD,0.2840461714688518,0.27035685963521,-0.013689311833641804
+fixed_default_same_scenarios,deepseek,HVAC,kendall_tau,0.9331400966183574,0.9331400966183574,0.0
+fixed_default_same_scenarios,deepseek,HVAC,top1,0.9570186335403728,0.9570186335403728,0.0
+fixed_default_same_scenarios,deepseek,HVAC,tau_gain_AH_minus_FD,-0.0133885438233264,-0.0133885438233264,0.0
+fixed_default_same_scenarios,deepseek,Appliance,kendall_tau,0.0974358974358974,0.1384615384615385,0.0410256410256411
+fixed_default_same_scenarios,deepseek,Appliance,top1,0.2923076923076923,0.3076923076923077,0.015384615384615385
+fixed_default_same_scenarios,deepseek,Appliance,tau_gain_AH_minus_FD,0.877948717948718,0.836923076923077,-0.04102564102564099
+fixed_default_same_scenarios,deepseek,Shower,kendall_tau,0.8000000000000002,0.8000000000000002,0.0
+fixed_default_same_scenarios,deepseek,Shower,top1,0.85,0.85,0.0
+fixed_default_same_scenarios,deepseek,Shower,tau_gain_AH_minus_FD,-0.0133333333333335,-0.0133333333333335,0.0
+fixed_default_same_scenarios,gemini,Overall,kendall_tau,0.6136752136752137,0.6273504273504275,0.013675213675213738
+fixed_default_same_scenarios,gemini,Overall,top1,0.7025641025641025,0.7076923076923077,0.005128205128205221
+fixed_default_same_scenarios,gemini,Overall,tau_gain_AH_minus_FD,0.3097435897435896,0.2926495726495725,-0.017094017094017144
+fixed_default_same_scenarios,gemini,HVAC,kendall_tau,0.9333333333333332,0.9333333333333332,0.0
+fixed_default_same_scenarios,gemini,HVAC,top1,0.9571428571428572,0.9571428571428572,0.0
+fixed_default_same_scenarios,gemini,HVAC,tau_gain_AH_minus_FD,0.0438095238095238,0.0342857142857143,-0.009523809523809497
+fixed_default_same_scenarios,gemini,Appliance,kendall_tau,0.0974358974358974,0.1384615384615385,0.0410256410256411
+fixed_default_same_scenarios,gemini,Appliance,top1,0.2923076923076923,0.3076923076923077,0.015384615384615385
+fixed_default_same_scenarios,gemini,Appliance,tau_gain_AH_minus_FD,0.8615384615384617,0.8205128205128205,-0.04102564102564121
+fixed_default_same_scenarios,gemini,Shower,kendall_tau,0.8000000000000002,0.8000000000000002,0.0
+fixed_default_same_scenarios,gemini,Shower,top1,0.85,0.85,0.0
+fixed_default_same_scenarios,gemini,Shower,tau_gain_AH_minus_FD,0.022222222222222,0.022222222222222,0.0
+fixed_default_same_scenarios,gptoss,Overall,kendall_tau,0.5686836052247193,0.5842266867163106,0.015543081491591337
+fixed_default_same_scenarios,gptoss,Overall,top1,0.6654403440217139,0.6712689995810608,0.0058286555593468625
+fixed_default_same_scenarios,gptoss,Overall,tau_gain_AH_minus_FD,0.3287357678295423,0.3131926863379508,-0.015543081491591504
+fixed_default_same_scenarios,gptoss,HVAC,kendall_tau,0.928321583178726,0.928321583178726,0.0
+fixed_default_same_scenarios,gptoss,HVAC,top1,0.948422593279736,0.948422593279736,0.0
+fixed_default_same_scenarios,gptoss,HVAC,tau_gain_AH_minus_FD,0.014531436817151,0.014531436817151,0.0
+fixed_default_same_scenarios,gptoss,Appliance,kendall_tau,0.0974358974358974,0.1384615384615385,0.0410256410256411
+fixed_default_same_scenarios,gptoss,Appliance,top1,0.2923076923076923,0.3076923076923077,0.015384615384615385
+fixed_default_same_scenarios,gptoss,Appliance,tau_gain_AH_minus_FD,0.8697435897435899,0.8287179487179486,-0.041025641025641324
+fixed_default_same_scenarios,gptoss,Shower,kendall_tau,0.8000000000000002,0.8000000000000002,0.0
+fixed_default_same_scenarios,gptoss,Shower,top1,0.85,0.85,0.0
+fixed_default_same_scenarios,gptoss,Shower,tau_gain_AH_minus_FD,-0.0133333333333334,-0.0133333333333334,0.0
+fixed_default_same_scenarios,qwen,Overall,kendall_tau,0.6135659529473962,0.6272693629394661,0.01370340999206987
+fixed_default_same_scenarios,qwen,Overall,top1,0.7029817605075337,0.70812053925456,0.005138778747026285
+fixed_default_same_scenarios,qwen,Overall,tau_gain_AH_minus_FD,0.2665468323200281,0.2528434223279583,-0.013703409992069815
+fixed_default_same_scenarios,qwen,HVAC,kendall_tau,0.93487922705314,0.93487922705314,0.0
+fixed_default_same_scenarios,qwen,HVAC,top1,0.959792960662526,0.959792960662526,0.0
+fixed_default_same_scenarios,qwen,HVAC,tau_gain_AH_minus_FD,-0.0535817805383022,-0.0535817805383022,0.0
+fixed_default_same_scenarios,qwen,Appliance,kendall_tau,0.0974358974358974,0.1384615384615385,0.0410256410256411
+fixed_default_same_scenarios,qwen,Appliance,top1,0.2923076923076923,0.3076923076923077,0.015384615384615385
+fixed_default_same_scenarios,qwen,Appliance,tau_gain_AH_minus_FD,0.8082051282051281,0.7671794871794871,-0.04102564102564099
+fixed_default_same_scenarios,qwen,Shower,kendall_tau,0.8000000000000002,0.8000000000000002,0.0
+fixed_default_same_scenarios,qwen,Shower,top1,0.85,0.85,0.0
+fixed_default_same_scenarios,qwen,Shower,tau_gain_AH_minus_FD,0.0511111111111109,0.0511111111111109,0.0

@@ -1,0 +1,59 @@
+Retrieval-set median default parameters (the 'no inference' arm):
+  HVAC: r_value=16.0, seer=13.0, hvac_age=16.0, occupancy_context=standard
+  Appliance: kwh_per_cycle=1.2, appliance=dryer, baseline_time=9:00 AM
+  Shower: gpm=2.25, tank_size=45.0, water_heater_temp=120.0
+
+gptoss: 5 shipped per-run file(s)
+  order arms: reversed=5 run(s), control=3 run(s), shipped per-run=5
+  matched 195/195 scenarios
+qwen: 5 shipped per-run file(s)
+  order arms: reversed=5 run(s), control=3 run(s), shipped per-run=5
+  matched 195/195 scenarios
+deepseek: 5 shipped per-run file(s)
+  order arms: reversed=5 run(s), control=3 run(s), shipped per-run=5
+  matched 195/195 scenarios
+gemini: 5 shipped per-run file(s)
+  order arms: reversed=5 run(s), control=3 run(s), shipped per-run=5
+  matched 195/195 scenarios
+
+=== AH parameter-provenance ablation ===
+   model            arm  n_scored  success_rate  kendall_tau  top1_accuracy    mae
+deepseek      extracted       974        0.9990       0.8973         0.9076 0.0448
+deepseek  order_control       585        1.0000       0.8974         0.9043 0.0455
+deepseek order_reversed       975        1.0000       0.9015         0.9108 0.0440
+deepseek default_params       195        1.0000       0.6410         0.7590 0.1327
+  gemini      extracted       975        1.0000       0.9234         0.9313 0.0477
+  gemini  order_control       585        1.0000       0.9293         0.9385 0.0454
+  gemini order_reversed       975        1.0000       0.9262         0.9364 0.0466
+  gemini default_params       195        1.0000       0.6410         0.7590 0.1327
+  gptoss      extracted       858        0.8800       0.8974         0.9173 0.0519
+  gptoss  order_control       514        0.8786       0.8985         0.9141 0.0517
+  gptoss order_reversed       867        0.8892       0.8977         0.9088 0.0525
+  gptoss default_params       195        1.0000       0.6410         0.7590 0.1327
+    qwen      extracted       973        0.9979       0.8801         0.8972 0.0718
+    qwen  order_control       585        1.0000       0.8895         0.9077 0.0736
+    qwen order_reversed       975        1.0000       0.8913         0.9036 0.0725
+    qwen default_params       195        1.0000       0.6410         0.7590 0.1327
+
+
+=== Alternative-order arm: exact label-permutation test ===
+Under the null that ordering does nothing, a reversed run is just another run. Relabel all C(8,3)=56 ways and ask how often the observed within-minus-between separation is matched. Separation near zero means the reversed runs are indistinguishable from more shipped runs. Floor is p=0.018, so that is the strongest claim this design supports.
+   model  n_reversed_runs  perm_choice_separation  perm_choice_p  perm_param_separation  perm_param_p  perm_n_relabelings
+  gptoss                5                 -0.0038         0.8462                 0.0041        0.3023                1287
+    qwen                5                 -0.0012         0.6791                 0.0543        0.0008                1287
+deepseek                5                 -0.0042         0.9262                -0.0158        0.4499                1287
+  gemini                5                  0.0005         0.2354                 0.0471        0.0008                1287
+
+  Top-1 choice: separation significant in 0/4 models.
+  Extracted parameters: separation significant in 2/4 models.
+
+--- Descriptive agreement bands (context, not tests) ---
+   model  within_shipped_choice_agreement_mean  within_reversed_choice_agreement_mean  between_choice_agreement_mean  within_shipped_param_identity_mean  within_reversed_param_identity_mean  between_param_identity_mean
+  gptoss                                0.9278                                 0.9318                         0.9342                              0.3800                               0.3782                       0.3703
+    qwen                                0.9526                                 0.9513                         0.9521                              0.5788                               0.5651                       0.5155
+deepseek                                0.9579                                 0.9836                         0.9692                              0.4230                               0.6703                       0.5163
+  gemini                                0.9969                                 0.9959                         0.9936                              0.8497                               0.8626                       0.7996
+
+  Per-pair McNemar columns are in the workbook but are underpowered here (5-15 discordant pairs of 195) and must not be read as evidence of no effect.
+
+Wrote Analysis/rerun_prep/pipeline/cli_outputs/hybrid/hybrid_ablation_results.md and Analysis\rerun_prep\pipeline\cli_outputs\hybrid\hybrid_ablation_summary.xlsx

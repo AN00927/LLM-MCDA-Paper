@@ -1,0 +1,5 @@
+phase,decision_type,kendall_tau,top1,mae,n_scored,n_failed
+after,HVAC,0.1333,0.4286,0.1579,70,0
+after,Appliance,0.2923,0.5538,0.157,65,0
+after,Shower,0.7333,0.75,0.2126,60,0
+after,Overall,0.3709,0.5692,0.1744,195,0

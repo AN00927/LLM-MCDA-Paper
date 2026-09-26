@@ -1,0 +1,21 @@
+Arms excluded (separate experiment, see hybrid_order_reversal.xlsx): order_control, order_reversed
+Models tested: 4  |  scenario rows (run means): 1559
+
+=== extracted vs default_params: paired Wilcoxon signed-rank ===
+(one test per model x metric, Holm-corrected across all 12)
+   model      metric       config_i  config_j  statistic   p_value    p_holm  significant_holm  cliff_delta cliff_delta_interpretation  n_pairs
+deepseek kendall_tau default_params extracted        694 1.293e-08 6.463e-08              True      -0.2065                      small      195
+deepseek        top1 default_params extracted      461.5  7.98e-06  7.98e-06              True      -0.1236                 negligible      195
+deepseek         mae default_params extracted       2674 2.778e-18 2.778e-17              True       0.4829                      large      195
+  gemini kendall_tau default_params extracted        339 2.203e-09 1.542e-08              True      -0.2659                      small      195
+  gemini        top1 default_params extracted        286 3.801e-06  1.14e-05              True      -0.1705                      small      195
+  gemini         mae default_params extracted       1765 8.889e-23 1.067e-21              True       0.4967                      large      195
+  gptoss kendall_tau default_params extracted        402 4.982e-10 3.986e-09              True      -0.2176                      small      194
+  gptoss        top1 default_params extracted      247.5 1.324e-07 5.295e-07              True      -0.1318                 negligible      194
+  gptoss         mae default_params extracted       2528 1.444e-18 1.589e-17              True       0.4062                     medium      194
+    qwen kendall_tau default_params extracted      479.5 6.658e-09 3.995e-08              True      -0.1947                      small      195
+    qwen        top1 default_params extracted        267 3.882e-06 7.765e-06              True      -0.1055                 negligible      195
+    qwen         mae default_params extracted       3550 2.727e-14 2.454e-13              True       0.3368                     medium      195
+
+Significant cells: 12 of 12
+Wrote 3 files to Analysis\rerun_prep\pipeline\cli_outputs\hybrid

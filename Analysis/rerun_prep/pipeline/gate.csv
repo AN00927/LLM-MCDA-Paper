@@ -1,0 +1,195 @@
+gate,item,reference,new,abs_diff,compare_digits,pass,note
+G1,deepseek/Overall/kendall_tau,0.89732,0.897323112168473,3.112168473040633e-06,3.0,True,
+G3,deepseek/Overall/kendall_tau,0.89732,0.89732,0.0,12.0,True,
+G1,deepseek/Overall/top1,0.9076,0.9075865715040972,1.3428495902800819e-05,3.0,True,
+G3,deepseek/Overall/top1,0.9076,0.9076,0.0,12.0,True,
+G1,deepseek/Overall/mae,0.04484,0.0448194818926777,2.051810732230097e-05,3.0,True,
+G3,deepseek/Overall/mae,0.04484,0.04484,0.0,12.0,True,
+G1,deepseek/Overall/n_scored,974.0,974.0,0.0,0.0,True,
+G1,deepseek/HVAC/kendall_tau,0.91974,0.9197515527950312,1.1552795031177787e-05,3.0,True,
+G3,deepseek/HVAC/kendall_tau,0.91974,0.91974,0.0,12.0,True,
+G1,deepseek/HVAC/top1,0.91976,0.9197515527950312,8.447204968842215e-06,3.0,True,
+G3,deepseek/HVAC/top1,0.91976,0.91976,0.0,12.0,True,
+G1,deepseek/HVAC/mae,0.0447199999999999,0.0447189095928226,1.0904071773010227e-06,3.0,True,
+G3,deepseek/HVAC/mae,0.0447199999999999,0.0447199999999999,0.0,12.0,True,
+G1,deepseek/HVAC/n_scored,349.0,349.0,0.0,0.0,True,
+G1,deepseek/Appliance/kendall_tau,0.9754,0.9753846153846156,1.5384615384417266e-05,3.0,True,
+G3,deepseek/Appliance/kendall_tau,0.9754,0.9754,0.0,12.0,True,
+G1,deepseek/Appliance/top1,0.9846,0.9846153846153848,1.5384615384750333e-05,3.0,True,
+G3,deepseek/Appliance/top1,0.9846,0.9846,0.0,12.0,True,
+G1,deepseek/Appliance/mae,0.0403599999999999,0.0403743589743589,1.4358974358995302e-05,3.0,True,
+G3,deepseek/Appliance/mae,0.0403599999999999,0.0403599999999999,0.0,12.0,True,
+G1,deepseek/Appliance/n_scored,325.0,325.0,0.0,0.0,True,
+G1,deepseek/Shower/kendall_tau,0.78668,0.7866666666666665,1.3333333333531705e-05,3.0,True,
+G3,deepseek/Shower/kendall_tau,0.78668,0.78668,0.0,12.0,True,
+G1,deepseek/Shower/top1,0.8099999999999999,0.8099999999999999,0.0,3.0,True,
+G3,deepseek/Shower/top1,0.8099999999999999,0.8099999999999999,0.0,12.0,True,
+G1,deepseek/Shower/mae,0.04974,0.0497444444444444,4.444444444397233e-06,3.0,True,
+G3,deepseek/Shower/mae,0.04974,0.04974,0.0,12.0,True,
+G1,deepseek/Shower/n_scored,300.0,300.0,0.0,0.0,True,
+G1,deepseek/Overall/success_rate,0.9989743589743588,0.9989743589743588,0.0,3.0,True,
+G1,gemini/Overall/kendall_tau,0.92344,0.92,0.0034399999999999986,3.0,False,explained: stored Gemini A_H rank broke an exact tie by float noise (HVAC test 5)
+G3,gemini/Overall/kendall_tau,0.92344,0.92344,0.0,12.0,True,
+G1,gemini/Overall/top1,0.93126,0.9312820512820512,2.205128205123863e-05,3.0,True,
+G3,gemini/Overall/top1,0.93126,0.93126,0.0,12.0,True,
+G1,gemini/Overall/mae,0.04768,0.0476829059829059,2.9059829058999953e-06,3.0,True,
+G3,gemini/Overall/mae,0.04768,0.04768,0.0,12.0,True,
+G1,gemini/Overall/n_scored,975.0,975.0,0.0,0.0,True,
+G1,gemini/HVAC/kendall_tau,0.97716,0.9676190476190476,0.009540952380952428,3.0,False,explained: stored Gemini A_H rank broke an exact tie by float noise (HVAC test 5)
+G3,gemini/HVAC/kendall_tau,0.97716,0.97716,0.0,12.0,True,
+G1,gemini/HVAC/top1,0.96568,0.9657142857142856,3.428571428565341e-05,3.0,True,
+G3,gemini/HVAC/top1,0.96568,0.96568,0.0,12.0,True,
+G1,gemini/HVAC/mae,0.0295599999999999,0.0295428571428571,1.714285714279895e-05,3.0,True,
+G3,gemini/HVAC/mae,0.0295599999999999,0.0295599999999999,0.0,12.0,True,
+G1,gemini/HVAC/n_scored,350.0,350.0,0.0,0.0,True,
+G1,gemini/Appliance/kendall_tau,0.959,0.9589743589743588,2.564102564117654e-05,3.0,True,
+G3,gemini/Appliance/kendall_tau,0.959,0.959,0.0,12.0,True,
+G1,gemini/Appliance/top1,0.9692,0.9692307692307692,3.076923076927862e-05,3.0,True,
+G3,gemini/Appliance/top1,0.9692,0.9692,0.0,12.0,True,
+G1,gemini/Appliance/mae,0.06654,0.0665333333333333,6.6666666666964636e-06,3.0,True,
+G3,gemini/Appliance/mae,0.06654,0.06654,0.0,12.0,True,
+G1,gemini/Appliance/n_scored,325.0,325.0,0.0,0.0,True,
+G1,gemini/Shower/kendall_tau,0.8222000000000002,0.8222222222222222,2.2222222222034738e-05,3.0,True,
+G3,gemini/Shower/kendall_tau,0.8222000000000002,0.8222000000000002,0.0,12.0,True,
+G1,gemini/Shower/top1,0.85,0.85,0.0,3.0,True,
+G3,gemini/Shower/top1,0.85,0.85,0.0,12.0,True,
+G1,gemini/Shower/mae,0.04838,0.0484249999999999,4.499999999989929e-05,3.0,True,
+G3,gemini/Shower/mae,0.04838,0.04838,0.0,12.0,True,
+G1,gemini/Shower/n_scored,300.0,300.0,0.0,0.0,True,
+G1,gemini/Overall/success_rate,1.0,1.0,0.0,3.0,True,
+G1,gptoss/Overall/kendall_tau,0.8974400000000001,0.8974193730542617,2.0626945738455582e-05,3.0,True,
+G3,gptoss/Overall/kendall_tau,0.8974400000000001,0.8974400000000001,0.0,12.0,True,
+G1,gptoss/Overall/top1,0.9173,0.917283010327167,1.698967283303432e-05,3.0,True,
+G3,gptoss/Overall/top1,0.9173,0.9173,0.0,12.0,True,
+G1,gptoss/Overall/mae,0.0518799999999999,0.0518612814625952,1.8718537404698032e-05,3.0,True,
+G3,gptoss/Overall/mae,0.0518799999999999,0.0518799999999999,0.0,12.0,True,
+G1,gptoss/Overall/n_scored,858.0,858.0,0.0,0.0,True,
+G1,gptoss/HVAC/kendall_tau,0.94284,0.9428530199958772,1.3019995877217028e-05,3.0,True,
+G3,gptoss/HVAC/kendall_tau,0.94284,0.94284,0.0,12.0,True,
+G1,gptoss/HVAC/top1,0.93988,0.9398771387342816,2.861265718467898e-06,3.0,True,
+G3,gptoss/HVAC/top1,0.93988,0.93988,0.0,12.0,True,
+G1,gptoss/HVAC/mae,0.05114,0.0511500429464715,1.004294647150017e-05,3.0,True,
+G3,gptoss/HVAC/mae,0.05114,0.05114,0.0,12.0,True,
+G1,gptoss/HVAC/n_scored,233.0,233.0,0.0,0.0,True,
+G1,gptoss/Appliance/kendall_tau,0.9671800000000002,0.9671794871794872,5.128205129434349e-07,3.0,True,
+G3,gptoss/Appliance/kendall_tau,0.9671800000000002,0.9671800000000002,0.0,12.0,True,
+G1,gptoss/Appliance/top1,0.98768,0.9876923076923078,1.2307692307755858e-05,3.0,True,
+G3,gptoss/Appliance/top1,0.98768,0.98768,0.0,12.0,True,
+G1,gptoss/Appliance/mae,0.0515,0.0515,0.0,3.0,True,
+G3,gptoss/Appliance/mae,0.0515,0.0515,0.0,12.0,True,
+G1,gptoss/Appliance/n_scored,325.0,325.0,0.0,0.0,True,
+G1,gptoss/Shower/kendall_tau,0.7866800000000002,0.7866666666666666,1.3333333333531705e-05,3.0,True,
+G3,gptoss/Shower/kendall_tau,0.7866800000000002,0.7866800000000002,0.0,12.0,True,
+G1,gptoss/Shower/top1,0.82334,0.8233333333333335,6.666666666488297e-06,3.0,True,
+G3,gptoss/Shower/top1,0.82334,0.82334,0.0,12.0,True,
+G1,gptoss/Shower/mae,0.05282,0.0528138888888888,6.1111111111997185e-06,3.0,True,
+G3,gptoss/Shower/mae,0.05282,0.05282,0.0,12.0,True,
+G1,gptoss/Shower/n_scored,300.0,300.0,0.0,0.0,True,
+G1,gptoss/Overall/success_rate,0.88,0.88,0.0,3.0,True,
+G1,qwen/Overall/kendall_tau,0.8801,0.8801127852674243,1.2785267424320068e-05,3.0,True,
+G3,qwen/Overall/kendall_tau,0.8801,0.8801,0.0,12.0,True,
+G1,qwen/Overall/top1,0.89724,0.8972402854877082,2.8548770814040836e-07,3.0,True,
+G3,qwen/Overall/top1,0.89724,0.89724,0.0,12.0,True,
+G1,qwen/Overall/mae,0.07178,0.0717771037095779,2.8962904220913854e-06,3.0,True,
+G3,qwen/Overall/mae,0.07178,0.07178,0.0,12.0,True,
+G1,qwen/Overall/n_scored,973.0,973.0,0.0,0.0,True,
+G1,qwen/HVAC/kendall_tau,0.8813000000000001,0.8812974465148378,2.553485162315461e-06,3.0,True,
+G3,qwen/HVAC/kendall_tau,0.8813000000000001,0.8813000000000001,0.0,12.0,True,
+G1,qwen/HVAC/top1,0.8736599999999999,0.8736645962732918,4.596273291967989e-06,3.0,True,
+G3,qwen/HVAC/top1,0.8736599999999999,0.8736599999999999,0.0,12.0,True,
+G1,qwen/HVAC/mae,0.05662,0.0566140786749482,5.9213250517969884e-06,3.0,True,
+G3,qwen/HVAC/mae,0.05662,0.05662,0.0,12.0,True,
+G1,qwen/HVAC/n_scored,348.0,348.0,0.0,0.0,True,
+G1,qwen/Appliance/kendall_tau,0.90562,0.9056410256410256,2.1025641025573805e-05,3.0,True,
+G3,qwen/Appliance/kendall_tau,0.90562,0.90562,0.0,12.0,True,
+G1,qwen/Appliance/top1,0.92926,0.9292307692307692,2.9230769230781384e-05,3.0,True,
+G3,qwen/Appliance/top1,0.92926,0.92926,0.0,12.0,True,
+G1,qwen/Appliance/mae,0.11764,0.1176410256410256,1.025641025609314e-06,3.0,True,
+G3,qwen/Appliance/mae,0.11764,0.11764,0.0,12.0,True,
+G1,qwen/Appliance/n_scored,325.0,325.0,0.0,0.0,True,
+G1,qwen/Shower/kendall_tau,0.8511200000000001,0.8511111111111112,8.888888888947122e-06,3.0,True,
+G3,qwen/Shower/kendall_tau,0.8511200000000001,0.8511200000000001,0.0,12.0,True,
+G1,qwen/Shower/top1,0.89,0.8899999999999999,1.1102230246251565e-16,3.0,True,
+G3,qwen/Shower/top1,0.89,0.89,0.0,12.0,True,
+G1,qwen/Shower/mae,0.0397,0.0396805555555555,1.944444444450244e-05,3.0,True,
+G3,qwen/Shower/mae,0.0397,0.0397,0.0,12.0,True,
+G1,qwen/Shower/n_scored,300.0,300.0,0.0,0.0,True,
+G1,qwen/Overall/success_rate,0.997948717948718,0.997948717948718,0.0,3.0,True,
+G2,AH_tau_deepseek,0.897,0.897,0.0,3.0,True,paper value from paper/supplementary.tex:1524
+G2,AH_top1_deepseek,90.8,90.8,0.0,1.0,True,paper value from paper/supplementary.tex:1526
+G2,AH_mae_deepseek,0.045,0.045,0.0,3.0,True,paper value from paper/supplementary.tex:1528
+G2,AH_success_deepseek,99.9,99.9,0.0,1.0,True,paper value from paper/supplementary.tex:1530
+G2,AH_tau_gemini,0.923,0.92,0.0030000000000000027,3.0,False,explained: stored Gemini A_H rank broke an exact tie by float noise (HVAC test 5)
+G2,AH_top1_gemini,93.1,93.1,0.0,1.0,True,paper value from paper/supplementary.tex:1526
+G2,AH_mae_gemini,0.048,0.048,0.0,3.0,True,paper value from paper/supplementary.tex:1528
+G2,AH_success_gemini,100.0,100.0,0.0,1.0,True,paper value from paper/supplementary.tex:1530
+G2,AH_tau_gptoss,0.897,0.897,0.0,3.0,True,paper value from paper/supplementary.tex:1542
+G2,AH_top1_gptoss,91.7,91.7,0.0,1.0,True,paper value from paper/supplementary.tex:1544
+G2,AH_mae_gptoss,0.052,0.052,0.0,3.0,True,paper value from paper/supplementary.tex:1546
+G2,AH_success_gptoss,88.0,88.0,0.0,1.0,True,paper value from paper/supplementary.tex:1548
+G2,AH_tau_qwen,0.88,0.88,0.0,3.0,True,paper value from paper/supplementary.tex:1542
+G2,AH_top1_qwen,89.7,89.7,0.0,1.0,True,paper value from paper/supplementary.tex:1544
+G2,AH_mae_qwen,0.072,0.072,0.0,3.0,True,paper value from paper/supplementary.tex:1546
+G2,AH_success_qwen,99.8,99.8,0.0,1.0,True,paper value from paper/supplementary.tex:1548
+G2,AH_tau_inclusive_deepseek,0.896,0.896,0.0,3.0,True,paper value from paper/supplementary.tex:1525
+G2,AH_top1_inclusive_deepseek,90.7,90.7,0.0,1.0,True,paper value from paper/supplementary.tex:1527
+G2,AH_tau_inclusive_gemini,0.923,0.92,0.0030000000000000027,3.0,False,explained: stored Gemini A_H rank broke an exact tie by float noise (HVAC test 5)
+G2,AH_top1_inclusive_gemini,93.1,93.1,0.0,1.0,True,paper value from paper/supplementary.tex:1527
+G2,AH_tau_inclusive_gptoss,0.79,0.79,0.0,3.0,True,paper value from paper/supplementary.tex:1543
+G2,AH_top1_inclusive_gptoss,84.7,84.7,0.0,1.0,True,paper value from paper/supplementary.tex:1545
+G2,AH_tau_inclusive_qwen,0.878,0.878,0.0,3.0,True,paper value from paper/supplementary.tex:1543
+G2,AH_top1_inclusive_qwen,89.6,89.6,0.0,1.0,True,paper value from paper/supplementary.tex:1545
+G2,AH_tau_deepseek_HVAC,0.92,0.92,0.0,3.0,True,paper value from not quoted
+G2,AH_tau_deepseek_Appliance,0.975,0.975,0.0,3.0,True,paper value from paper/paper_draft_v2.tex:973
+G2,AH_tau_deepseek_Shower,0.787,0.787,0.0,3.0,True,paper value from paper/paper_draft_v2.tex:977
+G2,AH_tau_gemini_HVAC,0.977,0.968,0.009000000000000008,3.0,False,explained: stored Gemini A_H rank broke an exact tie by float noise (HVAC test 5)
+G2,AH_tau_gemini_Appliance,0.959,0.959,0.0,3.0,True,paper value from not quoted
+G2,AH_tau_gemini_Shower,0.822,0.822,0.0,3.0,True,paper value from not quoted
+G2,AH_tau_gptoss_HVAC,0.943,0.943,0.0,3.0,True,paper value from not quoted
+G2,AH_tau_gptoss_Appliance,0.967,0.967,0.0,3.0,True,paper value from not quoted
+G2,AH_tau_gptoss_Shower,0.787,0.787,0.0,3.0,True,paper value from paper/paper_draft_v2.tex:977
+G2,AH_tau_qwen_HVAC,0.881,0.881,0.0,3.0,True,paper value from paper/paper_draft_v2.tex:971
+G2,AH_tau_qwen_Appliance,0.906,0.906,0.0,3.0,True,paper value from paper/paper_draft_v2.tex:974
+G2,AH_tau_qwen_Shower,0.851,0.851,0.0,3.0,True,paper value from paper/paper_draft_v2.tex:976
+G4,numbers_master rows (not recovery / pooled / cost) that changed,0.0,0.0,0.0,0.0,True,227 rows compared
+G4,pooled-across-model rows still written,0.0,0.0,0.0,0.0,True,Table5 / Table6 pooled / Table7 pooled
+G4-info,"Table8 cost rows changed (MODEL_SPECS prices, P3)",0.0,6.0,,0.0,,
+G4,GPTOSS recovered tau vs D2 backfill,0.90446735395189,0.90446,7.353951889998989e-06,3.0,True,
+G4,GPTOSS recovered Top-1 vs D2 backfill,0.9195876288659794,0.9196,1.2371134020527919e-05,3.0,True,
+G4,GPTOSS unrecovered (pooled_5run) tau vs Set A,0.8974400000000001,0.89744,1.1102230246251565e-16,12.0,True,
+G5-info,deepseek/kendall_tau/p_holm,1.057396413984316e-06,6.462898581656947e-08,9.927674281677467e-07,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/kendall_tau/cliff_delta,-0.1790138067061144,-0.2065220249835635,0.02750821827744912,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/kendall_tau/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/top1/p_holm,1.7852638933272997e-05,7.979790106967753e-06,9.872848826305244e-06,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/top1/cliff_delta,-0.1124260355029585,-0.1235765943458251,0.0111505588428666,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/top1/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/mae/p_holm,2.9067731519592358e-15,2.778407752085768e-17,2.878989074438378e-15,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/mae/cliff_delta,0.4503353057199211,0.4828928336620644,0.03255752794214334,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,deepseek/mae/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/kendall_tau/p_holm,2.60125029949696e-07,2.1984227906804052e-08,2.3814080204289193e-07,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/kendall_tau/cliff_delta,-0.2402103879026955,-0.2615384615384616,0.02132807363576611,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/kendall_tau/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/top1/p_holm,2.794368874809889e-05,1.140248610087371e-05,1.6541202647225182e-05,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/top1/cliff_delta,-0.1601577909270217,-0.1704667981591058,0.010309007232084083,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/top1/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/mae/p_holm,4.495944532636106e-18,1.0666283051910619e-21,4.494877904330915e-18,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/mae/cliff_delta,0.4435765943458251,0.4966995397764629,0.053122945430637836,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gemini/mae/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/kendall_tau/p_holm,3.4342758559447514e-08,3.985926763958963e-09,3.035683179548855e-08,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/kendall_tau/cliff_delta,-0.186789244340525,-0.2176373684769901,0.03084812413646512,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/kendall_tau/n_pairs,194.0,194.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/top1/p_holm,1.987381884336713e-06,5.294855541927457e-07,1.4578963301439673e-06,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/top1/cliff_delta,-0.1202837708576894,-0.1318152832394516,0.011531512381762199,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/top1/n_pairs,194.0,194.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/mae/p_holm,1.487254507093158e-16,1.5887665801494318e-17,1.328377849078215e-16,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/mae/cliff_delta,0.3830375172706983,0.4061802529493039,0.023142735678605586,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,gptoss/mae/n_pairs,194.0,194.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/kendall_tau/p_holm,2.211464127087909e-06,3.9947002665993076e-08,2.1715171244219157e-06,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/kendall_tau/cliff_delta,-0.1664957264957265,-0.1947140039447732,0.028218277449046703,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/kendall_tau/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/top1/p_holm,2.2175979448382124e-05,7.764642479180948e-06,1.4411336969201176e-05,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/top1/cliff_delta,-0.0942800788954635,-0.1055358316896778,0.0112557527942143,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/top1/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/mae/p_holm,4.109669928087676e-08,2.454277976773204e-13,4.1096453853079083e-08,,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/mae/cliff_delta,0.2975147928994083,0.3368047337278107,0.039289940828402425,3.0,,reference = D2 run-mean basis with the OLD dataset median
+G5-info,qwen/mae/n_pairs,195.0,195.0,0.0,0.0,,reference = D2 run-mean basis with the OLD dataset median

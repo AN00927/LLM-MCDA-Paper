@@ -14,6 +14,14 @@ SENTINEL_VALUE = 1928
 SENTINEL_FLOAT = 1928.0
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
 
+# Decimals kept on a weighted MAVT sum before alternatives are ranked. Criterion
+# scores are stored at 2 dp and the weights at 2 dp, so an exact sum never needs
+# more than 4; the extra digits only strip floating-point noise. Without the
+# rounding, two alternatives that tie exactly (e.g. 0.5175 and 0.5175) can differ
+# in the 16th digit depending on summation order, and the noise, not
+# TIE_BREAK_PRIORITY, decides which ranks first.
+MAVT_ROUND_DECIMALS = 10
+
 
 def coerce_score(value):
     """Coerce a raw score value to float, returning NaN for non-numeric garbage.
@@ -365,7 +373,8 @@ def apply_mavt_ranking(alternatives_scores):
             continue
         if math.isnan(ws):
             continue
-        valid_pairs.append((idx, ws))
+        # Round so exact ties are equal and reach TIE_BREAK_PRIORITY.
+        valid_pairs.append((idx, round(ws, MAVT_ROUND_DECIMALS)))
 
     if not valid_pairs:
         return {

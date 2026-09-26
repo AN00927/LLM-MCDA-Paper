@@ -1,0 +1,13 @@
+decision_type,metric,shipped_baseline_metrics_csv,old,new,delta
+HVAC,kendall_tau,0.1333,0.1333,0.1333,0.0
+HVAC,top1,0.4286,0.4286,0.4286,0.0
+HVAC,mae,0.1579,0.1579,0.1579,0.0
+Appliance,kendall_tau,0.2923,0.2923,0.2923,0.0
+Appliance,top1,0.5538,0.5538,0.5538,0.0
+Appliance,mae,0.157,0.157,0.157,0.0
+Shower,kendall_tau,0.7333,0.7333,0.7333,0.0
+Shower,top1,0.75,0.75,0.75,0.0
+Shower,mae,0.2122,0.2122,0.2126,0.00040000000000001146
+Overall,kendall_tau,0.3709,0.3709,0.3709,0.0
+Overall,top1,0.5692,0.5692,0.5692,0.0
+Overall,mae,0.1743,0.1743,0.1744,9.999999999998899e-05

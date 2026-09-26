@@ -1,0 +1,33 @@
+New logic + shipped data vs GT: IDENTICAL
+bounds [shipped data, unrounded raw, n=300]: cost p5=0.024633 p95=0.710500 -> (0.025, 0.71); env p5=0.288878 p95=3.643500 -> (0.289, 3.643)
+bounds [new data, unrounded raw, n=300]: cost p5=0.027570 p95=0.774140 -> (0.028, 0.774); env p5=0.288878 p95=3.643500 -> (0.289, 3.643)
+bounds [shipped GT xlsx columns, n=300]: cost p5=0.024595 p95=0.710500 -> (0.025, 0.71); env p5=0.288400 p95=3.643000 -> (0.288, 3.643)
+bounds [new data xlsx columns, n=300]: cost p5=0.027600 p95=0.774100 -> (0.028, 0.774); env p5=0.288400 p95=3.643000 -> (0.288, 3.643)
+Bounds in calc_new: cost (0.028, 0.774), env (0.288, 3.643); derived ((0.028, 0.774), (0.288, 3.643))
+
+W = winner changes, R = full-ranking changes, S = scenarios with any criterion score change
+a  super off-peak only (shipped rates)         test W  4/65  R  4/65  S 23/65 | RAG W  0/35  R  0/35  S  7/35
+b  Dec25-May26 rates+windows, no super         test W  1/65  R  2/65  S 49/65 | RAG W  0/35  R  0/35  S 29/35
+b1   PPL Dec25 PTC-basis rates+4-8pm           test W  1/65  R  1/65  S  9/65 | RAG W  0/35  R  0/35  S 12/35
+b2   PPL 4-8pm window only (old rates)         test W  1/65  R  2/65  S  8/65 | RAG W  0/35  R  0/35  S  9/35
+b3   PECO Dec25 PTC-basis values only          test W  0/65  R  1/65  S 21/65 | RAG W  0/35  R  0/35  S 11/35
+b4   FE Dec25 PTCs only (no super)             test W  0/65  R  0/65  S 19/65 | RAG W  0/35  R  0/35  S  6/35
+b5   Duquesne flat, no window                  test W  0/65  R  0/65  S  0/65 | RAG W  0/35  R  0/35  S  0/35
+c  city mapping only (6 cities)                test W  0/65  R  0/65  S  3/65 | RAG W  0/35  R  0/35  S  3/35
+a+b  all tariff fixes, shipped map+bounds      test W  5/65  R  6/65  S 49/65 | RAG W  0/35  R  0/35  S 31/35
+a+b+c  all, shipped bounds                     test W  5/65  R  6/65  S 49/65 | RAG W  0/35  R  0/35  S 31/35
+f  new bounds only (shipped rates+map)         test W  1/65  R  2/65  S 62/65 | RAG W  3/35  R  3/35  S 33/35
+ALL  a+b+c+f (calc_new as written)             test W  5/65  R  5/65  S 55/65 | RAG W  2/35  R  2/35  S 30/35
+sens ALL + Stroudsburg -> MetEd                test W  6/65  R  6/65  S 55/65 | RAG W  2/35  R  2/35  S 30/35
+
+calc_new file vs ALL variant: IDENTICAL
+bounds effect alone on top of a+b+c: test W  0/65  R  1/65  S 63/65 | RAG W  2/35  R  2/35  S 33/35
+
+Scenarios whose winner or ranking changes under ALL (calc_new):
+  [test] sid  1 Indiana, PA        dryer           base 7:00 PM   old 7:00 PM > 11:00 PM > 2:00 PM  |  new 11:00 PM > 7:00 PM > 2:00 PM
+  [test] sid  4 Greensburg, PA     dryer           base 5:00 PM   old 5:00 PM > 11:00 PM > 2:00 PM  |  new 11:00 PM > 5:00 PM > 2:00 PM
+  [test] sid 30 Gettysburg, PA     dryer           base 3:00 PM   old 3:00 PM > 11:00 PM > 1:00 AM  |  new 11:00 PM > 3:00 PM > 1:00 AM
+  [test] sid 36 Chester, PA        dryer           base 5:00 PM   old 5:00 PM > 12:00 AM > 2:00 PM  |  new 12:00 AM > 5:00 PM > 2:00 PM
+  [test] sid 74 Bethlehem, PA      dryer           base 4:00 PM   old 6:00 PM > 4:00 PM > 10:00 PM  |  new 4:00 PM > 6:00 PM > 10:00 PM
+  [rag] sid 80 King of Prussia, PA dishwasher      base 5:00 PM   old 11:00 PM > 5:00 PM > 8:00 AM  |  new 5:00 PM > 11:00 PM > 8:00 AM
+  [rag] sid 83 Philadelphia, PA   dishwasher      base 2:00 PM   old 8:00 PM > 2:00 PM > 2:00 AM  |  new 2:00 PM > 8:00 PM > 2:00 AM

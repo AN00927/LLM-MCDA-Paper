@@ -6,9 +6,11 @@ import math
 import os
 import sys
 import tempfile
+import threading
 import time
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -38,7 +40,9 @@ from model_config import (
 from sentinel_utils import (
     CRITERIA,
     SENTINEL_FLOAT,
+    RawCallLog,
     appliance_age_to_band_label,
+    apply_mavt_ranking,
     format_embedding_text,
     gpm_to_flow_rate_label,
     house_age_to_band_label,
@@ -60,6 +64,13 @@ load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.app/llm-mcda")
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+# Per-call raw archive, same mechanism as the architectures (sentinel_utils.RawCallLog).
+# Disabled unless .start() is called. LLM scoring runs on a thread pool, so the
+# file write is serialised by this lock rather than relying on .set_scenario(),
+# which is not thread-safe.
+RAW_LOG = RawCallLog()
+_raw_log_lock = threading.Lock()
 
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 RAG_FILES = OrderedDict([
@@ -660,6 +671,9 @@ def weighted_score(scores: Dict[str, float]) -> float:
 
 
 def rank_from_scores(scores: List[float]) -> List[int]:
+    """Superseded by apply_mavt_ranking at both call sites (B60): this breaks
+    weighted_score ties by list position, not TIE_BREAK_PRIORITY. Left in place,
+    unused, rather than deleted, since it is not the change B60 asked for."""
     ranks = [SENTINEL] * len(scores)
     valid_idx = [idx for idx, value in enumerate(scores) if value != SENTINEL and np.isfinite(value)]
     if not valid_idx:
@@ -701,7 +715,10 @@ def nearest_neighbor_prediction(scenario: Dict, retrieved: List[Dict]) -> Dict:
             "weighted_score": weighted_score(pred_scores) if all(pred_scores[c] != SENTINEL for c in CRITERIA) else SENTINEL,
             "failed": False,
         })
-    ranks = rank_from_scores([p["weighted_score"] for p in predictions])
+    # Tie-broken via apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY sort
+    # key (B60), not rank_from_scores's positional stable-sort tie-break.
+    mavt_input = [{"alternative": p["alternative"], **p["scores"]} for p in predictions]
+    ranks = apply_mavt_ranking(mavt_input)["ranks"]
     for pred, rank in zip(predictions, ranks):
         pred["rank"] = rank
     return {
@@ -738,11 +755,46 @@ def llm_prediction(scenario: Dict, spec: Dict, retrieved: List[Dict], model_id: 
         ]
         diagnostics["api_calls"] += 1
         try:
-            response_text, call_diag = query_openrouter(messages, model_id)
+            try:
+                response_text, call_diag = query_openrouter(messages, model_id)
+            except Exception as call_exc:
+                # query_openrouter raises (rather than returning a diagnostics
+                # dict) once MAX_RETRIES is exhausted, so the ordinary
+                # RAW_LOG.record() below is never reached for that call. Log it
+                # here instead, so a retry-exhausted call still leaves a raw
+                # record (error + attempt count), not just a failed_calls tally.
+                with _raw_log_lock:
+                    RAW_LOG.record(
+                        scenario_id=scenario.get("source_scenario_id"),
+                        decision_type=scenario.get("decision_type", ""),
+                        alternative=alt["alternative"],
+                        model=model_id,
+                        prompt=user_prompt,
+                        prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
+                        response="",
+                        error=str(call_exc),
+                        attempts=MAX_RETRIES if MAX_RETRIES > 0 else None,
+                        api_success=False,
+                    )
+                raise
             diagnostics["prompt_tokens"] += call_diag.get("prompt_tokens", 0)
             diagnostics["completion_tokens"] += call_diag.get("completion_tokens", 0)
             diagnostics["total_tokens"] += call_diag.get("total_tokens", 0)
             diagnostics["latency_ms"] += call_diag.get("latency_ms", 0.0)
+            with _raw_log_lock:
+                RAW_LOG.record(
+                    scenario_id=scenario.get("source_scenario_id"),
+                    decision_type=scenario.get("decision_type", ""),
+                    alternative=alt["alternative"],
+                    model=model_id,
+                    prompt=user_prompt,
+                    prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
+                    response=response_text or "",
+                    prompt_tokens=call_diag.get("prompt_tokens", 0),
+                    completion_tokens=call_diag.get("completion_tokens", 0),
+                    latency_ms=call_diag.get("latency_ms", 0),
+                    api_success=True,
+                )
             scores, error = parse_scores(response_text)
             if error:
                 raise RuntimeError(error)
@@ -763,7 +815,10 @@ def llm_prediction(scenario: Dict, spec: Dict, retrieved: List[Dict], model_id: 
                 "error": str(exc),
             })
             diagnostics["failed_calls"] += 1
-    ranks = rank_from_scores([p["weighted_score"] for p in predictions])
+    # Tie-broken via apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY sort
+    # key (B60), not rank_from_scores's positional stable-sort tie-break.
+    mavt_input = [{"alternative": p["alternative"], **p["scores"]} for p in predictions]
+    ranks = apply_mavt_ranking(mavt_input)["ranks"]
     for pred, rank in zip(predictions, ranks):
         pred["rank"] = rank
     return {"predictions": predictions, "diagnostics": diagnostics}
@@ -787,15 +842,28 @@ def scenario_metrics(predictions: List[Dict], scenario: Dict) -> Dict:
         score_rmse = np.nan
     if len(pred_scores) >= 2 and np.nanstd(pred_scores) > 0 and np.nanstd(gt_scores) > 0:
         try:
-            kendalltau, spearmanr = _load_scipy_rank_metrics()
-            tau = float(kendalltau(pred_scores, gt_scores).statistic)
+            _, spearmanr = _load_scipy_rank_metrics()
             rho = float(spearmanr(pred_scores, gt_scores).statistic)
         except Exception:
-            tau = np.nan
             rho = np.nan
     else:
-        tau = np.nan
         rho = np.nan
+
+    # Tau uses the tie-broken ranks, not raw scores (B60): both sides already
+    # carry the TIE_BREAK_PRIORITY tie-break -- gt_by_alt[alt]["rank"] from the
+    # ground truth's own apply_mavt_ranking output, pred_by_alt[alt]["rank"] from
+    # this file's apply_mavt_ranking call above -- so tau is never tau_b on ties.
+    rank_common = [alt for alt in common if pred_by_alt[alt]["rank"] != SENTINEL]
+    gt_ranks = [gt_by_alt[alt]["rank"] for alt in rank_common]
+    pred_ranks = [pred_by_alt[alt]["rank"] for alt in rank_common]
+    if len(pred_ranks) >= 2 and len(set(pred_ranks)) > 1 and len(set(gt_ranks)) > 1:
+        try:
+            kendalltau, _ = _load_scipy_rank_metrics()
+            tau = float(kendalltau(pred_ranks, gt_ranks).statistic)
+        except Exception:
+            tau = np.nan
+    else:
+        tau = np.nan
     gt_top1 = sorted(common, key=lambda alt: gt_by_alt[alt]["mavt_score"], reverse=True)[0] if common else ""
     ranked_common = [alt for alt in common if pred_by_alt[alt]["weighted_score"] != SENTINEL]
     pred_order = sorted(ranked_common, key=lambda alt: pred_by_alt[alt]["weighted_score"], reverse=True) if ranked_common else []
@@ -1422,16 +1490,23 @@ def run(args) -> Dict:
         logging.info("Building temporary Chroma collection with %s", embedding_model_name)
         collections[embedding_model_name] = build_collection(embedding_model_name, temp_root)
 
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     rng = np.random.default_rng(args.seed)
-    rows = build_result_rows(sample, specs, collections, rng, getattr(args, "models", None),
-                             workers=getattr(args, "workers", 1))
+    collected_utc = datetime.now(timezone.utc).isoformat()
+    RAW_LOG.start(output_dir / "rag_ablation_results_raw.jsonl")
+    try:
+        rows = build_result_rows(sample, specs, collections, rng, getattr(args, "models", None),
+                                 workers=getattr(args, "workers", 1))
+    finally:
+        RAW_LOG.stop()
     rows_df = pd.DataFrame(rows)
+    rows_df["collected_utc"] = collected_utc
     rows_df["top1_accuracy"] = rows_df["top1_correct"].astype(float)
     rows_df["top2_accuracy"] = rows_df["top2_correct"].astype(float)
     rows_df["success_rate"] = np.where(rows_df["api_calls"] > 0, rows_df["successful_calls"] / rows_df["api_calls"], np.nan)
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
     results_path = output_dir / "rag_ablation_results.xlsx"
     summary_path = output_dir / "rag_ablation_summary.xlsx"
     dtype_summary_path = output_dir / "rag_ablation_summary_by_decision_type.xlsx"

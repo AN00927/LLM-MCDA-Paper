@@ -33,28 +33,28 @@ def _is_transient_http_status(status_code: int) -> bool:
 
 MODEL_SPECS = {
     "gptoss": {
-        "label": "input Price: $0.029/M, Output Price: $0.14/M",
-        "openrouter_id": "openai/gpt-oss-20b:exacto",
+        "label": "input Price: $0.018/M, Output Price: $0.09/M",
+        "openrouter_id": "openai/gpt-oss-20b:floor",
         "output_folder": "Output Files GPT-OSS 20B",
         "reasoning_effort": "low",  
     },
     "qwen": {
         "label": "Input Price: $0.10/M, Output Price: $0.15/M",
-        "openrouter_id": "qwen/qwen3.5-9b:exacto",
+        "openrouter_id": "qwen/qwen3.5-9b:floor",
         "output_folder": "Output Files Qwen3.5 9B",
         "reasoning_effort": "none",
     },
     "deepseek": {
-        "label": "Input Price: $0.09/M, Output Price: $0.18/M",
-        "openrouter_id": "deepseek/deepseek-v4-flash:exacto",
+        "label": "Input Price: $0.14/M, Output Price: $0.42/M",
+        "openrouter_id": "deepseek/deepseek-v4-flash-0731:floor",
         "output_folder": "Output Files DeepSeek V4 Flash",
         "reasoning_effort": "none",
     },
     "gemini": {
-        "label": "Input Price: $1.50/M, Output Price: $9/M",
-        "openrouter_id": "google/gemini-3.5-flash:exacto",
-        "output_folder": "Output Files Gemini 3.5 Flash",
-        "reasoning_effort": "minimal",  
+        "label": "Input Price: $0.75/M, Output Price: $3.75/M",
+        "openrouter_id": "google/gemini-3.8-flash:floor",
+        "output_folder": "Output Files Gemini 3.8 Flash",
+        "reasoning_effort": "minimal",
     },
 }
 

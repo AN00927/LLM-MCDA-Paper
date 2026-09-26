@@ -30,7 +30,8 @@ if str(EXPERIMENTS_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENTS_DIR))
 
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking
+from sentinel_utils import (read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking,
+                            MAVT_ROUND_DECIMALS)
 
 from HVACGroundTruthCalculator import HVACGroundTruthCalculator
 from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
@@ -58,12 +59,14 @@ HVAC_DEFAULT_SQFT_FALLBACK = 2000
 HVAC_DEFAULT_HOUSEHOLD_SIZE = 2.54
 HVAC_DEFAULT_OUTDOOR_TEMP = 51.8
 HVAC_DEFAULT_UTILITY_BUDGET = 430
+HVAC_DEFAULT_OCCUPANCY_CONTEXT = "occupied_all_day"
 
 APPLIANCE_DEFAULT_KWH_PER_CYCLE = {
     "Washer": 0.55, "Dryer": 2.10, "Dishwasher": 1.00,
     "washing_machine": 0.55, "dryer": 2.10, "dishwasher": 1.00,
 }
 APPLIANCE_DEFAULT_KWH_FALLBACK = 1.00
+APPLIANCE_DEFAULT_BASELINE_TIME = "7pm"
 APPLIANCE_DEFAULT_AGE_YEARS = 11
 APPLIANCE_DEFAULT_HOUSEHOLD_SIZE = 2.54
 APPLIANCE_DEFAULT_UTILITY_BUDGET = 430
@@ -88,8 +91,11 @@ COMMON_STR_COLS = [
 ]
 
 def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, log_prefix=""):
-    """Rank rows by `weighted_col` desc with deterministic tie-breaking."""
+    """Rank rows by `weighted_col` desc with deterministic tie-breaking. The
+    weighted score is rounded to MAVT_ROUND_DECIMALS first, the same rule as
+    sentinel_utils.apply_mavt_ranking, so floating-point noise can't split a tie."""
     df = scores_df.copy()
+    df[weighted_col] = df[weighted_col].astype(float).round(MAVT_ROUND_DECIMALS)
     if df[weighted_col].duplicated().any():
         tied_groups = df.groupby(weighted_col).size()
         n_tied = (tied_groups > 1).sum()
@@ -128,8 +134,29 @@ def normalize_alternative(alt, decision_type):
         except ValueError: return alt
     return alt
 
+_RETRIEVAL_APPLIANCE_MODE = None
+
+
+def retrieval_set_appliance_mode():
+    """Appliance type the Fixed-Default baseline assigns to every Appliance
+    scenario: the mode over the retrieval (RAG) scenarios, the same rule and the
+    same helper as the dataset-median condition in
+    run_hybrid_ablation_experiments.compute_defaults(). Computed once, then
+    cached."""
+    global _RETRIEVAL_APPLIANCE_MODE
+    if _RETRIEVAL_APPLIANCE_MODE is None:
+        from run_hybrid_ablation_experiments import compute_defaults
+        _RETRIEVAL_APPLIANCE_MODE = compute_defaults()["Appliance"]["appliance"]
+    return _RETRIEVAL_APPLIANCE_MODE
+
+
 def build_scenario_from_test(row, decision_type):
-    """Build a scenario dict from TestScenarios row for the GT calculators."""
+    """Build a scenario dict from TestScenarios row for the GT calculators.
+
+    Homeowner-reported fields (location, household size, budget, housing type,
+    floor area, outdoor temperature, the appliance-age band) come from the row.
+    Every hidden engineering parameter is a fixed constant, identical for every
+    scenario of a type; nothing is read from the question text."""
     scenario = {
         'question': str(row.get('question', '')).strip(),
         'location': str(row.get('location', '')).strip(),
@@ -144,32 +171,19 @@ def build_scenario_from_test(row, decision_type):
             'hvac_age': HVAC_DEFAULT_HVAC_AGE,
             'r_value': HVAC_DEFAULT_R_VALUE,
             'seer': HVAC_DEFAULT_SEER,
-            'occupancy_context': str(row.get('occupancy_context', 'occupied_all_day')),
+            'occupancy_context': HVAC_DEFAULT_OCCUPANCY_CONTEXT,
             'electricity_rate': HVACGroundTruthCalculator.ELECTRICITY_RATE_PA,
             'alternative_1': str(row.get('alternative_1', '')),
             'alternative_2': str(row.get('alternative_2', '')),
             'alternative_3': str(row.get('alternative_3', '')),
         })
     elif decision_type == "Appliance":
-        # TestScenarios has no 'appliance' column, so the default here decides the
-        # appliance type for every scenario. Defaulting to 'Washer' made the
-        # question-text detection below unreachable and typed all 65 appliance
-        # scenarios as washing machines. Default to empty so detection runs.
-        app_type = str(row.get('appliance', '')).strip()
-        q_lower = str(row.get('question', '')).lower()
-        if not app_type or app_type.lower() in ('nan', 'none'):
-            # 'dishwasher' must be tested BEFORE 'washer': the substring 'washer'
-            # is contained in 'dishwasher', so testing 'washer' first silently
-            # classified every dishwasher scenario as a washing machine.
-            if 'dishwasher' in q_lower: app_type = 'Dishwasher'
-            elif 'dryer' in q_lower: app_type = 'Dryer'
-            elif 'washing machine' in q_lower or 'washer' in q_lower: app_type = 'Washer'
-            else: app_type = 'Washer'
+        # The appliance type is a hidden parameter, so the baseline does not
+        # read it from the question (it used to, with a keyword parser). Every
+        # Appliance scenario gets the retrieval-set mode, the same constant the
+        # dataset-median condition uses.
+        app_type = retrieval_set_appliance_mode()
 
-        if 'washer' in app_type.lower() and 'dishwasher' not in app_type.lower(): app_type = 'washing_machine'
-        elif 'dryer' in app_type.lower(): app_type = 'dryer'
-        elif 'dishwasher' in app_type.lower(): app_type = 'dishwasher'
-            
         # Parse appliance_age which might be a string band like "7-9 years" or a float/int
         raw_age = row.get('appliance_age')
         try:
@@ -184,25 +198,20 @@ def build_scenario_from_test(row, decision_type):
 
         scenario.update({
             'appliance': app_type,
-            # Fixed-Default means a per-appliance-type default, not one constant for
-            # every appliance: a dryer and a dishwasher do not use the same energy.
-            # TestScenarios carries no kwh_per_cycle column, so this lookup is what
-            # actually supplies the value in practice.
-            'kwh_per_cycle': float(row.get(
-                'kwh_per_cycle',
-                APPLIANCE_DEFAULT_KWH_PER_CYCLE.get(app_type, APPLIANCE_DEFAULT_KWH_FALLBACK),
-            )),
+            # The fixed kWh/cycle default for the assigned appliance type.
+            'kwh_per_cycle': float(APPLIANCE_DEFAULT_KWH_PER_CYCLE.get(
+                app_type, APPLIANCE_DEFAULT_KWH_FALLBACK)),
             'appliance_age': appliance_age_val,
-            'baseline_time': str(row.get('baseline_time', '7pm')),
+            'baseline_time': APPLIANCE_DEFAULT_BASELINE_TIME,
             'alternative_1': str(row.get('alternative_1', '')),
             'alternative_2': str(row.get('alternative_2', '')),
             'alternative_3': str(row.get('alternative_3', '')),
         })
     elif decision_type == "Shower":
         scenario.update({
-            'gpm': float(row.get('gpm', SHOWER_DEFAULT_GPM)),
-            'tank_size': float(row.get('tank_size', SHOWER_DEFAULT_TANK_SIZE)),
-            'water_heater_temp': float(row.get('water_heater_temp', SHOWER_DEFAULT_WATER_HEATER_TEMP)),
+            'gpm': float(SHOWER_DEFAULT_GPM),
+            'tank_size': float(SHOWER_DEFAULT_TANK_SIZE),
+            'water_heater_temp': float(SHOWER_DEFAULT_WATER_HEATER_TEMP),
             'outdoor_temp': float(row.get('outdoor_temp', SHOWER_DEFAULT_OUTDOOR_TEMP)),
             'alternative_1': str(row.get('alternative_1', '')),
             'alternative_2': str(row.get('alternative_2', '')),
@@ -347,23 +356,20 @@ def run_nearest_neighbor_baseline(test_df, k=3):
         all_rows = []
         for idx, row in test_df.iterrows():
             dtype = row['decision_type']
+            # The retrieval query is built exactly as A_E builds its own: the
+            # Test row's fields go to sentinel_utils.format_embedding_text
+            # (called inside retrieve_similar), including the row's flow_rate
+            # label for Shower. Nothing is parsed from the question and no hidden
+            # parameter is filled in: the embedding reads only homeowner fields.
+            # source_scenario_id is namespaced so it can never equal a RAG
+            # scenario's id and wrongly exclude that exemplar from retrieval.
             scenario = {
-                'decision_type': dtype, 'scenario_id': f"{dtype.lower()}_{idx}", 'source_scenario_id': idx,
-                'source_position': idx + 1, 'question': row['question'], 'location': row['location'],
-                'household_size': row['household_size'], 'housing_type': row['housing_type'],
-                'utility_budget': row.get('utility_budget', 0), 'alternatives': []
+                **row.to_dict(),
+                'decision_type': dtype, 'scenario_id': f"{dtype.lower()}_{idx}",
+                'source_scenario_id': f"test_{idx}", 'source_position': idx + 1,
+                'alternatives': [],
             }
-            if dtype == "HVAC":
-                scenario.update({'outdoor_temp': row['outdoor_temp'], 'insulation': row['insulation'],
-                                 'square_footage': row['square_footage'], 'house_age': row['house_age']})
-            elif dtype == "Appliance":
-                q_lower = str(row['question']).lower()
-                app_type = 'washing_machine' if 'washer' in q_lower else ('dryer' if 'dryer' in q_lower else 'dishwasher')
-                scenario.update({'appliance': app_type, 'appliance_age': row.get('appliance_age', 11), 'kwh_per_cycle': 0})
-            elif dtype == "Shower":
-                scenario.update({'outdoor_temp': row['outdoor_temp'], 'gpm': 2.5, 'flow_rate': 'standard',
-                                 'tank_size': 50, 'water_heater_temp': 120})
-            
+
             for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
                 if not pd.isna(row.get(alt_col)) and str(row.get(alt_col)).strip().lower() not in ('', 'nan'):
                     val = float(row[alt_col]) if dtype == "Shower" else str(row[alt_col]).strip()
@@ -385,8 +391,12 @@ def run_nearest_neighbor_baseline(test_df, k=3):
 def _rank_with_weights_and_tiebreak(group):
     """Rank alternatives within a group by mavt_score desc with deterministic tie-break."""
     tiebreak_cols = [f"{c}_score" for c in TIE_BREAK_PRIORITY]
-    sort_cols = ['mavt_score'] + tiebreak_cols
+    # Sort on the rounded sum (same rule as sentinel_utils.apply_mavt_ranking);
+    # the stored mavt_score keeps its full value.
+    group = group.assign(_mavt_sort=group['mavt_score'].astype(float).round(MAVT_ROUND_DECIMALS))
+    sort_cols = ['_mavt_sort'] + tiebreak_cols
     group_sorted = group.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
+    group_sorted = group_sorted.drop(columns=['_mavt_sort'])
     group_sorted['rank'] = range(1, len(group_sorted) + 1)
     return group_sorted
 
@@ -480,6 +490,8 @@ def main():
     parser.add_argument('--verify', action='store_true', help='Run verification checks')
     parser.add_argument('--baseline', type=str, help='Run single baseline (for verification)')
     parser.add_argument('--assert-top1-min', type=float, help='Assert minimum Top-1 accuracy')
+    parser.add_argument('--output-dir', default=str(PROJECT_ROOT / "Output Files" / "Baselines"),
+                        help='Where the baseline_*.xlsx files are written')
     args = parser.parse_args()
     
     baselines = ['fixed_default', 'nearest_neighbor'] if args.baselines == ['all'] else args.baselines
@@ -493,7 +505,7 @@ def main():
     
     results = run_all_baselines(test_df, baselines, k=args.k)
     
-    OUTPUT_DIR = PROJECT_ROOT / "Output Files" / "Baselines"
+    OUTPUT_DIR = Path(args.output_dir)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for name, df in results.items():
         df.to_excel(OUTPUT_DIR / f"baseline_{name.lower()}.xlsx", index=False, engine="openpyxl")

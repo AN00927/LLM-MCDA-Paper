@@ -1,8 +1,8 @@
 """Significance tests for the hybrid (parameter-provenance) ablation.
 
 Tests whether the two parameter-provenance arms differ by more than noise:
-    extracted        LLM-extracted hidden parameters
-    default_params   corpus-median parameters, no inference
+    extracted        LLM-extracted hidden parameters, one entry per shipped run
+    default_params   retrieval-set median parameters, no inference
 
 That single contrast is the paper's claim: it isolates what the extraction step
 contributes over a no-inference baseline. Both arms are scored against the
@@ -18,11 +18,20 @@ run_rag_ablation_experiments.py, so all three ablations in the paper are tested 
 same reviewed code.
 
 Only the two provenance arms above are tested here. `hybrid_ablation_summary.xlsx`
-also carries the alternative-ordering arms (`extracted_per_run`, `order_control`,
-`order_reversed`), which are a different experiment with its own analysis in
-`hybrid_order_reversal.xlsx`. They are excluded because they carry several runs
-per scenario, which the pivot inside `posthoc_wilcoxon_holm` would collapse with
-`aggfunc='first'` -- keeping run 1 and discarding the rest without saying so.
+also carries the alternative-ordering arms (`order_control`, `order_reversed`),
+which are a different experiment with its own analysis in
+`hybrid_order_reversal.xlsx`.
+
+Pairing basis (the Methods protocol for every paired test in the paper): the
+`extracted` arm holds one row per scenario per shipped run. Before testing, each
+scenario's metric is averaged over the runs in which that scenario succeeded
+(five for most scenarios, fewer where a run failed); a scenario that failed in
+every run has no value and drops out of its model's test. The test then pairs
+that per-scenario run mean with the scenario's dataset-median value. Feeding
+the multi-run rows straight into `posthoc_wilcoxon_holm` would be wrong: its
+pivot collapses duplicates with `aggfunc='first'`, keeping run 1 and silently
+discarding the rest. The arm used to read the five-run aggregate workbook
+(a parameter ensemble, not A_H); that path is gone.
 
 Tests run within each model. Pooling models would confound provenance effects
 with model effects.
@@ -31,7 +40,8 @@ Significance-testing methodology (one correction layer):
   With two arms there is exactly one comparison per (model, metric) cell, so a
   Friedman omnibus does not apply -- it needs three or more related samples --
   and there is no within-cell pairwise family to correct. Each cell is therefore
-  tested directly with a paired Wilcoxon signed-rank test on the 195 scenarios,
+  tested directly with a paired Wilcoxon signed-rank test on the 195 scenarios
+  (fewer for a model with a scenario that failed in every run),
   via `posthoc_wilcoxon_holm` restricted to the two arms (its own Holm step is a
   no-op over a family of one, so the RAW p_value is taken from it).
 
@@ -50,15 +60,21 @@ Significance-testing methodology (one correction layer):
   for every model x arm x metric; they describe an arm's own sampling
   uncertainty rather than a pairwise comparison.
 
-Outputs (Analysis/Hybrid_Ablation/):
+Outputs (Analysis/Hybrid_Ablation/ by default, --output-dir to redirect):
     hybrid_ablation_pairwise_tests.xlsx
     hybrid_ablation_bootstrap_ci.xlsx
     hybrid_ablation_significance.xlsx     pairwise / descriptives
 
+Descriptives and bootstrap CIs are computed on the same per-scenario run means
+that are tested. For a model with failures their mean can differ in the fourth
+decimal from the headline A_H value (mean of per-run means); the headline value
+lives in hybrid_ablation_summary.xlsx, sheet `summary`.
+
 Run:
-    python "Miscellaneous Scripts/test_hybrid_ablation_significance.py"
+    python "Miscellaneous Scripts/validation/test_hybrid_ablation_significance.py"
 """
 
+import argparse
 import importlib.util
 import sys
 from pathlib import Path
@@ -74,6 +90,10 @@ SUMMARY_XLSX = OUT_DIR / "hybrid_ablation_summary.xlsx"
 
 METRIC_COLS = ["kendall_tau", "top1", "mae"]
 
+# Decimals kept on each per-scenario run mean before testing (see
+# per_scenario_run_means). Far below any real difference between scenarios.
+RUN_MEAN_DECIMALS = 10
+
 # The parameter-provenance arms, and only those. See the module docstring: the
 # summary workbook also carries the alternative-ordering arms, which belong to a
 # separate experiment and have several rows per scenario.
@@ -88,22 +108,57 @@ def _load_rag_module():
     return module
 
 
+def per_scenario_run_means(df: pd.DataFrame) -> pd.DataFrame:
+    """One row per (model, arm, scenario): each metric averaged over the runs
+    in which that scenario succeeded. Failed scenario-runs are already removed
+    by the caller, so the 1928 sentinel never reaches this mean. A single-run
+    arm (default_params) passes through unchanged."""
+    keys = ["model", "arm", "scenario_id"]
+    out = (df.groupby(keys, sort=False)
+             .agg(**{m: (m, "mean") for m in METRIC_COLS},
+                  n_runs_scored=("kendall_tau", "size"),
+                  decision_type=("decision_type", "first"))
+             .reset_index())
+    # Rounded so that equal values are equal. Wilcoxon (zero differences, tied
+    # ranks) and Cliff's delta (ties) are decided by exact equality, and a run
+    # mean such as (1 + 1/3) / 2 differs in the 16th digit depending on
+    # summation order and on an xlsx round trip. Unrounded, a re-read of the
+    # same workbook moved gptoss's tau Cliff's delta from -0.187 to -0.190.
+    out[METRIC_COLS] = out[METRIC_COLS].round(RUN_MEAN_DECIMALS)
+    return out
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--summary", default=str(SUMMARY_XLSX),
+                   help="hybrid_ablation_summary.xlsx written by "
+                        "run_hybrid_ablation_experiments.py")
+    p.add_argument("--output-dir", default=str(OUT_DIR))
+    return p.parse_args()
+
+
 def main():
-    if not SUMMARY_XLSX.exists():
-        raise SystemExit(f"Missing {SUMMARY_XLSX}. Run run_hybrid_ablation_experiments.py first.")
+    args = parse_args()
+    summary_xlsx = Path(args.summary)
+    out_dir = Path(args.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if not summary_xlsx.exists():
+        raise SystemExit(f"Missing {summary_xlsx}. Run run_hybrid_ablation_experiments.py first.")
 
     rag = _load_rag_module()
-    df = pd.read_excel(SUMMARY_XLSX, sheet_name="per_scenario")
+    df = pd.read_excel(summary_xlsx, sheet_name="per_scenario")
     df = df[~df["failed"].astype(bool)].copy()
 
     missing = [a for a in PROVENANCE_ARMS if a not in set(df["arm"])]
     if missing:
-        raise SystemExit(f"Missing provenance arm(s) in {SUMMARY_XLSX}: {missing}")
+        raise SystemExit(f"Missing provenance arm(s) in {summary_xlsx}: {missing}")
     dropped = sorted(set(df["arm"]) - set(PROVENANCE_ARMS))
     df = df[df["arm"].isin(PROVENANCE_ARMS)].copy()
     if dropped:
         print(f"Arms excluded (separate experiment, see hybrid_order_reversal.xlsx): "
               f"{', '.join(dropped)}")
+    # Pair on per-scenario run means (see the module docstring).
+    df = per_scenario_run_means(df)
 
     pairwise_rows = []
     boot_rows = []
@@ -161,14 +216,14 @@ def main():
     descriptives.columns = ["_".join(c).strip("_") for c in descriptives.columns.to_flat_index()]
     descriptives = descriptives.reset_index()
 
-    with pd.ExcelWriter(OUT_DIR / "hybrid_ablation_significance.xlsx") as xl:
+    with pd.ExcelWriter(out_dir / "hybrid_ablation_significance.xlsx") as xl:
         pairwise.to_excel(xl, sheet_name="pairwise", index=False)
         descriptives.to_excel(xl, sheet_name="descriptives", index=False)
 
-    pairwise.to_excel(OUT_DIR / "hybrid_ablation_pairwise_tests.xlsx", index=False)
-    bootstrap.to_excel(OUT_DIR / "hybrid_ablation_bootstrap_ci.xlsx", index=False)
+    pairwise.to_excel(out_dir / "hybrid_ablation_pairwise_tests.xlsx", index=False)
+    bootstrap.to_excel(out_dir / "hybrid_ablation_bootstrap_ci.xlsx", index=False)
 
-    print(f"Models tested: {df['model'].nunique()}  |  scenario rows: {len(df)}")
+    print(f"Models tested: {df['model'].nunique()}  |  scenario rows (run means): {len(df)}")
     print()
     n_tests = int(pairwise["p_value"].notna().sum()) if len(pairwise) else 0
     print(f"=== extracted vs default_params: paired Wilcoxon signed-rank ===")
@@ -181,7 +236,7 @@ def main():
 
     n_sig = int(pairwise["significant_holm"].sum()) if len(pairwise) else 0
     print(f"\nSignificant cells: {n_sig} of {n_tests}")
-    print(f"Wrote 3 files to {OUT_DIR}")
+    print(f"Wrote 3 files to {out_dir}")
 
 
 if __name__ == "__main__":

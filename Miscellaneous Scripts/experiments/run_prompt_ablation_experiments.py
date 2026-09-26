@@ -33,6 +33,7 @@ Resume-aware per (variant, architecture, model, run).
 """
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -42,6 +43,7 @@ import threading
 import time
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -56,7 +58,6 @@ from dotenv import load_dotenv
 from scipy.stats import kendalltau
 
 from model_config import (
-    CRITERION_WEIGHTS,
     MAX_RETRIES,
     MAX_RETRY_BACKOFF,
     MODEL_SPECS,
@@ -72,6 +73,7 @@ from model_config import (
 from sentinel_utils import (
     CRITERIA,
     SENTINEL_FLOAT,
+    RawCallLog,
     apply_mavt_ranking,
     read_table_clean,
 )
@@ -87,6 +89,14 @@ TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
 GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 logger = logging.getLogger("prompt_ablation")
+
+# Per-call raw archive, same mechanism as the architectures (sentinel_utils.RawCallLog).
+# Disabled unless .start() is called; each cell's run gets its own jsonl. Workers
+# call .record() concurrently, so the file write is serialised by this lock and
+# scenario_id is passed explicitly per call rather than via .set_scenario(), which
+# is not thread-safe.
+RAW_LOG = RawCallLog()
+_raw_log_lock = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -510,6 +520,25 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
         for key in ("prompt_tokens", "completion_tokens", "total_tokens", "latency_ms"):
             diag[key] += call_diag.get(key, 0)
 
+        user_prompt = messages[-1]["content"]
+        with _raw_log_lock:
+            RAW_LOG.record(
+                scenario_id=scenario.get("scenario_id"),
+                decision_type=scenario.get("decision_type", ""),
+                alternative=alternative,
+                model=model_id,
+                prompt=user_prompt,
+                prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
+                response=response or "",
+                prompt_tokens=call_diag.get("prompt_tokens", 0),
+                completion_tokens=call_diag.get("completion_tokens", 0),
+                latency_ms=call_diag.get("latency_ms", 0),
+                retries=call_diag.get("retries", 0),
+                attempts=call_diag.get("retries", 0) + 1,
+                error=call_diag.get("error", ""),
+                api_success=response is not None,
+            )
+
         scores, error = parse_scores(response, variant["scale_max"]) if response else (None, "failed_api_exhausted")
         if error:
             diag["failed_calls"] += 1
@@ -580,13 +609,25 @@ def load_reference() -> Dict[int, Dict]:
             "ranked_alternatives": [clean(a) for a in ordered["alternative"]],
             "mavt_by_alt": {clean(r["alternative"]): float(r["mavt_score"])
                             for _, r in sub.iterrows()},
+            # Ground-truth "rank" is already the deterministic TIE_BREAK_PRIORITY
+            # tie-break applied by apply_mavt_ranking (see the GT calculators) --
+            # reused here rather than re-deriving ranks from mavt_score, which
+            # would tie whenever two alternatives share a weighted sum.
+            "rank_by_alt": {clean(r["alternative"]): int(r["rank"])
+                            for _, r in sub.iterrows()},
         }
     return reference
 
 
 def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
     """Kendall tau / Top-1 against the reference ranking. A scenario with any
-    sentinel score is reported as failed and contributes to no mean."""
+    sentinel score is reported as failed and contributes to no mean.
+
+    Tau is computed on ranks, not raw scores: `result["ranking"]` already
+    applies apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY tie-break
+    (B60), and the reference side reuses the ground truth's own tie-broken
+    "rank" column, so neither side scores tau_b on tied values.
+    """
     out = {"kendall_tau": np.nan, "top1": np.nan, "failed": True}
     if ref is None:
         return out
@@ -598,17 +639,17 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
     if len(common) < 2:
         return out
 
-    pred = {a["alternative"]: sum(CRITERION_WEIGHTS[c] * float(a[c]) for c in CRITERIA)
-            for a in scored}
-    pred_vec = [pred[a] for a in common]
-    ref_vec = [ref["mavt_by_alt"][a] for a in common]
-    if len(set(pred_vec)) < 2 or len(set(ref_vec)) < 2:
+    pred_rank_by_alt = {a["alternative"]: r for a, r in
+                        zip(scored, result["ranking"]["ranks"])}
+    pred_ranks = [pred_rank_by_alt[a] for a in common]
+    ref_ranks = [ref["rank_by_alt"][a] for a in common]
+    if len(set(pred_ranks)) < 2 or len(set(ref_ranks)) < 2:
         tau = np.nan
     else:
-        tau = float(kendalltau(pred_vec, ref_vec).correlation)
+        tau = float(kendalltau(pred_ranks, ref_ranks).correlation)
 
-    pred_top1 = max(common, key=lambda a: pred[a])
-    ref_top1 = max(common, key=lambda a: ref["mavt_by_alt"][a])
+    pred_top1 = min(common, key=lambda a: pred_rank_by_alt[a])
+    ref_top1 = min(common, key=lambda a: ref["rank_by_alt"][a])
     return {"kendall_tau": tau, "top1": 1.0 if pred_top1 == ref_top1 else 0.0,
             "failed": False}
 
@@ -618,12 +659,13 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
 # ---------------------------------------------------------------------------
 
 def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture: str,
-                   model_key: str, run_idx: int, error: str) -> Dict:
+                   model_key: str, run_idx: int, error: str, collected_utc: str) -> Dict:
     """A scenario that raised rather than returning scores. Marked failed so it is
     excluded from every mean, with the error preserved for diagnosis."""
     return {
         "variant": variant_id, "variant_label": variant["label"],
         "architecture": architecture, "model": model_key, "run": run_idx,
+        "collected_utc": collected_utc,
         "scenario_id": scenario["scenario_id"],
         "decision_type": scenario.get("decision_type", ""),
         "kendall_tau": np.nan, "top1": np.nan, "failed": True, "pred_top1": "",
@@ -636,10 +678,11 @@ def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture:
 
 def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: str,
              variant_id: str, variant: Dict, model_key: str, run_idx: int,
-             workers: int) -> pd.DataFrame:
+             workers: int, raw_log_path: Optional[Path] = None) -> pd.DataFrame:
     """One (variant, architecture, model, run) cell over all scenarios."""
     model_id = MODEL_SPECS[model_key]["openrouter_id"]
     records: List[Optional[Dict]] = [None] * len(scenarios)
+    collected_utc = datetime.now(timezone.utc).isoformat()
 
     def work(i: int) -> Tuple[int, Dict]:
         scenario = scenarios[i]
@@ -652,6 +695,7 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
             "architecture": architecture,
             "model": model_key,
             "run": run_idx,
+            "collected_utc": collected_utc,
             "scenario_id": scenario["scenario_id"],
             "decision_type": scenario.get("decision_type", ""),
             "kendall_tau": metrics["kendall_tau"],
@@ -681,37 +725,45 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
     if ARCHITECTURES[architecture]["rag"]:
         preload_ae_module()
 
-    n_workers = max(1, int(workers))
-    if n_workers > 1:
-        with ThreadPoolExecutor(max_workers=n_workers) as pool:
-            futures = {pool.submit(work, i): i for i in range(len(scenarios))}
-            done = 0
-            for future in as_completed(futures):
-                idx = futures[future]
+    if raw_log_path is not None:
+        RAW_LOG.start(raw_log_path, run=run_idx)
+    try:
+        n_workers = max(1, int(workers))
+        if n_workers > 1:
+            with ThreadPoolExecutor(max_workers=n_workers) as pool:
+                futures = {pool.submit(work, i): i for i in range(len(scenarios))}
+                done = 0
+                for future in as_completed(futures):
+                    idx = futures[future]
+                    try:
+                        i, rec = future.result()
+                        records[i] = rec
+                    except Exception as exc:
+                        # One scenario must not abort a multi-hour campaign. Record it
+                        # as a failed scenario so it is excluded from every mean and
+                        # stays visible in the per-scenario sheet.
+                        logger.warning("scenario %s raised: %s",
+                                       scenarios[idx]["scenario_id"], exc)
+                        records[idx] = _failed_record(scenarios[idx], variant_id, variant,
+                                                      architecture, model_key, run_idx,
+                                                      str(exc), collected_utc)
+                    done += 1
+                    if done % 25 == 0 or done == len(scenarios):
+                        logger.info("      %s/%s scenarios", done, len(scenarios))
+        else:
+            for idx in range(len(scenarios)):
                 try:
-                    i, rec = future.result()
+                    i, rec = work(idx)
                     records[i] = rec
                 except Exception as exc:
-                    # One scenario must not abort a multi-hour campaign. Record it
-                    # as a failed scenario so it is excluded from every mean and
-                    # stays visible in the per-scenario sheet.
                     logger.warning("scenario %s raised: %s",
                                    scenarios[idx]["scenario_id"], exc)
                     records[idx] = _failed_record(scenarios[idx], variant_id, variant,
-                                                  architecture, model_key, run_idx, str(exc))
-                done += 1
-                if done % 25 == 0 or done == len(scenarios):
-                    logger.info("      %s/%s scenarios", done, len(scenarios))
-    else:
-        for idx in range(len(scenarios)):
-            try:
-                i, rec = work(idx)
-                records[i] = rec
-            except Exception as exc:
-                logger.warning("scenario %s raised: %s",
-                               scenarios[idx]["scenario_id"], exc)
-                records[idx] = _failed_record(scenarios[idx], variant_id, variant,
-                                              architecture, model_key, run_idx, str(exc))
+                                                  architecture, model_key, run_idx,
+                                                  str(exc), collected_utc)
+    finally:
+        if raw_log_path is not None:
+            RAW_LOG.stop()
 
     return pd.DataFrame([r for r in records if r is not None])
 
@@ -874,9 +926,11 @@ def main():
                             logger.info("Unreadable, re-running %s", cell_path.name)
                     logger.info("Running %s / %s / %s / run %s",
                                 variant_id, arch, model_key, run_idx)
+                    raw_log_path = cell_path.with_name(f"{cell_path.stem}_raw.jsonl")
                     try:
                         cell_df = run_cell(scenarios, reference, arch, variant_id, variant,
-                                           model_key, run_idx, args.workers)
+                                           model_key, run_idx, args.workers,
+                                           raw_log_path=raw_log_path)
                     except Exception as exc:
                         # Skip this cell rather than lose every completed cell.
                         # Reruns resume from the xlsx files already on disk.
