@@ -14,14 +14,23 @@ Design:
     variants. Pooling across models would confound prompt effects with model
     effects, and pooling across architectures would compare A_D variants
     against A_E variants, which is not the question.
-  - Scenario-level metrics are averaged over the 5 runs first, giving one
-    value per (variant, scenario). This matches the "Method A" aggregation
-    used by `significance_testing.py` for the headline architecture results,
-    so effect estimates are comparable across the paper. `no_anchors` uses
-    10 runs instead of 5 (see module-level rerun note); the averaging step is
-    identical, just over more runs for that variant.
-  - `no_anchors` has no A_E arm (A_E ships without anchors), so A_E strata
-    test 3 variants and A_D strata test 4.
+  - Scenario-level metrics are averaged over the runs first (3 per cell,
+    fixed in advance, author decision 2026-09-27), giving one value per
+    (variant, scenario). This matches the "Method A" aggregation used by
+    `significance_testing.py` for the headline architecture results, so
+    effect estimates are comparable across the paper.
+  - The control cell is NOT a collected cell by default: it is main-suite runs
+    1..R (R = the stratum's run count), rebuilt and scored by
+    run_prompt_ablation_experiments.main_suite_control_rows. The ablation
+    script checks at startup that its control messages equal the main suite's
+    byte for byte. A control collected explicitly (cell_control_*) is used
+    instead when present, never mixed with main-suite rows.
+  - Variants since 2026-09-27: control, no_anchors, cot_scaffold (scale_0_10
+    cut). `no_anchors` has no A_E arm (A_E ships without anchors), so A_D
+    strata test 3 variants (Friedman omnibus, then post-hoc Wilcoxon) and A_E
+    strata test 2 (one paired Wilcoxon signed-rank test, control vs
+    cot_scaffold, which is that stratum's omnibus test and joins the same
+    Holm family as the Friedman tests).
 
 Significance-testing methodology (two correction layers, mirroring
 run_rag_ablation_experiments.py and test_hybrid_ablation_significance.py exactly):
@@ -95,6 +104,37 @@ def _load_rag_module():
     return module
 
 
+def _load_prompt_ablation_module():
+    """Import run_prompt_ablation_experiments for the main-suite control loader
+    and the reference ranking, so control rows are scored by the same code as
+    the collected cells."""
+    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_prompt_ablation_experiments.py"
+    spec = importlib.util.spec_from_file_location("run_prompt_ablation", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def add_main_suite_control(df: pd.DataFrame, pa=None) -> pd.DataFrame:
+    """Append the control cell for every (architecture, model) stratum that has
+    no collected control, from main-suite runs 1..R, where R is the stratum's
+    largest run index. Restricted to the scenarios the stratum's cells cover."""
+    pa = pa or _load_prompt_ablation_module()
+    reference = None
+    parts = [df]
+    for (arch, model), g in df.groupby(["architecture", "model"]):
+        if (g["variant"] == "control").any():
+            continue
+        if reference is None:
+            reference = pa.load_reference()
+        runs = int(g["run"].max())
+        control = pa.main_suite_control_rows(model, arch, runs, reference,
+                                             scenario_ids=set(int(x) for x in g["scenario_id"]))
+        print(f"Control for {arch}/{model}: main-suite runs 1-{runs} ({len(control)} scenario rows)")
+        parts.append(control)
+    return pd.concat(parts, ignore_index=True)
+
+
 def load_matrix() -> pd.DataFrame:
     """All per-scenario cell rows, failed scenarios included.
 
@@ -111,9 +151,29 @@ def load_matrix() -> pd.DataFrame:
     return pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
 
 
+def two_variant_test(stratum: pd.DataFrame, metric_cols, rag) -> list:
+    """Omnibus rows for a 2-variant stratum: one paired Wilcoxon signed-rank
+    test per metric (Friedman needs 3 groups). The rows carry the same columns
+    as the Friedman rows plus `test`, so both join one Holm family."""
+    rows = []
+    for metric in metric_cols:
+        ph = rag.posthoc_wilcoxon_holm(stratum, metric, config_col="variant",
+                                       scenario_col="scenario_id")
+        if ph.empty:
+            continue
+        r = ph.iloc[0]
+        rows.append({"metric": metric, "test": "wilcoxon_signed_rank", "chi2": float("nan"),
+                     "statistic": r["statistic"], "p_value": r["p_value"], "df": 1,
+                     "n_scenarios": r["n_pairs"], "n_configs": 2,
+                     "config_i": r["config_i"], "config_j": r["config_j"],
+                     "cliff_delta": r["cliff_delta"],
+                     "cliff_delta_interpretation": r["cliff_delta_interpretation"]})
+    return rows
+
+
 def main():
     rag = _load_rag_module()
-    df = load_matrix()
+    df = add_main_suite_control(load_matrix())
 
     # Average over runs -> one row per (variant, architecture, model, scenario).
     per_scenario = (
@@ -126,6 +186,10 @@ def main():
 
     for (arch, model), stratum in per_scenario.groupby(["architecture", "model"]):
         n_variants = stratum["variant"].nunique()
+        if n_variants == 2:
+            for r in two_variant_test(stratum, METRIC_COLS, rag):
+                friedman_rows.append({"architecture": arch, "model": model, **r})
+            continue
         if n_variants < 3:
             continue
         strata.append((arch, model, stratum))
@@ -135,7 +199,8 @@ def main():
             config_col="variant", scenario_col="scenario_id",
         )
         for _, r in fr.iterrows():
-            friedman_rows.append({"architecture": arch, "model": model, **r.to_dict()})
+            friedman_rows.append({"architecture": arch, "model": model, "test": "friedman",
+                                  **r.to_dict()})
 
     friedman = pd.DataFrame(friedman_rows)
 
@@ -233,7 +298,7 @@ def main():
     n_friedman = int(friedman["p_value"].notna().sum()) if len(friedman) else 0
     print(f"=== FRIEDMAN (per architecture x model; Holm-corrected across all {n_friedman} tests) ===")
     if len(friedman):
-        show = friedman[["architecture", "model", "metric", "chi2", "p_value",
+        show = friedman[["architecture", "model", "metric", "test", "chi2", "p_value",
                          "p_holm", "significant_holm", "df", "n_scenarios", "n_configs"]]
         print(show.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 

@@ -1,18 +1,23 @@
 """Prompt-sensitivity ablation for A_D (direct scoring) and A_E (example-guided).
 
 Tests whether A_D's and A_E's poor rank recovery is an artifact of the specific
-prompt they ship with, rather than a property of direct LLM scoring. Four
-variants, applied to both architectures:
+prompt they ship with, rather than a property of direct LLM scoring. Variants:
 
-  control      -- the shipped prompt, unmodified. Gate: must reproduce the
-                  main-text tau within run-to-run SD, otherwise the harness
-                  itself is wrong and no other arm can be trusted.
+  control      -- the shipped prompt, unmodified. NOT collected by default
+                  (author decision 2026-09-27): its messages are byte-identical
+                  to the main suite's (checked at startup by
+                  _assert_control_is_main_suite), so the significance script
+                  reads main-suite runs 1..N as the control cell instead of
+                  paying for the same calls twice. Pass --variants control to
+                  collect it anyway (smoke tests, harness checks).
   no_anchors   -- per-criterion good/moderate/poor calibration anchors stripped
                   from the system prompt, leaving criterion names and the scale.
+                  A_D only (A_E ships without anchors).
   cot_scaffold -- an explicit reasoning scaffold before the JSON answer.
-  scale_0_10   -- response scale changed 0-1 -> 0-10, rescaled post hoc by /10.
-                  The sharpest probe of the central-tendency finding: if the
-                  clustering is a scale artifact it should move here.
+
+The 0-10 response-scale variant was cut on 2026-09-27 (author decision).
+Every cell runs PROMPT_ABLATION_RUNS = 3 times by default, fixed in advance,
+with no top-up runs.
 
 This script NEVER edits the architecture files. The shipped A_D system prompt is
 hardcoded inline in `score_alternative()` and A_E's in
@@ -204,20 +209,6 @@ Write your reasoning first, then on the final line return ONLY the JSON object.
 """
 
 
-def _rescale_prompt_0_10(prompt: str) -> str:
-    """Rewrite a 0-1 system prompt to ask for 0-10. Applied to the shipped text
-    so the variant differs from control in the scale and nothing else."""
-    out = prompt.replace(
-        "using the inclusive 0-1 scale (0.0 <= score <= 1.0)",
-        "using the inclusive 0-10 scale (0.0 <= score <= 10.0)",
-    )
-    out = out.replace(
-        'where each X is between 0.0 and 1.0.',
-        'where each X is between 0.0 and 10.0.',
-    )
-    return out
-
-
 VARIANT_SPECS = OrderedDict([
     ("control", {
         "label": "Control (shipped prompt)",
@@ -241,14 +232,16 @@ VARIANT_SPECS = OrderedDict([
         "system": {"AD": AD_SYSTEM_PROMPT + COT_SCAFFOLD,
                    "AE": AE_SYSTEM_PROMPT + COT_SCAFFOLD},
     }),
-    ("scale_0_10", {
-        "label": "Response scale 0-10 (rescaled post hoc)",
-        "scale_max": 10.0,
-        "cot": False,
-        "system": {"AD": _rescale_prompt_0_10(AD_SYSTEM_PROMPT),
-                   "AE": _rescale_prompt_0_10(AE_SYSTEM_PROMPT)},
-    }),
 ])
+
+# Variants collected when --variants is not given: control comes from the main
+# suite (see module docstring).
+DEFAULT_VARIANTS = [v for v in VARIANT_SPECS if v != "control"]
+
+# Runs per cell, fixed in advance (author decision 2026-09-27). Deliberately not
+# N_RUNS: the main suite keeps 5 runs, and runs 1..PROMPT_ABLATION_RUNS of it are
+# the control cell.
+PROMPT_ABLATION_RUNS = 3
 
 NO_ANCHORS_AE_NOTE = (
     "A_E's shipped system prompt contains no per-criterion calibration anchors "
@@ -441,6 +434,131 @@ def _assert_control_matches_shipped() -> None:
         )
 
 
+class _CapturedMessages(BaseException):
+    """Raised by a stubbed query function to stop an architecture right after it
+    has built its messages. A BaseException, so the architectures' own
+    `except Exception` handlers cannot swallow it."""
+
+    def __init__(self, messages):
+        super().__init__("captured")
+        self.messages = messages
+
+
+def _capture_stub(*args, **kwargs):
+    messages = args[0] if args else kwargs.get("messages")
+    raise _CapturedMessages(messages)
+
+
+def _load_direct_module():
+    import importlib.util
+    path = PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py"
+    spec = importlib.util.spec_from_file_location("direct_llm_scoring_for_check", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def main_suite_messages(architecture: str, scenario: Dict, alternative: str) -> List[Dict]:
+    """The exact messages the installed main-suite architecture would send for
+    one (scenario, alternative), captured by stubbing its query function. No
+    API call is made."""
+    if ARCHITECTURES[architecture]["rag"]:
+        module, fn = _load_ae_module(), "score_alternative_with_rag"
+    else:
+        module, fn = _load_direct_module(), "score_alternative"
+    original = module.query_openrouter
+    module.query_openrouter = _capture_stub
+    try:
+        getattr(module, fn)(scenario, alternative)
+    except _CapturedMessages as captured:
+        return captured.messages
+    finally:
+        module.query_openrouter = original
+    raise RuntimeError(f"{architecture}: the architecture returned without calling its query "
+                       f"function (for A_E, retrieval found no exemplar).")
+
+
+def _assert_control_is_main_suite(architectures: List[str]) -> None:
+    """Fail loudly unless this script's control messages equal the installed
+    architectures' byte for byte, on the first test scenario of each decision
+    type and every alternative. That equality is what lets the significance
+    script use main-suite runs as the control cell (author decision
+    2026-09-27); the other variants then differ from the main suite only in
+    their system prompt."""
+    scenarios = load_scenarios(None, 13)
+    firsts = {}
+    for sc in scenarios:
+        firsts.setdefault(sc.get("decision_type"), sc)
+    problems = []
+    for arch in architectures:
+        for dtype, sc in firsts.items():
+            for i in (1, 2, 3):
+                alt = str(sc.get(f"alternative_{i}"))
+                ours = build_messages(arch, VARIANT_SPECS["control"], sc, alt)
+                theirs = main_suite_messages(arch, sc, alt)
+                if ours != theirs:
+                    problems.append(f"{arch} {dtype} scenario {sc['scenario_id']} alternative {alt!r}")
+    if problems:
+        raise RuntimeError(
+            "Control messages differ from the installed main suite's, so main-suite runs "
+            "cannot stand in for the control cell:\n  - " + "\n  - ".join(problems))
+
+
+MAIN_SUITE_FILE_STEM = {"AD": "Direct_LLM_Scoring", "AE": "Example-Guided_LLM_Scoring"}
+
+
+def main_suite_run_path(model_key: str, architecture: str, run_idx: int) -> Path:
+    """Per-run workbook of the main suite (k = 1, untagged A_E files only)."""
+    return (PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"]
+            / f"{MAIN_SUITE_FILE_STEM[architecture]}_results_run_{run_idx:02d}.xlsx")
+
+
+def main_suite_control_rows(model_key: str, architecture: str, runs: int,
+                            reference: Dict[int, Dict],
+                            scenario_ids: Optional[List[int]] = None) -> pd.DataFrame:
+    """The control cell rebuilt from main-suite runs 1..runs, scored with this
+    script's own scenario_metrics, so control and variant rows are computed by
+    the same code. Columns match run_cell's rows for everything the summary and
+    the significance tests read. A missing run file raises: a partial control
+    would bias every comparison against it."""
+    rows = []
+    for run_idx in range(1, runs + 1):
+        path = main_suite_run_path(model_key, architecture, run_idx)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Main-suite run {run_idx} for {model_key}/{architecture} not found at {path}. "
+                f"The prompt-ablation control comes from main-suite runs 1..{runs}; collect them first.")
+        df = read_table_clean(path, keep_str_cols=["alternative"])
+        for sid, g in df.groupby("scenario_id", sort=True):
+            sid = int(sid)
+            if scenario_ids is not None and sid not in scenario_ids:
+                continue
+            scored = [{"alternative": str(r["alternative"]), **{c: float(r[c]) for c in CRITERIA}}
+                      for _, r in g.iterrows()]
+            result = {"scored": scored, "ranking": apply_mavt_ranking(scored)}
+            metrics = scenario_metrics(result, reference.get(sid))
+            valid = [a for a in scored if not any(a[c] == SENTINEL_FLOAT for c in CRITERIA)]
+            rows.append({
+                "variant": "control",
+                "variant_label": VARIANT_SPECS["control"]["label"] + " [main-suite run]",
+                "architecture": architecture, "model": model_key,
+                "model_id": str(g["model_id"].iloc[0]) if "model_id" in g else "",
+                "run": run_idx,
+                "collected_utc": str(g["collected_utc"].iloc[0]) if "collected_utc" in g else "",
+                "scenario_id": sid,
+                "decision_type": str(g["decision_type"].iloc[0]),
+                "alt_scores_json": json.dumps([{**a, "rank": r} for a, r in
+                                               zip(scored, result["ranking"]["ranks"])]),
+                "kendall_tau": metrics["kendall_tau"], "top1": metrics["top1"],
+                "top2": metrics["top2"], "failed": metrics["failed"],
+                "pred_top1": metrics["pred_top1"],
+                "total_tokens": np.nan,
+                "mean_criterion_sd": float(np.mean([np.std([a[c] for c in CRITERIA]) for a in valid]))
+                                     if valid and not metrics["failed"] else np.nan,
+            })
+    return pd.DataFrame(rows)
+
+
 # ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
@@ -564,8 +682,10 @@ def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[st
 # ---------------------------------------------------------------------------
 
 def build_user_prompt(scenario: Dict, alternative: str) -> str:
-    """Mirrors Direct_LLM_Scoring.build_user_prompt. Homeowner-facing fields
-    only -- the true engineering values are never placed in an A_D/A_E prompt."""
+    """Byte-identical to Direct_LLM_Scoring.build_user_prompt (checked at
+    startup by _assert_control_is_main_suite). A_D only: A_E's user prompt is
+    built by the installed A_E's own build_user_prompt_with_rag. Homeowner-facing
+    fields only -- the true engineering values are never placed in a prompt."""
     decision_type = scenario.get("decision_type", "N/A")
     all_alts = [scenario.get("alternative_1", ""), scenario.get("alternative_2", ""),
                 scenario.get("alternative_3", "")]
@@ -598,7 +718,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
         prompt += f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
 
-    prompt += "\nProvide scores for all 4 criteria.\n"
+    prompt += "\nProvide scores (0-1) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
     return prompt
 
@@ -654,8 +774,9 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
                    retrieval_errors: Optional[List] = None,
                    distances_out: Optional[List] = None) -> List[Dict]:
     system_prompt = variant["system"][architecture]
-    user_prompt = build_user_prompt(scenario, alternative)
-    if ARCHITECTURES[architecture]["rag"]:
+    if not ARCHITECTURES[architecture]["rag"]:
+        user_prompt = build_user_prompt(scenario, alternative)
+    else:
         ae = _load_ae_module()
         # Chroma queries and the SentenceTransformer encode are serialised; only
         # the OpenRouter call below runs concurrently. Retrieval is local and
@@ -669,8 +790,10 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
         if distances_out is not None:
             distances_out.extend(r.get("distance") for r in retrieved)
         rag_context = ae.format_rag_context(retrieved)
-        if rag_context:
-            user_prompt = user_prompt + "\n" + rag_context
+        # The installed A_E's own builder, so the user prompt is the main
+        # suite's byte for byte. With no exemplar, score_scenario fails the
+        # call before any API request.
+        user_prompt = ae.build_user_prompt_with_rag(scenario, alternative, rag_context)
     return [{"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}]
 
@@ -1176,10 +1299,12 @@ def main():
                         help="Test scenarios to evaluate (default 'all' = 195), "
                              "stratified by decision type when subsetting.")
     parser.add_argument("--seed", type=int, default=13)
-    parser.add_argument("--runs", type=int, default=N_RUNS,
-                        help=f"Runs per cell (default N_RUNS={N_RUNS}).")
-    parser.add_argument("--variants", nargs="+", default=list(VARIANT_SPECS.keys()),
-                        choices=list(VARIANT_SPECS.keys()))
+    parser.add_argument("--runs", type=int, default=PROMPT_ABLATION_RUNS,
+                        help=f"Runs per cell (default {PROMPT_ABLATION_RUNS}, fixed in advance).")
+    parser.add_argument("--variants", nargs="+", default=DEFAULT_VARIANTS,
+                        choices=list(VARIANT_SPECS.keys()),
+                        help="Default: every variant except control, which the significance "
+                             "script takes from main-suite runs 1..--runs.")
     parser.add_argument("--architectures", nargs="+", default=list(ARCHITECTURES.keys()),
                         choices=list(ARCHITECTURES.keys()))
     parser.add_argument("--models", nargs="+",
@@ -1208,7 +1333,8 @@ def main():
         raise RuntimeError("OPENROUTER_API_KEY not found in .env")
 
     _assert_control_matches_shipped()
-    logger.info("Shipped-prompt drift check passed.")
+    _assert_control_is_main_suite(args.architectures)
+    logger.info("Shipped-prompt drift check passed; control messages equal the main suite's.")
 
     if "cot_scaffold" in args.variants:
         # Resolved once per model, before any cot_scaffold cell is collected
@@ -1284,6 +1410,20 @@ def main():
         return
 
     df = pd.concat(all_parts, ignore_index=True)
+    if "control" not in args.variants:
+        # The control cell is the main suite's runs 1..--runs. It is collected
+        # last (author decision: main suite after every ablation), so it is
+        # often absent here; the significance script adds it when it exists.
+        for arch in args.architectures:
+            for model_key in args.models:
+                try:
+                    control = main_suite_control_rows(
+                        model_key, arch, args.runs, reference,
+                        scenario_ids={s["scenario_id"] for s in scenarios})
+                except FileNotFoundError as exc:
+                    logger.info("Control for %s/%s not in the summary yet: %s", arch, model_key, exc)
+                    continue
+                df = pd.concat([df, control], ignore_index=True)
     summary, per_run_df = summarize(df)
 
     with pd.ExcelWriter(out_dir / "prompt_ablation_summary.xlsx") as xl:
