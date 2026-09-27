@@ -707,11 +707,27 @@ SYNTHETIC = [
 ]
 
 
+# Deliberate changes (author decision 2026-09-27: the main suite uses the
+# prompt ablation's lenient parser, sentinel_utils.extract_json_object +
+# is_numeric_score): the expected (scores, failure_types, success) of the
+# installed scorer, which differs from the pre-patch one on purpose.
+_SENT = {c: 1928 for c in ["energy_cost", "environmental", "comfort", "practicality"]}
+INTENDED_CHANGES = {
+    'Sure! {"energy_cost": 0.6, "environmental": 0.5, "comfort": 0.7, "practicality": 0.8}':
+        ({"energy_cost": 0.6, "environmental": 0.5, "comfort": 0.7, "practicality": 0.8}, [], True),
+    '{"energy_cost": true, "environmental": 0.5, "comfort": 0.7, "practicality": 0.8}':
+        ({"energy_cost": 1928, "environmental": 0.5, "comfort": 0.7, "practicality": 0.8},
+         ["FAILED_INVALID_SCORE_TYPE"], False),
+}
+
+
 @pytest.mark.parametrize("key", ["AD", "AE"])
 def test_regression_ad_ae_synthetic(key):
     """No historical A_D/A_E raw responses exist; replay a corpus of response
     shapes through the live and patched scorers and require identical scores
-    and failure codes (sentinels compared as sentinels)."""
+    and failure codes (sentinels compared as sentinels), except for the
+    replies in INTENDED_CHANGES, where the installed scorer must give the
+    listed outcome and differ from the pre-patch one."""
     live = H.load_prepatch(key)
     live.chroma_collection, live.embedding_model = H.FakeCollection(), H.FakeEmbedder()
     sc = dict(SCN["HVAC"][1])
@@ -723,7 +739,11 @@ def test_regression_ad_ae_synthetic(key):
             with mock.patch("requests.post", H.Poster([H.ok(text)])):
                 s, d = fn(dict(sc), alt)
             outs.append(({c: s.get(c) for c in CRIT}, d.get("failure_types"), bool(d.get("success"))))
-        assert outs[0] == outs[1], (key, text, outs)
+        if text in INTENDED_CHANGES:
+            assert outs[0] == INTENDED_CHANGES[text], (key, text, outs)
+            assert outs[0] != outs[1], (key, text, outs)
+        else:
+            assert outs[0] == outs[1], (key, text, outs)
 
 
 # ---------------------------------------------------------------------------

@@ -42,8 +42,11 @@ from sentinel_utils import (
     add_call_usage,
     build_openrouter_payload,
     call_log_fields,
+    CRITERIA,
+    extract_json_object,
     format_embedding_text,
     has_sentinel_scores,
+    is_numeric_score,
     init_usage_totals,
     log_run_event,
     merge_usage_totals,
@@ -659,15 +662,8 @@ def _validate_scores(response_text: str, diagnostics: Dict, retrieved: List[Dict
     validation_failed = False
     validation_failure_types = set()
     scores: Dict[str, float] = {}
-    try:
-        text = response_text.strip()
-        if text.startswith("```"):
-            text = text.split("```", 2)[1]
-            if text.lower().startswith("json"):
-                text = text[4:]
-            text = text.strip()
-        parsed = json.loads(text)
-    except (json.JSONDecodeError, ValueError):
+    parsed = extract_json_object(response_text, CRITERIA)
+    if parsed is None:
         logger.info("   Could not parse scores; failed")
         diagnostics['success'] = False
         diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
@@ -684,7 +680,7 @@ def _validate_scores(response_text: str, diagnostics: Dict, retrieved: List[Dict
             continue
 
         raw_score = parsed[criterion]
-        if isinstance(raw_score, (int, float)):
+        if is_numeric_score(raw_score):
             raw_value = float(raw_score)
             if 0.0 <= raw_value <= 1.0:
                 scores[criterion] = raw_value

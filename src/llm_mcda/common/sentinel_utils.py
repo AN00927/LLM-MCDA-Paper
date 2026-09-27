@@ -788,6 +788,48 @@ def gpm_to_flow_rate_label(gpm) -> str:
     return "high_flow"
 
 
+def extract_json_object(text, keys):
+    """The JSON object in a model reply, or None. Shared by A_D, A_E and the
+    prompt ablation so every scoring arm parses replies by one rule (author
+    decision 2026-09-27).
+
+    A ```json fence is unwrapped. The whole reply is parsed first; if that fails,
+    the last flat {...} span that holds any of *keys* is used, so a reply with
+    prose around the object (or a reasoning scaffold before it) still parses.
+    """
+    import json
+    import re
+    if not text:
+        return None
+    body = str(text).strip()
+    if body.startswith("```"):
+        parts = body.split("```")
+        if len(parts) >= 2:
+            body = parts[1]
+            if body.lower().startswith("json"):
+                body = body[4:]
+            body = body.strip()
+    try:
+        parsed = json.loads(body)
+        if isinstance(parsed, dict):
+            return parsed
+    except (json.JSONDecodeError, ValueError):
+        pass
+    for match in reversed(list(re.finditer(r"\{[^{}]*\}", body, re.DOTALL))):
+        try:
+            candidate = json.loads(match.group(0))
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(candidate, dict) and any(k in candidate for k in keys):
+            return candidate
+    return None
+
+
+def is_numeric_score(value) -> bool:
+    """A real number, not a bool (bool is an int subclass in Python)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def apply_mavt_ranking(alternatives_scores):
     """MAVT ranking for flat-dict alternatives (GT calculators and Direct arch).
 
