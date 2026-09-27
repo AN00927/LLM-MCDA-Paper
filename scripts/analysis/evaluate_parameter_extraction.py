@@ -70,6 +70,15 @@ def _to_float(value):
     return value
 
 
+def _required_float(row, key: str) -> float:
+    """A missing budget must fail loudly: 0 would silently switch the
+    calculators' budget penalty off (they skip it when budget <= 0)."""
+    value = _to_float(row.get(key))
+    if pd.isna(value):
+        raise ValueError(f"master row has no numeric {key!r}: {row.get(key)!r}")
+    return value
+
+
 def _clean_text(value) -> str:
     if value is None:
         return ""
@@ -219,13 +228,13 @@ def _build_ground_truth_scenario(decision_type: str, test_row: pd.Series, gt_row
             "hvac_age": float(gt_row["hvac_age"]),
             "household_size": float(gt_row["household_size"]),
             "housing_type": _clean_text(gt_row.get("housing_type", "")),
-            "utility_budget": float(gt_row.get("utility_budget", 0) or 0),
+            "utility_budget": _required_float(gt_row, "utility_budget"),
             "occupancy_context": _clean_text(gt_row.get("occupancy_context", "")),
         })
     elif decision_type == "Appliance":
         base.update({
             "location": _clean_text(gt_row["location"]),
-            "utility_budget": float(gt_row.get("utility_budget", 0) or 0),
+            "utility_budget": _required_float(gt_row, "utility_budget"),
             "appliance": _clean_text(gt_row["appliance"]),
             "housing_type": _clean_text(gt_row.get("housing_type", "")),
             "household_size": float(gt_row["household_size"]),
@@ -237,7 +246,7 @@ def _build_ground_truth_scenario(decision_type: str, test_row: pd.Series, gt_row
             "household_size": float(gt_row["household_size"]),
             "tank_size": float(gt_row["tank_size"]),
             "gpm": float(gt_row["gpm"]),
-            "utility_budget": float(gt_row.get("utility_budget", 0) or 0),
+            "utility_budget": _required_float(gt_row, "utility_budget"),
             "housing_type": _clean_text(gt_row.get("housing_type", "")),
             "outdoor_temp": float(gt_row["outdoor_temp"]),
             "water_heater_temp": float(gt_row["water_heater_temp"]),

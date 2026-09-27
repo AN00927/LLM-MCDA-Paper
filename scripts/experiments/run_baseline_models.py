@@ -39,6 +39,7 @@ from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
 
 from run_rag_ablation_experiments import (
     nearest_neighbor_prediction,
+    NN_FALLBACKS,
     build_collection,
     retrieve_similar,
     load_source_groups,
@@ -347,7 +348,7 @@ def run_fixed_default_baseline(test_df):
         results.append(run_calculator_on_scenarios("Shower", scenarios["Shower"], ShowerGroundTruthCalculator, id_offset=offset))
     return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
 
-def run_nearest_neighbor_baseline(test_df, k=3):
+def run_nearest_neighbor_baseline(test_df, k=3, fallback="tie"):
     groups_by_type = load_source_groups()
     from run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
     import tempfile, shutil
@@ -376,7 +377,7 @@ def run_nearest_neighbor_baseline(test_df, k=3):
                     scenario['alternatives'].append({'alternative': val})
             
             retrieved = retrieve_similar(collection, model, scenario, k)
-            result = nearest_neighbor_prediction(scenario, retrieved)
+            result = nearest_neighbor_prediction(scenario, retrieved, fallback=fallback)
             for pred in result["predictions"]:
                 all_rows.append({
                     'scenario_id': idx, 'question': row['question'], 'location': row['location'], 'decision_type': dtype,
@@ -469,7 +470,7 @@ def run_uniform_baseline(test_df):
         all_rows.append(ranked)
     return pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
 
-def run_all_baselines(test_df, baselines=None, k=3):
+def run_all_baselines(test_df, baselines=None, k=3, nn_fallback="tie"):
     if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
     results = {}
     if 'random' in baselines:
@@ -479,7 +480,7 @@ def run_all_baselines(test_df, baselines=None, k=3):
     if 'fixed_default' in baselines:
         print("Running Fixed-Default baseline..."); results['FixedDefault'] = run_fixed_default_baseline(test_df)
     if 'nearest_neighbor' in baselines:
-        print("Running Nearest-Neighbor baseline..."); results['NearestNeighbor'] = run_nearest_neighbor_baseline(test_df, k=k)
+        print("Running Nearest-Neighbor baseline..."); results['NearestNeighbor'] = run_nearest_neighbor_baseline(test_df, k=k, fallback=nn_fallback)
     return results
 
 def main():
@@ -487,6 +488,10 @@ def main():
     parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
                         choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
     parser.add_argument('--k', type=int, default=3, help='k for Nearest-Neighbor baseline')
+    parser.add_argument('--nn-fallback', choices=list(NN_FALLBACKS), default='tie',
+                        help='Nearest-Neighbor rule for an alternative no exemplar shares: tie (mean over all '
+                             'retrieved alternatives, the original rule), nearest (exemplar alternatives nearest '
+                             'in value), unscored (a scenario with no label match gets the sentinel)')
     parser.add_argument('--verify', action='store_true', help='Run verification checks')
     parser.add_argument('--baseline', type=str, help='Run single baseline (for verification)')
     parser.add_argument('--assert-top1-min', type=float, help='Assert minimum Top-1 accuracy')
@@ -503,7 +508,7 @@ def main():
     
     if args.baseline: baselines = [args.baseline]
     
-    results = run_all_baselines(test_df, baselines, k=args.k)
+    results = run_all_baselines(test_df, baselines, k=args.k, nn_fallback=args.nn_fallback)
     
     OUTPUT_DIR = Path(args.output_dir)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

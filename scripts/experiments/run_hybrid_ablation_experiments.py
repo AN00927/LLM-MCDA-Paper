@@ -79,10 +79,11 @@ Collecting the reversed arm costs one extraction call per scenario per run, and
 is a separate, resumable step. --models defaults to all four keys, which is the
 set the paper reports:
 
-    python "Miscellaneous Scripts/run_hybrid_ablation_experiments.py" --collect-only \
-        --order-runs 3
+    python "Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py" --collect-only
 
-That is 195 x 3 x 4 = 2,340 calls. Run one model per process to parallelise.
+With no flags that collects the paper's design: the reversed arm runs 1-5 and the
+same-session control arm runs 1-3 (ORDER_ARM_DEFAULT_RUNS), i.e. 195 x 8 x 4 =
+6,240 calls. Run one model per process to parallelise.
 
 Raw prompts and raw model responses are written to a per-model jsonl alongside
 the tidy workbook, so any statistic here can be recomputed later without paying
@@ -109,6 +110,7 @@ import itertools
 import json
 import sys
 from collections import OrderedDict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -152,14 +154,14 @@ ORDER_ARM_XLSX = "AH_extraction_order_{arm}_run_{run:02d}.xlsx"
 ORDER_ARM_JSONL = "AH_extraction_order_{arm}_run_{run:02d}_raw.jsonl"
 ORDER_ARMS = ("reversed", "control")
 
-# Default repeat runs of the reversed arm per invocation. A single reversed run
-# could only be placed against the shipped runs' spread, never given a spread of
-# its own; more than one lets the reversed arm carry its own run-to-run variance,
-# so the comparison is between two distributions instead of a point and a range.
-# This is the per-invocation default, not the shipped total: the reversed arm was
-# extended to five runs via --order-run-start, against eight in the shipped order
-# (the five original runs plus three contemporaneous controls).
-DEFAULT_ORDER_RUNS = 3
+# Runs per order arm in the paper's design (main text and S2: each model's
+# thirteen runs are the five main-benchmark A_H runs, three same-session
+# original-order control runs and five reversed runs, so the permutation test
+# has C(13,5) = 1,287 labelings). A single reversed run could only be placed
+# against the shipped runs' spread, never given a spread of its own; five let
+# the reversed arm carry its own run-to-run variance. With no --order-runs,
+# each arm is collected up to its own total here.
+ORDER_ARM_DEFAULT_RUNS = {"reversed": 5, "control": 3}
 
 # Hidden engineering parameters the LLM is asked to estimate, by decision type.
 # Must stay in lockstep with the extraction prompt in
@@ -381,6 +383,9 @@ def instrument_capture(mod) -> List[Dict]:
             "prompt_tokens": diag.get("prompt_tokens", 0),
             "completion_tokens": diag.get("completion_tokens", 0),
             "latency_ms": diag.get("latency_ms", 0),
+            # Everything A_H's query_openrouter reports for the call (provider,
+            # generation id, finish_reason, usage once the architecture logs them).
+            "api_diag": {k: v for k, v in diag.items() if k not in ("prompt_tokens", "completion_tokens", "latency_ms")},
         })
         return text, diag
 
@@ -512,7 +517,11 @@ def collect_order_arm(model_key: str, run: int = 1, arm: str = "reversed") -> Pa
                 prompt_text = call.get("prompt", "")
                 rec = {
                     "scenario_id": sid,
+                    # Per-call UTC wall clock (CLAUDE.md: every run records a
+                    # collection timestamp) and the exact model id sent.
+                    "collected_utc": datetime.now(timezone.utc).isoformat(),
                     "model_key": model_key,
+                    "model_id": mod.API_CONFIG["model"],
                     "arm": arm,
                     "run": run,
                     "decision_type": dtype or "",
@@ -529,6 +538,7 @@ def collect_order_arm(model_key: str, run: int = 1, arm: str = "reversed") -> Pa
                     "prompt_tokens": call.get("prompt_tokens", 0),
                     "completion_tokens": call.get("completion_tokens", 0),
                     "latency_ms": call.get("latency_ms", 0),
+                    "api_diag": call.get("api_diag"),
                 }
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 f.flush()
@@ -542,6 +552,8 @@ def collect_order_arm(model_key: str, run: int = 1, arm: str = "reversed") -> Pa
         params = (rec.get("parsed") or {}).get("parameters", {}) or {}
         row = {
             "scenario_id": sid,
+            "collected_utc": rec.get("collected_utc", ""),
+            "model_id": rec.get("model_id", ""),
             "arm": arm,
             "run": run,
             "decision_type": rec.get("decision_type", ""),
@@ -706,7 +718,9 @@ def build_scenario(decision_type: str, test_row: pd.Series, gt_row: pd.Series,
         "alternative_3": test_row.get("alternative_3", ""),
         "household_size": float(gt_row["household_size"]),
         "housing_type": _clean_text(gt_row.get("housing_type", "")),
-        "utility_budget": float(gt_row.get("utility_budget", 0) or 0),
+        # A missing budget must fail loudly: 0 would silently switch the
+        # calculators' budget penalty off (they skip it when budget <= 0).
+        "utility_budget": _required_float(gt_row, "utility_budget"),
     }
     if decision_type == "HVAC":
         base.update({
@@ -715,8 +729,21 @@ def build_scenario(decision_type: str, test_row: pd.Series, gt_row: pd.Series,
         })
     elif decision_type == "Shower":
         base.update({"outdoor_temp": float(gt_row["outdoor_temp"])})
+    # Only the hidden parameters of this decision type may be overridden; any
+    # other key (question, location, hvac_mode, ...) comes from the sheet.
+    allowed = set(HIDDEN_PARAMS[decision_type]["numeric"]) | set(HIDDEN_PARAMS[decision_type]["categorical"])
+    unexpected = set(params) - allowed
+    if unexpected:
+        raise ValueError(f"{decision_type}: unexpected parameter keys {sorted(unexpected)}")
     base.update(params)
     return base
+
+
+def _required_float(row: pd.Series, key: str) -> float:
+    value = _to_float(row.get(key))
+    if pd.isna(value):
+        raise ValueError(f"master row has no numeric {key!r}: {row.get(key)!r}")
+    return value
 
 
 def score_scenario(decision_type: str, scenario: Dict) -> Optional[List[Dict]]:
@@ -1376,22 +1403,24 @@ def parse_args():
                         "per run per model (195 x runs each). Resumable.")
     p.add_argument("--collect-only", action="store_true",
                    help="Collect the order arm and stop, without running the analysis.")
-    p.add_argument("--order-arms", nargs="+", default=["reversed"],
+    p.add_argument("--order-arms", nargs="+", default=list(ORDER_ARMS),
                    choices=list(ORDER_ARMS),
                    help="Which order arms to collect. 'control' re-sends the "
                         "shipped order in the same session, which is what makes "
                         "a reversed-vs-shipped gap attributable to ordering "
-                        "rather than to provider drift between sessions.")
+                        "rather than to provider drift between sessions. "
+                        "Default: both arms, the paper's design.")
     p.add_argument("--order-run-start", type=int, default=1,
                    help="First run index to collect. Use this to extend an arm "
                         "without touching runs already collected: re-running a "
                         "completed index would retry its failed scenarios and "
                         "mutate data that has already been analysed.")
-    p.add_argument("--order-runs", type=int, default=DEFAULT_ORDER_RUNS,
-                   help=f"Repeat runs of the reversed arm (default "
-                        f"{DEFAULT_ORDER_RUNS}). More than one is what gives the arm "
-                        f"its own variance, so the comparison against the five shipped "
-                        f"runs is distribution against distribution.")
+    p.add_argument("--order-runs", type=int, default=None,
+                   help="LAST run index to collect (inclusive), for every arm in "
+                        "--order-arms. It is an end index, not a count: "
+                        "--order-run-start 4 --order-runs 5 collects runs 4 and 5. "
+                        "Default: each arm's design total "
+                        f"({', '.join(f'{a} {n}' for a, n in ORDER_ARM_DEFAULT_RUNS.items())}).")
     p.add_argument("--output-dir", default=str(PROJECT_ROOT / "Analysis" / "Hybrid_Ablation"))
     p.add_argument("--output", default=str(PROJECT_ROOT / "hybrid_ablation_results.md"))
     return p.parse_args()
@@ -1405,9 +1434,11 @@ def main():
             for arm in args.order_arms:
                 # Not `run`: that name is the module-level analysis function,
                 # and binding it here would make it local to main().
-                for run_idx in range(args.order_run_start, args.order_runs + 1):
+                last_run = (args.order_runs if args.order_runs is not None
+                            else ORDER_ARM_DEFAULT_RUNS[arm])
+                for run_idx in range(args.order_run_start, last_run + 1):
                     print(f"\n=== Collecting order-{arm} extraction: "
-                          f"{model_key} run {run_idx}/{args.order_runs} ===")
+                          f"{model_key} run {run_idx}/{last_run} ===")
                     collect_order_arm(model_key, run=run_idx, arm=arm)
         if args.collect_only:
             return

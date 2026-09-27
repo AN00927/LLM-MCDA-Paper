@@ -349,17 +349,9 @@ def main():
         comp_rows.append({"variant": "ImputedPerRun", **r})
     comp_df = pd.DataFrame(comp_rows)
 
-    pooled_rows = []
-    for arch in ARCH_STEMS:
-        for m in TABLE_METRICS:
-            row = {"architecture": arch, "metric": m}
-            for variant in ["MethodA", "ImputedPerRun"]:
-                vals = comp_df[(comp_df["variant"] == variant) & (comp_df["architecture"] == arch)
-                               & (comp_df["metric"] == m)]["value"]
-                row[variant] = float(np.mean(vals.dropna())) if len(vals.dropna()) else np.nan
-            row["perrun_minus_A"] = row["ImputedPerRun"] - row["MethodA"]
-            pooled_rows.append(row)
-    pooled_df = pd.DataFrame(pooled_rows)
+    # No four-model "pooled" sheet: the project never averages a metric across
+    # models (a pool can hide a per-model reversal), and the paper prints only
+    # the per-model comparison (tab:imputed_comparison).
 
     detail_cols = ["variant", "model", "architecture", "run", "n_scenarios",
                    "n_imputed_scenarios", "n_imputed_cells", "n_failed", "n_total"] \
@@ -372,7 +364,6 @@ def main():
     OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as writer:
         comp_df.to_excel(writer, sheet_name="comparison", index=False)
-        pooled_df.to_excel(writer, sheet_name="pooled", index=False)
         impute_df.to_excel(writer, sheet_name="imputation_counts", index=False)
         detail_df.to_excel(writer, sheet_name="per_run_detail", index=False)
     print(f"  Wrote {OUT_XLSX}")
@@ -381,22 +372,16 @@ def main():
     print("\n" + "=" * 72)
     print("VERDICT")
     print("=" * 72)
-    for variant in ["MethodA", "ImputedPerRun"]:
-        tau = {}
-        for short, long in [("AD", "Direct_LLM_Scoring"), ("AE", "Example-Guided_LLM_Scoring"),
-                            ("AH", "LLM-Parameterized_Reference_Scoring")]:
-            vals = comp_df[(comp_df["variant"] == variant) & (comp_df["architecture"] == long)
-                           & (comp_df["metric"] == "kendall_tau")]["value"]
-            tau[short] = float(np.mean(vals.dropna()))
-        order = "AH > AE > AD" if tau["AH"] > tau["AE"] > tau["AD"] else "NOT HELD"
-        print(f"  {variant:14s} pooled tau: AD={tau['AD']:.4f} AE={tau['AE']:.4f} "
-              f"AH={tau['AH']:.4f} -> {order}")
-
-    idx = pooled_df["perrun_minus_A"].abs().idxmax()
-    largest = pooled_df.loc[idx]
-    print(f"  largest |per-run - MethodA| movement (pooled): {largest['architecture']} "
-          f"{largest['metric']} {largest['MethodA']:.4f} -> {largest['ImputedPerRun']:.4f} "
-          f"({largest['perrun_minus_A']:+.4f})")
+    cell = comp_df[comp_df["metric"].isin(TABLE_METRICS)].pivot_table(
+        index=["model", "architecture", "metric"], columns="variant",
+        values="value", aggfunc="first").dropna()
+    if not cell.empty:
+        move = cell["ImputedPerRun"] - cell["MethodA"]
+        (mk, arch, metric) = move.abs().idxmax()
+        print(f"  largest |per-run - MethodA| movement (one model): {mk} {arch} {metric} "
+              f"{cell.loc[(mk, arch, metric), 'MethodA']:.4f} -> "
+              f"{cell.loc[(mk, arch, metric), 'ImputedPerRun']:.4f} "
+              f"({move.loc[(mk, arch, metric)]:+.4f})")
 
     print("  per-model tau ordering under per-run imputation:")
     for mk in MODEL_KEYS:
