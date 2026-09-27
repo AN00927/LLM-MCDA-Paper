@@ -338,7 +338,7 @@ def run_fixed_default_baseline(test_df):
         results.append(run_calculator_on_scenarios("Shower", scenarios["Shower"], ShowerGroundTruthCalculator, id_offset=offset))
     return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
 
-def run_nearest_neighbor_baseline(test_df, k=3, fallback="tie"):
+def run_nearest_neighbor_baseline(test_df, k=1, fallback="tie"):
     groups_by_type = load_source_groups()
     from run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
     import tempfile, shutil
@@ -460,7 +460,7 @@ def run_uniform_baseline(test_df):
         all_rows.append(ranked)
     return pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
 
-def run_all_baselines(test_df, baselines=None, k=3, nn_fallback="tie"):
+def run_all_baselines(test_df, baselines=None, k=1, nn_fallback="tie"):
     if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
     results = {}
     if 'random' in baselines:
@@ -477,7 +477,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
     parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
                         choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
-    parser.add_argument('--k', type=int, default=3, help='k for Nearest-Neighbor baseline')
+    # k = 1 matches the benchmark A_E, which retrieves one exemplar (author decision
+    # 2026-09-27: k = 1 stays fixed), so the copy-only baseline shows what A_E's LLM
+    # adds over copying the exemplar it retrieves. The RAG ablation's own copy-only
+    # control keeps k = 3 there.
+    parser.add_argument('--k', type=int, default=1, help='k for Nearest-Neighbor baseline (default 1, A_E\'s k)')
     parser.add_argument('--nn-fallback', choices=list(NN_FALLBACKS), default='tie',
                         help='Nearest-Neighbor rule for an alternative no exemplar shares: tie (mean over all '
                              'retrieved alternatives, the original rule), nearest (exemplar alternatives nearest '
