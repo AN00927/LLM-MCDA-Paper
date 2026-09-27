@@ -235,6 +235,9 @@ $Q_{\mathrm{cond}}$, $Q_{\mathrm{inf}}$, $Q_{\mathrm{int}}$, $Q_{\mathrm{sol}}$ 
 $R$ & Envelope R-value \\
 $A_f$ & Conditioned floor area (ft\textsuperscript{2}) \\
 $m_h$ & Housing-type envelope multiplier \\
+$F_h$ & IECC glazing-area factor for attached units \\
+SHGC, IAC & Solar heat gain coefficient and interior shade fraction of the glazing \\
+$\bar{I}_m$ & Mean vertical irradiance in operating mode $m$ \\
 $\Delta T$ & Indoor--outdoor temperature difference \\
 $h_c$ & Ceiling height \\
 ACH & Infiltration air-change rate \\
@@ -242,6 +245,8 @@ $n$ & Household size \\
 $H$ & Decision-period length in hours ($H=8$ for HVAC) \\
 $S$ & Rated SEER \\
 EER & Effective cooling efficiency, derived from SEER \\
+HSPF & Heating seasonal performance factor of the heat pump paired with SEER \\
+$\eta$ & Efficiency divisor: EER in cooling mode, HSPF in heating mode \\
 $r(o)$ & Occupancy multiplier \\
 $C_{\mathrm{comfort}}$ & HVAC Comfort score (0--1) \\
 $T_{\mathrm{in}}$ & Indoor setpoint temperature \\
@@ -249,7 +254,7 @@ $T^{*}$ & Context-dependent optimal (ASHRAE 55) setpoint \\
 $\delta(T_{\mathrm{in}})$ & Practicality extremity penalty as a function of setpoint \\
 $D$ & Fraction of HVAC efficiency lost to age and maintenance \\
 $a$ & HVAC equipment age, in years \\
-$\delta_{\mathrm{maint}}$ & Base annual efficiency-loss rate \\
+$M$ & Annual maintenance factor of the efficiency degradation \\
 $\tau$ (Kendall's $\tau$) & Rank correlation between an architecture's ranking and the reference ranking \\
 \bottomrule
 \end{tabular}
@@ -568,13 +573,13 @@ The 90 retrieval scenarios carry the same fields under the same distributions
 \subsection{Parameter Ranges and Band Labels}
 \label{app:parameter_ranges}
 
-Each insulation tier spans a range of R-values drawn from standard U.S.\ residential wall assemblies \citep{cec_ja43_2013,energystar_insulation2023}: Poor scenarios use R-8 to R-12 (minimal 2$\times$4 cavity fill, below current code), Medium scenarios use R-13 to R-18 (standard 2$\times$4 batt through 2$\times$6 mixed), and Good scenarios use R-19 to R-24 (2$\times$6 framing and above). Consecutive tier midpoints differ by 55\% (R-10 to R-15.5) and 39\% (R-15.5 to R-21.5) in wall R-value. SEER ratings in the test dataset span 8--22, covering pre-1992 units (SEER~8--10), standard-efficiency replacements (SEER~13--14), and high-efficiency models (SEER~16--22), consistent with the ENERGY STAR Most Efficient threshold \citep{energystar_ac2023}.
+Each insulation tier spans a range of wall R-values that we set around standard U.S.\ residential wall assemblies \citep{cec_ja43_2013,energystar_insulation2023}: Poor scenarios use R-8 to R-12 (minimal 2$\times$4 cavity fill, below current code), Medium scenarios use R-13 to R-18 (standard 2$\times$4 batt through 2$\times$6 mixed), and Good scenarios use R-19 to R-24 (2$\times$6 framing and above). Consecutive tier midpoints differ by 55\% (R-10 to R-15.5) and 39\% (R-15.5 to R-21.5) in wall R-value. SEER ratings in the test dataset span 8--22, covering pre-1992 units (SEER~8--10), standard-efficiency replacements (SEER~13--14), and high-efficiency models (SEER~16--22), consistent with the ENERGY STAR threshold of 15.2~SEER2 \citep{energystar_ac2023}.
 
-The appliance age presented to the LLM architectures is a band label (1--3, 4--6, 7--9, 10--12, 13--17, and 28--32 years in the test dataset), derived from the scenario's raw integer age by a single shared helper so that the label is byte-identical on the query and index sides of retrieval. The scenario sheets retain both the raw age and an independent per-cycle energy value (kWh/cycle) drawn from the ENERGY STAR certified-products database, and the ground-truth calculator scores kWh/cycle directly without reference to age. Within a single appliance type the band and the per-cycle energy are only moderately associated (Spearman's $\rho = 0.36$ for dishwashers, $0.38$ for dryers, and $0.69$ for washing machines), so two appliances sharing a band can differ materially in energy draw---a 7--9-year dryer ranges from 2.40 to 3.50\,kWh/cycle across the dataset.
+The appliance age presented to the LLM architectures is a band label (1--3, 4--6, 7--9, 10--12, 13--17, and 28--32 years in the test dataset), derived from the scenario's raw integer age by a single shared helper so that the label is byte-identical on the query and index sides of retrieval. The scenario sheets retain both the raw age and an independent per-cycle energy value (kWh/cycle) that we set per scenario (most dryer values and some dishwasher values exceed current ENERGY STAR limits, as older units do), and the ground-truth calculator scores kWh/cycle directly without reference to age. Within a single appliance type the band and the per-cycle energy are only moderately associated (Spearman's $\rho = 0.36$ for dishwashers, $0.38$ for dryers, and $0.69$ for washing machines, over the 100 test and RAG Appliance scenarios), so two appliances sharing a band can differ materially in energy draw---a 7--9-year dryer ranges from 2.40 to 3.50\,kWh/cycle across the dataset.
 
-For the Flow Rate parameter, the scenario's numeric GPM is bucketed into three qualitative labels: \texttt{low\_flow} ($\le$2.0\,GPM, including EPA WaterSense certified showerheads \citep{epawatersense}), \texttt{standard} (2.5--3.0\,GPM, at or near the Energy Policy Act of 1992 federal maximum of 2.5\,GPM \citep{cfr430_32}), and \texttt{high\_flow} ($>$3.0\,GPM). The label is present in the LLM test scenarios only; the ground-truth calculator scores the scenario's numeric GPM directly.
+For the Flow Rate parameter, the scenario's numeric GPM is bucketed into three qualitative labels: \texttt{low\_flow} ($\le$2.0\,GPM, including EPA WaterSense certified showerheads \citep{epawatersense}), \texttt{standard} ($>$2.0 to 3.0\,GPM; every standard scenario lies at 2.5--3.0\,GPM, at or near the Energy Policy Act of 1992 federal maximum of 2.5\,GPM \citep{cfr430_32}), and \texttt{high\_flow} ($>$3.0\,GPM; 11 of the 80 Shower scenarios sit at 3.5--4.0\,GPM, above the federal maximum, as fixtures installed before it took effect can). The label is present in the LLM test scenarios only; the ground-truth calculator scores the scenario's numeric GPM directly.
 
-Housing type enters two calculators through separate coefficients. In the HVAC load equation it scales exposed envelope area by $m_h$, following ACCA Manual~J exposure conventions \citep{accamanualj}: a mid-unit apartment shares most of its walls and takes the smallest multiplier, a detached single-family home the largest. In the appliance comfort model it scales the late-night noise penalty by $\kappa$, which applies only to cycles run between 10\,p.m.\ and 7\,a.m.\ whose rated sound level exceeds the 45\,dBA threshold; there the ordering inverts, because shared walls transmit vibration to neighbours. We give both mappings in Table~\ref{tab:housing_mappings}.
+Housing type enters two calculators through separate coefficients. In the HVAC load equation it scales exposed envelope area by $m_h$, with values we set by exposure (they are not taken from a Manual~J table): a mid-unit apartment shares most of its walls and takes the smallest multiplier, a detached single-family home the largest. In the appliance comfort model it scales the late-night noise penalty by $\kappa$, which applies only to cycles run between 10\,p.m.\ and 7\,a.m.\ whose rated sound level exceeds the 45\,dBA threshold; there the ordering inverts, because shared walls transmit vibration to neighbours. We give both mappings in Table~\ref{tab:housing_mappings}.
 
 \begin{table}[htbp]
 \centering
@@ -611,9 +616,9 @@ C_{\mathrm{monthly}} = n_{\mathrm{cycles}}(\text{type})\,C_{\mathrm{cycle}},
 \end{equation}
 with $n_{\mathrm{cycles}} = 18$ for dishwashers, 25 for washers, and 24 for dryers, rounded to whole cycles from the 215, 300, and 283 cycles per year of the ENERGY STAR and DOE test procedures \citep{energystar_dishwasher_criteria2023,energystar_clotheswasher,doe_dryer_tp_2011}.
 
-For Shower the count scales with household size at an assumed 0.9 showers per person per day, above the 0.75 showers and baths per person per day that \citet{mayer1999reuw} measured:
+For Shower the count scales with household size at 0.69 showers per person per day, the rate the \textit{Residential End Uses of Water, Version~2} study measured \citep{reu2016,gauley2017showering}:
 \begin{equation}
-C_{\mathrm{monthly}} = 0.9 \times 30\,n\,C_{\mathrm{shower}} = 27\,n\,C_{\mathrm{shower}},
+C_{\mathrm{monthly}} = 0.69 \times 30\,n\,C_{\mathrm{shower}} = 20.7\,n\,C_{\mathrm{shower}},
 \end{equation}
 where $n$ is the household size.
 
@@ -623,32 +628,37 @@ where $n$ is the household size.
 The fixed-default baseline ranks the same three alternatives with the reference
 calculators but substitutes one fixed engineering value for each withheld
 parameter, regardless of scenario, and performs no per-scenario inference.
-Table~\ref{tab:fixed_default_constants} lists each constant. Appliance
-kWh/cycle is a per-appliance-type constant rather than a single value shared
-by every appliance, since a dryer and a dishwasher do not draw the same
-energy; the baseline falls back to 1.00\,kWh/cycle for an appliance type it
-cannot match to one of the three.
+Table~\ref{tab:fixed_default_constants} lists each constant. The appliance
+type is itself withheld, so the baseline assigns every Appliance scenario the
+most common type in the retrieval set, a dryer, at 2.27\,kWh/cycle: the DOE
+test load of 8.45\,lb divided by the 2015 federal minimum combined energy
+factor of 3.73\,lb/kWh for a standard vented electric dryer
+\citep{cfr430_32h}. The 40-gallon tank lies in the 31--49-gallon band that
+holds the median Pennsylvania household water heater \citep{eia_recs2020micro}.
+The table also lists the constants of the dataset-median condition: the
+median, or for a categorical parameter the mode, over the 90 retrieval
+scenarios, so that no test scenario contributes to the value it is scored
+with.
 
 \begin{table}[htbp]
 \centering
 \footnotesize
-\caption{Fixed-default constant values by decision type}
+\caption{Fixed-default and dataset-median constant values by decision type}
 \label{tab:fixed_default_constants}
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{@{}llll@{}}
 \toprule
-Decision type & Parameter & Fixed value \\
+Decision type & Parameter & Fixed value & Dataset median \\
 \midrule
-HVAC & R-value & 15 \\
-HVAC & SEER & 13 \\
-HVAC & HVAC age (yr) & 13 \\
-HVAC & Occupancy context & occupied\_all\_day \\
-Appliance & kWh/cycle (Washer) & 0.55 \\
-Appliance & kWh/cycle (Dryer) & 2.10 \\
-Appliance & kWh/cycle (Dishwasher) & 1.00 \\
-Appliance & Baseline run time & 7:00\,p.m. \\
-Shower & GPM & 2.5 \\
-Shower & Tank size (gal) & 50 \\
-Shower & Heater setpoint (\textdegree{}F) & 120 \\
+HVAC & R-value & 15 & 16 \\
+HVAC & SEER & 13 & 13 \\
+HVAC & HVAC age (yr) & 13 & 16 \\
+HVAC & Occupancy context & occupied\_all\_day & standard (scored as occupied\_all\_day) \\
+Appliance & Appliance type & dryer & dryer \\
+Appliance & kWh/cycle & 2.27 & 1.2 \\
+Appliance & Baseline run time & 7:00\,p.m. & 9:00\,a.m. \\
+Shower & GPM & 2.5 & 2.25 \\
+Shower & Tank size (gal) & 40 & 45 \\
+Shower & Heater setpoint (\textdegree{}F) & 120 & 120 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -737,8 +747,8 @@ Counts are 5-run totals, shown per model, on a mode-occurrence basis (one count 
 \label{app:tou_rates}
 
 We list the six Pennsylvania utilities the Appliance reference calculator uses,
-with their TOU peak/off-peak windows and energy rates (\$/kWh), in
-Table~\ref{tab:tou_rates}. The residential electricity rate of \$0.19/kWh used for HVAC cost normalization is the
+with their TOU windows and energy rates (\$/kWh), in
+Table~\ref{tab:tou_rates}. All rates belong to one common rate period, December 2025 to May 2026, and each is the utility's full price to compare, generation plus transmission. The residential electricity rate of \$0.19/kWh used for HVAC cost normalization is the
 statewide bundled baseline \citep{eia_epa_2024,paupc2025}.
 
 \begin{table}[htbp]
@@ -747,23 +757,24 @@ statewide bundled baseline \citep{eia_epa_2024,paupc2025}.
 \renewcommand{\arraystretch}{1.15}
 \caption{Pennsylvania utility TOU rate structure}
 \label{tab:tou_rates}
-\begin{tabular}{@{}l c rr@{}}
+\begin{tabular}{@{}l cc rrr@{}}
 \toprule
-\textbf{Utility} & \textbf{Peak Window} & \textbf{Peak Rate} &
-  \textbf{Off-Peak Rate} \\
+\textbf{Utility} & \multicolumn{2}{c}{\textbf{Window}} & \multicolumn{3}{c}{\textbf{Rate}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+ & Peak & Super off-peak & Peak & Off-peak & Super off-peak \\
 \midrule
-PECO       & 2--6pm  & 0.3200 & 0.0760 \\
-PPL        & 2--6pm  & 0.1600 & 0.0700 \\
-West Penn  & 2--9pm  & 0.1720 & 0.0880 \\
-Penelec    & 2--9pm  & 0.1850 & 0.0930 \\
-MetEd      & 2--9pm  & 0.2030 & 0.1000 \\
-Duquesne   & 2--9pm  & 0.1375 & 0.1375 \\
+PECO       & 2--6pm  & 12--6am & 0.3275 & 0.0838 & 0.0606 \\
+PPL        & 4--8pm  & ---     & 0.1399 & 0.1199 & --- \\
+West Penn  & 2--9pm  & 11pm--6am & 0.1823 & 0.0935 & 0.0689 \\
+Penelec    & 2--9pm  & 11pm--6am & 0.1973 & 0.0996 & 0.0765 \\
+MetEd      & 2--9pm  & 11pm--6am & 0.2212 & 0.1089 & 0.0806 \\
+Duquesne   & flat    & ---     & 0.1375 & 0.1375 & --- \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-PECO (Rate R-TOU) \citep{peco2021} and PPL (Rate RTS) \citep{ppl2025} use a 4-hour afternoon peak window (2--6pm weekdays). The three FirstEnergy utilities (West Penn, Penelec, MetEd) use a 7-hour peak window (2--9pm weekdays), with rates derived from the Jun-2025 Price-to-Compare (PTC) multiplied by approved multipliers \citep{firstenergy2025,firstenergy2026}. Duquesne uses a flat default rate (Rate RS) \citep{duquesne2026}. Shifting a dishwasher cycle from peak to off-peak cuts its per-cycle cost by 49--76\% across these five time-of-use utilities.
+PECO (Rate R-TOU) \citep{peco2021,peco2025tou} uses a 4-hour afternoon peak window (2--6pm weekdays) and a super off-peak window from midnight to 6am every day. PPL (GSC-1 time-of-use program for Rate Schedules RS and RTS) \citep{ppl2025supp402,ppl2025ptc} uses a 4-hour winter peak window (4--8pm weekdays) and has no super off-peak period. The three FirstEnergy utilities (West Penn, Penelec, MetEd) use a 7-hour peak window (2--9pm weekdays) and a super off-peak window from 11pm to 6am every day, with rates derived from the December 2025 Price-to-Compare (PTC) multiplied by approved multipliers \citep{fepa_supp28,fepa_supp20}. Duquesne uses a flat default rate (Rate RS) \citep{duquesne2026,paupc2025dec}. Shifting a dishwasher cycle from peak to off-peak cuts its per-cycle cost by 14--74\% across these five time-of-use utilities, and shifting it from peak to super off-peak cuts the cost by 61--81\% at the four that offer that period.
 
 Emissions are keyed to a separate, system-wide window rather than to any utility's tariff. The PJM marginal factors are 1.041\,lbs\,CO\textsubscript{2}/kWh across the 7\,a.m.--11\,p.m.\ peak and 0.976\,lbs\,CO\textsubscript{2}/kWh off-peak \citep{pjm2022emissions}, so moving the same cycle out of the emissions peak cuts its emissions by 6.2\%. The two differentials are what separate the energy-cost and environmental criteria for Appliance scheduling: the cost differential is an order of magnitude larger than the emissions differential, and the two windows do not coincide, so a cycle run at 8\,a.m.\ is off-peak for cost and on-peak for emissions.
 \suppsection{Extended Results and Robustness}
@@ -777,17 +788,17 @@ For each criterion and decision type, we report in Table~\ref{tab:swing_weights}
 \centering
 \footnotesize
 \centering
-\caption{Mean within-scenario swing (nominal weight $\times$ within-scenario score range) by criterion and decision type}
+\caption{Mean within-scenario swing (nominal weight $\times$ within-scenario score range) by criterion and decision type, over the 285 test and RAG scenarios}
 \label{tab:swing_weights}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lcccc}
 \toprule
 Criterion & Nominal Weight & HVAC & Appliance & Shower \\
 \midrule
-Energy Cost & 0.30 & 0.027 & 0.066 & 0.108 \\
-Environmental Impact & 0.35 & 0.032 & 0.008 & 0.128 \\
-Comfort & 0.20 & 0.086 & 0.098 & 0.070 \\
-Practicality & 0.15 & 0.015 & 0.095 & 0.053 \\
+Energy Cost & 0.30 & 0.031 & 0.066 & 0.107 \\
+Environmental Impact & 0.35 & 0.035 & 0.008 & 0.128 \\
+Comfort & 0.20 & 0.092 & 0.098 & 0.070 \\
+Practicality & 0.15 & 0.012 & 0.095 & 0.054 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
@@ -924,7 +935,7 @@ The ordering of the three architectures holds at every $\alpha$ for every model 
 \subsection{Ablation Data Provenance}
 \label{app:ablation_provenance}
 
-The RAG and prompt-sensitivity ablations reported in this section were collected against an earlier shower comfort function. That function scored the water-heater setpoint, a storage temperature, against a 110--130\,\textdegree{}F no-penalty band taken from delivery-side comfort and scald thresholds. The original function uses 120--140\,\textdegree{}F, anchored instead to CDC storage guidance: below 120\,\textdegree{}F a tank cannot deliver the 105\,\textdegree{}F target with mixing margin and sits inside the \textit{Legionella} amplification range, and above 140\,\textdegree{}F the tank adds standby loss without comfort benefit.
+The RAG and prompt-sensitivity ablations reported in this section were collected against an earlier shower comfort function. That function scored the water-heater setpoint, a storage temperature, against a 110--130\,\textdegree{}F no-penalty band taken from delivery-side comfort and scald thresholds. The current function uses 120--140\,\textdegree{}F, anchored instead to the CDC's 120\,\textdegree{}F floor for circulating hot water: below 120\,\textdegree{}F a tank cannot deliver the 105\,\textdegree{}F target with mixing margin and sits inside the \textit{Legionella} amplification range, and above 140\,\textdegree{}F, by our assumption, the tank adds standby loss without comfort benefit (the CDC recommends storing hot water above 140\,\textdegree{}F; no scenario setpoint exceeds it).
 
 We recomputed the shower reference under the corrected band before deciding whether to re-collect. The setpoint enters comfort as a per-scenario constant shared by all three alternatives, so it moves a ranking only through the criterion balance. Across the 60 test shower scenarios the correction changes no reference winner and no full reference ranking. In the 20-scenario shower RAG dataset it changes 1 winner and 2 rankings. 
 
