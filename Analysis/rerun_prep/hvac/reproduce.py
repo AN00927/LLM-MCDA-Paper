@@ -65,10 +65,10 @@ def main() -> int:
             p = lambda s, q: float(np.percentile(s.astype(float), q))
             c5, c95 = p(srun["raw_cost"], 5), p(srun["raw_cost"], 95)
             w5, w95 = p(srun["raw_water_gallons"], 5), p(srun["raw_water_gallons"], 95)
-            same = (round(c5, 2), round(c95, 2), round(w5, 1), round(w95, 1)) == (0.14, 1.14, 6.0, 45.0)
+            same = (round(c5, 2), round(c95, 2), round(w5, 1), round(w95, 1)) == (0.13, 1.07, 6.0, 45.0)
             ok &= same
             print(f"[{'PASS' if same else 'FAIL'}] Shower bounds recomputed: cost p5={c5:.4f} "
-                  f"p95={c95:.4f} (class 0.14/1.14); water p5={w5:.2f} p95={w95:.2f} (class 6.0/45.0)")
+                  f"p95={c95:.4f} (class 0.13/1.07); water p5={w5:.2f} p95={w95:.2f} (class 6.0/45.0)")
 
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
     return 0 if ok else 1

@@ -45,8 +45,8 @@ def test_values_unchanged(calc):
     assert calc.ELECTRICITY_RATE_PA == 0.19
     assert calc.ELECTRIC_HEATER_EFFICIENCY == 0.92
     assert calc.TARGET_SHOWER_TEMP == 105.0
-    assert (calc.INLET_TEMP_WINTER, calc.INLET_TEMP_SUMMER) == (45, 65)
-    assert calc.apply_value_function(0.14, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(1.0)
-    assert calc.apply_value_function(1.14, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.0)
+    assert (calc.INLET_TEMP_WINTER, calc.INLET_TEMP_SUMMER) == (48.5, 68.2)
+    assert calc.apply_value_function(0.13, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(1.0)
+    assert calc.apply_value_function(1.07, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.0)
     assert calc.apply_value_function(6.0, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(1.0)
     assert calc.apply_value_function(45.0, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(0.0)

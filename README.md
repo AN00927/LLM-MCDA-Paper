@@ -347,8 +347,8 @@ All four criterion scores are on a 0--1 scale before weighting. Energy cost and 
 
 | Criterion | HVAC | Appliance | Shower |
 | --- | --- | --- | --- |
-| Energy Cost ($) | $0.19 - $3.21 | $0.028 - $0.774 | $0.14 - $1.14 |
-| Environmental Impact | 0.97 - 17.59 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
+| Energy Cost ($) | $0.40 - $2.81 | $0.028 - $0.774 | $0.13 - $1.07 |
+| Environmental Impact | 2.05 - 15.40 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
 | Comfort | 0.0 - 1.0 | 0.0 - 1.0 | 0.0 - 1.0 |
 | Practicality | 0.05 - 1.0 | 0.05 - 1.0 | 0.05 - 1.0 |
 
@@ -402,7 +402,7 @@ Comfort decays piecewise from delay and appliance type, with appliance-specific 
 
 ### Shower Calculator
 
-Mains inlet temperature is interpolated from outdoor temperature (45 F winter to 65 F summer, NREL seasonal model). Hot-water mixing fraction targets a fixed 105 F delivery temperature:
+Mains inlet temperature is interpolated from outdoor temperature (48.5 F winter to 68.2 F summer, a linear fit to the NREL (Burch & Christensen) mains model on PA TMY3 weather). Hot-water mixing fraction targets a fixed 105 F delivery temperature:
 
 ```
 f_hot = (T_target - T_inlet) / (T_heater - T_inlet),   T_target = 105 F
