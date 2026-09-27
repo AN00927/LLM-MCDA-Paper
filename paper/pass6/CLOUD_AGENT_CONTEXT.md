@@ -80,9 +80,21 @@ Everything from `NEXT_SESSION_HANDOFF.md` sections 2-4 is done and pushed to `cl
   stale text fixed (`STALE_FIX_LOG.md`). No local LaTeX: the author compiles in Overleaf.
 - Network: all *.nrel.gov hosts and codes.iccsafe.org stay blocked; mirrors were used.
 
-Next: Phase R (smoke test, then collection) only on the author's go-ahead with the cost shown
-first, then S4/S5/S6. Items `STALE_FIX_LOG.md` lists under "needs the rerun" belong to S4.
-Still open for the author: B10, B11, B63, B77, the title.
+Update, 2026-09-27 (end of session):
+- B10, B11 and B63 were applied as option (a), and B77 was approved and applied.
+- The Phase R smoke test (runbook step 1, with the author's go-ahead) passed: 112 of 112 calls
+  succeeded for $0.03 (`Analysis/rerun_smoke/SMOKE_REPORT.md`).
+- The re-costed full collection is about $35.
+- The OpenRouter balance was $2.97, so the author must top up before step 2.
+- The author's call was to stop before the full paid calls.
+
+Next:
+1. Resolve the runbook's section-0 decisions D2 and D5-D9.
+2. The author tops up the credit.
+3. Collect (runbook steps 2-8), then do S4, S5 and S6. Items `STALE_FIX_LOG.md` lists under
+   "needs the rerun" belong to S4.
+
+Still open for the author: the title.
 
 ## State on 2026-09-27
 

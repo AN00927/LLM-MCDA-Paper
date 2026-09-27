@@ -27,9 +27,9 @@ as proxies, Gemini at the standard tier), not quotes. With Gemini pinned to the 
 |---|---|---|
 | B1 | Architecture patch (`Analysis/rerun_prep/arch_new/`) installed into `Architectures/` and `sentinel_utils.py`, its tests passing against the installed files | done 2026-09-27: `tests/test_arch_patch.py` 140/140 under each MODEL_KEY; gate unchanged (`paper/pass6/verify/INSTALL_MIGRATE_REPORT.md`) |
 | B2 | The two ablation scripts (`run_rag_ablation_experiments.py`, `run_prompt_ablation_experiments.py`) switched to the patch's shared payload and POST (`sentinel_utils.build_openrouter_payload` / `openrouter_chat`), so they send `provider`, `max_tokens` and fail truncated replies like the architectures (ARCH_PATCH_REPORT, "Adaptations" item 1) | done 2026-09-27: both use `openrouter_chat`; prompts byte-identical (hash proof in INSTALL_MIGRATE_REPORT); `tests/test_ablation_migration.py` |
-| B3 | Phase I of `PASS6_HANDOFF.md` done: snapshot, scenario fixes, calculators installed, calculators run, `sync_rag_ground_truth_scores.py`, `build_rag_index.py` (always last) | **[AUTHOR: confirm]** |
+| B3 | Phase I of `PASS6_HANDOFF.md` done: snapshot, scenario fixes, calculators installed, calculators run, `sync_rag_ground_truth_scores.py`, `build_rag_index.py` (always last) | done (second cloud session, 2026-09-27; `CLOUD_AGENT_CONTEXT.md`) |
 | D1 | Provider pinning. `model_config.py` (author's edit, seen 2026-09-26) now pins one provider per model with `"only": [...]` and `"allow_fallbacks": false`: gptoss `darkbloom/fp8`, qwen `venice/fp8`, deepseek `baseten/fp8`, gemini `google-ai-studio/flex`. The entry replaces the patch's default `{"require_parameters": true}`, so `require_parameters` is not sent: a pinned provider that does not support `temperature` would ignore it silently. The smoke test must confirm each pinned endpoint lists `temperature` and `reasoning` | done (author, 2026-09-27): `"require_parameters": true` added to all four pins; `build_openrouter_payload` sends the pin dict unchanged (`test_payload_passes_model_specs_provider_pin_unchanged`) |
-| D2 | Gemini reasoning effort. `model_config.py` now says `"low"` (a listed effort). Confirm in the smoke test that it is accepted and how many reasoning tokens it returns; main L734 says "minimal" | **[AUTHOR: confirm after step 1]** |
+| D2 | Gemini reasoning effort. `model_config.py` now says `"low"` (a listed effort). Confirm in the smoke test that it is accepted and how many reasoning tokens it returns; main L734 says "minimal" | smoke 2026-09-27: `low` accepted, about 269 reasoning tokens per call; Gemini is about 68% of the estimate. **[AUTHOR: keep `low` (then fix main L737), or switch to `minimal`]** |
 | D3 | DeepSeek output folder: now `"Output Files DeepSeek V4 Flash 0731"` (new, must be empty). The old `"Output Files DeepSeek V4 Flash"` keeps the old runs and is not written to | done (author) |
 | D4 | Price labels updated by the author (DeepSeek $0.13/$0.26, Gemini flex $0.375/$1.875). Only the Table 8 fallback uses labels; charged cost comes from the diagnostics JSON | done (author) |
 | D5 | Prompt-ablation run counts (step 6) | **[AUTHOR: DECISION prompt-ablation runs]** |
@@ -38,7 +38,9 @@ as proxies, Gemini at the standard tier), not quotes. With Gemini pinned to the 
 | D8 | Optional arms (step 7): A_E at k = 3 on the test set; listwise A_D | **[AUTHOR: DECISION optional arms]** |
 | D9 | `MAX_OUTPUT_TOKENS = 8192` (arch patch, now also sent by both ablations), confirmed against the smoke-test token counts. Old logs: only the Qwen CoT prompt-ablation arms come near it (A_D CoT 4.3-39.4% of calls over 8,192, A_E CoT 1.3-8.5%; `paper/pass6/verify/truncation_risk_8192.csv`); those calls now fail as `failed_truncated` | **[AUTHOR: confirm after step 1; decide on Qwen CoT (step 6)]** |
 
-Check the OpenRouter credit balance is at least twice the estimate for the steps you are about
+Step 1 ran on 2026-09-27: see `Analysis/rerun_smoke/SMOKE_REPORT.md` (112/112 calls ok, $0.03;
+DeepSeek 429s upstream, so use `--workers 1-2` for it; re-costed total about $35; balance was
+$2.97). Check the OpenRouter credit balance is at least twice the estimate for the steps you are about
 to run (V_INFRA Section 2).
 
 ## 0.1 What must be empty (or moved aside) before collecting

@@ -1,0 +1,20 @@
+{
+  "model_key": "qwen",
+  "n_requested": 3,
+  "n_sampled": 3,
+  "seed": 20260803,
+  "allocation_by_decision_type": {
+    "HVAC": 1,
+    "Appliance": 1,
+    "Shower": 1
+  },
+  "scenario_ids": [
+    53,
+    122,
+    167
+  ],
+  "manipulation": "alternative_1/2/3 reversed; scenario context fields unchanged",
+  "architectures": [
+    "Direct_LLM_Scoring"
+  ]
+}
