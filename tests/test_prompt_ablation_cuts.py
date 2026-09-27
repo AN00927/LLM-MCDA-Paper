@@ -12,6 +12,7 @@
 No network, no paid calls.
 """
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -173,3 +174,29 @@ def test_order_arm_control_still_collectable_on_request(monkeypatch):
                         lambda mk, run, arm: calls.append((mk, run, arm)))
     HY.main()
     assert calls == [("qwen", r, "control") for r in range(1, 4)]
+
+
+def test_control_reparses_failed_main_suite_reply_with_ablation_rule(tmp_path, monkeypatch):
+    """The main suite parses strictly; a reply with prose around the JSON fails
+    there but is accepted by the ablation's parse_scores. The control must use
+    the ablation's rule, and a truncated reply must stay failed."""
+    monkeypatch.setattr(PA, "main_suite_run_path",
+                        lambda mk, arch, r: tmp_path / f"AD_qwen_run_{r:02d}.xlsx")
+    scores = {"A": (0.9,) * 4, "B": (1928,) * 4, "C": (0.1,) * 4}
+    trunc = {"A": (0.9,) * 4, "B": (0.5,) * 4, "C": (1928,) * 4}
+    rows = _main_run_rows(1, "HVAC", scores, 1) + _main_run_rows(2, "HVAC", trunc, 1)
+    run_path = tmp_path / "AD_qwen_run_01.xlsx"
+    pd.DataFrame(rows).to_excel(run_path, index=False)
+    raw = [
+        {"scenario_id": 1, "alternative": "B",
+         "response": 'Here you go: {"energy_cost": 0.5, "environmental": 0.5, "comfort": 0.5, "practicality": 0.5}'},
+        {"scenario_id": 2, "alternative": "C", "truncated": True, "finish_reason": "length",
+         "response": '{"energy_cost": 0.1, "environmental": 0.1, "comfort": 0.1, "practicality": 0.1}'},
+    ]
+    run_path.with_name(run_path.stem + "_raw.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in raw), encoding="utf-8")
+    ref = {sid: {"mavt_by_alt": {"A": 0.9, "B": 0.5, "C": 0.1},
+                 "rank_by_alt": {"A": 1, "B": 2, "C": 3}} for sid in (1, 2)}
+    out = PA.main_suite_control_rows("qwen", "AD", 1, ref).set_index("scenario_id")
+    assert not out.loc[1, "failed"] and out.loc[1, "top1"] == 1.0
+    assert out.loc[2, "failed"] and out.loc[2, "top1"] == 0.0
