@@ -231,7 +231,7 @@ Status: our assumption. The paper already says "The values 0.80, 2.5 and 1.5 and
 are our own choices"; removing the cliff is the author's decision.
 
 Effect:
-- **Shower** (max u 0.905) and **Appliance** (max u about 0.29): no score changes. The Appliance
+- **Shower** (max u 0.905) and **Appliance** (max u about 0.23, recomputed 0.2292): no score changes. The Appliance
   `calc_new` output is identical to P1-APP's `calc_new_final.xlsx`, and all 101 Appliance tests pass.
 - **HVAC**, shipped model: no alternative reaches u = 1.5 (max 1.39), so no change.
 - **HVAC**, new calculator: 3 alternatives reach u >= 1.5 (max 1.84), 9 fall in [1.0, 1.5) and 24 in

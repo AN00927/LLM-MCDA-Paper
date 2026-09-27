@@ -38,7 +38,8 @@ canonical name and a new test pins the sentinel behaviour.
    single-criterion floors and baseline metrics need the new runs (runbook step 8).
 3. The `cot_scaffold` endpoint-cap GET runs at prompt-ablation start; if it cannot resolve the
    pinned endpoint it aborts, and `--cot-max-tokens N` sets the cap by hand.
-4. `tests/audit_scenarios.py` reports every scenario as an orphan both before and after Phase I
-   (pre-existing key mismatch in that script, not a data problem).
+4. `tests/audit_scenarios.py` reported every scenario as an orphan both before and after Phase I
+   (pre-existing key mismatch in that script, not a data problem); deleted 2026-09-27, author's
+   decision.
 5. Cost with the higher CoT cap: at most about +$3.6 for Qwen (old mean completion lengths),
    so about $28-32 in total. Other models' CoT arms were far below 8,192.

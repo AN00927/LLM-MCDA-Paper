@@ -396,7 +396,7 @@ handling, output columns and rounding.
 By the author's decision, `calculate_budget_penalty` in `calc_new/ApplianceGroundTruthCalculator.py`
 no longer drops to 0 at u >= 1.5; the exponential 0.5 exp(-3(u - 1)) continues for every u >= 1.0
 (the same change was made in the HVAC and Shower calculators). No Appliance alternative comes near
-u = 1.0 (max about 0.29), so the output is identical to the P1-APP `calc_new` output
+u = 1.0 (max about 0.23, recomputed 0.2292), so the output is identical to the P1-APP `calc_new` output
 (`appliance/out/calc_new_final.xlsx`, 0 cell differences), the bounds are unchanged and all 101 tests
 in `tests/test_appliance_tariffs.py` pass. The sentence above that lists the budget penalty as
 unchanged refers to the tariff work only. The calculator file is 2 lines shorter from line 464 on;
