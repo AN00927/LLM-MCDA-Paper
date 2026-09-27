@@ -1,15 +1,16 @@
 # LLM-MCDA: AI-Assisted Multi-Criteria Decision Analysis for Household Energy Optimization
 
-**Author:** Ahaan Nigam
+**Authors:** Ahaan Nigam; River Huang (Paul Scherrer Institut, Switzerland)
 **Institution:** Downingtown East High School
-**Collaborator:** River Huang, Paul Scherrer Institut (PSI), Switzerland
 **Target Journal:** Environmental Modelling & Software
 
 ---
 
 ## Research Question
 
-Which LLM-assisted architecture most accurately reproduces a deterministic reference ranking for rapid household energy decisions, and how consistently does that ordering hold across models of varying capability and cost?
+**Proposition:** An LLM can occupy three positions in an MCDA workflow: it can score the alternatives, score them with retrieved worked examples, or supply the inputs of a deterministic calculator.
+
+**Research question:** How accurately does each position reproduce a deterministic reference ranking?
 
 ---
 
@@ -141,12 +142,12 @@ Across models, the LLM-parameterized reference scoring architecture's tau spans 
 | Appliance | -0.147 (GPT-OSS) to 0.029 (DeepSeek) | -0.048 (GPT-OSS) to 0.417 (DeepSeek) | 0.906 (Qwen) to 0.975 (DeepSeek) |
 | Shower | 0.069 (Qwen) to 0.633 (Gemini) | 0.240 (Qwen) to 0.767 (Gemini) | 0.787 (GPT-OSS, tied with DeepSeek) to 0.851 (Qwen) |
 
-HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-parameterized reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where LLM-parameterized reference scoring is weakest, because a flow-rate (GPM) error multiplies each alternative's own duration and so does not cancel across alternatives.
+HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-parameterized reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where LLM-parameterized reference scoring is weakest, because a flow-rate (GPM) error rescales every duration's cost and water use by the same factor, which changes how they trade off against comfort, and many shower scenarios sit close to that trade-off's break-even point.
 
 ### Key Findings
 
 - **Calculator access alone is not enough.** Running the same reference calculator on dataset-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the LLM-parameterized reference scoring architecture's 0.880--0.923. LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
-- **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM), which multiplies against each alternative's own duration rather than scaling all three by a common amount -- it carries the highest top-1 flip probability of any extracted parameter for every model.
+- **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM). A GPM error scales every duration's cost and water use by one factor without reordering them, but it changes their weight against comfort, which GPM does not affect; shower winners often lead narrowly, so GPM carries the highest top-1 flip probability of any extracted parameter for every model (0.23-0.27 per run).
 - **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a scenario-weighted tau of 0.614, which outranks direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it. It collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. Separately, the RAG ablation's copy-only configuration (assigning the retrieved scenario's scores directly, no LLM call, leave-one-out on the 90-scenario RAG set) reaches tau = 0.001, indistinguishable from a random ranking.
 - **In the RAG ablation, exemplar scores matter more than exemplar content.** Removing the reference scores from retrieved exemplars degrades ranking far more than removing their hidden engineering parameters (R-value, SEER, GPM, etc.) -- scored exemplars anchor the LLM's output scale, they don't teach it new physics.
 - **Reversing alternative order in the prompt changed what two of four models extracted, but never changed which alternative any model ranked first** -- a null result at the ranking layer that only means something because the same perturbation is detectably present one layer up, at the LLM's parameter estimates.
