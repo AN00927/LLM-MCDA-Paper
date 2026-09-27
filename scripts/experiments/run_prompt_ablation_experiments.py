@@ -74,6 +74,7 @@ from sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,
+    MAX_OUTPUT_TOKENS,
     SENTINEL_FLOAT,
     RawCallLog,
     RunAbort,
@@ -261,6 +262,148 @@ ARCHITECTURES = OrderedDict([
 ])
 
 
+# ---------------------------------------------------------------------------
+# cot_scaffold max_tokens: raised per model from the pinned endpoint's own
+# limit (2026-09-27 author decision). Every other arm, and both architectures'
+# non-CoT cells, keep sentinel_utils.MAX_OUTPUT_TOKENS (8192) unchanged.
+# ---------------------------------------------------------------------------
+
+# Hard ceiling regardless of what an endpoint reports.
+COT_MAX_TOKENS_CAP = 32768
+
+# Populated once per run by resolve_cot_max_tokens(), before any cot_scaffold
+# cell is collected: {model_key: max_tokens to send for that model's CoT arm}.
+COT_MAX_TOKENS: Dict[str, int] = {}
+
+OPENROUTER_ENDPOINTS_URL = "https://openrouter.ai/api/v1/models/{author}/{slug}/endpoints"
+
+
+def _pinned_provider_tag(model_key: str) -> str:
+    """The single provider *MODEL_SPECS[model_key]["provider"]["only"]* pins
+    (e.g. "darkbloom/fp8"): the string an /endpoints entry must match."""
+    only = (MODEL_SPECS[model_key].get("provider") or {}).get("only") or []
+    if len(only) != 1:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup: MODEL_SPECS['{model_key}']['provider']['only'] "
+            f"must pin exactly one provider to know which /endpoints entry to read; got {only!r}."
+        )
+    return only[0]
+
+
+def _endpoint_matches_pin(endpoint: Dict, tag: str) -> bool:
+    """True if an OpenRouter /endpoints entry is the pinned provider.
+
+    Matched on the entry's own `tag` field first (the documented identity for
+    an endpoint); if that field is absent or blank, falls back to
+    `<provider_name>/<quantization>` lower-cased, which is the same string
+    shape the pin itself uses (e.g. "darkbloom/fp8").
+    """
+    tag = tag.strip().lower()
+    ep_tag = str(endpoint.get("tag") or "").strip().lower()
+    if ep_tag:
+        return ep_tag == tag
+    provider_name = str(endpoint.get("provider_name") or "").strip().lower()
+    quantization = str(endpoint.get("quantization") or "").strip().lower()
+    return f"{provider_name}/{quantization}" == tag
+
+
+def _fetch_endpoint_max_completion_tokens(model_key: str) -> int:
+    """GET the pinned endpoint's max_completion_tokens for *model_key* from
+    OpenRouter's free, keyless `/api/v1/models/<author>/<slug>/endpoints`.
+
+    Raises RuntimeError with a clear ASCII message on any failure -- network
+    error, non-200 status, unparseable body, no endpoint matching the pinned
+    provider tag, or a null max_completion_tokens -- rather than silently
+    falling back to a default cap.
+    """
+    model_id = MODEL_SPECS[model_key]["openrouter_id"]
+    base_id = model_id.split(":", 1)[0]  # strip ":floor" (or any other suffix)
+    if "/" not in base_id:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"cannot split '{base_id}' into author/slug for the OpenRouter /endpoints URL."
+        )
+    author, slug = base_id.split("/", 1)
+    url = OPENROUTER_ENDPOINTS_URL.format(author=author, slug=slug)
+    tag = _pinned_provider_tag(model_key)
+    how_to_fix = ("Pass --cot-max-tokens N to override (still capped at "
+                  f"{COT_MAX_TOKENS_CAP}), or fix the cause before collecting cot_scaffold cells.")
+
+    try:
+        resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} raised {type(exc).__name__}: {exc}. {how_to_fix}"
+        ) from exc
+
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} returned HTTP {resp.status_code}. {how_to_fix}"
+        )
+
+    try:
+        body = resp.json()
+    except ValueError as exc:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} returned a body that is not valid JSON. {how_to_fix}"
+        ) from exc
+
+    endpoints = ((body or {}).get("data") or {}).get("endpoints")
+    if not isinstance(endpoints, list) or not endpoints:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} returned no endpoints. {how_to_fix}"
+        )
+
+    matches = [ep for ep in endpoints if isinstance(ep, dict) and _endpoint_matches_pin(ep, tag)]
+    if not matches:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"no entry in GET {url} matches the pinned provider '{tag}'. {how_to_fix}"
+        )
+
+    max_completion_tokens = matches[0].get("max_completion_tokens")
+    if max_completion_tokens is None:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"the pinned endpoint '{tag}' reports max_completion_tokens = null. {how_to_fix}"
+        )
+    try:
+        return int(max_completion_tokens)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"max_completion_tokens={max_completion_tokens!r} is not an integer. {how_to_fix}"
+        ) from exc
+
+
+def resolve_cot_max_tokens(model_keys: List[str], override: Optional[int] = None) -> Dict[str, int]:
+    """Populate and return COT_MAX_TOKENS for *model_keys*: the max_tokens to
+    send on every cot_scaffold call for that model, min(COT_MAX_TOKENS_CAP,
+    the pinned endpoint's max_completion_tokens). Run once per model at the
+    start of the prompt-ablation run, before any cot_scaffold cell is
+    collected; every other arm keeps sentinel_utils.MAX_OUTPUT_TOKENS.
+
+    With *override* given (the --cot-max-tokens CLI flag), every model gets
+    min(COT_MAX_TOKENS_CAP, override) and the network lookup is skipped
+    entirely -- the author's escape hatch when the free GET is unavailable.
+    Otherwise each model_key's cap is fetched fresh (not cached across calls),
+    so a rerun in the same process reflects the endpoint's current state; a
+    failed lookup raises and aborts before any cot_scaffold cell runs.
+    """
+    for model_key in model_keys:
+        if override is not None:
+            cap = min(COT_MAX_TOKENS_CAP, int(override))
+        else:
+            cap = min(COT_MAX_TOKENS_CAP, _fetch_endpoint_max_completion_tokens(model_key))
+        COT_MAX_TOKENS[model_key] = cap
+        logger.info("cot_scaffold max_tokens for %s: %s", model_key, cap)
+    return dict(COT_MAX_TOKENS)
+
+
 def _assert_control_matches_shipped() -> None:
     """Fail loudly if an architecture's shipped prompt has drifted from the copy
     above. Compares whitespace-normalised text, so reflowing a line is tolerated
@@ -322,11 +465,13 @@ def _call_diagnostics(call: Dict, model_id: str) -> Dict:
     }
 
 
-def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tuple[Optional[str], Dict]:
+def query_openrouter(messages: List[Dict], model_id: str, model_key: str,
+                     max_tokens: Optional[int] = None) -> Tuple[Optional[str], Dict]:
     """POST to OpenRouter through the architectures' shared client,
     sentinel_utils.openrouter_chat: same payload builder (max_tokens
-    MAX_OUTPUT_TOKENS, the MODEL_SPECS provider pin for model_id), same retry
-    policy from model_config, same failure rules.
+    MAX_OUTPUT_TOKENS unless *max_tokens* overrides it -- the cot_scaffold
+    arm's raised cap -- and the MODEL_SPECS provider pin for model_id), same
+    retry policy from model_config, same failure rules.
 
     Returns (content, diagnostics). content is None when the call failed
     (retries exhausted, or a 400/404/422 on its one retry). A truncated reply
@@ -342,7 +487,8 @@ def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tup
         "X-Title": OPENROUTER_APP_TITLE,
     }
     payload = build_openrouter_payload(model_id, messages, TEMPERATURE,
-                                       get_reasoning_payload(model_key))
+                                       get_reasoning_payload(model_key),
+                                       max_tokens=max_tokens)
     # logger=None: 8 workers x ~80k calls would flood the console with one line
     # per call; every attempt is in the raw jsonl instead.
     call = openrouter_chat(
@@ -533,6 +679,23 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
 # Scenario scoring
 # ---------------------------------------------------------------------------
 
+def _max_tokens_for(variant: Dict, model_key: str) -> int:
+    """The max_tokens cap for one (variant, model) cell: the raised
+    cot_scaffold cap resolved by resolve_cot_max_tokens() for a CoT variant,
+    else sentinel_utils.MAX_OUTPUT_TOKENS unchanged. Never falls back
+    silently: a CoT variant with no resolved cap is a bug (main() always
+    resolves it before the cell loop), so it raises rather than sending 8192."""
+    if not variant["cot"]:
+        return MAX_OUTPUT_TOKENS
+    cap = COT_MAX_TOKENS.get(model_key)
+    if cap is None:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens not resolved for model '{model_key}'. "
+            f"Call resolve_cot_max_tokens([...]) before collecting any cot_scaffold cell."
+        )
+    return cap
+
+
 def score_scenario(scenario: Dict, architecture: str, variant: Dict,
                    model_id: str, model_key: str) -> Dict:
     """Score every alternative in one scenario. Returns per-alternative scores
@@ -548,6 +711,7 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
     failure_types = []
 
     is_rag = ARCHITECTURES[architecture]["rag"]
+    max_tokens = _max_tokens_for(variant, model_key)
     for alternative in alternatives:
         if _ABORT.is_set():
             raise RunAbort("aborted: another worker hit a fatal OpenRouter error")
@@ -585,6 +749,11 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
                     latency_ms=call_diag.get("latency_ms", 0),
                     error=call_diag.get("error", "") or (error or ""),
                     failure_type=call_diag.get("failure_type"),
+                    # The per-arm cap actually sent (8192, or the raised
+                    # cot_scaffold cap): recorded even when no call was made
+                    # (the RAG-retrieval-failure branch), since it is fixed by
+                    # (variant, model) and known regardless.
+                    max_tokens=max_tokens,
                     **call_log_fields(call_diag),
                     api_success=response is not None,
                     parse_error=error,
@@ -604,7 +773,8 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
 
         diag["api_calls"] += 1
         try:
-            response, call_diag = query_openrouter(messages, model_id, model_key)
+            response, call_diag = query_openrouter(messages, model_id, model_key,
+                                                    max_tokens=max_tokens)
         except RunAbort as abort:
             # Archive the failing call (e.g. the 402) before the process stops.
             fatal = _call_diagnostics(getattr(abort, "diagnostics", {}) or {}, model_id)
@@ -707,15 +877,26 @@ def load_reference() -> Dict[int, Dict]:
 
 
 def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
-    """Kendall tau / Top-1 against the reference ranking. A scenario with any
-    sentinel score is reported as failed and contributes to no mean.
+    """Kendall tau / Top-1 / Top-2 against the reference ranking.
+
+    Accuracy rule (author decision, 2026-09-27; same rule the RAG ablation
+    already uses -- see run_rag_ablation_experiments.scenario_metrics): a
+    scenario that failed or is unscored -- no reference ranking at all, any
+    alternative scored the sentinel, or no alternative overlaps the reference
+    -- counts as WRONG for Top-1 and Top-2 (0.0, never NaN), and stays in the
+    denominator: callers average top1/top2 over every scenario in the cell,
+    not only the scored ones. Kendall tau is not an accuracy metric and is
+    unchanged: NaN whenever it is undefined (fewer than two overlapping
+    alternatives, or tied ranks on either side), averaged over scored
+    scenarios only because pandas' mean() skips NaN.
 
     Tau is computed on ranks, not raw scores: `result["ranking"]` already
     applies apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY tie-break
     (B60), and the reference side reuses the ground truth's own tie-broken
     "rank" column, so neither side scores tau_b on tied values.
     """
-    out = {"kendall_tau": np.nan, "top1": np.nan, "failed": True}
+    out = {"kendall_tau": np.nan, "top1": 0.0, "top2": 0.0,
+           "failed": True, "pred_top1": ""}
     if ref is None:
         return out
     scored = result["scored"]
@@ -723,22 +904,29 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
         return out
 
     common = [a["alternative"] for a in scored if a["alternative"] in ref["mavt_by_alt"]]
-    if len(common) < 2:
+    if not common:
         return out
 
     pred_rank_by_alt = {a["alternative"]: r for a, r in
                         zip(scored, result["ranking"]["ranks"])}
+    ref_rank_by_alt = ref["rank_by_alt"]
     pred_ranks = [pred_rank_by_alt[a] for a in common]
-    ref_ranks = [ref["rank_by_alt"][a] for a in common]
-    if len(set(pred_ranks)) < 2 or len(set(ref_ranks)) < 2:
+    ref_ranks = [ref_rank_by_alt[a] for a in common]
+    if len(common) < 2 or len(set(pred_ranks)) < 2 or len(set(ref_ranks)) < 2:
         tau = np.nan
     else:
         tau = float(kendalltau(pred_ranks, ref_ranks).correlation)
 
     pred_top1 = min(common, key=lambda a: pred_rank_by_alt[a])
-    ref_top1 = min(common, key=lambda a: ref["rank_by_alt"][a])
-    return {"kendall_tau": tau, "top1": 1.0 if pred_top1 == ref_top1 else 0.0,
-            "failed": False}
+    ref_top1 = min(common, key=lambda a: ref_rank_by_alt[a])
+    pred_top2 = {a for a in common if pred_rank_by_alt[a] <= 2}
+    return {
+        "kendall_tau": tau,
+        "top1": 1.0 if pred_top1 == ref_top1 else 0.0,
+        "top2": 1.0 if ref_top1 in pred_top2 else 0.0,
+        "failed": False,
+        "pred_top1": pred_top1,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -747,8 +935,10 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
 
 def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture: str,
                    model_key: str, run_idx: int, error: str, collected_utc: str) -> Dict:
-    """A scenario that raised rather than returning scores. Marked failed so it is
-    excluded from every mean, with the error preserved for diagnosis."""
+    """A scenario that raised rather than returning scores. Marked failed so it
+    is excluded from the kendall_tau mean (NaN, skipped by pandas' mean()) and
+    counted WRONG in top1/top2 (0.0, not NaN -- the failure-as-wrong rule),
+    with the error preserved for diagnosis."""
     return {
         "variant": variant_id, "variant_label": variant["label"],
         "architecture": architecture, "model": model_key,
@@ -756,7 +946,7 @@ def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture:
         "collected_utc": collected_utc,
         "scenario_id": scenario["scenario_id"],
         "decision_type": scenario.get("decision_type", ""),
-        "kendall_tau": np.nan, "top1": np.nan, "failed": True, "pred_top1": "",
+        "kendall_tau": np.nan, "top1": 0.0, "top2": 0.0, "failed": True, "pred_top1": "",
         "api_calls": 0, "successful_calls": 0, "failed_calls": 0,
         "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
         "latency_ms": 0.0, "failure_types": f"harness_exception: {error[:200]}",
@@ -794,6 +984,7 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
             ]),
             "kendall_tau": metrics["kendall_tau"],
             "top1": metrics["top1"],
+            "top2": metrics["top2"],
             "failed": metrics["failed"],
             "pred_top1": result["ranking"]["ranked_alternatives"][0]
                          if result["ranking"]["ranked_alternatives"] else "",
@@ -911,7 +1102,17 @@ def parse_sample_size(value: str) -> Optional[int]:
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
     """Per-run means first, then mean +/- SD across runs, so the reported SD is
-    the run-to-run SD the control gate is checked against."""
+    the run-to-run SD the control gate is checked against.
+
+    Accuracy rule (author decision, 2026-09-27, mirroring the RAG ablation): a
+    failed or unscored scenario counts as WRONG for top1_accuracy and
+    top2_accuracy, so their denominator is every scenario in the cell
+    (`g`/`len(g)`), not just the scored ones (`ok`/`len(ok)`). This falls out
+    of scenario_metrics/_failed_record already writing 0.0 (never NaN) for a
+    failed scenario's top1/top2, so `g["top1"].mean()` divides by n_scenarios
+    automatically. kendall_tau is not an accuracy metric and keeps averaging
+    over the scored subset only (its NaN values are skipped by mean()).
+    """
     rows = []
     per_run = []
     for (variant, arch, model, run), g in df.groupby(
@@ -920,8 +1121,10 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
         per_run.append({
             "variant": variant, "architecture": arch, "model": model, "run": run,
             "n_scenarios": len(g), "n_scored": len(ok),
+            "n_failed_scenarios": int(g["failed"].astype(bool).sum()),
             "kendall_tau": ok["kendall_tau"].mean(),
-            "top1_accuracy": ok["top1"].mean(),
+            "top1_accuracy": g["top1"].mean(),
+            "top2_accuracy": g["top2"].mean(),
             "mean_criterion_sd": ok["mean_criterion_sd"].mean(),
             "total_tokens": g["total_tokens"].sum(),
         })
@@ -938,6 +1141,9 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
             "kendall_tau_sd": g["kendall_tau"].std(),
             "top1_accuracy": g["top1_accuracy"].mean(),
             "top1_accuracy_sd": g["top1_accuracy"].std(),
+            "top2_accuracy": g["top2_accuracy"].mean(),
+            "top2_accuracy_sd": g["top2_accuracy"].std(),
+            "n_failed_scenarios": g["n_failed_scenarios"].mean(),
             "mean_criterion_sd": g["mean_criterion_sd"].mean(),
             "success_rate": g["n_scored"].sum() / max(g["n_scenarios"].sum(), 1),
             "tokens_per_run": g["total_tokens"].mean(),
@@ -985,6 +1191,11 @@ def main():
                              "it, at the cost of no longer matching the paper.")
     parser.add_argument("--workers", type=int, default=8,
                         help="Concurrent scenario threads. 1 runs serially.")
+    parser.add_argument("--cot-max-tokens", type=int, default=None,
+                        help="Override the cot_scaffold max_tokens cap for every model "
+                             f"requested (still capped at {COT_MAX_TOKENS_CAP}), skipping the "
+                             "OpenRouter /endpoints GET lookup entirely. Use only when that "
+                             "free lookup is unavailable.")
     parser.add_argument("--output-dir",
                         default=str(PROJECT_ROOT / "Analysis" / "Prompt_Ablation"))
     parser.add_argument("--output",
@@ -998,6 +1209,13 @@ def main():
 
     _assert_control_matches_shipped()
     logger.info("Shipped-prompt drift check passed.")
+
+    if "cot_scaffold" in args.variants:
+        # Resolved once per model, before any cot_scaffold cell is collected
+        # (every other variant keeps sentinel_utils.MAX_OUTPUT_TOKENS and needs
+        # no lookup). A failed lookup raises here and aborts the whole run
+        # rather than silently falling back to the 8192 default.
+        resolve_cot_max_tokens(args.models, override=args.cot_max_tokens)
 
     sample_size = parse_sample_size(args.sample_size)
     scenarios = load_scenarios(sample_size, args.seed)
@@ -1075,6 +1293,7 @@ def main():
 
     cols = ["variant", "architecture", "model", "n_runs", "kendall_tau",
             "kendall_tau_sd", "top1_accuracy", "top1_accuracy_sd",
+            "top2_accuracy", "top2_accuracy_sd", "n_failed_scenarios",
             "mean_criterion_sd", "success_rate"]
     print("\n=== PROMPT ABLATION ===")
     print(summary[cols].to_string(index=False,
