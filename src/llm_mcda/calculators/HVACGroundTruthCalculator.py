@@ -39,11 +39,39 @@ class HVACGroundTruthCalculator:
     # Internal gains, sensible only (the load balance is sensible). Occupants: 220 Btu/h per
     # person, the single-zone sensible gain in Building America House Simulation Protocols
     # (Hendron & Engebrecht 2010) Table 44, citing ASHRAE (2009); the 164 Btu/h latent part is
-    # left out. Equipment 1.0 Btu/h per sqft and the 800 Btu/h base are our assumptions (the HSP
-    # gives appliance/MEL gains as annual kWh by bedroom count, not in these units).
+    # left out. Equipment and base gains: IECC 2018 Table R405.5.2(1) standard reference design,
+    # "Internal gains IGain, in units of Btu/day per dwelling unit, shall equal:
+    # 17,900 + 23.8 x CFA + 4,104 x Nbr", divided by 24 h. The occupant term above stands in
+    # for the 4,104 x Nbr bedroom term (scenarios carry household size, not bedrooms).
     OCCUPANT_SENSIBLE_GAIN_BTUH = 220
-    EQUIPMENT_GAIN_BTUH_PER_SQFT = 1.0
-    BASE_INTERNAL_GAIN_BTUH = 800
+    EQUIPMENT_GAIN_BTUH_PER_SQFT = 23.8 / 24     # 0.99 Btu/h per sqft
+    BASE_INTERNAL_GAIN_BTUH = 17900 / 24         # 745.8 Btu/h
+
+    # Solar gain through glazing: q = A_glass x SHGC x IAC x I_avg (Btu/h).
+    # A_glass: IECC 2018 Table R405.5.2(1) standard reference design, "15 percent of the
+    #   conditioned floor area", "equally distributed to four cardinal compass orientations
+    #   (N, E, S & W)". For attached dwelling units the same table scales the area by
+    #   F = above-grade thermal boundary wall area / (that area + common wall area), "or 0.56,
+    #   whichever is greater". Scenarios carry no wall geometry, so F follows the exposure
+    #   the envelope multipliers already assume: Townhouse/Rowhouse (end unit, one of four
+    #   walls shared) F = 0.75; Apartment/Condo (mid unit, two of four walls shared, 0.5)
+    #   F = 0.56, the table's floor.
+    # SHGC 0.40: same table, "the SHGC shall be equal to 0.40" for climate zones without an
+    #   SHGC requirement (PA zones 4A and 5A). IAC: same table, "Interior shade fraction:
+    #   0.92-(0.21 x SHGC for the standard reference design)" = 0.836.
+    # I_avg: 24-h mean incident irradiance averaged over the four cardinal vertical faces,
+    #   Harrisburg Intl AP TMY3 (climate.onebuilding.org), isotropic sky, ground reflectance
+    #   0.2, over the TMY3 hours whose dry-bulb falls in the scenario outdoor range of each
+    #   mode (heat 5-62 F, AC 68-102 F). The 24-h mean matches the cost model, which bills
+    #   each 8 h period three times a day (calculate_monthly_cost). Script:
+    #   paper/pass6/verify/value_review/solar_irradiance.py.
+    GLAZING_FRACTION_OF_FLOOR = 0.15
+    GLAZING_ATTACHED_FACTOR = {"Townhouse": 0.75, "Rowhouse": 0.75,
+                               "Apartment": 0.56, "Condo": 0.56}
+    SOLAR_SHGC = 0.40
+    SOLAR_INTERIOR_SHADE = 0.92 - 0.21 * SOLAR_SHGC
+    SOLAR_IRRADIANCE_W_M2 = {'heat': 74.03, 'cool': 105.54}
+    W_M2_PER_BTUH_FT2 = 3.15459
 
     # Heat-pump heating efficiency paired with rated SEER, as (SEER, HSPF) anchors. HSPF is
     # seasonal Btu of heat delivered per Wh of electricity (seasonal COP = HSPF / 3.412), so
@@ -93,10 +121,11 @@ class HVACGroundTruthCalculator:
                                 square_footage: int, r_value: int, household_size: int = 3,
                                 ceiling_height: float = 8.0,
                                 housing_type: str = "Single-family",
-                                include_solar: bool = True) -> float:
+                                include_solar: bool = True, mode: str = 'cool') -> float:
         """Sensible heat balance of the house held at indoor_temp, in BTU/hr: conduction +
-        infiltration + internal gains (+ solar when include_solar). Positive means the house
-        gains heat and needs cooling; negative means it loses heat and needs heating."""
+        infiltration + internal gains (+ solar when include_solar, at the mode's seasonal
+        irradiance). Positive means the house gains heat and needs cooling; negative means it
+        loses heat and needs heating."""
         delta_t = outdoor_temp - indoor_temp
 
         # Adjust by housing type. Our multipliers, set by exposure (not a Manual J table):
@@ -117,17 +146,22 @@ class HVACGroundTruthCalculator:
 
         conductive_load = u_factor * envelope_area * delta_t
 
-        # Formula: occupants (220 BTU/hr sensible each) + lighting & equipment (1.0 BTU/hr/sqft) + baseline (800)
-        # Example: for 3-person, 1500 sqft home: (3 x 220) + (1500 x 1.0) + 800 = 2,960 BTU/hr
-        # Occupant gain per Building America HSP Table 44 (sensible); 1.0/sqft and 800 are our assumptions
+        # Formula: occupants (220 BTU/hr sensible each) + equipment (23.8/24 BTU/hr/sqft) + base (17,900/24)
+        # Example: for 3-person, 1500 sqft home: (3 x 220) + (1500 x 0.992) + 745.8 = 2,893 BTU/hr
+        # Occupant gain per Building America HSP Table 44 (sensible); equipment and base per IECC R405
         internal_gains = ((household_size * self.OCCUPANT_SENSIBLE_GAIN_BTUH)
                           + (square_footage * self.EQUIPMENT_GAIN_BTUH_PER_SQFT)
                           + self.BASE_INTERNAL_GAIN_BTUH)
 
-        # Glazing = 15% of floor area, the IECC R405 standard reference design; 20 BTU/hr per
-        # sqft of glass is our assumption. Solar counts in both modes (author decision, 2026-09-27).
-        window_area = square_footage * 0.15
-        solar_gains = window_area * 20 if include_solar else 0.0
+        # Solar gain per the constants above. Solar counts in both modes (author decision,
+        # 2026-09-27), at the mode's seasonal irradiance.
+        if mode not in self.HVAC_MODES:
+            raise ValueError(f"HVAC mode must be 'heat' or 'cool', got {mode!r}")
+        window_area = (square_footage * self.GLAZING_FRACTION_OF_FLOOR
+                       * self.GLAZING_ATTACHED_FACTOR.get(housing_type, 1.0))
+        solar_gains = (window_area * self.SOLAR_SHGC * self.SOLAR_INTERIOR_SHADE
+                       * self.SOLAR_IRRADIANCE_W_M2[mode] / self.W_M2_PER_BTUH_FT2
+                       if include_solar else 0.0)
 
         # Infiltration sensible load via the air-change method (ACCA Manual J (2016)):
         #   cfm = volume_ft3 * ACH / 60;  Q_sensible = 1.08 * cfm * deltaT
@@ -145,17 +179,17 @@ class HVACGroundTruthCalculator:
         # Cooling load = the positive part of the net heat gain, solar included.
         return max(0, self.calculate_net_heat_gain(
             outdoor_temp, indoor_temp, square_footage, r_value, household_size,
-            ceiling_height, housing_type, include_solar=True))
+            ceiling_height, housing_type, include_solar=True, mode='cool'))
 
     def calculate_heating_load(self, outdoor_temp: float, indoor_temp: float,
                                square_footage: int, r_value: int, household_size: int = 3,
                                ceiling_height: float = 8.0,
                                housing_type: str = "Single-family") -> float:
         # Heating load = the negative part of the net heat gain: conductive and infiltration
-        # loss minus the same internal and solar gains as the cooling load.
+        # loss minus the internal gains and the heating-season solar gain.
         return max(0, -self.calculate_net_heat_gain(
             outdoor_temp, indoor_temp, square_footage, r_value, household_size,
-            ceiling_height, housing_type, include_solar=True))
+            ceiling_height, housing_type, include_solar=True, mode='heat'))
 
     def heating_hspf(self, seer: float) -> float:
         """HSPF paired with a rated SEER, piecewise-linear over HSPF_BY_SEER (linear along
@@ -251,20 +285,18 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(1.0, comfort_score / 10.0))
 
     def _efficiency_degradation(self, hvac_age: int, maintenance_level: str = 'moderate') -> float:
-        """Fraction of HVAC efficiency lost to age + maintenance: front-loaded, capped
-        at 30%. Base annual loss 0.5/1.0/1.5%/yr for good/moderate/poor upkeep; the first
-        10 years degrade at 1.5x base, later years at 0.5x. These rates and the cap are our
-        assumptions; every scenario uses 'moderate'. Raises on a missing age rather
-        than defaulting to 0 (which would falsely score the system as pristine)."""
+        """Fraction of HVAC efficiency lost to age + maintenance, from Building America HSP
+        (Hendron & Engebrecht 2010) Eq. 20, "EFF = (Base EFF) x (1-M)^age ... Age of equipment
+        in years, up to a maximum of 20 years": degradation = 1 - (1 - M)^min(age, 20).
+        M = 0.01 (annual professional maintenance) and 0.03 (seldom or never maintained) are
+        HSP Table 32's maintenance factors ('good' and 'poor'); 'moderate' = 0.02 is our
+        midpoint, and every scenario uses 'moderate'. Raises on a missing age rather than
+        defaulting to 0 (which would falsely score the system as pristine)."""
         if hvac_age is None:
             raise ValueError("hvac_age is required to compute efficiency degradation")
-        rates = {'good': 0.005, 'moderate': 0.010, 'poor': 0.015}
-        base_rate = rates.get(maintenance_level, 0.010)
-        if hvac_age <= 10:
-            total_degradation = hvac_age * (base_rate * 1.5)
-        else:
-            total_degradation = 10 * (base_rate * 1.5) + (hvac_age - 10) * (base_rate * 0.5)
-        return min(total_degradation, 0.30)
+        factors = {'good': 0.01, 'moderate': 0.02, 'poor': 0.03}
+        m = factors.get(maintenance_level, 0.02)
+        return 1.0 - (1.0 - m) ** min(max(hvac_age, 0), 20)
 
     def calculate_practicality_score(self, outdoor_temp: float, indoor_temp: float,
                                      hvac_age: int, maintenance_level: str = 'moderate',
@@ -313,7 +345,7 @@ class HVACGroundTruthCalculator:
         # Component 3: system condition (item 3d). Age/maintenance efficiency degradation
         # is a reliability concern -- an older or poorly maintained unit is a less
         # practical choice to rely on -- so it scales the score down by the degraded
-        # fraction (0-30%) instead of inflating energy use.
+        # fraction (0-33% at 'moderate') instead of inflating energy use.
         degradation = self._efficiency_degradation(hvac_age, maintenance_level)
         base_score *= (1 - degradation)
 
@@ -417,26 +449,26 @@ class HVACGroundTruthCalculator:
                 # excluded from the percentile so the normalization floor is not degenerate;
                 # an Off/zero-load alternative still scores at the top of the [0,10] cost
                 # scale via the (x_max - x) normalization. p5 over the nonzero active set
-                # (280 of 315) = $0.190, p95 = $3.210. Endpoints remain consistent
+                # (301 of 315) = $0.400, p95 = $2.810. Endpoints remain consistent
                 # with residential HVAC studies (efficient: Huyen & Cetin (2019),
                 # Energies 12(1):188; degraded: Alves et al. (2016), EB 130:408).
-                'min': 0.19,
-                'max': 3.21,
+                'min': 0.40,
+                'max': 2.81,
                 'decreasing': True
             },
             'environmental': {
                 # Derived from the same active-set 5th-95th percentile cost envelope as
-                # energy_cost ($0.190-$3.210 at $0.19/kWh flat = 0.997-16.897 kWh), applied
+                # energy_cost ($0.400-$2.810 at $0.19/kWh flat = 2.105-14.789 kWh), applied
                 # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak) to
                 # keep cost and emissions physically consistent (these are not percentiles
                 # of the emissions distribution):
-                #   min = 0.997 kWh x 0.976 lbs/kWh = 0.97 lbs CO2  (best case: fully off-peak)
-                #   max = 16.897 kWh x 1.041 lbs/kWh = 17.59 lbs CO2 (worst case: fully peak)
+                #   min = 2.105 kWh x 0.976 lbs/kWh = 2.05 lbs CO2  (best case: fully off-peak)
+                #   max = 14.789 kWh x 1.041 lbs/kWh = 15.40 lbs CO2 (worst case: fully peak)
                 # Source: PJM 2022 Emissions Report (April 2023).
                 # For HVAC, alternatives within one scenario share the same emission
                 # factor because they are evaluated at the same moment and differ by load.
-                'min': 0.97,
-                'max': 17.59,
+                'min': 2.05,
+                'max': 15.40,
                 'decreasing': True
             },
             'comfort': {
@@ -599,6 +631,7 @@ class HVACGroundTruthCalculator:
                 scenario.get('ceiling_height', 8.0),
                 scenario.get('housing_type', 'Single-family'),
                 include_solar=True,
+                mode=mode,
             )
             if mode == 'cool':
                 load = max(0.0, net_gain)
