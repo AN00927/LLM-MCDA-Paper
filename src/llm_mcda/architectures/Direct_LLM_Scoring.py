@@ -65,14 +65,30 @@ from model_config import (
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
-    _is_complete_run_file,
     apply_mavt_ranking,
+    add_call_usage,
+    build_openrouter_payload,
+    call_log_fields,
     has_sentinel_scores,
+    init_usage_totals,
+    log_run_event,
+    merge_usage_totals,
+    MAVT_ROUND_DECIMALS,
+    MAX_OUTPUT_TOKENS,
+    openrouter_chat,
+    OpenRouterFatalError,
+    RunAbort,
     read_table_clean,
+    run_file_state,
+    utc_now,
     RawCallLog,
     SENTINEL_VALUE,
     SENTINEL_FLOAT,
+    FAILED_API_BAD_REQUEST,
+    FAILED_TRUNCATED,
 )
+
+ARCHITECTURE = "Direct_LLM_Scoring"
 
 # Raw per-call archive. Inert until run_test_set turns it on, so importing this
 # module and calling run_scenario directly (ablation / position-bias scripts)
@@ -121,6 +137,8 @@ PURE_FAILURE_COUNTER_KEYS = [
     FAILED_OUT_OF_BOUNDS,
     FAILED_INVALID_SCORE_TYPE,
     FAILED_API_EXHAUSTED,
+    FAILED_API_BAD_REQUEST,
+    FAILED_TRUNCATED,
     FAILED_UNKNOWN
 ]
 
@@ -145,7 +163,13 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
     MAX_RETRIES attempts, REQUEST_TIMEOUT-second socket timeout, exponential
     backoff capped at MAX_RETRY_BACKOFF. latency_ms is the wall-clock round trip
     of the *successful* HTTP request only (measured around requests.post),
-    excluding retry sleeps and local JSON parsing.
+    excluding retry sleeps and local JSON parsing. The loop itself is
+    sentinel_utils.openrouter_chat, shared by all three architectures.
+
+    Returns (content, diagnostics). content is None when the call failed
+    (FAILED_API_EXHAUSTED / FAILED_API_BAD_REQUEST); a truncated call returns
+    its partial text with success False and failure_types [FAILED_TRUNCATED].
+    Raises OpenRouterFatalError on 401/402/403.
     """
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
@@ -158,117 +182,42 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
         "X-Title": OPENROUTER_APP_TITLE
     }
 
-    payload = {
-        "model": API_CONFIG["model"],
-        "messages": messages,
-        "temperature": API_CONFIG["temperature"],
-    }
-    if API_CONFIG["reasoning"] is not None:
-        payload["reasoning"] = API_CONFIG["reasoning"]
+    payload = build_openrouter_payload(
+        API_CONFIG["model"], messages, API_CONFIG["temperature"], API_CONFIG["reasoning"]
+    )
     if API_CONFIG.get("native_thinking") is not None:
         payload.update(API_CONFIG["native_thinking"])
 
+    call = openrouter_chat(
+        payload, headers,
+        endpoint=API_CONFIG["endpoint"],
+        max_retries=max_retries,
+        timeout=REQUEST_TIMEOUT,
+        is_transient=_is_transient_http_status,
+        base_delay=RETRY_BASE_DELAY,
+        max_backoff=MAX_RETRY_BACKOFF,
+        logger=logger,
+    )
+
     diagnostics = {
-        "tokens_input": 0,
-        "tokens_output": 0,
-        "latency_ms": 0,
-        "retries": 0,
-        "success": False
+        "tokens_input": call["prompt_tokens"],
+        "tokens_output": call["completion_tokens"],
+        "latency_ms": call["latency_ms"],
+        "retries": call["retries"],
+        "success": call["ok"],
+        **call_log_fields(call),
     }
 
-    attempt = 0
-    retry_forever = max_retries <= 0
+    if call["ok"]:
+        if DEBUG_API:
+            logger.debug(f"Returning content (len={len(call['content'])}): {call['content'][:200]}...")
+        return call["content"], diagnostics
 
-    while True:
-        attempt += 1
-        try:
-            start_time = time.time()
-            response = requests.post(
-                API_CONFIG["endpoint"],
-                headers=headers,
-                json=payload,
-                timeout=REQUEST_TIMEOUT
-            )
-            latency = (time.time() - start_time) * 1000
-
-            if response.status_code == 200:
-                data = response.json()
-                
-                logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
-                logger.debug(f"Full response keys: {list(data.keys())}")
-                logger.debug(f"Usage: {data.get('usage', {})}")
-                if "choices" in data and len(data["choices"]) > 0:
-                    choice = data["choices"][0]
-                    logger.debug(f"Choice keys: {list(choice.keys())}")
-                    if "message" in choice:
-                        msg = choice["message"]
-                        logger.debug(f"Message keys: {list(msg.keys())}")
-                        logger.debug(f"Message role: {msg.get('role')}")
-                        logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                        for key in msg.keys():
-                            if key not in ['role', 'content']:
-                                logger.debug(f"Message extra field '{key}': {msg.get(key)}")
-
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-
-                usage = data.get("usage", {})
-                reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
-                finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
-                logger.info(
-                    f"  [call ok] attempt={attempt} latency={latency/1000:.1f}s "
-                    f"prompt={usage.get('prompt_tokens', 0)} "
-                    f"completion={usage.get('completion_tokens', 0)} "
-                    f"reasoning_tokens={reasoning_tokens} "
-                    f"finish={finish_reason}"
-                )
-                if reasoning_tokens > 0:
-                    logger.warning(
-                        f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
-                        f"-- reasoning was not disabled for this provider/model."
-                    )
-
-                diagnostics["tokens_input"] = usage.get("prompt_tokens", 0)
-                diagnostics["tokens_output"] = usage.get("completion_tokens", 0)
-                diagnostics["latency_ms"] = latency
-                diagnostics["success"] = True
-                diagnostics["retries"] = attempt - 1
-
-                if DEBUG_API:
-                    logger.debug(f"Returning content (len={len(content)}): {content[:200]}...")
-
-                return content, diagnostics
-            else:
-                diagnostics["retries"] = attempt
-                if _is_transient_http_status(response.status_code):
-                    logging.warning(f"Transient API error {response.status_code}: {response.text}")
-                else:
-                    logging.error(f"API error {response.status_code}: {response.text}")
-
-                if not retry_forever and attempt >= max_retries:
-                    break
-
-                time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-                continue
-
-        except requests.exceptions.RequestException as e:
-            logging.warning(f"Request failed (attempt {attempt}): {e}")
-            diagnostics["retries"] = attempt
-            if not retry_forever and attempt >= max_retries:
-                break
-            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-            continue
-
-        except ValueError as e:
-            logging.warning(f"Invalid API JSON envelope (attempt {attempt}): {e}")
-            diagnostics["retries"] = attempt
-            if not retry_forever and attempt >= max_retries:
-                break
-            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-            continue
-
-    diagnostics["failure_types"] = [FAILED_API_EXHAUSTED]
+    diagnostics["failure_types"] = [call["failure_type"]]
+    if call["truncated"]:
+        # Partial text goes to the raw log only; score_alternative never parses it.
+        return call["content"], diagnostics
     return None, diagnostics
-
 
 
 def build_user_prompt(scenario: Dict, alternative: str) -> str:
@@ -364,22 +313,57 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
         {"role": "user", "content": user_prompt}
     ]
 
-    response, diagnostics = query_openrouter(messages)
+    try:
+        response, diagnostics = query_openrouter(messages)
+    except OpenRouterFatalError as e:
+        # The process is stopping (401/402/403 or repeated failures); archive the
+        # failing call first, then let the abort propagate.
+        _record_call(scenario, alternative, system_prompt, user_prompt, None,
+                     e.diagnostics, None, [e.diagnostics.get("failure_type") or "FATAL"])
+        raise
 
+    # The raw record is written after validation so it carries the outcome. If
+    # validation itself raises, the call is still archived before the raise.
+    try:
+        scores, diagnostics = _validate_scores(response, diagnostics, alternative)
+    except Exception as e:
+        _record_call(scenario, alternative, system_prompt, user_prompt, response,
+                     diagnostics, None, [FAILED_UNKNOWN], validation_error=str(e))
+        raise
+    _record_call(scenario, alternative, system_prompt, user_prompt, response,
+                 diagnostics, scores, diagnostics.get("failure_types", []))
+    return scores, diagnostics
+
+
+def _record_call(scenario: Dict, alternative: str, system_prompt: str, user_prompt: str,
+                 response, diagnostics: Dict, scores, failure_types, **extra) -> None:
+    """Append one scoring call (request, response, provenance, outcome) to RAW_LOG."""
+    diagnostics = diagnostics or {}
     RAW_LOG.record(
+        architecture=ARCHITECTURE,
         decision_type=scenario.get("decision_type", ""),
         alternative=str(alternative),
         model=API_CONFIG["model"],
+        system_prompt_sha256=hashlib.sha256(system_prompt.encode("utf-8")).hexdigest(),
         prompt=user_prompt,
         prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
         response=response or "",
-        prompt_tokens=diagnostics.get("tokens_input", 0),
-        completion_tokens=diagnostics.get("tokens_output", 0),
+        prompt_tokens=diagnostics.get("tokens_input", diagnostics.get("prompt_tokens", 0)),
+        completion_tokens=diagnostics.get("tokens_output", diagnostics.get("completion_tokens", 0)),
         latency_ms=diagnostics.get("latency_ms", 0),
-        retries=diagnostics.get("retries", 0),
-        api_success=bool(diagnostics.get("success")),
+        api_success=response is not None,
+        **call_log_fields(diagnostics),
+        scores=scores,
+        scores_valid=scores is not None and not has_sentinel_scores(scores),
+        failure_types=list(failure_types or []),
+        **extra,
     )
 
+
+def _validate_scores(response, diagnostics: Dict, alternative: str) -> Tuple[Dict, Dict]:
+    """Parse and range-check one scoring response (moved unchanged out of
+    score_alternative so the raw record can follow it; the truncation check is
+    new)."""
     logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
     logger.debug(f"Raw response (first 1000 chars): {response[:1000] if response else 'None'}")
     logger.debug(f"Response length: {len(response) if response else 0} chars")
@@ -399,6 +383,12 @@ Return ONLY: {"energy_cost": X, "environmental": X, "comfort": X, "practicality"
         "comfort": SENTINEL_VALUE,
         "practicality": SENTINEL_VALUE,
     }
+
+    if diagnostics.get("truncated"):
+        logging.error(f"LLM response truncated (finish_reason=length) for alternative: {alternative}")
+        diagnostics["success"] = False
+        diagnostics["failure_types"] = [FAILED_TRUNCATED]
+        return api_fallback_scores, diagnostics
 
     if not response:
         logging.error(f"LLM scoring failed for alternative: {alternative}")
@@ -481,11 +471,13 @@ def run_scenario(scenario: Dict) -> Dict:
         "total_tokens_output": 0,
         "successful_calls": 0,
         "failed_calls": 0,
+        **init_usage_totals(),
         **_init_failure_counters()
     }
 
     for alt in alternatives:
         scores, diagnostics = score_alternative(scenario, alt)
+        add_call_usage(total_diagnostics, diagnostics)
         alt_failed = has_sentinel_scores(scores)
         if alt_failed:
             diagnostics["success"] = False
@@ -531,6 +523,7 @@ PURE_RESULT_FIELDNAMES = [
     "appliance_age", "flow_rate", "alternative",
     "energy_cost", "environmental", "comfort", "practicality",
     "rank", "weighted_score",
+    "collected_utc", "model_id",
 ]
 
 
@@ -555,8 +548,14 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
     logging.info(f"Loaded {len(scenarios)} test scenarios from {test_csv_path}")
 
     all_results = []
+    run_start_utc = datetime.now(timezone.utc).isoformat()
     cumulative_diagnostics = {
-        "collected_utc": datetime.now(timezone.utc).isoformat(),
+        "collected_utc": run_start_utc,
+        "collected_utc_start": run_start_utc,
+        "collected_utc_end": None,
+        "architecture": ARCHITECTURE,
+        "model_id": API_CONFIG["model"],
+        "max_output_tokens": MAX_OUTPUT_TOKENS,
         "total_scenarios": len(scenarios),
         "total_api_calls": 0,
         "total_latency_ms": 0,
@@ -566,6 +565,7 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
         "failed_calls": 0,
         "successful_scenarios": 0,
         "failed_scenarios": 0,
+        **init_usage_totals(),
         **_init_failure_counters()
     }
 
@@ -621,6 +621,8 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
                 }
             }
 
+        # UTC time this scenario's calls finished; written on each of its rows.
+        result["collected_utc"] = utc_now()
         all_results.append(result)
 
         diag = result["diagnostics"]
@@ -630,6 +632,7 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
         cumulative_diagnostics["total_tokens_output"] += diag["total_tokens_output"]
         cumulative_diagnostics["successful_calls"] += diag["successful_calls"]
         cumulative_diagnostics["failed_calls"] += diag["failed_calls"]
+        merge_usage_totals(cumulative_diagnostics, diag)
         for counter_key in PURE_FAILURE_COUNTER_KEYS:
             cumulative_diagnostics[counter_key] += diag.get(counter_key, 0)
         if diag.get("scenario_failed", False):
@@ -638,6 +641,7 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
             cumulative_diagnostics["successful_scenarios"] += 1
 
     RAW_LOG.stop()
+    cumulative_diagnostics["collected_utc_end"] = datetime.now(timezone.utc).isoformat()
 
     avg_latency = cumulative_diagnostics["total_latency_ms"] / max(cumulative_diagnostics["total_api_calls"], 1)
     scenario_success_rate = cumulative_diagnostics["successful_scenarios"] / max(cumulative_diagnostics["total_scenarios"], 1)
@@ -691,7 +695,9 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
                 "comfort": comfort,
                 "practicality": practicality,
                 "rank": rank,
-                "weighted_score": weighted_score
+                "weighted_score": weighted_score,
+                "collected_utc": result["collected_utc"],
+                "model_id": API_CONFIG["model"],
             })
 
     _atomic_write_xlsx(pd.DataFrame(rows, columns=PURE_RESULT_FIELDNAMES), output_csv_path)
@@ -708,28 +714,51 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
 
     Resume-aware: a per-run xlsx that already exists, has size > 0, has no
-    leftover .tmp sibling, and is a readable non-empty DataFrame is treated as
-    a completed run and skipped. Any other state triggers a re-run.
+    leftover .tmp sibling, is a readable non-empty DataFrame and carries a
+    collected_utc column is treated as a completed run and skipped. Any other
+    state triggers a re-run, except a readable file WITHOUT collected_utc (a
+    pre-rerun output): then nothing runs until it is moved aside. Every skip,
+    start, finish and abort is appended to <base>_events.log.
     """
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
+    events_log = base.with_name(f"{base.stem}_events.log")
     run_paths = []
     skipped_runs = []
+
+    old_format = [
+        base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}").name
+        for i in range(1, N_RUNS + 1)
+        if run_file_state(base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}")) == "old_format"
+    ]
+    if old_format:
+        msg = (f"Refusing to run: {old_format} in {base.parent} have no collected_utc column "
+               f"(pre-rerun outputs). Move them aside; they are never resumed or overwritten.")
+        log_run_event(events_log, f"REFUSED {msg}")
+        raise RuntimeError(msg)
 
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
         diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
-        if _is_complete_run_file(run_path):
+        if run_file_state(run_path) == "complete":
             logging.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+            log_run_event(events_log, f"SKIP run {run_idx}/{N_RUNS}: {run_path.name} already complete (resumed)")
             run_paths.append(run_path)
             skipped_runs.append(run_idx)
             continue
         logging.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
+        log_run_event(events_log, f"START run {run_idx}/{N_RUNS} -> {run_path.name} model={API_CONFIG['model']}")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
             run_paths.append(run_path)
+            log_run_event(events_log, f"DONE run {run_idx}/{N_RUNS} -> {run_path.name}")
+        except RunAbort as e:
+            logging.critical(f"Run {run_idx} aborted, nothing saved for it: {e}")
+            log_run_event(events_log, f"ABORT run {run_idx}/{N_RUNS}: {e}")
+            raise
         except Exception as e:
             logging.error(f"Run {run_idx} failed and will be excluded from aggregation: {e}")
+            log_run_event(events_log, f"FAILED run {run_idx}/{N_RUNS}: {e}")
 
     if skipped_runs:
         logging.info(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
@@ -821,7 +850,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                 avg.loc[valid_idx, "environmental"] * CRITERION_WEIGHTS["environmental"] +
                 avg.loc[valid_idx, "comfort"] * CRITERION_WEIGHTS["comfort"] +
                 avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
-            )
+            ).round(MAVT_ROUND_DECIMALS)  # exact ties reach TIE_BREAK_PRIORITY
             avg.loc[valid_idx, "weighted_score"] = ws
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws

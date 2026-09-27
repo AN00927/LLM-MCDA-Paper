@@ -43,13 +43,29 @@ from model_config import (
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
-    _is_complete_run_file,
+    add_call_usage,
+    build_openrouter_payload,
+    call_log_fields,
     has_sentinel_scores,
+    init_usage_totals,
+    log_run_event,
+    MAVT_ROUND_DECIMALS,
+    MAX_OUTPUT_TOKENS,
+    openrouter_chat,
+    OpenRouterCallFailed,
+    OpenRouterFatalError,
+    RunAbort,
     read_table_clean,
+    run_file_state,
+    utc_now,
     RawCallLog,
     SENTINEL_VALUE,
     SENTINEL_FLOAT,
+    FAILED_API_BAD_REQUEST,
+    FAILED_TRUNCATED,
 )
+
+ARCHITECTURE = "LLM-Parameterized_Reference_Scoring"
 
 # Raw per-call archive. Inert until run_test_set turns it on, so importing this
 # module and driving extract_all_with_ai directly (the order-reversal ablation)
@@ -140,6 +156,7 @@ LLM_Parameterized_Reference_Scoring_RESULT_FIELDNAMES = [
     'alternative', 'extracted_alternative',
     'energy_cost', 'environmental', 'comfort', 'practicality',
     'rank', 'weighted_score',
+    'collected_utc', 'model_id',
 ]
 
 LLM_Parameterized_Reference_Scoring_NUMERIC_EXTRACTED_COLS = [
@@ -164,6 +181,8 @@ LLM_Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS = [
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
     FAILED_API_EXHAUSTED,
+    FAILED_API_BAD_REQUEST,
+    FAILED_TRUNCATED,
     FAILED_UNKNOWN
 ]
 
@@ -189,6 +208,17 @@ LLM_Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS = {
         "tank_size": (10.0, 120.0),      # nominal water-heater tank gallons
         "water_heater_temp": (80.0, 160.0),  # setpoint deg F
     },
+}
+
+
+# The engineering parameters the extraction prompt asks for, per decision type.
+# Only these keys are merged over the scenario before the calculator runs, so an
+# extraction that also returns e.g. 'question' or 'hvac_mode' cannot override the
+# scenario's own value.
+EXTRACTION_REQUIRED_PARAMS = {
+    "HVAC": ['r_value', 'seer', 'hvac_age', 'occupancy_context'],
+    "Appliance": ['appliance', 'kwh_per_cycle', 'baseline_time'],
+    "Shower": ['gpm', 'tank_size', 'water_heater_temp'],
 }
 
 
@@ -301,6 +331,14 @@ Return ONLY the JSON, no explanation.
 
 def query_openrouter(messages: List[Dict], model: str = None,
                      temperature: float = None) -> Tuple[str, Dict]:
+    """POST one extraction call under the shared policy (sentinel_utils.openrouter_chat).
+
+    Returns (content, diagnostics). A truncated call returns its partial text
+    with diagnostics['truncated'] True and failure_types [FAILED_TRUNCATED].
+    Raises OpenRouterCallFailed ("FAILED_API_...: Failed to get response ...",
+    .diagnostics holds the attempt log) when no completion was obtained, and
+    OpenRouterFatalError on 401/402/403.
+    """
     if model is None:
         model = API_CONFIG["model"]
     if temperature is None:
@@ -316,101 +354,43 @@ def query_openrouter(messages: List[Dict], model: str = None,
         "X-Title": OPENROUTER_APP_TITLE
     }
 
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
+    payload = build_openrouter_payload(model, messages, temperature, API_CONFIG["reasoning"])
+
+    call = openrouter_chat(
+        payload, headers,
+        endpoint=url,
+        max_retries=MAX_RETRIES,
+        timeout=REQUEST_TIMEOUT,
+        is_transient=_is_transient_http_status,
+        base_delay=RETRY_BASE_DELAY,
+        max_backoff=MAX_RETRY_BACKOFF,
+        logger=logger,
+    )
+
+    diagnostics = {
+        'prompt_tokens': call['prompt_tokens'],
+        'completion_tokens': call['completion_tokens'],
+        'total_tokens': call['total_tokens'],
+        'latency_ms': call['latency_ms'],
+        'model': model,
+        'success': call['ok'],
+        **call_log_fields(call),
     }
-    reasoning_payload = API_CONFIG["reasoning"]
-    if reasoning_payload is not None:
-        payload["reasoning"] = reasoning_payload
 
+    if call['ok']:
+        if DEBUG_API:
+            logger.debug(f"Returning content (len={len(call['content'])}): {call['content'][:200]}...")
+        return call['content'], diagnostics
+    if call['truncated']:
+        diagnostics['failure_types'] = [FAILED_TRUNCATED]
+        return call['content'], diagnostics
 
-    attempt = 0
-    retry_forever = MAX_RETRIES <= 0
-
-    while True:
-        attempt += 1
-        try:
-            start_time = time.time()
-            response = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
-            latency_ms = (time.time() - start_time) * 1000
-
-            if response.status_code == 200:
-                data = response.json()
-                
-                logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
-                logger.debug(f"Full response keys: {list(data.keys())}")
-                logger.debug(f"Usage: {data.get('usage', {})}")
-                if "choices" in data and len(data["choices"]) > 0:
-                    choice = data["choices"][0]
-                    logger.debug(f"Choice keys: {list(choice.keys())}")
-                    if "message" in choice:
-                        msg = choice["message"]
-                        logger.debug(f"Message keys: {list(msg.keys())}")
-                        logger.debug(f"Message role: {msg.get('role')}")
-                        logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                        for key in msg.keys():
-                            if key not in ['role', 'content']:
-                                logger.debug(f"Message extra field '{key}': {msg.get(key)}")
-
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-
-                usage = data.get('usage', {})
-                reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
-                finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
-                logger.info(
-                    f"  [call ok] attempt={attempt} latency={latency_ms/1000:.1f}s "
-                    f"prompt={usage.get('prompt_tokens', 0)} "
-                    f"completion={usage.get('completion_tokens', 0)} "
-                    f"reasoning_tokens={reasoning_tokens} "
-                    f"finish={finish_reason}"
-                )
-                if reasoning_tokens > 0:
-                    logger.warning(
-                        f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
-                        f"-- reasoning was not disabled for this provider/model."
-                    )
-
-                diagnostics = {
-                    'prompt_tokens': usage.get('prompt_tokens', 0),
-                    'completion_tokens': usage.get('completion_tokens', 0),
-                    'total_tokens': usage.get('total_tokens', 0),
-                    'latency_ms': latency_ms,
-                    'model': model
-                }
-
-                if DEBUG_API:
-                    logger.debug(f"Returning content (len={len(content)}): {content[:200]}...")
-
-                return content, diagnostics
-            else:
-                if _is_transient_http_status(response.status_code):
-                    print(f"  Transient API error (attempt {attempt}): {response.status_code}")
-                else:
-                    print(f"  API error (attempt {attempt}): {response.status_code}")
-
-                if not retry_forever and attempt >= MAX_RETRIES:
-                    break
-
-                time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-                continue
-
-        except requests.exceptions.RequestException as e:
-            print(f"  Request failed (attempt {attempt}): {e}")
-            if not retry_forever and attempt >= MAX_RETRIES:
-                break
-            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-            continue
-
-        except ValueError as e:
-            print(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
-            if not retry_forever and attempt >= MAX_RETRIES:
-                break
-            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-            continue
-
-    raise Exception(f"{FAILED_API_EXHAUSTED}: Failed to get response after {MAX_RETRIES} attempts")
+    last = call['attempt_errors'][-1] if call['attempt_errors'] else {}
+    raise OpenRouterCallFailed(
+        f"{call['failure_type']}: Failed to get response after {call['attempts']} attempts. "
+        f"Last error: status {last.get('status')} {last.get('detail', '')[:300]}",
+        diagnostics={**diagnostics, 'failure_type': call['failure_type']},
+    )
 
 # Household-reported fields the LLM extraction prompt may see. Engineering-truth
 # keys (r_value, gpm, kwh_per_cycle, ...) must NEVER reach the prompt -- the LLM
@@ -475,135 +455,106 @@ def extract_all_with_ai(scenario: Dict,
         'failure_types': []
     }
 
-    # The except below also catches faults raised AFTER a successful call, so it
-    # must not archive a second, empty record for a call already archived.
-    raw_recorded = False
-
-    try:
-        response_text, api_diagnostics = query_openrouter(messages)
-        extraction_diagnostics.update({
-            'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-            'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-            'latency_ms': api_diagnostics.get('latency_ms', 0)
-        })
-
+    def _record(response_text, api_diag, extracted, failure_types, **extra):
+        # One raw record per call, written after parsing so it carries the outcome.
+        api_diag = api_diag or {}
         RAW_LOG.record(
+            architecture=ARCHITECTURE,
             decision_type=str(scenario.get('decision_type', '')),
             alternatives=[str(scenario.get(f'alternative_{i}', '')) for i in (1, 2, 3)],
             model=API_CONFIG['model'],
+            system_prompt_sha256=None,  # single user message, no system prompt
             prompt=prompt,
             prompt_sha256=hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
             response=response_text or '',
-            prompt_tokens=api_diagnostics.get('prompt_tokens', 0),
-            completion_tokens=api_diagnostics.get('completion_tokens', 0),
-            latency_ms=api_diagnostics.get('latency_ms', 0),
-            api_success=True,
+            prompt_tokens=api_diag.get('prompt_tokens', 0),
+            completion_tokens=api_diag.get('completion_tokens', 0),
+            latency_ms=api_diag.get('latency_ms', 0),
+            api_success=response_text is not None,
+            **call_log_fields(api_diag),
+            parsed=extracted,
+            extraction_success=extracted is not None,
+            failure_types=list(failure_types or []),
+            extraction_error=extraction_diagnostics.get('extraction_error'),
+            **extra,
         )
-        raw_recorded = True
 
-        logger.debug(f"=== EXTRACTION RESPONSE ===")
-        logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
-        logger.debug(f"Response length: {len(response_text)} chars")
-        
-        stripped_response = response_text.strip()
-        if stripped_response.startswith("```"):
-            stripped_response = stripped_response.split("```", 2)[1]
-            if stripped_response.lower().startswith("json"):
-                stripped_response = stripped_response[4:]
-            stripped_response = stripped_response.strip()
-        strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
-        if not strict_json_only:
-            print("Extraction failed: non-JSON wrapper text detected")
-            extraction_diagnostics['extraction_error'] = "Non-JSON wrapper text detected"
-            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_NON_JSON_WRAPPER]
-            return None, extraction_diagnostics
+    try:
+        response_text, api_diagnostics = query_openrouter(messages)
+    except OpenRouterFatalError as e:
+        _record(None, e.diagnostics, None, [e.diagnostics.get('failure_type') or 'FATAL'])
+        raise
+    except Exception as e:
+        print(f"Extraction error: {e}")
+        api_diag = getattr(e, 'diagnostics', None) or {}
+        extraction_diagnostics['extraction_error'] = str(e)
+        error_text = str(e).lower()
+        # Distinguish API/network exhaustion (transient infrastructure failure)
+        # from genuine extraction errors (bad LLM output, code bugs).
+        if isinstance(e, OpenRouterCallFailed) and e.failure_type:
+            extraction_diagnostics['failure_types'] = [e.failure_type]
+        elif "failed to get response" in error_text or "request failed" in error_text:
+            extraction_diagnostics['failure_types'] = [FAILED_API_EXHAUSTED]
+        else:
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_EXCEPTION]
+        extraction_diagnostics['api_diagnostics'] = call_log_fields(api_diag)
+        _record(None, api_diag, None, extraction_diagnostics['failure_types'], api_error=str(e))
+        return None, extraction_diagnostics
 
-        import re
-        json_match = re.search(r'\{.*\}', stripped_response, re.DOTALL)
+    extraction_diagnostics.update({
+        'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+        'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+        'latency_ms': api_diagnostics.get('latency_ms', 0),
+        'cost': api_diagnostics.get('cost'),
+        'reasoning_tokens': api_diagnostics.get('reasoning_tokens', 0),
+    })
 
-        if not json_match:
-            print("Extraction failed: could not parse JSON")
-            extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-            extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
-            extraction_diagnostics.update({
-                'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                'latency_ms': api_diagnostics.get('latency_ms', 0)
-            })
-            return None, extraction_diagnostics
+    try:
+        extracted, extraction_diagnostics = _parse_extraction(
+            response_text, api_diagnostics, extraction_diagnostics, expected_decision_type)
+    except Exception as e:
+        # A fault after a successful call (e.g. a malformed 'parameters' value)
+        # is an extraction failure, never an API one.
+        print(f"Extraction error: {e}")
+        extraction_diagnostics['extraction_error'] = str(e)
+        extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_EXCEPTION]
+        extracted = None
+    _record(response_text, api_diagnostics, extracted, extraction_diagnostics.get('failure_types', []))
+    return extracted, extraction_diagnostics
 
-        try:
-            extracted = json.loads(json_match.group())
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"Extraction failed: could not parse JSON: {e}")
-            extraction_diagnostics['extraction_error'] = "Invalid JSON format"
-            extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
-            extraction_diagnostics.update({
-                'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                'latency_ms': api_diagnostics.get('latency_ms', 0)
-            })
-            return None, extraction_diagnostics
 
-        required_top_level = ['decision_type', 'calculator', 'parameters']
-        if all(k in extracted for k in required_top_level):
+def _parse_extraction(response_text: str, api_diagnostics: Dict, extraction_diagnostics: Dict,
+                      expected_decision_type: Optional[str]) -> Tuple[Optional[Dict], Dict]:
+    """Parse and validate one extraction response (moved unchanged out of
+    extract_all_with_ai so the raw record can follow it; the truncation check
+    is new)."""
+    if api_diagnostics.get('truncated'):
+        print("Extraction failed: response truncated (finish_reason=length)")
+        extraction_diagnostics['extraction_error'] = "Response truncated at max_tokens"
+        extraction_diagnostics['failure_types'] = [FAILED_TRUNCATED]
+        return None, extraction_diagnostics
 
-            if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
-                print(f" invalid decision_type: {extracted['decision_type']}")
-                extraction_diagnostics['extraction_error'] = "Invalid decision_type"
-                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_DECISION_TYPE]
-                return None, extraction_diagnostics
+    logger.debug(f"=== EXTRACTION RESPONSE ===")
+    logger.debug(f"Raw response (first 1000 chars): {(response_text or '')[:1000]}")
+    logger.debug(f"Response length: {len(response_text or '')} chars")
 
-            valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
-                                 'ShowerGroundTruthCalculator']
-            if extracted['calculator'] not in valid_calculators:
-                print(f" invalid calculator: {extracted['calculator']}")
-                extraction_diagnostics['extraction_error'] = "Invalid calculator"
-                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_CALCULATOR]
-                return None, extraction_diagnostics
+    stripped_response = (response_text or '').strip()
+    if stripped_response.startswith("```"):
+        stripped_response = stripped_response.split("```", 2)[1]
+        if stripped_response.lower().startswith("json"):
+            stripped_response = stripped_response[4:]
+        stripped_response = stripped_response.strip()
+    strict_json_only = stripped_response.startswith('{') and stripped_response.endswith('}')
+    if not strict_json_only:
+        print("Extraction failed: non-JSON wrapper text detected")
+        extraction_diagnostics['extraction_error'] = "Non-JSON wrapper text detected"
+        extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_NON_JSON_WRAPPER]
+        return None, extraction_diagnostics
 
-            params = extracted['parameters']
-            decision_type = extracted['decision_type']
+    import re
+    json_match = re.search(r'\{.*\}', stripped_response, re.DOTALL)
 
-            if expected_decision_type is not None and decision_type != expected_decision_type:
-                print(f" decision_type mismatch: extracted {decision_type!r}, "
-                      f"expected {expected_decision_type!r}")
-                extraction_diagnostics['extraction_error'] = (
-                    f"decision_type mismatch: {decision_type} != {expected_decision_type}"
-                )
-                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_DECISION_TYPE_MISMATCH]
-                return None, extraction_diagnostics
-
-            if decision_type == 'HVAC':
-                required_params = ['r_value', 'seer', 'hvac_age', 'occupancy_context']
-            elif decision_type == 'Appliance':
-                required_params = ['appliance', 'kwh_per_cycle', 'baseline_time']
-            elif decision_type == 'Shower':
-                required_params = ['gpm', 'tank_size', 'water_heater_temp']
-            if all(k in params for k in required_params):
-                bad_numeric = _validate_numeric_params(decision_type, params)
-                if bad_numeric:
-                    print(f"Invalid numeric parameters for {decision_type}: {bad_numeric}")
-                    extraction_diagnostics['extraction_error'] = (
-                        f"Invalid numeric parameters: {bad_numeric}"
-                    )
-                    extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_PARAMETERS]
-                    return None, extraction_diagnostics
-
-                extraction_diagnostics['success'] = True
-                extraction_diagnostics['failure_types'] = []
-                extraction_diagnostics.update({
-                    'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
-                    'completion_tokens': api_diagnostics.get('completion_tokens', 0),
-                    'latency_ms': api_diagnostics.get('latency_ms', 0)
-                })
-                return extracted, extraction_diagnostics
-
-            print(f"Missing required parameters for {decision_type}")
-            extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
-            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_MISSING_PARAMETERS]
-            return None, extraction_diagnostics
-
+    if not json_match:
         print("Extraction failed: could not parse JSON")
         extraction_diagnostics['extraction_error'] = "Invalid JSON format"
         extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
@@ -614,31 +565,83 @@ def extract_all_with_ai(scenario: Dict,
         })
         return None, extraction_diagnostics
 
-    except Exception as e:
-        print(f"Extraction error: {e}")
-        if not raw_recorded:
-            RAW_LOG.record(
-                decision_type=str(scenario.get('decision_type', '')),
-                alternatives=[str(scenario.get(f'alternative_{i}', '')) for i in (1, 2, 3)],
-                model=API_CONFIG['model'],
-                prompt=prompt,
-                prompt_sha256=hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
-                response='',
-                prompt_tokens=0,
-                completion_tokens=0,
-                latency_ms=0,
-                api_success=False,
-                api_error=str(e),
-            )
-        extraction_diagnostics['extraction_error'] = str(e)
-        error_text = str(e).lower()
-        # Distinguish API/network exhaustion (transient infrastructure failure)
-        # from genuine extraction errors (bad LLM output, code bugs).
-        if "failed to get response" in error_text or "request failed" in error_text:
-            extraction_diagnostics['failure_types'] = [FAILED_API_EXHAUSTED]
-        else:
-            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_EXCEPTION]
+    try:
+        extracted = json.loads(json_match.group())
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Extraction failed: could not parse JSON: {e}")
+        extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+        extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
+        extraction_diagnostics.update({
+            'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+            'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+            'latency_ms': api_diagnostics.get('latency_ms', 0)
+        })
         return None, extraction_diagnostics
+
+    required_top_level = ['decision_type', 'calculator', 'parameters']
+    if all(k in extracted for k in required_top_level):
+
+        if extracted['decision_type'] not in ['HVAC', 'Appliance', 'Shower']:
+            print(f" invalid decision_type: {extracted['decision_type']}")
+            extraction_diagnostics['extraction_error'] = "Invalid decision_type"
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_DECISION_TYPE]
+            return None, extraction_diagnostics
+
+        valid_calculators = ['HVACGroundTruthCalculator', 'ApplianceGroundTruthCalculator',
+                             'ShowerGroundTruthCalculator']
+        if extracted['calculator'] not in valid_calculators:
+            print(f" invalid calculator: {extracted['calculator']}")
+            extraction_diagnostics['extraction_error'] = "Invalid calculator"
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_CALCULATOR]
+            return None, extraction_diagnostics
+
+        params = extracted['parameters']
+        decision_type = extracted['decision_type']
+
+        if expected_decision_type is not None and decision_type != expected_decision_type:
+            print(f" decision_type mismatch: extracted {decision_type!r}, "
+                  f"expected {expected_decision_type!r}")
+            extraction_diagnostics['extraction_error'] = (
+                f"decision_type mismatch: {decision_type} != {expected_decision_type}"
+            )
+            extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_DECISION_TYPE_MISMATCH]
+            return None, extraction_diagnostics
+
+        required_params = EXTRACTION_REQUIRED_PARAMS[decision_type]
+        if all(k in params for k in required_params):
+            bad_numeric = _validate_numeric_params(decision_type, params)
+            if bad_numeric:
+                print(f"Invalid numeric parameters for {decision_type}: {bad_numeric}")
+                extraction_diagnostics['extraction_error'] = (
+                    f"Invalid numeric parameters: {bad_numeric}"
+                )
+                extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_INVALID_PARAMETERS]
+                return None, extraction_diagnostics
+
+            extraction_diagnostics['success'] = True
+            extraction_diagnostics['failure_types'] = []
+            extraction_diagnostics.update({
+                'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+                'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+                'latency_ms': api_diagnostics.get('latency_ms', 0)
+            })
+            return extracted, extraction_diagnostics
+
+        print(f"Missing required parameters for {decision_type}")
+        extraction_diagnostics['extraction_error'] = f"Missing parameters: {required_params}"
+        extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_MISSING_PARAMETERS]
+        return None, extraction_diagnostics
+
+    print("Extraction failed: could not parse JSON")
+    extraction_diagnostics['extraction_error'] = "Invalid JSON format"
+    extraction_diagnostics['failure_types'] = [EXTRACTION_INVALID_JSON]
+    extraction_diagnostics.update({
+        'prompt_tokens': api_diagnostics.get('prompt_tokens', 0),
+        'completion_tokens': api_diagnostics.get('completion_tokens', 0),
+        'latency_ms': api_diagnostics.get('latency_ms', 0)
+    })
+    return None, extraction_diagnostics
+
 
 def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict]:
     # Alternatives are taken verbatim from the test scenario (the sheet already
@@ -649,7 +652,11 @@ def score_with_ground_truth(extracted_result: Dict, scenario: Dict) -> List[Dict
         if a not in (None, '') and str(a).strip().lower() != 'nan'
     ]
 
-    gt_scenario = {**scenario, **extracted_result['parameters']}
+    allowed = EXTRACTION_REQUIRED_PARAMS[extracted_result['decision_type']]
+    extracted_params = {
+        k: v for k, v in extracted_result['parameters'].items() if k in allowed
+    }
+    gt_scenario = {**scenario, **extracted_params}
     gt_scenario['alternatives'] = scenario_alts  # HVAC calc reads this list
     for i, alt in enumerate(scenario_alts[:3], 1):
         gt_scenario[f'alternative_{i}'] = alt
@@ -732,7 +739,8 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
                 CRITERION_WEIGHTS['comfort'] * scores['comfort'] +
                 CRITERION_WEIGHTS['practicality'] * scores['practicality']
         )
-        valid_pairs.append((idx, weighted_sum))
+        # Round so exact ties are equal and reach TIE_BREAK_PRIORITY.
+        valid_pairs.append((idx, round(weighted_sum, MAVT_ROUND_DECIMALS)))
 
     if not valid_pairs:
         return {
@@ -778,7 +786,7 @@ def run_scenario(scenario: Dict) -> Dict:
 
     if extraction_result is None:
         extraction_failure_types = extraction_diag.get('failure_types', [])
-        if extraction_failure_types == [FAILED_API_EXHAUSTED]:
+        if extraction_failure_types in ([FAILED_API_EXHAUSTED], [FAILED_API_BAD_REQUEST]):
             print(f" EXTRACTION FAILED DUE TO API/ENVIRONMENT. Using fallback scores")
 
             neutral_alternatives = []
@@ -805,7 +813,7 @@ def run_scenario(scenario: Dict) -> Dict:
                 'calculator': 'NONE',
                 'extraction_failed': True,
                 'gt_calculation_failed': False,
-                'scenario_failed': False,
+                'scenario_failed': True,
                 'failure_types': extraction_failure_types,
                 'extracted_result': None,
                 'alternatives_scores': neutral_alternatives,
@@ -968,8 +976,14 @@ def run_test_set(test_path: str, output_path: str,
     print(f"  Decision types: {set([s.get('decision_type', 'UNKNOWN') for s in scenarios])}\n")
 
     all_results = []
+    run_start_utc = datetime.now(timezone.utc).isoformat()
     cumulative_diagnostics = {
-        'collected_utc': datetime.now(timezone.utc).isoformat(),
+        'collected_utc': run_start_utc,
+        'collected_utc_start': run_start_utc,
+        'collected_utc_end': None,
+        'architecture': ARCHITECTURE,
+        'model_id': API_CONFIG['model'],
+        'max_output_tokens': MAX_OUTPUT_TOKENS,
         'total_scenarios': len(scenarios),
         'total_api_calls': 0,
         'total_latency_ms': 0.0,
@@ -979,6 +993,7 @@ def run_test_set(test_path: str, output_path: str,
         'failed_calls': 0,
         'successful_scenarios': 0,
         'failed_scenarios': 0,
+        **init_usage_totals(),
         **_init_failure_counters()
     }
 
@@ -1035,6 +1050,8 @@ def run_test_set(test_path: str, output_path: str,
                 }
             }
 
+        # UTC time this scenario's call finished; written on each of its rows.
+        result['collected_utc'] = utc_now()
         all_results.append(result)
 
         ext_diag = result.get('extraction_diagnostics', {})
@@ -1048,6 +1065,7 @@ def run_test_set(test_path: str, output_path: str,
         cumulative_diagnostics['total_tokens_input'] += ext_diag.get('prompt_tokens', 0)
         cumulative_diagnostics['total_tokens_output'] += ext_diag.get('completion_tokens', 0)
         cumulative_diagnostics['total_latency_ms'] += ext_diag.get('latency_ms', 0.0)
+        add_call_usage(cumulative_diagnostics, ext_diag)
 
         failure_types = result.get('failure_types')
         if failure_types:
@@ -1063,6 +1081,7 @@ def run_test_set(test_path: str, output_path: str,
             cumulative_diagnostics['successful_scenarios'] += 1
 
     RAW_LOG.stop()
+    cumulative_diagnostics['collected_utc_end'] = datetime.now(timezone.utc).isoformat()
 
     cumulative_diagnostics['avg_latency_ms'] = (
             cumulative_diagnostics['total_latency_ms'] /
@@ -1132,6 +1151,8 @@ def run_test_set(test_path: str, output_path: str,
                 'practicality': practicality,
                 'rank': rank,
                 'weighted_score': weighted_score,
+                'collected_utc': result['collected_utc'],
+                'model_id': API_CONFIG['model'],
             })
 
     _atomic_write_xlsx(pd.DataFrame(rows, columns=LLM_Parameterized_Reference_Scoring_RESULT_FIELDNAMES), output_csv_path)
@@ -1159,28 +1180,51 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
 
     Resume-aware: a per-run xlsx that already exists, has size > 0, has no
-    leftover .tmp sibling, and reads as a non-empty DataFrame is treated as
-    a completed run and skipped. Any other state triggers a re-run.
+    leftover .tmp sibling, reads as a non-empty DataFrame and carries a
+    collected_utc column is treated as a completed run and skipped. Any other
+    state triggers a re-run, except a readable file WITHOUT collected_utc (a
+    pre-rerun output): then nothing runs until it is moved aside. Every skip,
+    start, finish and abort is appended to <base>_events.log.
     """
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
+    events_log = base.with_name(f"{base.stem}_events.log")
     run_paths = []
     skipped_runs = []
+
+    old_format = [
+        base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}").name
+        for i in range(1, N_RUNS + 1)
+        if run_file_state(base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}")) == "old_format"
+    ]
+    if old_format:
+        msg = (f"Refusing to run: {old_format} in {base.parent} have no collected_utc column "
+               f"(pre-rerun outputs). Move them aside; they are never resumed or overwritten.")
+        log_run_event(events_log, f"REFUSED {msg}")
+        raise RuntimeError(msg)
 
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
         diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
-        if _is_complete_run_file(run_path):
+        if run_file_state(run_path) == "complete":
             print(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+            log_run_event(events_log, f"SKIP run {run_idx}/{N_RUNS}: {run_path.name} already complete (resumed)")
             run_paths.append(run_path)
             skipped_runs.append(run_idx)
             continue
         print(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
+        log_run_event(events_log, f"START run {run_idx}/{N_RUNS} -> {run_path.name} model={API_CONFIG['model']}")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
             run_paths.append(run_path)
+            log_run_event(events_log, f"DONE run {run_idx}/{N_RUNS} -> {run_path.name}")
+        except RunAbort as e:
+            print(f"ABORT: Run {run_idx} aborted, nothing saved for it: {e}")
+            log_run_event(events_log, f"ABORT run {run_idx}/{N_RUNS}: {e}")
+            raise
         except Exception as e:
             print(f"ERROR: Run {run_idx} failed and will be excluded from aggregation: {e}")
+            log_run_event(events_log, f"FAILED run {run_idx}/{N_RUNS}: {e}")
 
     if skipped_runs:
         print(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
@@ -1316,7 +1360,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                 avg.loc[valid_idx, "environmental"] * CRITERION_WEIGHTS["environmental"] +
                 avg.loc[valid_idx, "comfort"] * CRITERION_WEIGHTS["comfort"] +
                 avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
-            )
+            ).round(MAVT_ROUND_DECIMALS)  # exact ties reach TIE_BREAK_PRIORITY
             avg.loc[valid_idx, "weighted_score"] = ws
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws

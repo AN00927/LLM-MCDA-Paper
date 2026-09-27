@@ -39,14 +39,33 @@ from model_config import (
 from sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
-    _is_complete_run_file,
+    add_call_usage,
+    build_openrouter_payload,
+    call_log_fields,
     format_embedding_text,
     has_sentinel_scores,
+    init_usage_totals,
+    log_run_event,
+    merge_usage_totals,
+    MAVT_ROUND_DECIMALS,
+    MAX_CONSECUTIVE_RETRIEVAL_FAILURES,
+    MAX_OUTPUT_TOKENS,
+    openrouter_chat,
+    OpenRouterCallFailed,
+    OpenRouterFatalError,
+    RunAbort,
     read_table_clean,
+    run_file_state,
+    utc_now,
     RawCallLog,
     SENTINEL_VALUE,
     SENTINEL_FLOAT,
+    FAILED_API_BAD_REQUEST,
+    FAILED_RAG_RETRIEVAL,
+    FAILED_TRUNCATED,
 )
+
+ARCHITECTURE = "Example-Guided_LLM_Scoring"
 
 # Raw per-call archive. Inert until run_test_set turns it on, so importing this
 # module and calling run_scenario directly (ablation / position-bias scripts)
@@ -92,7 +111,13 @@ if DEBUG_API:
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-RETRIEVE_K = 1
+# Exemplars retrieved per call. The benchmark uses 1. RAG_TOP_K=<k> in the
+# environment collects a separate arm (e.g. k=3): its output files carry "_k<k>"
+# so the benchmark files are never resumed into or overwritten.
+DEFAULT_RETRIEVE_K = 1
+RETRIEVE_K = int(os.getenv("RAG_TOP_K", str(DEFAULT_RETRIEVE_K)))
+if RETRIEVE_K < 1:
+    raise ValueError(f"RAG_TOP_K must be >= 1, got {RETRIEVE_K}")
 
 EXPECTED_RAG_SCHEMA_VERSION = 4
 RAG_SOURCE_FILES = [
@@ -126,6 +151,9 @@ RAG_FAILURE_COUNTER_KEYS = [
     FAILED_OUT_OF_BOUNDS,
     FAILED_INVALID_SCORE_TYPE,
     FAILED_API_EXHAUSTED,
+    FAILED_API_BAD_REQUEST,
+    FAILED_TRUNCATED,
+    FAILED_RAG_RETRIEVAL,
     FAILED_UNKNOWN
 ]
 
@@ -145,6 +173,8 @@ def _is_transient_http_status(status_code: int) -> bool:
 
 chroma_collection = None
 embedding_model = None
+# Scoring calls in a row that found no exemplar (see MAX_CONSECUTIVE_RETRIEVAL_FAILURES).
+_consecutive_retrieval_failures = 0
 
 
 def init_rag_resources() -> None:
@@ -180,6 +210,14 @@ def init_rag_resources() -> None:
 
 def query_openrouter(messages: List[Dict], model: str = None,
                      temperature: float = None) -> Tuple[str, Dict]:
+    """POST one scoring call under the shared policy (sentinel_utils.openrouter_chat).
+
+    Returns (content, diagnostics). A truncated call returns its partial text
+    with diagnostics['truncated'] True and failure_types [FAILED_TRUNCATED].
+    Raises OpenRouterCallFailed (message starts with the failure code, and
+    .diagnostics holds the attempt log) when no completion was obtained, and
+    OpenRouterFatalError on 401/402/403.
+    """
     if model is None:
         model = API_CONFIG["model"]
     if temperature is None:
@@ -195,106 +233,44 @@ def query_openrouter(messages: List[Dict], model: str = None,
         "X-Title": OPENROUTER_APP_TITLE
     }
 
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
+    payload = build_openrouter_payload(model, messages, temperature, API_CONFIG["reasoning"])
+
+    call = openrouter_chat(
+        payload, headers,
+        endpoint=url,
+        max_retries=MAX_RETRIES,
+        timeout=REQUEST_TIMEOUT,
+        is_transient=_is_transient_http_status,
+        base_delay=RETRY_BASE_DELAY,
+        max_backoff=MAX_RETRY_BACKOFF,
+        logger=logger,
+    )
+
+    diagnostics = {
+        'prompt_tokens': call['prompt_tokens'],
+        'completion_tokens': call['completion_tokens'],
+        'total_tokens': call['total_tokens'],
+        'latency_ms': call['latency_ms'],
+        'model': model,
+        'success': call['ok'],
+        **call_log_fields(call),
     }
-    reasoning_payload = API_CONFIG["reasoning"]
-    if reasoning_payload is not None:
-        payload["reasoning"] = reasoning_payload
 
-    last_error = None
-    response = None
+    if call['ok']:
+        if DEBUG_API:
+            logger.debug(f"Returning content (len={len(call['content'])}): {call['content'][:200]}...")
+        return call['content'], diagnostics
+    if call['truncated']:
+        diagnostics['failure_types'] = [FAILED_TRUNCATED]
+        return call['content'], diagnostics
 
-    attempt = 0
-    retry_forever = MAX_RETRIES <= 0
+    last = call['attempt_errors'][-1] if call['attempt_errors'] else {}
+    raise OpenRouterCallFailed(
+        f"{call['failure_type']}: Failed after {call['attempts']} attempts. "
+        f"Last error: status {last.get('status')} {last.get('detail', '')[:300]}",
+        diagnostics={**diagnostics, 'failure_type': call['failure_type']},
+    )
 
-    while True:
-        attempt += 1
-        try:
-            start_time = time.time()
-            response = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
-            latency_ms = (time.time() - start_time) * 1000
-
-            if response.status_code == 200:
-                data = response.json()
-                
-                logger.debug(f"=== API RESPONSE (attempt {attempt}) ===")
-                logger.debug(f"Full response keys: {list(data.keys())}")
-                logger.debug(f"Usage: {data.get('usage', {})}")
-                if "choices" in data and len(data["choices"]) > 0:
-                    choice = data["choices"][0]
-                    logger.debug(f"Choice keys: {list(choice.keys())}")
-                    if "message" in choice:
-                        msg = choice["message"]
-                        logger.debug(f"Message keys: {list(msg.keys())}")
-                        logger.debug(f"Message role: {msg.get('role')}")
-                        logger.debug(f"Message content (first 500 chars): {msg.get('content', '')[:500]}")
-                        for key in msg.keys():
-                            if key not in ['role', 'content']:
-                                logger.debug(f"Message extra field '{key}': {msg.get(key)}")
-
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-
-                usage = data.get('usage', {})
-                reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
-                finish_reason = data.get("choices", [{}])[0].get("finish_reason", "?")
-                logger.info(
-                    f"  [call ok] attempt={attempt} latency={latency_ms/1000:.1f}s "
-                    f"prompt={usage.get('prompt_tokens', 0)} "
-                    f"completion={usage.get('completion_tokens', 0)} "
-                    f"reasoning_tokens={reasoning_tokens} "
-                    f"finish={finish_reason}"
-                )
-                if reasoning_tokens > 0:
-                    logger.warning(
-                        f"  [WARN] reasoning_tokens={reasoning_tokens} > 0 "
-                        f"-- reasoning was not disabled for this provider/model."
-                    )
-
-                diagnostics = {
-                    'prompt_tokens': usage.get('prompt_tokens', 0),
-                    'completion_tokens': usage.get('completion_tokens', 0),
-                    'total_tokens': usage.get('total_tokens', 0),
-                    'latency_ms': latency_ms,
-                    'model': model
-                }
-
-                if DEBUG_API:
-                    logger.debug(f"Returning content (len={len(content)}): {content[:200]}...")
-
-                return content, diagnostics
-            else:
-                last_error = f"Status {response.status_code}: {response.text}"
-                if _is_transient_http_status(response.status_code):
-                    logger.info(f"  Transient API error (attempt {attempt}): {response.status_code}")
-                else:
-                    logger.info(f"  API error (attempt {attempt}): {response.status_code}")
-
-                if not retry_forever and attempt >= MAX_RETRIES:
-                    break
-
-                time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-                continue
-
-        except requests.exceptions.RequestException as e:
-            last_error = str(e)
-            logger.info(f"  Request failed (attempt {attempt}): {e}")
-            if not retry_forever and attempt >= MAX_RETRIES:
-                break
-            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-            continue
-
-        except ValueError as e:
-            last_error = f"Invalid API JSON envelope: {e}"
-            logger.info(f"  Invalid API JSON envelope (attempt {attempt}): {e}")
-            if not retry_forever and attempt >= MAX_RETRIES:
-                break
-            time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-            continue
-
-    raise Exception(f"{FAILED_API_EXHAUSTED}: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
 
 def build_system_prompt() -> str:
     """Build system prompt.
@@ -325,9 +301,15 @@ def format_scenario_text_for_retrieval(scenario: Dict) -> Tuple[str, str]:
         logger.info(f"   Warning: Unknown decision type '{decision_type}'")
     return scenario_text, decision_type
 
-def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict]:
+def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K,
+                               error_out: List = None) -> List[Dict]:
+    """Top-k exemplars of the scenario's decision type, each with its Chroma
+    'distance'. Returns [] on any failure; the reason is appended to
+    error_out when given (A_E then fails the call as FAILED_RAG_RETRIEVAL)."""
     if chroma_collection is None or embedding_model is None:
         logger.info("   RAG database not available, skipping retrieval")
+        if error_out is not None:
+            error_out.append("RAG database not initialised")
         return []
 
     scenario_text, decision_type = format_scenario_text_for_retrieval(scenario)
@@ -347,14 +329,18 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
         )
     except (ValueError, RuntimeError, KeyError) as e:
         logger.warning(f"   Retrieval query failed ({type(e).__name__}): {e}")
+        if error_out is not None:
+            error_out.append(f"{type(e).__name__}: {e}")
         return []
 
     retrieved = []
     if results['ids'] and len(results['ids'][0]) > 0:
-        for doc_id, doc_text, metadata in zip(
+        distances = (results.get('distances') or [[None] * len(results['ids'][0])])[0]
+        for doc_id, doc_text, metadata, distance in zip(
                 results['ids'][0],
                 results['documents'][0],
-                results['metadatas'][0]
+                results['metadatas'][0],
+                distances
         ):
             # Carry the full "show everything" metadata through; format_rag_context
             # renders the homeowner+engineering block and per-alt scores from it.
@@ -363,7 +349,10 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K) -> List[Dict
                 'text': doc_text,
                 'decision_type': metadata.get('decision_type', 'Unknown'),
                 'metadata': metadata,
+                'distance': None if distance is None else float(distance),
             })
+    elif error_out is not None:
+        error_out.append(f"zero results for decision_type={decision_type!r}")
 
     return retrieved
 
@@ -527,8 +516,14 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     retrieved/rag_context are locals here so the RAG diagnostics at the end
     always reference real values (previously they were inlined into the prompt
     call and the diagnostics referenced undefined names, crashing every call).
+
+    No exemplar -> FAILED_RAG_RETRIEVAL without an API call (scoring without
+    examples would be A_D, not A_E). Every call, and every retrieval failure,
+    gets one raw record written after validation, so it carries the outcome.
     """
-    retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K)
+    global _consecutive_retrieval_failures
+    retrieval_errors: List[str] = []
+    retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K, error_out=retrieval_errors)
     rag_context = format_rag_context(retrieved)
 
     system_prompt = build_system_prompt()
@@ -545,46 +540,38 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
     }
 
     rag_exemplar_ids = [r.get('id', '') for r in retrieved]
+    rag_exemplar_distances = [r.get('distance') for r in retrieved]
+    rag_fields = {
+        'rag_top_k': RETRIEVE_K,
+        'rag_exemplar_ids': rag_exemplar_ids,
+        'rag_exemplar_distances': rag_exemplar_distances,
+    }
 
-    try:
-        response_text, diagnostics = query_openrouter(messages)
-
+    def _record(response_text, diag, scores, failure_types, **extra):
+        diag = diag or {}
         RAW_LOG.record(
+            architecture=ARCHITECTURE,
             decision_type=scenario.get('decision_type', ''),
             alternative=str(alternative),
             model=API_CONFIG['model'],
+            system_prompt_sha256=hashlib.sha256(system_prompt.encode('utf-8')).hexdigest(),
             prompt=user_prompt,
             prompt_sha256=hashlib.sha256(user_prompt.encode('utf-8')).hexdigest(),
             response=response_text or '',
-            prompt_tokens=diagnostics.get('prompt_tokens', 0),
-            completion_tokens=diagnostics.get('completion_tokens', 0),
-            latency_ms=diagnostics.get('latency_ms', 0),
-            api_success=bool(diagnostics.get('success')),
-            rag_exemplar_ids=rag_exemplar_ids,
+            prompt_tokens=diag.get('prompt_tokens', 0),
+            completion_tokens=diag.get('completion_tokens', 0),
+            latency_ms=diag.get('latency_ms', 0),
+            api_success=response_text is not None,
+            **call_log_fields(diag),
+            **rag_fields,
+            scores=scores,
+            scores_valid=scores is not None and not scores.get('_failed', False),
+            failure_types=list(failure_types or []),
+            **extra,
         )
 
-        # DEBUG: Log the raw scoring response (always log reasoning/thinking data)
-        logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
-        logger.debug(f"Raw response (first 1000 chars): {response_text[:1000]}")
-        logger.debug(f"Response length: {len(response_text)} chars")
-    except Exception as e:
-        logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
-        RAW_LOG.record(
-            decision_type=scenario.get('decision_type', ''),
-            alternative=str(alternative),
-            model=API_CONFIG['model'],
-            prompt=user_prompt,
-            prompt_sha256=hashlib.sha256(user_prompt.encode('utf-8')).hexdigest(),
-            response='',
-            prompt_tokens=0,
-            completion_tokens=0,
-            latency_ms=0,
-            api_success=False,
-            api_error=str(e),
-            rag_exemplar_ids=rag_exemplar_ids,
-        )
-        error_text = str(e).lower()
-        failure_type = FAILED_API_EXHAUSTED if FAILED_API_EXHAUSTED.lower() in error_text else FAILED_UNKNOWN
+    if not retrieved:
+        logger.info(f"   Retrieval returned no exemplar for '{alternative}'; failed ({retrieval_errors})")
         diagnostics = {
             'prompt_tokens': 0,
             'completion_tokens': 0,
@@ -592,11 +579,81 @@ def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, 
             'latency_ms': 0.0,
             'model': API_CONFIG['model'],
             'success': False,
+            'error': '; '.join(retrieval_errors) or 'no exemplars retrieved',
+            'failure_types': [FAILED_RAG_RETRIEVAL],
+            'rag_retrieved_count': 0,
+            'rag_context_length': len(rag_context),
+            **rag_fields,
+        }
+        _record(None, diagnostics, None, [FAILED_RAG_RETRIEVAL],
+                api_called=False, retrieval_error=diagnostics['error'])
+        _consecutive_retrieval_failures += 1
+        if 0 < MAX_CONSECUTIVE_RETRIEVAL_FAILURES <= _consecutive_retrieval_failures:
+            raise RunAbort(
+                f"ABORT: {_consecutive_retrieval_failures} consecutive A_E calls retrieved no "
+                f"exemplar (last: {diagnostics['error']}). Check the Chroma index before resuming.")
+        return dict(sentinel_scores), diagnostics
+    _consecutive_retrieval_failures = 0
+
+    try:
+        response_text, diagnostics = query_openrouter(messages)
+
+        # DEBUG: Log the raw scoring response (always log reasoning/thinking data)
+        logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
+        logger.debug(f"Raw response (first 1000 chars): {(response_text or '')[:1000]}")
+        logger.debug(f"Response length: {len(response_text or '')} chars")
+    except OpenRouterFatalError as e:
+        _record(None, e.diagnostics, None, [e.diagnostics.get('failure_type') or 'FATAL'])
+        raise
+    except Exception as e:
+        logger.info(f"   Scoring failed for alternative '{alternative}': {e}")
+        call_diag = getattr(e, 'diagnostics', None) or {}
+        if isinstance(e, OpenRouterCallFailed) and e.failure_type:
+            failure_type = e.failure_type
+        else:
+            error_text = str(e).lower()
+            failure_type = FAILED_API_EXHAUSTED if FAILED_API_EXHAUSTED.lower() in error_text else FAILED_UNKNOWN
+        diagnostics = {
+            'prompt_tokens': 0,
+            'completion_tokens': 0,
+            'total_tokens': 0,
+            'latency_ms': 0.0,
+            'model': API_CONFIG['model'],
+            **call_diag,
+            'success': False,
             'error': str(e),
             'failure_types': [failure_type],
             'rag_retrieved_count': len(retrieved),
             'rag_context_length': len(rag_context),
         }
+        _record(None, diagnostics, None, [failure_type], api_error=str(e))
+        return dict(sentinel_scores), diagnostics
+
+    try:
+        scores, diagnostics = _validate_scores(response_text, diagnostics, retrieved, rag_context)
+    except Exception as e:
+        _record(response_text, diagnostics, None, [FAILED_UNKNOWN], validation_error=str(e))
+        raise
+    _record(response_text, diagnostics, scores, diagnostics.get('failure_types', []))
+    return scores, diagnostics
+
+
+def _validate_scores(response_text: str, diagnostics: Dict, retrieved: List[Dict],
+                     rag_context: str) -> Tuple[Dict, Dict]:
+    """Parse and range-check one scoring response (moved unchanged out of
+    score_alternative_with_rag so the raw record can follow it; the truncation
+    check is new)."""
+    sentinel_scores = {
+        'energy_cost': SENTINEL_VALUE, 'environmental': SENTINEL_VALUE,
+        'comfort': SENTINEL_VALUE, 'practicality': SENTINEL_VALUE, '_failed': True,
+    }
+
+    if diagnostics.get('truncated'):
+        logger.info("   Response truncated (finish_reason=length); failed")
+        diagnostics['success'] = False
+        diagnostics['failure_types'] = [FAILED_TRUNCATED]
+        diagnostics['rag_retrieved_count'] = len(retrieved)
+        diagnostics['rag_context_length'] = len(rag_context)
         return dict(sentinel_scores), diagnostics
 
     validation_failed = False
@@ -671,7 +728,8 @@ def apply_mavt_ranking(alternatives_scores: List[Dict]) -> Dict:
                 CRITERION_WEIGHTS['comfort'] * scores['comfort'] +
                 CRITERION_WEIGHTS['practicality'] * scores['practicality']
         )
-        valid_pairs.append((idx, weighted_sum))
+        # Round so exact ties are equal and reach TIE_BREAK_PRIORITY.
+        valid_pairs.append((idx, round(weighted_sum, MAVT_ROUND_DECIMALS)))
 
     if not valid_pairs:
         return {
@@ -712,6 +770,7 @@ def run_scenario(scenario: Dict) -> Dict:
         'total_latency_ms': 0.0,
         'successful_calls': 0,
         'failed_calls': 0,
+        **init_usage_totals(),
         **_init_failure_counters()
     }
     for i in range(1, 4):
@@ -723,6 +782,7 @@ def run_scenario(scenario: Dict) -> Dict:
         logger.info(f"\nScoring: {alternative}")
 
         scores, diagnostics = score_alternative_with_rag(scenario, alternative)
+        add_call_usage(total_diagnostics, diagnostics)
         total_diagnostics['api_calls'] += 1
         total_diagnostics['total_tokens_input'] += diagnostics.get('prompt_tokens', 0)
         total_diagnostics['total_tokens_output'] += diagnostics.get('completion_tokens', 0)
@@ -780,6 +840,7 @@ RAG_RESULT_FIELDNAMES = [
     'outdoor_temp', 'appliance_age', 'flow_rate', 'alternative',
     'energy_cost', 'environmental', 'comfort', 'practicality',
     'rank', 'weighted_score',
+    'collected_utc', 'model_id',
 ]
 
 
@@ -817,8 +878,15 @@ def run_test_set(test_path: str, output_path: str,
     logger.info(f"  Decision types: {set([s.get('decision_type', 'UNKNOWN') for s in scenarios])}\n")
 
     all_results = []
+    run_start_utc = datetime.now(timezone.utc).isoformat()
     cumulative_diagnostics = {
-        'collected_utc': datetime.now(timezone.utc).isoformat(),
+        'collected_utc': run_start_utc,
+        'collected_utc_start': run_start_utc,
+        'collected_utc_end': None,
+        'architecture': ARCHITECTURE,
+        'model_id': API_CONFIG['model'],
+        'max_output_tokens': MAX_OUTPUT_TOKENS,
+        'rag_top_k': RETRIEVE_K,
         'total_scenarios': len(scenarios),
         'total_api_calls': 0,
         'total_latency_ms': 0.0,
@@ -828,6 +896,7 @@ def run_test_set(test_path: str, output_path: str,
         'failed_calls': 0,
         'successful_scenarios': 0,
         'failed_scenarios': 0,
+        **init_usage_totals(),
         **_init_failure_counters()
     }
 
@@ -881,6 +950,8 @@ def run_test_set(test_path: str, output_path: str,
                 }
             }
 
+        # UTC time this scenario's calls finished; written on each of its rows.
+        result['collected_utc'] = utc_now()
         all_results.append(result)
 
         diag = result['diagnostics']
@@ -890,6 +961,7 @@ def run_test_set(test_path: str, output_path: str,
         cumulative_diagnostics['total_latency_ms'] += diag['total_latency_ms']
         cumulative_diagnostics['successful_calls'] += diag['successful_calls']
         cumulative_diagnostics['failed_calls'] += diag['failed_calls']
+        merge_usage_totals(cumulative_diagnostics, diag)
         for counter_key in RAG_FAILURE_COUNTER_KEYS:
             cumulative_diagnostics[counter_key] += diag.get(counter_key, 0)
         if diag.get('scenario_failed', False):
@@ -898,6 +970,7 @@ def run_test_set(test_path: str, output_path: str,
             cumulative_diagnostics['successful_scenarios'] += 1
 
     RAW_LOG.stop()
+    cumulative_diagnostics['collected_utc_end'] = datetime.now(timezone.utc).isoformat()
 
     cumulative_diagnostics['avg_latency_ms'] = (
         cumulative_diagnostics['total_latency_ms'] /
@@ -955,7 +1028,9 @@ def run_test_set(test_path: str, output_path: str,
                 'comfort': comfort,
                 'practicality': practicality,
                 'rank': rank,
-                'weighted_score': weighted_score
+                'weighted_score': weighted_score,
+                'collected_utc': result['collected_utc'],
+                'model_id': API_CONFIG['model'],
             })
 
     _atomic_write_xlsx(pd.DataFrame(rows, columns=RAG_RESULT_FIELDNAMES), output_csv_path)
@@ -981,8 +1056,11 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
 
     Resume-aware: a per-run xlsx that already exists, has size > 0, has no
-    leftover .tmp sibling, and reads as a non-empty DataFrame is treated as
-    a completed run and skipped. Any other state triggers a re-run.
+    leftover .tmp sibling, reads as a non-empty DataFrame and carries a
+    collected_utc column is treated as a completed run and skipped. Any other
+    state triggers a re-run, except a readable file WITHOUT collected_utc (a
+    pre-rerun output): then nothing runs until it is moved aside. Every skip,
+    start, finish and abort is appended to <base>_events.log.
 
     RAG resources (Chroma collection + embedding model) are initialized once
     up-front. If they are still healthy across runs, no re-init happens. If a
@@ -991,8 +1069,20 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     """
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
+    events_log = base.with_name(f"{base.stem}_events.log")
     run_paths = []
     skipped_runs = []
+
+    old_format = [
+        base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}").name
+        for i in range(1, N_RUNS + 1)
+        if run_file_state(base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}")) == "old_format"
+    ]
+    if old_format:
+        msg = (f"Refusing to run: {old_format} in {base.parent} have no collected_utc column "
+               f"(pre-rerun outputs). Move them aside; they are never resumed or overwritten.")
+        log_run_event(events_log, f"REFUSED {msg}")
+        raise RuntimeError(msg)
 
     if chroma_collection is None or embedding_model is None:
         init_rag_resources()
@@ -1000,19 +1090,28 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     for run_idx in range(1, N_RUNS + 1):
         run_path = base.with_name(f"{base.stem}_run_{run_idx:02d}{base.suffix}")
         diag_path = base_diag.with_name(f"{base_diag.stem}_run_{run_idx:02d}{base_diag.suffix}")
-        if _is_complete_run_file(run_path):
+        if run_file_state(run_path) == "complete":
             logger.info(f"--- Run {run_idx}/{N_RUNS}: resuming from {run_path.name} ---")
+            log_run_event(events_log, f"SKIP run {run_idx}/{N_RUNS}: {run_path.name} already complete (resumed)")
             run_paths.append(run_path)
             skipped_runs.append(run_idx)
             continue
         if chroma_collection is None or embedding_model is None:
             init_rag_resources()
         logger.info(f"--- Run {run_idx}/{N_RUNS} -> {run_path.name} ---")
+        log_run_event(events_log, f"START run {run_idx}/{N_RUNS} -> {run_path.name} "
+                                  f"model={API_CONFIG['model']} k={RETRIEVE_K}")
         try:
             run_test_set(str(test_csv_path), str(run_path), str(diag_path))
             run_paths.append(run_path)
+            log_run_event(events_log, f"DONE run {run_idx}/{N_RUNS} -> {run_path.name}")
+        except RunAbort as e:
+            logger.critical(f"Run {run_idx} aborted, nothing saved for it: {e}")
+            log_run_event(events_log, f"ABORT run {run_idx}/{N_RUNS}: {e}")
+            raise
         except Exception as e:
             logger.info(f"ERROR: Run {run_idx} failed and will be excluded from aggregation: {e}")
+            log_run_event(events_log, f"FAILED run {run_idx}/{N_RUNS}: {e}")
 
     if skipped_runs:
         logger.info(f"Resumed {len(skipped_runs)} existing run(s): {skipped_runs}")
@@ -1098,7 +1197,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                 avg.loc[valid_idx, "environmental"] * CRITERION_WEIGHTS["environmental"] +
                 avg.loc[valid_idx, "comfort"] * CRITERION_WEIGHTS["comfort"] +
                 avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
-            )
+            ).round(MAVT_ROUND_DECIMALS)  # exact ties reach TIE_BREAK_PRIORITY
             avg.loc[valid_idx, "weighted_score"] = ws
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws
@@ -1133,8 +1232,12 @@ def main():
 
     output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_csv = output_dir / "Example-Guided_LLM_Scoring_results.xlsx"
-    output_diagnostics = output_dir / "Example-Guided_LLM_Scoring_results_diagnostics.json"
+    # k appears in the file names only for a non-default arm, so the benchmark
+    # (k=1) file names are unchanged and a k=3 arm never touches them.
+    k_tag = "" if RETRIEVE_K == DEFAULT_RETRIEVE_K else f"_k{RETRIEVE_K}"
+    logger.info(f"Retrieval k: {RETRIEVE_K}")
+    output_csv = output_dir / f"Example-Guided_LLM_Scoring{k_tag}_results.xlsx"
+    output_diagnostics = output_dir / f"Example-Guided_LLM_Scoring{k_tag}_results_diagnostics.json"
 
     run_multi_and_aggregate(
         test_csv_path=str(TEST_SCENARIOS),

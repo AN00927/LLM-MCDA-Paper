@@ -72,10 +72,17 @@ from model_config import (
 )
 from sentinel_utils import (
     CRITERIA,
+    FAILED_API_BAD_REQUEST,
+    FAILED_TRUNCATED,
     SENTINEL_FLOAT,
     RawCallLog,
+    RunAbort,
     apply_mavt_ranking,
+    build_openrouter_payload,
+    call_log_fields,
+    openrouter_chat,
     read_table_clean,
+    response_meta,
 )
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
@@ -97,6 +104,20 @@ logger = logging.getLogger("prompt_ablation")
 # is not thread-safe.
 RAW_LOG = RawCallLog()
 _raw_log_lock = threading.Lock()
+
+# Set when any worker hits a RunAbort (HTTP 401/402/403, or the shared
+# consecutive-failure breaker in sentinel_utils.openrouter_chat). Every worker
+# checks it before each call, and the pool cancels queued scenarios, so an
+# out-of-credit run stops paying at once instead of draining the queue.
+_ABORT = threading.Event()
+
+# Parse-error codes for a call that returned no usable completion. Lower-case,
+# like the rest of this script's codes.
+ERR_API_EXHAUSTED = "failed_api_exhausted"
+ERR_API_BAD_REQUEST = "failed_api_bad_request"
+ERR_TRUNCATED = "failed_truncated"
+ERR_EMPTY = "failed_empty_response"
+ERR_RAG_RETRIEVAL = "failed_rag_retrieval"
 
 
 # ---------------------------------------------------------------------------
@@ -281,33 +302,38 @@ def _assert_control_matches_shipped() -> None:
 # API
 # ---------------------------------------------------------------------------
 
-def _response_meta(data: Dict) -> Dict:
-    """Per-call provenance from an OpenRouter 200 body, for the raw log: the
-    generation id (lets cost/provider be re-queried via /api/v1/generation),
-    the serving provider and resolved model (both vary call to call under
-    :floor routing), finish_reason (a 'length' stop is a truncation), the full
-    usage block (reasoning tokens, cost) and any separate reasoning text."""
-    choice = (data.get("choices") or [{}])[0] or {}
-    message = choice.get("message") or {}
+# Kept under its old name for any caller; the fields are sentinel_utils'.
+_response_meta = response_meta
+
+
+def _call_diagnostics(call: Dict, model_id: str) -> Dict:
+    """This script's per-call diagnostics from an openrouter_chat result."""
+    errors = call.get("attempt_errors") or []
     return {
-        "response_id": data.get("id"),
-        "response_model": data.get("model"),
-        "provider": data.get("provider"),
-        "system_fingerprint": data.get("system_fingerprint"),
-        "finish_reason": choice.get("finish_reason"),
-        "native_finish_reason": choice.get("native_finish_reason"),
-        "usage": data.get("usage"),
-        "reasoning": message.get("reasoning"),
-        "body_error": data.get("error") or choice.get("error"),
+        "prompt_tokens": call.get("prompt_tokens", 0),
+        "completion_tokens": call.get("completion_tokens", 0),
+        "total_tokens": call.get("total_tokens", 0),
+        "latency_ms": call.get("latency_ms", 0.0),
+        "model": model_id,
+        "failure_type": call.get("failure_type"),
+        "error": (call.get("failure_type") or "") + (
+            f": {errors[-1].get('detail')}" if errors and call.get("failure_type") else ""),
+        **call_log_fields(call),
     }
 
 
 def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tuple[Optional[str], Dict]:
-    """POST to OpenRouter under the shared retry policy from model_config.
+    """POST to OpenRouter through the architectures' shared client,
+    sentinel_utils.openrouter_chat: same payload builder (max_tokens
+    MAX_OUTPUT_TOKENS, the MODEL_SPECS provider pin for model_id), same retry
+    policy from model_config, same failure rules.
 
-    `latency_ms` is measured around the successful POST only, matching the
-    architectures, so latency stays comparable to the main-run diagnostics even
-    when this harness runs many requests concurrently.
+    Returns (content, diagnostics). content is None when the call failed
+    (retries exhausted, or a 400/404/422 on its one retry). A truncated reply
+    (finish_reason length) returns its partial text with
+    diagnostics["failure_type"] == FAILED_TRUNCATED; it is never parsed.
+    HTTP 401/402/403 raise OpenRouterFatalError (a RunAbort), as does the
+    consecutive-failure breaker. `latency_ms` is the successful POST only.
     """
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -315,53 +341,27 @@ def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tup
         "HTTP-Referer": OPENROUTER_HTTP_REFERER,
         "X-Title": OPENROUTER_APP_TITLE,
     }
-    payload = {"model": model_id, "messages": messages, "temperature": TEMPERATURE}
-    reasoning_payload = get_reasoning_payload(model_key)
-    if reasoning_payload is not None:
-        payload["reasoning"] = reasoning_payload
-
-    diagnostics = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
-                   "latency_ms": 0.0, "model": model_id, "retries": 0,
-                   "request_params": {k: v for k, v in payload.items() if k != "messages"},
-                   "attempt_errors": []}
-    last_error = None
-    attempt = 0
-    retry_forever = MAX_RETRIES <= 0
-
-    while True:
-        attempt += 1
-        diagnostics["retries"] = attempt - 1
-        try:
-            start = time.time()
-            response = requests.post(OPENROUTER_URL, headers=headers, json=payload,
-                                     timeout=REQUEST_TIMEOUT)
-            latency_ms = (time.time() - start) * 1000
-            if response.status_code == 200:
-                data = response.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                usage = data.get("usage", {})
-                diagnostics.update({
-                    "prompt_tokens": usage.get("prompt_tokens", 0),
-                    "completion_tokens": usage.get("completion_tokens", 0),
-                    "total_tokens": usage.get("total_tokens", 0),
-                    "latency_ms": latency_ms,
-                    **_response_meta(data),
-                })
-                return content, diagnostics
-            last_error = f"Status {response.status_code}: {response.text[:200]}"
-            if _is_transient_http_status(response.status_code):
-                logger.debug("Transient %s on attempt %s", response.status_code, attempt)
-        except Exception as exc:
-            last_error = str(exc)
-            logger.debug("Request failed on attempt %s: %s", attempt, exc)
-        diagnostics["attempt_errors"].append(last_error)
-
-        if not retry_forever and attempt >= MAX_RETRIES:
-            break
-        time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-
-    diagnostics["error"] = last_error
-    return None, diagnostics
+    payload = build_openrouter_payload(model_id, messages, TEMPERATURE,
+                                       get_reasoning_payload(model_key))
+    # logger=None: 8 workers x ~80k calls would flood the console with one line
+    # per call; every attempt is in the raw jsonl instead.
+    call = openrouter_chat(
+        payload, headers,
+        endpoint=OPENROUTER_URL,
+        max_retries=MAX_RETRIES,
+        timeout=REQUEST_TIMEOUT,
+        is_transient=_is_transient_http_status,
+        base_delay=RETRY_BASE_DELAY,
+        max_backoff=MAX_RETRY_BACKOFF,
+        logger=None,
+    )
+    diagnostics = _call_diagnostics(call, model_id)
+    if call.get("failure_type"):
+        logger.warning("call failed (%s) after %s attempt(s) for %s",
+                       call["failure_type"], call.get("attempts"), model_id)
+    if call.get("failure_type") and call.get("content") is None:
+        return None, diagnostics
+    return call.get("content"), diagnostics
 
 
 def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[str, float]], Optional[str]]:
@@ -504,7 +504,9 @@ def preload_ae_module():
 
 
 def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative: str,
-                   retrieved_out: Optional[List] = None) -> List[Dict]:
+                   retrieved_out: Optional[List] = None,
+                   retrieval_errors: Optional[List] = None,
+                   distances_out: Optional[List] = None) -> List[Dict]:
     system_prompt = variant["system"][architecture]
     user_prompt = build_user_prompt(scenario, alternative)
     if ARCHITECTURES[architecture]["rag"]:
@@ -513,10 +515,13 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
         # the OpenRouter call below runs concurrently. Retrieval is local and
         # fast relative to the network wait, so this costs little parallelism.
         with _retrieval_lock:
-            retrieved = ae.retrieve_similar_scenarios(scenario, k=ae.RETRIEVE_K)
+            retrieved = ae.retrieve_similar_scenarios(scenario, k=ae.RETRIEVE_K,
+                                                      error_out=retrieval_errors)
         if retrieved_out is not None:
             # Exemplar ids for the raw log, so retrieval can be audited later.
             retrieved_out.extend(r.get("id", "") for r in retrieved)
+        if distances_out is not None:
+            distances_out.extend(r.get("distance") for r in retrieved)
         rag_context = ae.format_rag_context(retrieved)
         if rag_context:
             user_prompt = user_prompt + "\n" + rag_context
@@ -542,52 +547,85 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
             "latency_ms": 0.0}
     failure_types = []
 
+    is_rag = ARCHITECTURES[architecture]["rag"]
     for alternative in alternatives:
+        if _ABORT.is_set():
+            raise RunAbort("aborted: another worker hit a fatal OpenRouter error")
         retrieved_ids: List = []
+        retrieved_distances: List = []
+        retrieval_errors: List = []
         messages = build_messages(architecture, variant, scenario, alternative,
-                                  retrieved_out=retrieved_ids)
-        diag["api_calls"] += 1
-        response, call_diag = query_openrouter(messages, model_id, model_key)
-        for key in ("prompt_tokens", "completion_tokens", "total_tokens", "latency_ms"):
-            diag[key] += call_diag.get(key, 0)
-
+                                  retrieved_out=retrieved_ids,
+                                  retrieval_errors=retrieval_errors,
+                                  distances_out=retrieved_distances)
         user_prompt = messages[-1]["content"]
         system_prompt = messages[0]["content"]
-        scores, error = parse_scores(response, variant["scale_max"]) if response else (None, "failed_api_exhausted")
-        with _raw_log_lock:
-            RAW_LOG.record(
-                scenario_id=scenario.get("scenario_id"),
-                decision_type=scenario.get("decision_type", ""),
-                architecture=architecture,
-                variant=variant["label"],
-                alternative=alternative,
-                model_key=model_key,
-                model=model_id,
-                system_prompt_sha256=hashlib.sha256(system_prompt.encode("utf-8")).hexdigest(),
-                prompt=user_prompt,
-                prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
-                rag_exemplar_ids=retrieved_ids if ARCHITECTURES[architecture]["rag"] else None,
-                response=response or "",
-                prompt_tokens=call_diag.get("prompt_tokens", 0),
-                completion_tokens=call_diag.get("completion_tokens", 0),
-                latency_ms=call_diag.get("latency_ms", 0),
-                retries=call_diag.get("retries", 0),
-                attempts=call_diag.get("retries", 0) + 1,
-                error=call_diag.get("error", ""),
-                attempt_errors=call_diag.get("attempt_errors", []),
-                request_params=call_diag.get("request_params"),
-                response_id=call_diag.get("response_id"),
-                response_model=call_diag.get("response_model"),
-                provider=call_diag.get("provider"),
-                system_fingerprint=call_diag.get("system_fingerprint"),
-                finish_reason=call_diag.get("finish_reason"),
-                native_finish_reason=call_diag.get("native_finish_reason"),
-                usage=call_diag.get("usage"),
-                reasoning=call_diag.get("reasoning"),
-                body_error=call_diag.get("body_error"),
-                api_success=response is not None,
-                parse_error=error,
-            )
+
+        def _record(response, call_diag, error, api_called=True):
+            with _raw_log_lock:
+                RAW_LOG.record(
+                    scenario_id=scenario.get("scenario_id"),
+                    decision_type=scenario.get("decision_type", ""),
+                    architecture=architecture,
+                    variant=variant["label"],
+                    alternative=alternative,
+                    model_key=model_key,
+                    model=model_id,
+                    system_prompt_sha256=hashlib.sha256(system_prompt.encode("utf-8")).hexdigest(),
+                    prompt=user_prompt,
+                    prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
+                    rag_exemplar_ids=retrieved_ids if is_rag else None,
+                    rag_exemplar_distances=retrieved_distances if is_rag else None,
+                    rag_top_k=_load_ae_module().RETRIEVE_K if is_rag else None,
+                    retrieval_error="; ".join(retrieval_errors) if retrieval_errors else None,
+                    api_called=api_called,
+                    response=response or "",
+                    prompt_tokens=call_diag.get("prompt_tokens", 0),
+                    completion_tokens=call_diag.get("completion_tokens", 0),
+                    latency_ms=call_diag.get("latency_ms", 0),
+                    error=call_diag.get("error", "") or (error or ""),
+                    failure_type=call_diag.get("failure_type"),
+                    **call_log_fields(call_diag),
+                    api_success=response is not None,
+                    parse_error=error,
+                )
+
+        # A_E arm with no exemplar: scoring would silently turn the call into
+        # A_D. Fail it like the installed A_E does, without paying for a call.
+        if is_rag and not retrieved_ids:
+            error = ERR_RAG_RETRIEVAL
+            _record(None, {"error": ERR_RAG_RETRIEVAL + ": " + "; ".join(retrieval_errors)},
+                    error, api_called=False)
+            diag["failed_calls"] += 1
+            failure_types.append(error)
+            scored.append({"alternative": alternative,
+                           **{c: SENTINEL_FLOAT for c in CRITERIA}})
+            continue
+
+        diag["api_calls"] += 1
+        try:
+            response, call_diag = query_openrouter(messages, model_id, model_key)
+        except RunAbort as abort:
+            # Archive the failing call (e.g. the 402) before the process stops.
+            fatal = _call_diagnostics(getattr(abort, "diagnostics", {}) or {}, model_id)
+            fatal["error"] = str(abort)
+            _record(None, fatal, fatal.get("failure_type") or "fatal")
+            _ABORT.set()
+            raise
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens", "latency_ms"):
+            diag[key] += call_diag.get(key, 0) or 0
+
+        failure_type = call_diag.get("failure_type")
+        if failure_type == FAILED_TRUNCATED:
+            scores, error = None, ERR_TRUNCATED   # partial text is logged, never parsed
+        elif response is None:
+            scores, error = None, (ERR_API_BAD_REQUEST if failure_type == FAILED_API_BAD_REQUEST
+                                   else ERR_API_EXHAUSTED)
+        elif not response.strip():
+            scores, error = None, ERR_EMPTY       # content null / "" / whitespace
+        else:
+            scores, error = parse_scores(response, variant["scale_max"])
+        _record(response, call_diag, error)
 
         if error:
             diag["failed_calls"] += 1
@@ -786,7 +824,8 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
     try:
         n_workers = max(1, int(workers))
         if n_workers > 1:
-            with ThreadPoolExecutor(max_workers=n_workers) as pool:
+            pool = ThreadPoolExecutor(max_workers=n_workers)
+            try:
                 futures = {pool.submit(work, i): i for i in range(len(scenarios))}
                 done = 0
                 for future in as_completed(futures):
@@ -797,7 +836,8 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
                     except Exception as exc:
                         # One scenario must not abort a multi-hour campaign. Record it
                         # as a failed scenario so it is excluded from every mean and
-                        # stays visible in the per-scenario sheet.
+                        # stays visible in the per-scenario sheet. A RunAbort is a
+                        # BaseException and is not caught here.
                         logger.warning("scenario %s raised: %s",
                                        scenarios[idx]["scenario_id"], exc)
                         records[idx] = _failed_record(scenarios[idx], variant_id, variant,
@@ -806,6 +846,16 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
                     done += 1
                     if done % 25 == 0 or done == len(scenarios):
                         logger.info("      %s/%s scenarios", done, len(scenarios))
+            except BaseException as exc:
+                # RunAbort (401/402/403 or the failure breaker) or Ctrl-C: stop every
+                # worker at its next call, drop the queued scenarios, and let the
+                # abort propagate. The cell xlsx is written only by main() after a
+                # normal return, so nothing partial is ever saved as complete.
+                if not isinstance(exc, Exception):
+                    _ABORT.set()
+                pool.shutdown(wait=True, cancel_futures=True)
+                raise
+            pool.shutdown(wait=True)
         else:
             for idx in range(len(scenarios)):
                 try:
@@ -987,6 +1037,16 @@ def main():
                         cell_df = run_cell(scenarios, reference, arch, variant_id, variant,
                                            model_key, run_idx, args.workers,
                                            raw_log_path=raw_log_path)
+                    except RunAbort as exc:
+                        # 401/402/403 or the consecutive-failure breaker: every later
+                        # call would fail the same way. Stop the whole process; this
+                        # cell is not written (a rerun re-collects it) and completed
+                        # cells stay on disk. No summary is written.
+                        logger.error("ABORT in cell %s/%s/%s run %s; cell not written, "
+                                     "summary not written. Fix the cause, then rerun the "
+                                     "same command to resume: %s",
+                                     variant_id, arch, model_key, run_idx, exc)
+                        raise
                     except Exception as exc:
                         # Skip this cell rather than lose every completed cell.
                         # Reruns resume from the xlsx files already on disk.
