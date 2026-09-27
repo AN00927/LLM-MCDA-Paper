@@ -54,16 +54,20 @@ HVAC_DEFAULT_SEER = 13
 HVAC_DEFAULT_HVAC_AGE = 13
 HVAC_DEFAULT_OCCUPANCY_CONTEXT = "occupied_all_day"
 
+# Dryer 2.27 kWh/cycle = the DOE test load (8.45 lb, 10 CFR 430 Subpart B Appendix D1 sec. 2.7.1) over the
+# 2015 federal minimum CEF for a standard vented electric dryer (3.73 lb/kWh, 10 CFR 430.32(h)).
 APPLIANCE_DEFAULT_KWH_PER_CYCLE = {
-    "Washer": 0.55, "Dryer": 2.10, "Dishwasher": 1.00,
-    "washing_machine": 0.55, "dryer": 2.10, "dishwasher": 1.00,
+    "Washer": 0.55, "Dryer": 2.27, "Dishwasher": 1.00,
+    "washing_machine": 0.55, "dryer": 2.27, "dishwasher": 1.00,
 }
 APPLIANCE_DEFAULT_KWH_FALLBACK = 1.00
 APPLIANCE_DEFAULT_BASELINE_TIME = "7pm"
 APPLIANCE_DEFAULT_AGE_YEARS = 11
 
 SHOWER_DEFAULT_GPM = 2.5
-SHOWER_DEFAULT_TANK_SIZE = 50
+# 40 gal: within the RECS 2020 Pennsylvania median water-heater size band (31-49 gal) and
+# the master-sheet mode.
+SHOWER_DEFAULT_TANK_SIZE = 40
 SHOWER_DEFAULT_WATER_HEATER_TEMP = 120
 SHOWER_DEFAULT_OUTDOOR_TEMP = 51.8
 

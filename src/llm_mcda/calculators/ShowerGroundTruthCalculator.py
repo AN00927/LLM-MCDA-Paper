@@ -28,13 +28,16 @@ class ShowerGroundTruthCalculator:
     # rate (supply + delivery + riders) the paper derives from PA PUC (2025), not an EIA figure.
     ELECTRICITY_RATE_PA = 0.19
 
-    # PA seasonal mains water temperatures.
-    # Our linear approximation to Burch & Christensen (2007), OSTI 981988 (a sinusoid that runs
-    # ~2-5 F warmer for PA); see also Maguire et al. (2013), NREL/TP-5500-58756.
-    # Shoulder-season inlet temperature is interpolated between these two anchors
-    # in determine_inlet_temp rather than stored as a third constant.
-    INLET_TEMP_WINTER = 45  # F, outdoor <=32F
-    INLET_TEMP_SUMMER = 65  # F, outdoor >=75F
+    # PA seasonal mains water temperatures: a linear fit, T_mains = 33.87 + 0.457 x T_out (F),
+    # to the Burch & Christensen (2007) mains model (OSTI 981988) in the form of Building
+    # America HSP (Hendron & Engebrecht 2010) Eq. 26 (offset 6 F, ratio 0.4 + 0.01(Tamb - 44),
+    # lag 35 - 1.0(Tamb - 44)), evaluated mid-month against the monthly mean outdoor
+    # temperature at six PA TMY3 stations (Allentown, Erie, Harrisburg, Philadelphia,
+    # Pittsburgh, Wilkes-Barre/Scranton; 72 station-months; RMSE 3.6 F). The anchors are the
+    # fit at 32 F and 75 F outdoor; shoulder-season inlet temperature is interpolated between
+    # them in determine_inlet_temp rather than stored as a third constant.
+    INLET_TEMP_WINTER = 48.5  # F, outdoor <=32F
+    INLET_TEMP_SUMMER = 68.2  # F, outdoor >=75F
 
     # UEF 0.90-0.93 for 40-55 gal electric tank.
     # Source: Rheem Manufacturing Company. (2025). Residential Tank Water Heaters
@@ -101,14 +104,14 @@ class ShowerGroundTruthCalculator:
 
     def determine_inlet_temp(self, outdoor_temp: float) -> float:
         # PA seasonal mains temps, linearly interpolated across the 32-75F outdoor band
-        # between the winter and summer anchors: our linear approximation to Burch &
-        # Christensen (2007) (see also Backman & Hoeschele (2013)).
+        # between the winter and summer anchors: a linear fit to Burch & Christensen (2007)
+        # / HSP Eq. 26 on PA TMY3 weather (see the constants above).
         if outdoor_temp <= 32:
             return float(self.INLET_TEMP_WINTER)
         elif outdoor_temp >= 75:
             return float(self.INLET_TEMP_SUMMER)
         else:
-            span = self.INLET_TEMP_SUMMER - self.INLET_TEMP_WINTER  # 20F over a 43F outdoor range
+            span = self.INLET_TEMP_SUMMER - self.INLET_TEMP_WINTER  # 19.7F over a 43F outdoor range
             return self.INLET_TEMP_WINTER + (outdoor_temp - 32.0) * (span / 43.0)
 
     def calculate_shower_energy(self, duration_min: float, gpm: float,
@@ -240,7 +243,7 @@ class ShowerGroundTruthCalculator:
         return max(0.15, min(1.0, total_practicality / 10.0))
 
     def calculate_monthly_cost(self, per_shower_cost: float, occupants: int,
-                               showers_per_person_per_day: float = 0.9) -> float:
+                               showers_per_person_per_day: float = 0.69) -> float:
         showers_per_month = occupants * showers_per_person_per_day * 30
         return per_shower_cost * showers_per_month
 
@@ -264,7 +267,7 @@ class ShowerGroundTruthCalculator:
         reference_ranges = {
             'energy_cost': {
                 # 5th-95th percentile of the actual scenario-set per-shower cost
-                # distribution: p5 = $0.14, p95 = $1.14. Shower energy follows the
+                # distribution: p5 = $0.13, p95 = $1.07. Shower energy follows the
                 # dynamic mixing-fraction physics (target=105F),
                 #   kWh = gpm * 8.33 lb/gal * (TARGET_SHOWER_TEMP - inlet) * duration
                 #         / (3412 BTU/kWh * 0.92 UEF),
@@ -273,8 +276,8 @@ class ShowerGroundTruthCalculator:
                 # sensitivity over the durations/flows households actually encounter.
                 # Sources: DeOreo et al. (2016); Burch & Christensen (2007) (PA seasonal
                 # inlet temps); EIA Electric Power Annual (2025) (PA residential rate).
-                'min': 0.14,
-                'max': 1.14,
+                'min': 0.13,
+                'max': 1.07,
                 'decreasing': True
             },
             'environmental': {
@@ -447,7 +450,9 @@ class ShowerGroundTruthCalculator:
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost'],
                     occupants,
-                    showers_per_person_per_day=0.9  # our assumption, not an REU2016 figure
+                    # REU2016 (DeOreo et al. 2016) as reported by Gauley & Koeller (2017):
+                    # "people take an average of 0.69 showers per day"
+                    showers_per_person_per_day=0.69
                 )
 
                 budget_penalty = self.calculate_budget_penalty(

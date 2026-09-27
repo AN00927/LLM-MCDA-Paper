@@ -55,7 +55,7 @@ def _net(calc, outdoor, setpoint, mode, **kw):
     a.update(kw)
     return calc.calculate_net_heat_gain(float(outdoor), float(setpoint), a["square_footage"],
                                         a["r_value"], a["household_size"], 8.0, a["housing_type"],
-                                        include_solar=True)  # solar in both modes
+                                        include_solar=True, mode=mode)  # solar in both modes
 
 
 @pytest.fixture
@@ -205,10 +205,12 @@ def test_occupant_gain_220_sensible(calc):
 
 
 def test_solar_gain_offsets_heating_load(calc):
-    # Solar (15% glazing x 20 Btu/h per ft2) enters the heat balance in heat mode too.
-    solar = 1500 * 0.15 * 20
+    # Solar (15% glazing x SHGC 0.40 x IAC 0.836 x heating-season irradiance) enters the
+    # heat balance in heat mode too.
+    solar = 1500 * 0.15 * 0.40 * (0.92 - 0.21 * 0.40) * 74.03 / 3.15459
     with_solar = calc.calculate_heating_load(20, 70, 1500, 13, 3)
-    without = max(0, -calc.calculate_net_heat_gain(20, 70, 1500, 13, 3, include_solar=False))
+    without = max(0, -calc.calculate_net_heat_gain(20, 70, 1500, 13, 3, include_solar=False,
+                                                   mode="heat"))
     assert without - with_solar == pytest.approx(solar)
     res = calc.calculate_scenario_scores(_scenario(20, [70], question=HEAT_Q))
     assert res["70"]["raw_kwh"] == pytest.approx(
@@ -238,7 +240,45 @@ def test_unparseable_alternative_is_sentinel(calc):
 
 
 def test_new_bounds_in_value_function(calc):
-    assert calc.apply_value_function(0.19, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(1.0)
-    assert calc.apply_value_function(3.21, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.0)
-    assert calc.apply_value_function(0.97, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(1.0)
-    assert calc.apply_value_function(17.59, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(0.0)
+    assert calc.apply_value_function(0.40, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(1.0)
+    assert calc.apply_value_function(2.81, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.0)
+    assert calc.apply_value_function(1.605, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.5)
+    assert calc.apply_value_function(2.05, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(1.0)
+    assert calc.apply_value_function(15.40, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(0.0)
+    assert calc.apply_value_function(8.725, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(0.5)
+
+
+def test_solar_gain_by_mode_and_attached_glazing(calc):
+    # Per ft2 of glass: 7.85 Btu/h (heat) and 11.19 Btu/h (AC); attached units scale the
+    # glazing by the IECC factor F (0.75 townhouse/rowhouse, 0.56 apartment/condo).
+    def solar(mode, housing):
+        on = calc.calculate_net_heat_gain(50, 70, 1000, 13, 2, 8.0, housing, True, mode)
+        off = calc.calculate_net_heat_gain(50, 70, 1000, 13, 2, 8.0, housing, False, mode)
+        return on - off
+    assert solar("heat", "Single-family") / 150 == pytest.approx(7.848, abs=1e-3)
+    assert solar("cool", "Single-family") / 150 == pytest.approx(11.188, abs=1e-3)
+    assert solar("cool", "Townhouse") == pytest.approx(0.75 * solar("cool", "Single-family"))
+    assert solar("cool", "Rowhouse") == pytest.approx(0.75 * solar("cool", "Single-family"))
+    assert solar("heat", "Apartment") == pytest.approx(0.56 * solar("heat", "Single-family"))
+    assert solar("heat", "Condo") == pytest.approx(0.56 * solar("heat", "Single-family"))
+    with pytest.raises(ValueError):
+        calc.calculate_net_heat_gain(50, 70, 1000, 13, 2, 8.0, "Single-family", True, "auto")
+
+
+def test_internal_gains_iecc_r405(calc):
+    # IGain = 17,900 + 23.8 x CFA Btu/day (bedroom term replaced by 220 Btu/h per occupant).
+    assert calc.BASE_INTERNAL_GAIN_BTUH == pytest.approx(17900 / 24)
+    assert calc.EQUIPMENT_GAIN_BTUH_PER_SQFT == pytest.approx(23.8 / 24)
+
+
+def test_efficiency_degradation_hsp_eq20(calc):
+    # 1 - (1 - M)^min(age, 20); M = 0.01 / 0.02 / 0.03 for good / moderate / poor.
+    deg = calc._efficiency_degradation
+    assert deg(0) == 0.0
+    assert deg(10) == pytest.approx(1 - 0.98 ** 10)
+    assert deg(20) == pytest.approx(1 - 0.98 ** 20)
+    assert deg(40) == pytest.approx(deg(20))
+    assert deg(10, "good") == pytest.approx(1 - 0.99 ** 10)
+    assert deg(10, "poor") == pytest.approx(1 - 0.97 ** 10)
+    with pytest.raises(ValueError):
+        deg(None)
