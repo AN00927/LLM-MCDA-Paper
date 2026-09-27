@@ -734,7 +734,7 @@ The Shower calculator derives the mains inlet temperature from the outdoor tempe
 \subsection{Models and Implementation}
 \label{sec:models-implementation}
 
-We tested four models: GPT-OSS-20B, a reasoning model; Qwen 3.5 9B, a non-reasoning model; DeepSeek V4 Flash, a hybrid reasoning model; and Gemini 3.5 Flash, a reasoning model. We ran each reasoning-capable model at its lowest available reasoning tier (low effort for GPT-OSS, minimal for Gemini). We chose the four to span reasoning and non-reasoning designs and four providers, so that no finding about an architecture traces back to one provider's training or serving choices. The model identifiers and routing variants are in Supplementary Material S1.
+We tested four models: GPT-OSS-20B, a reasoning model; Qwen 3.5 9B, a non-reasoning model; DeepSeek V4 Flash, a hybrid reasoning model; and Gemini 3.8 Flash, a reasoning model. We ran each reasoning-capable model at its lowest available reasoning tier (low effort for GPT-OSS, minimal for Gemini). We chose the four to span reasoning and non-reasoning designs and four providers, so that no finding about an architecture traces back to one provider's training or serving choices. The model identifiers and routing variants are in Supplementary Material S1.
 
 Within a run, we held the criterion weights, the test scenarios and the model constant across the three architectures, so only the integration strategy changes. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ each make one call per alternative, three per scenario; $\mathcal{A}_{\text{H}}$ makes a single call per scenario, since it extracts parameters instead of scoring each alternative in turn.
 

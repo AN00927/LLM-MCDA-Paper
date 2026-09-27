@@ -43,6 +43,20 @@ DeepSeek 429s upstream, so use `--workers 1-2` for it; re-costed total about $35
 $2.97). Check the OpenRouter credit balance is at least twice the estimate for the steps you are about
 to run (V_INFRA Section 2).
 
+### Author decisions, 2026-09-27 (second batch)
+
+- **D7 closed:** keep **k = 1** in the main suite no matter what the RAG ablation shows. Still
+  rerun the RAG ablation and report how far its results moved from the old ones.
+- **Order:** run the **main suite (step 3) last**, after every ablation (steps 2, 5, 6 and any
+  optional arm). Keep this order in any later plan.
+- **DeepSeek provider:** the author switched `model_config.py` to `relace/fp4`. A 15-call smoke
+  with 4 workers had no failures and no retries, at $0.000024 per call (BaseTen: 12 of 27 calls
+  hit 429s). Confirm the pushed `model_config.py` has the pin before collecting.
+- **D2:** Gemini accepts `minimal`, but on the same 9 calls it used as much reasoning as `low`
+  (mean 263 vs 241 tokens) at the same cost. The choice is cosmetic; the author keeps or
+  changes the config. Main L737 now names Gemini 3.8 Flash.
+- **D5, D8 and the arm cuts:** pending the author's answer to the recommendation of 2026-09-27.
+
 ## 0.1 What must be empty (or moved aside) before collecting
 
 Every path below is resumed from, appended to, or overwritten. Move each aside **after** the

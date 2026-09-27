@@ -98,3 +98,24 @@ not recomputed here. Gemini would get 5 runs instead of 3, so expect about $10 m
 
 B3 (Phase I done) is confirmed by the second cloud session: calculators were rerun, the RAG
 scores synced and the index rebuilt last.
+
+## Follow-up smoke, 2026-09-27 (later)
+
+The configuration was overridden in memory only; `model_config.py` was not edited. Both runs
+used `direct_one_call/smoke_test.py` with `SMOKE_OVERRIDE`.
+
+- **DeepSeek on `relace/fp4`** (the author's new pin):
+  - 5 HVAC scenarios x 3 alternatives, 4 concurrent workers.
+  - 15 of 15 calls succeeded, with 0 retries and 0 errors.
+  - About 653 input and 40 output tokens per call, $0.000024 per call.
+  - Result file: `deepseek_relace.json`.
+- **Gemini `minimal` vs `low`:**
+  - Setup: the same 9 calls (3 scenarios x 3 alternatives) at each effort.
+  - `minimal` is accepted, with no HTTP 400.
+  - Reasoning tokens per call: mean 263 at `minimal`, 241 at `low`.
+  - Cost per call: $0.00083 at `minimal`, $0.00079 at `low`.
+  - Scores differ by at most 0.15 between the two.
+  - Conclusion: on this route `minimal` does not reduce thinking.
+  - Result files: `gemini_minimal_9.json`, `gemini_low_9.json`, `gemini_minimal.json`.
+
+Charged cost: about $0.02.

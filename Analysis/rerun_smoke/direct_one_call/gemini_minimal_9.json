@@ -1,0 +1,425 @@
+[
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:44.198995+00:00",
+    "scenario_id": null,
+    "alternative": "72",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 684,
+    "tokens_output": 284,
+    "reasoning_tokens": 245,
+    "cost_usd": 0.000789,
+    "latency_ms": 2251.26314163208,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.25,
+      "environmental": 0.3,
+      "comfort": 0.95,
+      "practicality": 0.85
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:44.199797+00:00",
+    "scenario_id": null,
+    "alternative": "76",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 684,
+    "tokens_output": 285,
+    "reasoning_tokens": 241,
+    "cost_usd": 0.000790875,
+    "latency_ms": 2334.764242172241,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.7,
+      "environmental": 0.68,
+      "comfort": 0.88,
+      "practicality": 0.85
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:44.204005+00:00",
+    "scenario_id": null,
+    "alternative": "80",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 684,
+    "tokens_output": 260,
+    "reasoning_tokens": 216,
+    "cost_usd": 0.000744,
+    "latency_ms": 2235.3029251098633,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.95,
+      "environmental": 0.95,
+      "comfort": 0.35,
+      "practicality": 0.6
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:46.441496+00:00",
+    "scenario_id": null,
+    "alternative": "68",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 683,
+    "tokens_output": 305,
+    "reasoning_tokens": 266,
+    "cost_usd": 0.000828,
+    "latency_ms": 2462.1851444244385,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.85,
+      "environmental": 0.85,
+      "comfort": 0.65,
+      "practicality": 0.85
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:46.451730+00:00",
+    "scenario_id": null,
+    "alternative": "71",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 683,
+    "tokens_output": 282,
+    "reasoning_tokens": 243,
+    "cost_usd": 0.000784875,
+    "latency_ms": 2048.1698513031006,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.9,
+      "practicality": 0.85
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:46.536858+00:00",
+    "scenario_id": null,
+    "alternative": "74",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 683,
+    "tokens_output": 269,
+    "reasoning_tokens": 230,
+    "cost_usd": 0.0007605,
+    "latency_ms": 2523.599624633789,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.2,
+      "environmental": 0.25,
+      "comfort": 0.9,
+      "practicality": 0.5
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:48.501526+00:00",
+    "scenario_id": null,
+    "alternative": "77",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 685,
+    "tokens_output": 366,
+    "reasoning_tokens": 322,
+    "cost_usd": 0.000943125,
+    "latency_ms": 4623.914957046509,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.9,
+      "practicality": 0.85
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:48.905256+00:00",
+    "scenario_id": null,
+    "alternative": "80",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 685,
+    "tokens_output": 405,
+    "reasoning_tokens": 361,
+    "cost_usd": 0.00101625,
+    "latency_ms": 3010.4479789733887,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.78,
+      "environmental": 0.76,
+      "comfort": 0.52,
+      "practicality": 0.7
+    }
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "minimal"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:49.062026+00:00",
+    "scenario_id": null,
+    "alternative": "83",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 685,
+    "tokens_output": 278,
+    "reasoning_tokens": 239,
+    "cost_usd": 0.000778125,
+    "latency_ms": 2262.425184249878,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "minimal"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.95,
+      "environmental": 0.92,
+      "comfort": 0.2,
+      "practicality": 0.35
+    }
+  }
+]
