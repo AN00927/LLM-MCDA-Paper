@@ -121,18 +121,6 @@ paper/draft_sections_new_analyses.tex
 Analysis/consolidation_report.md
 Analysis/workstream_f_report.md
 
-# Stale duplicate of the working paper (local diagnostic artifact)
-paper/paper_draft_working_DOUBLE.tex
-docs/AUDIT_REPORT_v2.md
-docs/AUDIT_REPORT_v2_FOLLOWUP_PLAN.md
-paper/REVIEW_PANEL_2026-08-11.md
-paper/REVISION_PLAN_2026-08-11.md
-Analysis/float_artifact_map.csv
-Analysis/float_artifact_map.md
-Analysis/gate1_verification_2026-08-12.md
-Analysis/Sensitivity_alpha_sweep_gemini.xlsx
-Analysis/symmetric_gate_metrics.md
-graphical_abstract_concept.html
 
 # --- Markdown: ignore everything except the reader-facing docs -----------------
 # A published repo should ship README, the schema map, CLAUDE.md, and docs/.
@@ -146,8 +134,6 @@ graphical_abstract_concept.html
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 
-# Reference literature PDFs (downloaded papers)
-temppapers/
 paper/Images/LifestyleChangesEmissionImpact.png
 paper_pipeline/analyze_benchmark_failures.py
 
@@ -159,6 +145,3 @@ paper_pipeline/analyze_benchmark_failures.py
 
 
 
-paper/paper_draft_v2.tex
-paper/paper_draft_working.tex
-paper/supplementary.tex
