@@ -55,7 +55,7 @@ def _net(calc, outdoor, setpoint, mode, **kw):
     a.update(kw)
     return calc.calculate_net_heat_gain(float(outdoor), float(setpoint), a["square_footage"],
                                         a["r_value"], a["household_size"], 8.0, a["housing_type"],
-                                        include_solar=(mode == "cool"))
+                                        include_solar=True)  # solar in both modes
 
 
 @pytest.fixture
@@ -204,6 +204,17 @@ def test_occupant_gain_220_sensible(calc):
     assert q4 - q3 == pytest.approx(220.0)
 
 
+def test_solar_gain_offsets_heating_load(calc):
+    # Solar (15% glazing x 20 Btu/h per ft2) enters the heat balance in heat mode too.
+    solar = 1500 * 0.15 * 20
+    with_solar = calc.calculate_heating_load(20, 70, 1500, 13, 3)
+    without = max(0, -calc.calculate_net_heat_gain(20, 70, 1500, 13, 3, include_solar=False))
+    assert without - with_solar == pytest.approx(solar)
+    res = calc.calculate_scenario_scores(_scenario(20, [70], question=HEAT_Q))
+    assert res["70"]["raw_kwh"] == pytest.approx(
+        round(with_solar / (calc.heating_hspf(13) * 1000) * 8, 2), abs=1e-9)
+
+
 # --- budget penalty -------------------------------------------------------------------
 
 def test_budget_penalty_continuous_above_1_5(calc):
@@ -227,7 +238,7 @@ def test_unparseable_alternative_is_sentinel(calc):
 
 
 def test_new_bounds_in_value_function(calc):
-    assert calc.apply_value_function(0.59, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(1.0)
-    assert calc.apply_value_function(3.27, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.0)
-    assert calc.apply_value_function(3.03, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(1.0)
-    assert calc.apply_value_function(17.90, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(0.0)
+    assert calc.apply_value_function(0.19, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(1.0)
+    assert calc.apply_value_function(3.21, calc.VF_ENERGY_COST, "energy_cost") == pytest.approx(0.0)
+    assert calc.apply_value_function(0.97, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(1.0)
+    assert calc.apply_value_function(17.59, calc.VF_ENVIRONMENTAL, "environmental") == pytest.approx(0.0)
