@@ -1,5 +1,7 @@
 # Cloud agent context (temporary; written 2026-09-27)
 
+**New session? Start with `paper/pass6/NEXT_SESSION_HANDOFF.md`** (current state and next tasks).
+
 Read this first, then `CLAUDE.md`, then `paper/pass6/PASS6_HANDOFF.md` and
 `paper/pass6/RERUN_RUNBOOK.md`. This file carries the standing rules and decisions that live in
 the author's local agent memory, which a cloned repo does not have.
