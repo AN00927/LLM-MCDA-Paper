@@ -6,8 +6,9 @@ the author's local agent memory, which a cloned repo does not have.
 
 ## Standing rules (author's, all binding)
 
-- **Never commit or push.** Leave every change in the working tree and list the files; the author
-  commits. Read-only git is fine.
+- **Never commit or push unless the author says so in the conversation**, and then only to the
+  `cloud-work` branch (see the last section). Otherwise leave changes in the working tree and list
+  the files. Read-only git is fine.
 - **No paid API call without the author's explicit go-ahead in the conversation**, including smoke
   tests. Show the cost estimate first. Tests mock HTTP.
 - **Never pool across models.** Every number is per model (gptoss, qwen, deepseek, gemini). No
@@ -122,3 +123,50 @@ Next (only when the author says go):
 Open for the author:
 - Handoff items: title (G3), citation style (B63), CLAUDE.md edit (B77), delivered vs total energy
   (B11), reason for the alpha values (B10), Stroudsburg/Quakertown utility (both PPL for now).
+
+## Git in the cloud phase, and the wrap-up when EVERYTHING is done
+
+The cloud phase runs on the temporary branch `cloud-work`, branched from `main` at 7a39cb3. On
+that branch `.gitignore` was loosened and the manuscript, the working docs and the Duquesne PDF are
+tracked, so the cloud agents can see them. The repo is private for this phase only.
+
+While working:
+- Commit and push only to `cloud-work`, and only when the author says so. Never push to `main`.
+- **Do not open GitHub pull requests from `cloud-work`.** GitHub keeps PR refs even after the
+  branch is deleted, so the manuscript would stay reachable once the repo is public again.
+
+When the author confirms that everything is done (rerun, analysis, paper edits), the goal is to
+put the useful changes on `main` and leave no trace of the temporary documentation or the
+`.gitignore` loosening. Do these steps only with the author's go-ahead, and preferably on the
+author's own machine, since the ignored files must end up on that disk:
+
+1. **Pull everything down first.** On the author's machine: `git fetch origin` and
+   `git switch cloud-work`. The manuscript and working docs edited in the cloud now land on the
+   local disk. Check `paper/paper_draft_v2.tex` and `paper/supplementary.tex` before going on,
+   because after the next steps those files are no longer in git anywhere.
+2. **Untrack the temporary files, keeping them on disk.** On `cloud-work`:
+   `git rm --cached -r` everything that was force-added only for the cloud phase:
+   - `paper/paper_draft_v2.tex`, `paper/paper_draft_working.tex`, `paper/supplementary.tex`
+   - `paper/pass5/`, `paper/pass6/` (including this file, `s1_snapshot/` and `verify/*.md`)
+   - `Analysis/rerun_prep/*.md` and the `.md` files under `Analysis/rerun_prep/pipeline/`
+   - `Analysis/Sensitivity_alpha_sweep_gemini.xlsx`
+   - `temppapers/`
+
+   Keep the scripts (`.py`), `.json`/`.csv` data and the real deliverables tracked:
+   - code, tests and scenario/ground-truth/output files;
+   - `docs/CALCULATOR_PROVENANCE.md`, which should stay tracked permanently: add a `!docs/*.md`
+     exception or force-add it, and ask the author which;
+   - README.
+3. **Restore `.gitignore`** to the version on `main`: `git checkout main -- .gitignore`. Then
+   check with `git status --ignored` that every file untracked in step 2 now shows as ignored
+   (`!!`) and still exists on disk.
+4. **Squash-merge, don't merge.** `git switch main`, then `git merge --squash cloud-work`, review
+   `git status` and the staged diff, then commit. A squash brings only the final state onto
+   `main`. A normal merge would carry `cloud-work`'s history, in which the manuscript was
+   tracked, into `main`, and it would become public with the repo.
+5. **Delete the branch everywhere:** `git branch -D cloud-work` and
+   `git push origin --delete cloud-work`. Then check that no PR, tag or other branch points at its
+   commits, and delete `paper/pass6/CLOUD_AGENT_CONTEXT.md` from disk if it is no longer wanted.
+6. Only then may the author make the repo public again, which is the author's decision.
+
+The author runs the commit and push steps. An agent may prepare them and list the exact commands.
