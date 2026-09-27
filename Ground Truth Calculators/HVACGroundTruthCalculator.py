@@ -125,7 +125,7 @@ class HVACGroundTruthCalculator:
                           + self.BASE_INTERNAL_GAIN_BTUH)
 
         # Glazing = 15% of floor area, the IECC R405 standard reference design; 20 BTU/hr per
-        # sqft of glass is our assumption. Solar counts only in AC mode.
+        # sqft of glass is our assumption. Solar counts in both modes (author decision, 2026-09-27).
         window_area = square_footage * 0.15
         solar_gains = window_area * 20 if include_solar else 0.0
 
@@ -151,11 +151,11 @@ class HVACGroundTruthCalculator:
                                square_footage: int, r_value: int, household_size: int = 3,
                                ceiling_height: float = 8.0,
                                housing_type: str = "Single-family") -> float:
-        # Heating load = the negative part of the net heat gain (no solar credit): conductive
-        # and infiltration loss minus the same internal gains as the cooling load.
+        # Heating load = the negative part of the net heat gain: conductive and infiltration
+        # loss minus the same internal and solar gains as the cooling load.
         return max(0, -self.calculate_net_heat_gain(
             outdoor_temp, indoor_temp, square_footage, r_value, household_size,
-            ceiling_height, housing_type, include_solar=False))
+            ceiling_height, housing_type, include_solar=True))
 
     def heating_hspf(self, seer: float) -> float:
         """HSPF paired with a rated SEER, piecewise-linear over HSPF_BY_SEER (linear along
@@ -417,26 +417,26 @@ class HVACGroundTruthCalculator:
                 # excluded from the percentile so the normalization floor is not degenerate;
                 # an Off/zero-load alternative still scores at the top of the [0,10] cost
                 # scale via the (x_max - x) normalization. p5 over the nonzero active set
-                # (306 of 315) = $0.590, p95 = $3.268. Endpoints remain consistent
+                # (280 of 315) = $0.190, p95 = $3.210. Endpoints remain consistent
                 # with residential HVAC studies (efficient: Huyen & Cetin (2019),
                 # Energies 12(1):188; degraded: Alves et al. (2016), EB 130:408).
-                'min': 0.59,
-                'max': 3.27,
+                'min': 0.19,
+                'max': 3.21,
                 'decreasing': True
             },
             'environmental': {
                 # Derived from the same active-set 5th-95th percentile cost envelope as
-                # energy_cost ($0.590-$3.268 at $0.19/kWh flat = 3.105-17.197 kWh), applied
+                # energy_cost ($0.190-$3.210 at $0.19/kWh flat = 0.997-16.897 kWh), applied
                 # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak) to
                 # keep cost and emissions physically consistent (these are not percentiles
                 # of the emissions distribution):
-                #   min = 3.105 kWh x 0.976 lbs/kWh = 3.03 lbs CO2  (best case: fully off-peak)
-                #   max = 17.197 kWh x 1.041 lbs/kWh = 17.90 lbs CO2 (worst case: fully peak)
+                #   min = 0.997 kWh x 0.976 lbs/kWh = 0.97 lbs CO2  (best case: fully off-peak)
+                #   max = 16.897 kWh x 1.041 lbs/kWh = 17.59 lbs CO2 (worst case: fully peak)
                 # Source: PJM 2022 Emissions Report (April 2023).
                 # For HVAC, alternatives within one scenario share the same emission
                 # factor because they are evaluated at the same moment and differ by load.
-                'min': 3.03,
-                'max': 17.90,
+                'min': 0.97,
+                'max': 17.59,
                 'decreasing': True
             },
             'comfort': {
@@ -539,8 +539,8 @@ class HVACGroundTruthCalculator:
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
         # Operating mode from the question (or an explicit hvac_mode). It sets the "Off"
-        # drift, the Comfort optimum, the load direction, Practicality and whether solar gain
-        # enters the heat balance (AC mode only, as the heating load never took a solar credit).
+        # drift, the Comfort optimum, the load direction and Practicality. Solar gain enters the
+        # heat balance in both modes.
         # No mode -> every alternative is the sentinel; the mode is never guessed.
         mode = self.resolve_hvac_mode(scenario)
         if mode is None:
@@ -586,7 +586,7 @@ class HVACGroundTruthCalculator:
                 effective_temp = float(alt)
 
             # Load from the setpoint against the house's free-float balance (conduction +
-            # infiltration + internal gains, + solar in AC mode), capped by the mode: heat mode
+            # infiltration + internal + solar gains), capped by the mode: heat mode
             # supplies heat only when the balance calls for heat, AC mode removes heat only when
             # it calls for cooling, otherwise the load is 0. Never cooling in heat mode or
             # heating in AC mode.
@@ -598,7 +598,7 @@ class HVACGroundTruthCalculator:
                 scenario['household_size'],
                 scenario.get('ceiling_height', 8.0),
                 scenario.get('housing_type', 'Single-family'),
-                include_solar=ac_mode,
+                include_solar=True,
             )
             if mode == 'cool':
                 load = max(0.0, net_gain)
