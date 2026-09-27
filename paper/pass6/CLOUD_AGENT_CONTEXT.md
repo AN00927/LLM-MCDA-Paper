@@ -1,6 +1,7 @@
 # Cloud agent context (temporary; written 2026-09-27)
 
-**New session? Read the section "State at the end of the second cloud session" below first**; `paper/pass6/NEXT_SESSION_HANDOFF.md` sections 2-4 are done.
+**New session? Start with `paper/pass6/NEXT_SESSION_HANDOFF.md`** (rewritten 2026-09-27 for the
+rerun), then the section "State at the end of the second cloud session" below.
 
 Read this first, then `CLAUDE.md`, then `paper/pass6/PASS6_HANDOFF.md` and
 `paper/pass6/RERUN_RUNBOOK.md`. This file carries the standing rules and decisions that live in
@@ -84,17 +85,25 @@ Update, 2026-09-27 (end of session):
 - B10, B11 and B63 were applied as option (a), and B77 was approved and applied.
 - The Phase R smoke test (runbook step 1, with the author's go-ahead) passed: 112 of 112 calls
   succeeded for $0.03 (`Analysis/rerun_smoke/SMOKE_REPORT.md`).
-- The re-costed full collection is about $35.
-- The OpenRouter balance was $2.97, so the author must top up before step 2.
-- The author's call was to stop before the full paid calls.
+- The OpenRouter balance was $2.93 after the smoke tests.
+- Later the same day, the author settled every design decision:
+  - cut: the prompt-ablation 0-10 variant and its control cells, the A_H order control arm,
+    and the optional A_E k = 3 arm;
+  - 3 runs per prompt-ablation cell, fixed in advance;
+  - added: the listwise A_D arm;
+  - k = 1 fixed; ablations first and the main suite last;
+  - nearest-neighbour fallback `tie`, with the copy baseline at k = 1;
+  - the main suite uses the lenient reply parser.
+- All of that is implemented and tested: 429 tests pass under every MODEL_KEY.
+- The re-costed collection is about $23 (`RERUN_RUNBOOK.md`).
 
-Next:
-1. Resolve the runbook's section-0 decisions D2 and D5-D9.
-2. The author tops up the credit.
-3. Collect (runbook steps 2-8), then do S4, S5 and S6. Items `STALE_FIX_LOG.md` lists under
-   "needs the rerun" belong to S4.
+Next: `NEXT_SESSION_HANDOFF.md` sections 3-5:
+1. The author's go-ahead and top-up.
+2. Collect.
+3. S4, S5 and S6, including the design-change text in its section 5.2.
 
-Still open for the author: the title.
+Still open for the author: the title, the Gemini effort choice, and pushing the DeepSeek
+`relace/fp4` pin.
 
 ## State on 2026-09-27
 

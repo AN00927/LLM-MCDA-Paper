@@ -1,153 +1,242 @@
-# Handoff to the next cloud session (written 2026-09-27)
+# Handoff to the next session: the paid rerun and the paper numbers
 
-Read in this order: this file, `CLAUDE.md`, `paper/pass6/CLOUD_AGENT_CONTEXT.md` (standing
-rules; all binding), then `paper/pass6/PASS6_HANDOFF.md` sections 5-6 when you reach the paper
-work. Work on branch `cloud-work`. No paid API call without the author's go-ahead in the
-conversation. The author let the previous session commit and push to `cloud-work`; confirm that
-permission in the new conversation before committing.
+Written 2026-09-27 at the end of the second cloud session. It replaces the previous handoff,
+which is in git history at commit 89ac45c. That handoff's sections 0-4 are all done.
 
-Why a new session: the author is widening the environment's network access so primary sources
-can be opened (the old sandbox denied nrel.gov, energy.gov, ashrae.org, osti.gov,
-codes.iccsafe.org, huggingface.co and openrouter.ai; WebSearch worked but WebFetch/curl could
-not open any source).
+## 0. Read first, and the rules
 
-## 0. Setup (first thing)
+Read in this order:
+1. This file.
+2. `CLAUDE.md`.
+3. `paper/pass6/CLOUD_AGENT_CONTEXT.md` (standing rules, all binding).
+4. `paper/pass6/RERUN_RUNBOOK.md`, which is the procedure for the collection.
+5. `paper/pass6/PASS6_HANDOFF.md` sections 5-6, when you reach the paper work.
 
-1. `python -m venv .venv && .venv/bin/pip install -r requirements.txt` (`.venv` is not in git;
-   system Python lacks pandas). Use `.venv/bin/python` everywhere.
-2. Check the network: `curl -s -o /dev/null -w "%{http_code}\n" https://docs.nrel.gov/docs/fy11osti/49246.pdf`
-   and the same for `https://huggingface.co`. If a source host is still denied, tell the author
-   which one and continue with what does not need it.
-3. Baseline check: `MODEL_KEY=gemini .venv/bin/python -m pytest -q tests` should give 368 passed,
-   1 failed (`test_ae_real_chroma_retrieval_distances`, no Chroma index yet). The
-   `attempts=None` crash in `run_rag_ablation_experiments.py` is being fixed by the author
-   elsewhere; ignore it.
+Rules:
+- **Branch:** work on `cloud-work`. Commit and push only there, and never open a PR from it.
+  The author let the last two sessions commit and push; confirm that permission in the new
+  conversation.
+- **Paid calls:** none without the author's explicit go-ahead in the conversation. The author
+  approved the design in the runbook but has **not** said "collect". They will top up the
+  OpenRouter credit when they choose; the balance was $2.93 on 2026-09-27, and the collection
+  needs about $23. Show the cost before each paid step.
+- **Paper edits:** minimal diffs (CLAUDE.md ABSOLUTE RULE); touch only the quoted span.
+  Appendix references use `\ref{}` only. The author compiles in Overleaf.
+- **Tables:** never pool across models.
+- **Problems:** fix them rather than disclose them.
+- **`model_config.py`** is the author's file. Don't edit it; ask.
 
-## 1. State on `cloud-work` (HEAD `4a93468`)
+## 1. Setup
 
-- `846b02e` Phase I done (offline): 148 scenario fixes, rebuild, new calculators + tests
-  installed, ground truth regenerated, RAG scores synced, README ranges, `audit_scenarios.py`
-  city map, `docs/CALCULATOR_PROVENANCE.md` (`!docs/*.md` in `.gitignore`), Duquesne D9
-  resolved, code changes a-c, fixed-default baseline, 301 old outputs archived to
-  `archive/2026-09_pre_rerun/`. Details: `paper/pass6/verify/PHASE1_RUN_REPORT.md` and
-  `PHASE1_CODE_CHANGES_REPORT.md` (both under an ignored path; use `git add -f`).
-- `fedf891` scenario workbook backups (`Scenario Files/Backups/`).
-- `4a93468` **author decision: HVAC solar gain now counts in heat mode as well as AC mode**
-  (`include_solar=True` in `calculate_heating_load` and `calculate_scenario_scores`). Recomputed:
-  HVAC ground truth, HVAC RAG scores (`HVACRagScenarios.xlsx` only; Appliance/Shower unchanged),
-  fixed-default baseline, README table, provenance rows, `tests/test_hvac_reference.py` (new
-  `test_solar_gain_offsets_heating_load`; 19/19). New HVAC bounds: cost $0.19-$3.21 (p5/p95 of
-  280 nonzero active alternatives), environmental 0.97-17.59 lbs CO2. Against the pre-solar
-  ground truth: 12/105 winners and 16/105 rankings change (10 of the 12 are heat-mode
-  questions). **Pending review**: the 20 Btu/h per ft2 of glass is still an unsourced
-  assumption, and it is a cooling-season peak figure.
-- New output folders are empty. `model_config.py` already fixed the earlier issues: DeepSeek
-  0731 price label, "Output Files DeepSeek V4 Flash 0731" folder, per-call `provider` logged.
+1. `python -m venv .venv && .venv/bin/pip install -r requirements.txt`, then use
+   `.venv/bin/python` everywhere.
+2. `chroma_rag_db/` is git-ignored, so build it first: `.venv/bin/python build_rag_index.py`.
+3. Baseline check: run `MODEL_KEY=<k> .venv/bin/python -m pytest -q tests` for each of `gptoss`,
+   `qwen`, `deepseek` and `gemini`. Expect **429 passed** under every key.
+4. `git pull origin cloud-work`, and check that `model_config.py` pins DeepSeek to
+   `relace/fp4`. At the end of this session the branch copy still said `baseten/fp8`; the
+   author had changed it locally. If it is still `baseten/fp8`, ask the author before
+   collecting.
 
-Gotcha: `Miscellaneous Scripts/core-automation/sync_rag_ground_truth_scores.py` has no argument
-parsing; `--help` runs the full sync and rewrites all three RAG workbooks. Restore unchanged ones
-with `git checkout -- <file>` so the Chroma source hash does not move for nothing.
+## 2. State at the end of the second session
 
-## 2. First task: Opus review of every value (the author asked for this before anything else)
+Done and pushed. Details are in `CLOUD_AGENT_CONTEXT.md`, "State at the end of the second
+cloud session".
 
-Dispatch an **Opus** subagent (or several, one per calculator, all Opus) to check every row of
-`docs/CALCULATOR_PROVENANCE.md` (HVAC, Appliance, Shower, Baselines; about 214 rows, 113 marked
-"our assumption") against the installed code and the primary source. Per row:
+**Earlier in the session:**
+- Opus value review; the author's A1-A8 applied.
+- HVAC solar with the 24-h mean irradiance and IECC SHGC/IAC.
+- Scenario-temperature season rule; the HSP Eq. 20 degradation cap.
+- Shower mains 48.5/68.2 °F and 0.69 showers per person per day.
+- Appliance validation tests; `audit_scenarios.py` deleted.
+- Paper S1 and S-CALC edits; ground-truth-derived stale text fixed.
+- Entropy and MEREC weights regenerated.
 
-1. The value in the code matches the value in the row (file and line).
-2. The source is opened (PDF or page), and the row gets the verbatim quote, the page or table,
-   and the URL. Report a mismatch between the quote and the value.
-3. For each "our assumption" row that is a physical or economic number (not a design choice such
-   as a value-function shape or the criterion weights), look for a primary source that gives a
-   defensible value. Propose the replacement with its quote, or state that none was found and
-   why the assumption stands.
-4. Source hierarchy: tariffs and codes, then government labs (NREL, LBNL, DOE, EIA, EPA), then
-   ASHRAE/ACCA handbooks, then peer-reviewed papers. No retailer pages or blogs as a final source.
-   PDFs over about 30 pages: read the table of contents first, then only the pages needed
-   (`pypdf` page ranges).
-5. Output: `paper/pass6/verify/VALUE_REVIEW.md`, a table per calculator with columns: constant,
-   code value, source value, quote, page/URL, verdict (confirmed / mismatch / assumption kept /
-   replacement proposed), and the proposed change.
+**Author decisions B10, B11, B63 and B77** are applied:
+- B10: the α clause is deleted.
+- B11: "total energy, including electrical system losses". EIA MER Table 2.1 could not be
+  opened to confirm that 19.2 quads is the total column; check it once, before submission.
+- B63: the supplement uses numeric citations.
+- B77: the `CLAUDE.md` R-value tiers are corrected.
 
-**Solar gain comes first.** The current term is `window_area * 20` Btu/h, with glazing = 15% of
-floor area (IECC R405 reference design, sourced). Candidate cited replacement:
-q_solar = A_glass x SHGC x (interior shading multiplier) x I, with SHGC and the shading
-multipliers from the Building America House Simulation Protocols (2010 revised,
-NREL/TP-5500-49246; search snippets show SHGC 0.30-0.44 in the FY13 addendum, NREL/TP-5500-57450)
-and I = mean incident solar on vertical surfaces for Pennsylvania, split by heating and cooling
-season, from NREL TMY3 / NSRDB data (Harrisburg or Philadelphia) or an ASHRAE Fundamentals table.
-The HVAC scenarios have no time of day, and the energy window is 8 h; the agent must state how
-it averages irradiance over that window and why. Note that ACCA Manual J's heating design load
-omits solar (a sizing worst case), while ASHRAE's energy-estimating (balance-point) method
-counts solar and internal gains; the calculator estimates energy, so crediting solar is
-consistent with the second. Cite whichever is used.
+**Main L737** now says "Gemini 3.8 Flash". The author asked only for that line.
 
-**Stop after the review and show the author the proposed changes** (each one changes ground
-truth). Apply only what the author approves. Any calculator change then follows the CLAUDE.md
-refresh order: run the calculator -> recompute bounds with
-`Analysis/rerun_prep/hvac/common.py:cost_percentile_bounds` (HVAC) or the calculator's own
-convention -> update the bounds, the README table and the bound tests -> rerun the calculator ->
-`sync_rag_ground_truth_scores.py` -> fixed-default baseline
-(`run_baseline_models.py --baselines fixed_default`) -> provenance rows -> tests -> pipeline gate
-(`Analysis/rerun_prep/pipeline/pipeline_gate.py after` then `diff`; the only allowed differences
-are score changes you caused) -> `build_rag_index.py` last.
+**Phase R smoke** (`Analysis/rerun_smoke/SMOKE_REPORT.md`):
+- 112 of 112 calls succeeded through all three request paths.
+- DeepSeek on `relace/fp4`: 15 of 15 calls at 4 workers with no 429s. BaseTen had 429s on 12
+  of 27.
+- Gemini `minimal` is accepted but reasons as much as `low` and costs the same.
+- Listwise arm: 24 of 24 calls parsed.
 
-## 3. Remaining fixes (author said: fix everything)
+**Design changes** (all author-approved; code, tests and runbook done):
+- **Prompt ablation:**
+  - The 0-10 scale variant is cut.
+  - 3 runs per cell, fixed in advance, with no top-ups.
+  - The control is not collected. `test_prompt_ablation_significance.py` rebuilds it from
+    main-suite runs 1-3.
+  - The ablation's control messages are now byte-identical to the installed A_D/A_E; this is
+    checked at startup and the script refuses to run otherwise. A user-prompt difference was
+    fixed: "(0-1)" and A_E's own prompt builder.
+  - A_E strata have two variants and get one paired Wilcoxon in the same Holm family as the
+    Friedman tests.
+- **Reply parsing:** A_D and A_E now use the ablation's lenient reply parser
+  (`sentinel_utils.extract_json_object` and `is_numeric_score`). A reply with prose around the
+  JSON now parses, and a boolean score is now rejected. All three scoring paths accept and
+  reject the same replies, which is tested.
+- **A_H order arm:** the same-session control arm is cut. The design is 5 main-suite A_H runs
+  plus 5 reversed runs, a permutation test over C(10,5) = 252 labelings.
+- **Optional A_E k = 3 arm on the test set:** cut.
+- **New listwise A_D arm:** `Miscellaneous Scripts/experiments/run_listwise_direct_ranking.py`.
+  - One call per scenario, 5 runs.
+  - System prompt: A_D's anchors plus the config weights, and nothing else from the value
+    model. Scenario context: A_D's own.
+  - Metrics and reference are shared with the prompt ablation. `analyze` compares with
+    pointwise A_D per model (Wilcoxon, Holm).
+  - Included in `emit_collection_window.py`.
+- **k = 1** in the main suite, whatever the RAG ablation shows. Rerun the RAG ablation anyway
+  and report how far it moved.
+- **Order:** every ablation first, **main suite last**.
+- **Nearest-neighbour copy baseline:** fallback `tie`. The default is now **k = 1**, matching
+  A_E, and `Output Files/Baselines/` was regenerated.
+  - At k = 1 it reaches **τ 0.374 and Top-1 64.6%** with no LLM.
+  - That is above every old A_E result (τ 0.208-0.310, Top-1 46.6-53.5%).
+  - If this holds after the rerun, A_E's LLM step makes the ranking worse than copying the
+    exemplar it retrieves.
+  - The paper does not report this baseline in the main text yet (section 5 below).
 
-1. **Delete `tests/audit_scenarios.py`** (author's call; it flagged every scenario as an orphan).
-   Update the places that name it: `docs/CODEBASE_GUIDE.md`, `docs/CALCULATOR_PROVENANCE.md`,
-   `paper/pass6/verify/PHASE1_RUN_REPORT.md` (item 4). Leave historical reports as they are.
-2. **Appliance tests and docs** (a Sonnet agent was started and stopped before changing anything;
-   redo it). New `tests/test_appliance_validation.py` pinning, against the installed calculator:
-   D1 misspelled/unknown appliance -> sentinel; D2 missing/unparseable `baseline_time` ->
-   sentinel; D3 `utility_budget` None/non-numeric -> sentinel, no crash; D4 missing/0 budget ->
-   what the code does; D6 "13:00 PM" -> sentinel; budget-penalty continuity at u = 0.8, 1.0, 1.5,
-   monotone, positive at 2.0, for Appliance and Shower (HVAC already has it). Verify each fix is
-   really in the code first. Docs: `V_APPLIANCE.md` D1-D4/D6/D13 "Applied?" column -> applied
-   (daafa48) or tested; `PROVENANCE_APPLIANCE.md` rows still describing the old behaviour; D5
-   "about 0.29" -> "0.23" (recompute max utilization first) in `PROVENANCE_APPLIANCE.md`,
-   `APPLIANCE_REPORT.md` ~L399, `HVAC_SHOWER_REPORT.md` ~L234; D7 regenerate
-   `Analysis/rerun_prep/appliance/calc_new.diff` (shipped vs installed; name the base commit);
-   D8 regenerate `Analysis/rerun_prep/appliance/out/check_calc_new.xlsx` from the installed
-   calculator; close open items 2-6 in `docs/CALCULATOR_PROVENANCE.md`.
-3. **Baselines** (provenance open items 8-9): re-verify the line citations for
-   `run_hybrid_ablation_experiments.py`; remove the constants no code reads
-   (`HVAC_DEFAULT_HOUSEHOLD_SIZE`, `HVAC_DEFAULT_OUTDOOR_TEMP`, `HVAC_DEFAULT_UTILITY_BUDGET`,
-   `SHOWER_DEFAULT_OUTDOOR_TEMP`, and others the item lists) after grepping the whole repo, then
-   the tests and the gate.
-4. **HVAC rows marked "Quote not recorded"**: fill them during the Section 2 review.
-5. **Now possible with the network:** `build_rag_index.py` (after every data change), then
-   `pytest tests` under all four MODEL_KEYs (expect all pass), then the nearest-neighbour
-   baseline (`run_baseline_models.py --baselines nearest_neighbor`).
+## 3. Before collecting (blocking)
 
-## 4. Paper edits (after Sections 2-3)
+1. The author says go and has topped up. The balance must be at least 2x the step's estimate.
+2. `model_config.py` on the branch has DeepSeek on `relace/fp4` (section 1, step 4).
+3. The author's Gemini effort choice (`low` or `minimal`) is in `model_config.py`. Main L737
+   says "minimal", so the text must match the config after the rerun (section 5).
+4. The output folders are empty (runbook section 0.1).
 
-The author asked for every edit that does not depend on the rerun's numbers: the **S1** items
-and the **S-CALC** items in `PASS6_HANDOFF.md` section 5 (Phase P1 and Phase S-CALC in section 6).
-Manuscript: `paper/paper_draft_v2.tex` and `paper/supplementary.tex`. Map the structure with an
-explore agent first (CLAUDE.md paper reading protocol), then dispatch Sonnet agents with precise
-prompts; minimal-diff rule; run the `stop-slop` skill before writing prose; re-check each quoted
-old string before editing.
+## 4. Collection
 
-Changes since `PASS6_HANDOFF.md` was written that S-CALC must reflect:
-- **B30**: solar gain now enters the heat balance in both modes. Its value and citation follow
-  whatever the author approves in Section 2 (if the 20 Btu/h per ft2 stays, it stays labelled as
-  our assumption).
-- **B35-B37**: HVAC bounds are now $0.19-$3.21 and 0.97-17.59 lbs CO2 (or whatever Section 2
-  produces); take them from the installed code, not from this file.
-- **B38-B40, B44**: Duquesne composition is primary-confirmed (Supplement No. 108, see
-  `docs/CALCULATOR_PROVENANCE.md`); 13.75 c/kWh unchanged.
-- **D12** stale text: main text "per-cycle cost spans \$0.025--\$0.71" -> \$0.028--\$0.774 and
-  the "weekday summer rates" wording; supplement "PPL (Rate RTS)", "2--6pm", "Jun-2025 PTC",
-  "49--76\%" and Table S1.6. Savings: 14-74% off-peak, 61-81.5% super off-peak (recompute).
-- A11.2/A11.4 and B55 swing values: recompute on the current ground truth.
+Follow `paper/pass6/RERUN_RUNBOOK.md` steps 1-7 exactly:
 
-Skip anything tagged S4, S5 or S6 (they need rerun numbers) and every item in
-`PASS6_HANDOFF.md` section 7 that only the author can decide (B11 delivered vs total energy,
-B10, B63, B77, the title). Collect those in the report as open questions.
+| Step | What | Calls |
+|---|---|---|
+| 1 | RAG ablation | 7,560 |
+| 2 | A_H reversed arm | 3,900 |
+| 3 | Position bias | 2,340 |
+| 4 | Prompt ablation | 21,060 |
+| 5 | Listwise A_D | 3,900 |
+| 6 | Main suite, **last** | 27,300 |
+| 7 | Offline analyses | none |
 
-## 5. After that
+That is 66,060 calls and about $23 in total. After each step, run the step's checks and update
+`CLOUD_AGENT_CONTEXT.md` "State". If DeepSeek logs 429s, drop to 2 workers.
 
-Phase R (smoke test, then full collection, about $28-32) only on the author's go-ahead with the
-cost shown first. Update `paper/pass6/CLOUD_AGENT_CONTEXT.md` "State" and `PASS6_HANDOFF.md`
-as each phase finishes.
+After step 1, write the old-vs-new RAG ablation comparison the author asked for:
+- per model and configuration: τ, Top-1 and MAE;
+- the old values are under `archive/2026-09_pre_rerun/Analysis/RAG_Ablation/`.
+
+## 5. After collection: paper work
+
+### 5.1 Numbers (Phase S4)
+
+- `paper_pipeline/build_numbers_of_record.py` produces the regenerated numbers; diff them
+  against `paper/pass5/NUMBERS_OF_RECORD.csv`. Every moved number is an edit.
+- Also apply the rerun items of `paper/pass6/verify/STALE_FIX_LOG.md`:
+  - Tables S2.3 and S2.4;
+  - main:1015;
+  - main:613, "all 20 cells";
+  - main:1072;
+  - README:110 and README:443;
+  - the fixed-default and dataset-median numbers.
+- Then re-check every claim whose direction could flip:
+  - per-model best and worst labels;
+  - "for every model";
+  - significance calls;
+  - the fixed-default and dataset-median comparisons;
+  - the MEREC HVAC reversal cell (main ~1006);
+  - main:912, which says A_D and A_E fail "mostly on unparseable output". The lenient parser
+    changes the failure counts.
+
+### 5.2 Text the design changes require
+
+Line numbers are as of commit f07ddd5. Re-find each span before editing.
+
+- **main:748**
+  - "two non-LLM baselines and then run five robustness checks": recount after adding the
+    nearest-neighbour copy baseline and the listwise arm.
+  - "Run counts differ between cells": check it still holds.
+- **main:750-752 (baselines):** add the nearest-neighbour copy baseline. It copies the
+  reference ranking of the single nearest RAG scenario, k = 1 like A_E, with the `tie`
+  fallback, so it tests what A_E's LLM adds over its own retrieval.
+- **main:756 (alternative ordering):**
+  - Remove "and collected three more original-order runs at the same time to rule out
+    provider drift". State instead that all runs were collected in one timestamped window.
+  - Change "all 1,287 ways of labeling five of the thirteen runs" to 252 ways and ten runs.
+  - The same applies in S2: supp:1351 "thirteen runs" and `tab:mcnemar_order`.
+- **main:760 (prompt ablation):**
+  - "three variants" becomes two; delete the rescaled-response clause.
+  - Add that each cell runs 3 times and that the control is the main suite's first three
+    runs.
+  - S2 `tab:prompt_ablation` notes at supp:1249 and supp:1254 describe 10/5/3 runs; replace
+    them.
+  - `tab:prompt_friedman` now mixes Friedman (A_D) and Wilcoxon (A_E) rows; say so in its
+    note.
+- **main:1001 (Results):** the "rescaled-response variant" sentence goes; rewrite from the new
+  numbers.
+- **Listwise arm (new):**
+  - One methods paragraph, as a new `\subsubsection` after "Prompt ablation".
+  - Its result in Section 4.2 or 4.5 (`\FloatBarrier` rules apply to any new subsection).
+  - Its prompt in S1 "Full Prompt Texts" (supp:263 onward).
+  - A per-model table in S2.
+  - It adds to the proposition's framing but is not a fourth architecture. It is an A_D
+    format check.
+- **Main Table `tab:incremental-contribution` (main ~790) and Section 4.1:**
+  - Add the nearest-neighbour copy row.
+  - Say what it means for A_E; this is the finding flagged in section 2.
+  - The Discussion's A_E paragraphs (main ~1062-1066) must be rewritten from the result.
+- **Models:**
+  - supp:202 lists `:exacto` IDs. Replace them with the `model_config.py` IDs and provider
+    pins: `:floor`, darkbloom, venice, relace and google-ai-studio flex, plus DeepSeek V4
+    Flash 0731.
+  - Figure legends at main:64, 115 and 268 and supp:74 and 165, and table rows at main:866 and
+    supp:1376, 1441 and 1443, still say "Gemini 3.5 Flash". The author asked only for L737, so
+    **ask before changing these**, and recommend changing all of them.
+  - README:21, 122, 184 and 258 say the same.
+  - Main L737 "minimal for Gemini" must match the config's effort.
+
+### 5.3 Claims, Discussion, verification
+
+- S5 and S6 as in `PASS6_HANDOFF.md` section 6.
+- The Discussion 6.1 rewrite is last, written from the final numbers.
+- Phase VER:
+  1. the old-string check;
+  2. the numbers diff;
+  3. a diagnostic compile;
+  4. the simulated EMS review.
+- The author compiles in Overleaf.
+
+## 6. Still open for the author
+
+- **Before collecting:** the go-ahead and the credit top-up.
+- **Before collecting:** the pushed DeepSeek pin and the Gemini effort choice.
+- **Title:** candidates are in A5 of `PASS6_PROPOSAL.md`.
+- **Flag, not fixed:** main ~699 says the base internal gain prevents zero load at zero ΔT.
+  That holds only in cooling mode.
+- **Stroudsburg and Quakertown** utility assignment: both stay on PPL.
+- **Before submission:** Zenodo DOI, EMS fields, highlights, graphical abstract, and strip
+  the co-author TODOs and `todonotes`.
+- **Network:** `*.nrel.gov` and `codes.iccsafe.org` were blocked in the cloud container.
+  Add them to the environment's allowed domains if a source must be re-opened.
+
+## 7. Gotchas
+
+- **`sync_rag_ground_truth_scores.py`** has no argument parsing and rewrites all three RAG
+  workbooks. Restore any unchanged one with `git checkout -- <file>`, or the Chroma source hash
+  moves for nothing.
+- **`.md` files are git-ignored** except README, CLAUDE and `docs/`. Force-add reports with
+  `git add -f`.
+- **`merec_weights.py`** now writes to `Scoring Logic and Documentation/method/`.
+- **The prompt ablation's summary** has no control rows until the main suite exists. The
+  significance script is the source for the paper.
+- **`run_hybrid_ablation_experiments.py`** still accepts `--order-arms control`, and
+  `run_prompt_ablation_experiments.py` still accepts `--variants control`. Don't pass either
+  for the rerun.
+- **`Analysis/rerun_smoke/`** holds the smoke outputs, and no pipeline reads it.
