@@ -83,6 +83,7 @@ OUTPUT_CSV  = "merec_weights_summary.xlsx"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SEARCH_DIRS = [
+    os.path.join(PROJECT_ROOT, "Ground Truth"),
     os.path.join(BASE_DIR, "..", "Ground Truth"),
     os.path.join(BASE_DIR, ".."),
     os.path.join(BASE_DIR, "Ground Truth"),
@@ -92,7 +93,7 @@ SEARCH_DIRS = [
 ]
 
 # Default output inside Scoring Logic and Documentation/method
-OUTPUT_DIR = os.path.join(BASE_DIR, "..", "Scoring Logic and Documentation", "method")
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, "Scoring Logic and Documentation", "method")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 OUTPUT_CSV = os.path.join(OUTPUT_DIR, OUTPUT_CSV)
 
