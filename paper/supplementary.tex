@@ -695,9 +695,9 @@ text for all three alternatives yields:
   & \textbf{$v_{\text{comfort}}$} & \textbf{$v_{\text{prac}}$}
   & \textbf{MAVT $s_j$} \\
 \midrule
-$76\,^\circ$F & 0.11 & 0.30 & 1.00 & 0.85 & \textbf{0.466} \\
-$80\,^\circ$F & 0.17 & 0.37 & 0.67 & 0.85 & 0.442 \\
-$72\,^\circ$F & 0.06 & 0.24 & 0.67 & 0.78 & 0.353 \\
+$80\,^\circ$F & 0.44 & 0.45 & 0.67 & 0.83 & \textbf{0.548} \\
+$76\,^\circ$F & 0.29 & 0.37 & 1.00 & 0.83 & 0.541 \\
+$72\,^\circ$F & 0.16 & 0.29 & 0.67 & 0.76 & 0.398 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -776,7 +776,7 @@ Duquesne   & flat    & ---     & 0.1375 & 0.1375 & --- \\
 
 PECO (Rate R-TOU) \citep{peco2021,peco2025tou} uses a 4-hour afternoon peak window (2--6pm weekdays) and a super off-peak window from midnight to 6am every day. PPL (GSC-1 time-of-use program for Rate Schedules RS and RTS) \citep{ppl2025supp402,ppl2025ptc} uses a 4-hour winter peak window (4--8pm weekdays) and has no super off-peak period. The three FirstEnergy utilities (West Penn, Penelec, MetEd) use a 7-hour peak window (2--9pm weekdays) and a super off-peak window from 11pm to 6am every day, with rates derived from the December 2025 Price-to-Compare (PTC) multiplied by approved multipliers \citep{fepa_supp28,fepa_supp20}. Duquesne uses a flat default rate (Rate RS) \citep{duquesne2026,paupc2025dec}. Shifting a dishwasher cycle from peak to off-peak cuts its per-cycle cost by 14--74\% across these five time-of-use utilities, and shifting it from peak to super off-peak cuts the cost by 61--81\% at the four that offer that period.
 
-Emissions are keyed to a separate, system-wide window rather than to any utility's tariff. The PJM marginal factors are 1.041\,lbs\,CO\textsubscript{2}/kWh across the 7\,a.m.--11\,p.m.\ peak and 0.976\,lbs\,CO\textsubscript{2}/kWh off-peak \citep{pjm2022emissions}, so moving the same cycle out of the emissions peak cuts its emissions by 6.2\%. The two differentials are what separate the energy-cost and environmental criteria for Appliance scheduling: the cost differential is an order of magnitude larger than the emissions differential, and the two windows do not coincide, so a cycle run at 8\,a.m.\ is off-peak for cost and on-peak for emissions.
+Emissions are keyed to a separate, system-wide window rather than to any utility's tariff. The PJM marginal factors are 1.041\,lbs\,CO\textsubscript{2}/kWh across the 7\,a.m.--11\,p.m.\ peak and 0.976\,lbs\,CO\textsubscript{2}/kWh off-peak \citep{pjm2022emissions}, so moving the same cycle out of the emissions peak cuts its emissions by 6.2\%. The two differentials are what separate the energy-cost and environmental criteria for Appliance scheduling: the cost differential is 2.3 to 12 times the emissions differential, and the two windows do not coincide, so a cycle run at 8\,a.m.\ is off-peak for cost and on-peak for emissions.
 \suppsection{Extended Results and Robustness}
 
 \subsection{Realized Criterion Swing}
@@ -820,21 +820,21 @@ We compare the a priori subjective weights, the design choice defended in the ma
 \textbf{Method} & Ene & Env & Com & Pra \\
 \midrule
 A priori (design)         & 0.300 & 0.350 & 0.200 & 0.150 \\
-Entropy (overall)         & 0.269 & 0.371 & 0.161 & 0.199 \\
-Entropy (HVAC)            & 0.336 & 0.320 & 0.269 & 0.074 \\
-Entropy (Appliance)       & 0.193 & 0.465 & 0.124 & 0.218 \\
-Entropy (Shower)          & 0.335 & 0.316 & 0.122 & 0.227 \\
+Entropy (overall)         & 0.272 & 0.370 & 0.171 & 0.186 \\
+Entropy (HVAC)            & 0.337 & 0.315 & 0.278 & 0.070 \\
+Entropy (Appliance)       & 0.190 & 0.467 & 0.124 & 0.219 \\
+Entropy (Shower)          & 0.333 & 0.318 & 0.123 & 0.226 \\
 \midrule
-MEREC (overall)           & 0.194 & 0.131 & 0.404 & 0.271 \\
-MEREC (HVAC)              & 0.138 & 0.128 & 0.663 & 0.071 \\
-MEREC (Appliance)         & 0.208 & 0.044 & 0.292 & 0.456 \\
-MEREC (Shower)            & 0.251 & 0.245 & 0.203 & 0.300 \\
+MEREC (overall)           & 0.196 & 0.134 & 0.403 & 0.267 \\
+MEREC (HVAC)              & 0.158 & 0.135 & 0.656 & 0.051 \\
+MEREC (Appliance)         & 0.194 & 0.043 & 0.298 & 0.466 \\
+MEREC (Shower)            & 0.250 & 0.246 & 0.203 & 0.302 \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-Entropy weights assign 0.371 to Environmental Impact (a priori: 0.350), 0.161 to Comfort (a priori: 0.200), and 0.199 to Practicality (a priori: 0.150). MEREC weights diverge for HVAC and Appliance and remain close to the design vector for Shower. For HVAC, Comfort rises from 0.200 to 0.663 while Environmental Impact falls from 0.350 to 0.128. For Appliance, Environmental Impact falls to 0.044 and Practicality rises to 0.456.
+Entropy weights assign 0.370 to Environmental Impact (a priori: 0.350), 0.171 to Comfort (a priori: 0.200), and 0.186 to Practicality (a priori: 0.150). MEREC weights diverge for HVAC and Appliance and remain close to the design vector for Shower. For HVAC, Comfort rises from 0.200 to 0.656 while Environmental Impact falls from 0.350 to 0.135. For Appliance, Environmental Impact falls to 0.043 and Practicality rises to 0.466.
 
 \subsection{Full Sensitivity Analysis Results}
 \label{app:sensitivity_full}

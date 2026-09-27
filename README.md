@@ -356,16 +356,15 @@ Shower environmental impact is water volume (gallons), not CO2 -- chosen because
 
 ### Budget Penalty
 
-A four-tier multiplicative budget penalty applies to the post-value-function energy-cost score, where `u = monthly_cost / budget`:
+A three-tier multiplicative budget penalty applies to the post-value-function energy-cost score, where `u = monthly_cost / budget`:
 
 | Utilization u | Penalty |
 | --- | --- |
 | u < 0.80 | 1.0 (no penalty) |
 | 0.80 <= u < 1.00 | Linear decay: 1 - 2.5(u - 0.80) |
-| 1.00 <= u < 1.50 | Exponential: 0.5 * e^{-3(u - 1.0)} |
-| u >= 1.50 | 0 (eliminated) |
+| u >= 1.00 | Exponential: 0.5 * e^{-3(u - 1.0)} (continuous, never 0) |
 
-Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-control (Heath & Soll 1996); exponential loss aversion (Prelec & Loewenstein 1998); infeasibility elimination (Gathergood 2012).
+Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-control (Heath & Soll 1996); exponential loss aversion (Prelec & Loewenstein 1998).
 
 ---
 
@@ -392,7 +391,7 @@ E_kWh = (Q_load / (EER_eff * 1000)) * 8 hr * m_occ
 
 In cooling mode, EER comes from rated SEER via the Building America House Simulation Protocols conversion (Hendron & Engebrecht 2010, Eq. 3, citing Wassmer 2003: `EER = -0.02*SEER^2 + 1.12*SEER`). In heating mode the calculator models an electric air-source heat pump and divides the load by the HSPF paired with the SEER (HSP Tables 4 and 32 up to SEER 14; NREL ResStock options at SEER 18 and 22) in place of EER. Occupancy modifier `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 - 0.5*(h_away/24)`). Age/maintenance degradation enters only the practicality score (as a reliability factor), not the energy path.
 
-Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 F cooling, 70 F heating).
+Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 F cooling, 71 F heating).
 
 ### Appliance Calculator
 
@@ -440,7 +439,7 @@ where eta = 0.92 (electric water-heater efficiency; the federal minimum in 10 CF
 The reported sensitivity check reweights both the reference ranking and the architecture rankings under the baseline, equal, and the entropy- and MEREC-derived vectors (see [Objective Weight Validation Scripts](#objective-weight-validation-scripts) below), applied pooled and per decision type, per model (never pooled across models -- see the no-pooling convention in `CLAUDE.md`).
 
 - **The LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional**: it holds in all 20 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
-- **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
+- **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.656 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
 
 Per the project's no-pooling-across-models convention, sensitivity results are reported and should be read per model, not as a four-model mean.
 
