@@ -63,7 +63,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - **Proxy/true pairs (intentional):** the LLM sees a homeowner-accessible label/estimate;
   the calculator gets the true engineering value. Never leak the true value to the LLM
   prompt, never let the calculator score the label directly.
-  - `insulation` (Poor/Medium/Good) ⟷ `r_value` (R-11/13/19)
+  - `insulation` (Poor/Medium/Good) ⟷ `r_value` (tiers R-8–12 / R-13–18 / R-19–24)
   - `flow_rate` (low_flow/standard/high_flow) ⟷ `gpm`
   - `appliance_age` band ⟷ raw years (→ `kwh_per_cycle`)
   - LLM-Parameterized_Reference_Scoring's extraction prompt asks ONLY for the true/engineering params it must
