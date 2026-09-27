@@ -86,6 +86,8 @@ from sentinel_utils import (
     apply_mavt_ranking,
     build_openrouter_payload,
     call_log_fields,
+    extract_json_object,
+    is_numeric_score,
     openrouter_chat,
     read_table_clean,
     response_meta,
@@ -513,48 +515,16 @@ def main_suite_run_path(model_key: str, architecture: str, run_idx: int) -> Path
             / f"{MAIN_SUITE_FILE_STEM[architecture]}_results_run_{run_idx:02d}.xlsx")
 
 
-def _main_suite_raw_responses(run_path: Path) -> Dict[Tuple[int, str], Dict]:
-    """Last raw record per (scenario_id, alternative) from a main-suite run's
-    raw jsonl (append-only, last write wins). Empty if the log is absent."""
-    raw_path = run_path.with_name(f"{run_path.stem}_raw.jsonl")
-    out: Dict[Tuple[int, str], Dict] = {}
-    if not raw_path.exists():
-        return out
-    with open(raw_path, encoding="utf-8") as fh:
-        for line in fh:
-            try:
-                rec = json.loads(line)
-                out[(int(rec["scenario_id"]), str(rec["alternative"]))] = rec
-            except (ValueError, KeyError, TypeError):
-                continue
-    return out
-
-
-def _reparse_with_ablation_rule(rec: Optional[Dict]) -> Optional[Dict[str, float]]:
-    """Scores for a main-suite alternative that failed validation, re-read with
-    this script's parse_scores. The main suite parses strictly (json.loads of
-    the whole reply); the variant cells fall back to the last {...} block. Without
-    this, a reply the variants would accept counts as a miss only in the control.
-    Truncated or empty replies stay failed, exactly as in the variant cells."""
-    if not rec or rec.get("truncated") or rec.get("finish_reason") == "length":
-        return None
-    scores, error = parse_scores(rec.get("response") or "", 1.0)
-    return None if error else scores
-
-
 def main_suite_control_rows(model_key: str, architecture: str, runs: int,
                             reference: Dict[int, Dict],
                             scenario_ids: Optional[List[int]] = None) -> pd.DataFrame:
     """The control cell rebuilt from main-suite runs 1..runs, scored with this
     script's own scenario_metrics, so control and variant rows are computed by
-    the same code. A main-suite alternative that failed validation is re-read
-    from the run's raw jsonl with this script's parse_scores
-    (_reparse_with_ablation_rule), so control and variants share one parsing
-    rule. Columns match run_cell's rows for everything the summary and the
+    the same code. The main suite parses replies with the same rule as this
+    script (sentinel_utils.extract_json_object and is_numeric_score). Columns match run_cell's rows for everything the summary and the
     significance tests read. A missing run file raises: a partial control
     would bias every comparison against it."""
     rows = []
-    reparsed = 0
     for run_idx in range(1, runs + 1):
         path = main_suite_run_path(model_key, architecture, run_idx)
         if not path.exists():
@@ -562,22 +532,12 @@ def main_suite_control_rows(model_key: str, architecture: str, runs: int,
                 f"Main-suite run {run_idx} for {model_key}/{architecture} not found at {path}. "
                 f"The prompt-ablation control comes from main-suite runs 1..{runs}; collect them first.")
         df = read_table_clean(path, keep_str_cols=["alternative"])
-        raw = None  # read lazily: only a run with a failed alternative needs it
         for sid, g in df.groupby("scenario_id", sort=True):
             sid = int(sid)
             if scenario_ids is not None and sid not in scenario_ids:
                 continue
-            scored = []
-            for _, r in g.iterrows():
-                alt = {"alternative": str(r["alternative"]), **{c: float(r[c]) for c in CRITERIA}}
-                if any(alt[c] == SENTINEL_FLOAT for c in CRITERIA):
-                    if raw is None:
-                        raw = _main_suite_raw_responses(path)
-                    rescued = _reparse_with_ablation_rule(raw.get((sid, alt["alternative"])))
-                    if rescued:
-                        alt.update(rescued)
-                        reparsed += 1
-                scored.append(alt)
+            scored = [{"alternative": str(r["alternative"]), **{c: float(r[c]) for c in CRITERIA}}
+                      for _, r in g.iterrows()]
             result = {"scored": scored, "ranking": apply_mavt_ranking(scored)}
             metrics = scenario_metrics(result, reference.get(sid))
             valid = [a for a in scored if not any(a[c] == SENTINEL_FLOAT for c in CRITERIA)]
@@ -599,9 +559,6 @@ def main_suite_control_rows(model_key: str, architecture: str, runs: int,
                 "mean_criterion_sd": float(np.mean([np.std([a[c] for c in CRITERIA]) for a in valid]))
                                      if valid and not metrics["failed"] else np.nan,
             })
-    if reparsed:
-        logger.info("%s/%s control: %d failed main-suite alternative(s) re-parsed with the "
-                    "ablation's rule", model_key, architecture, reparsed)
     return pd.DataFrame(rows)
 
 
@@ -683,29 +640,8 @@ def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[st
     """
     if not response_text:
         return None, "failed_empty_response"
-    text = response_text.strip()
-    if text.startswith("```"):
-        parts = text.split("```")
-        if len(parts) >= 2:
-            text = parts[1]
-            if text.lower().startswith("json"):
-                text = text[4:]
-            text = text.strip()
-
-    parsed = None
-    try:
-        parsed = json.loads(text)
-    except (json.JSONDecodeError, ValueError):
-        # Fall back to the last {...} span, which is where the scaffolded arms
-        # put the answer.
-        for match in reversed(list(re.finditer(r"\{[^{}]*\}", text, re.DOTALL))):
-            try:
-                candidate = json.loads(match.group(0))
-            except (json.JSONDecodeError, ValueError):
-                continue
-            if isinstance(candidate, dict) and any(c in candidate for c in CRITERIA):
-                parsed = candidate
-                break
+    # The same extraction rule as the installed A_D and A_E (sentinel_utils).
+    parsed = extract_json_object(response_text, CRITERIA)
     if not isinstance(parsed, dict):
         return None, "failed_malformed_json"
 
@@ -714,7 +650,7 @@ def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[st
         if criterion not in parsed:
             return None, f"failed_missing_score:{criterion}"
         raw = parsed[criterion]
-        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        if not is_numeric_score(raw):
             return None, "failed_invalid_score_type"
         value = float(raw)
         if not (0.0 <= value <= scale_max):
