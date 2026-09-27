@@ -133,6 +133,7 @@ Analysis/workstream_f_report.md
 !SECURITY.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
+!docs/*.md
 
 paper/Images/LifestyleChangesEmissionImpact.png
 paper_pipeline/analyze_benchmark_failures.py

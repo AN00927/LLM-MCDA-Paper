@@ -155,9 +155,11 @@ author's own machine, since the ignored files must end up on that disk:
    Keep the scripts (`.py`), `.json`/`.csv` data and the real deliverables tracked:
    - code, tests and scenario/ground-truth/output files;
    - `docs/CALCULATOR_PROVENANCE.md`, which should stay tracked permanently: add a `!docs/*.md`
-     exception or force-add it, and ask the author which;
+     exception or force-add it. The author chose the exception (2026-09-27): `!docs/*.md` is
+     already in `cloud-work`'s `.gitignore`, after `!CODE_OF_CONDUCT.md`;
    - README.
-3. **Restore `.gitignore`** to the version on `main`: `git checkout main -- .gitignore`. Then
+3. **Restore `.gitignore`** to the version on `main`: `git checkout main -- .gitignore`, then
+   re-add the line `!docs/*.md` after `!CODE_OF_CONDUCT.md` (main's version lacks it). Then
    check with `git status --ignored` that every file untracked in step 2 now shows as ignored
    (`!!`) and still exists on disk.
 4. **Squash-merge, don't merge.** `git switch main`, then `git merge --squash cloud-work`, review

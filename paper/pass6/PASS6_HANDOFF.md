@@ -186,7 +186,10 @@ shows every change.
   variable or constant at the installed files.
 
 **C. Run during the refresh chain, in this order** (`CLAUDE.md` "Refresh workflows"):
-1. `Scenario Files/build_consolidated_scenario_workbooks.py`, after the Stroudsburg edit to the
+1. (Superseded 2026-09-27: use `paper/pass6/verify/apply_scenario_fixes.py --apply`, then
+   `Scenario Files/build_scenario_workbooks.py --in-place`, per Phase I step 3. The old script
+   below cannot run: its source workbook is gone.)
+   `Scenario Files/build_consolidated_scenario_workbooks.py`, after the Stroudsburg edit to the
    master.
 2. Each installed calculator, which regenerates `Ground Truth/ground_truth_*.xlsx`.
 3. `Miscellaneous Scripts/core-automation/sync_rag_ground_truth_scores.py`.
@@ -369,8 +372,13 @@ Key:
    - `Analysis/` result files;
    - `Ground Truth/`, `Scenario Files/`, `chroma_rag_db/`;
    - `paper/paper_draft_v2.tex`, `paper/supplementary.tex`, `paper/cas-refs.bib`, `README.md`.
-3. Stroudsburg `hvac_age` 95 → 40 in `Scenario Files/HVACScenarios.xlsx`, then
-   `build_consolidated_scenario_workbooks.py`. Read its audit output.
+3. Apply all staged scenario fixes (`paper/pass6/verify/scenario_fixes.json`, 148 fixes,
+   including Stroudsburg `hvac_age` 95 → 40 as #84 and #82/#83) with
+   `paper/pass6/verify/apply_scenario_fixes.py --apply`, then rebuild with
+   `Scenario Files/build_scenario_workbooks.py --in-place` (partition fixed by
+   `Scenario Files/rag_membership.json`; the old `build_consolidated_scenario_workbooks.py`
+   cannot run). Read its audit output; expect 65 changed derived cells
+   (`paper/pass6/verify/REBUILD_REPORT.md` section 8).
 4. Install the calculators and tests (Section 3B). Run the tests against the installed files.
 5. Run the calculators, then sync, then build the index (Section 3C). Check that the
    regenerated xlsx match the agents' preview outputs (`Analysis/rerun_prep/*/out/`).
@@ -383,6 +391,25 @@ Key:
    the old folders; they are snapshotted, and the new lineup writes to new folder names for
    Gemini and DeepSeek. Move GPT-OSS's and Qwen's old outputs aside **after** the snapshot,
    because their folder names don't change.
+   Archive rule: move the CONTENTS of `Output Files GPT-OSS 20B/` and `Output Files Qwen3.5 9B/`
+   (including `position_bias/` and `hybrid_order_reversal/`), and of `Analysis/Prompt_Ablation/`,
+   to `archive/2026-09_pre_rerun/<same path>/`, verify every file arrived (sha256), and keep the
+   emptied folders as the new output folders. `Analysis/RAG_Ablation/checkpoints/` must be empty.
+10. Code changes approved 2026-09-27 (mocked-HTTP tests; prompts byte-identical; then `tests/`
+    under all four MODEL_KEYs and the pipeline gate):
+    a. prompt-ablation `cot_scaffold` arms (A_D and A_E, every model) send
+       max_tokens = min(32768, pinned endpoint `max_completion_tokens`), looked up by a free
+       GET of `https://openrouter.ai/api/v1/models/<author>/<slug>/endpoints` at run start
+       (abort if it fails; `--cot-max-tokens N` overrides); other arms and the architectures
+       keep 8192; the cap is recorded in the raw log;
+    b. prompt-ablation Top-1/Top-2: a failed or unscored scenario counts as wrong, denominator
+       = all scenarios in the cell (the RAG-ablation rule); tau/MAE unchanged;
+       `n_failed_scenarios` reported;
+    c. the five-consecutive-failures breaker in `sentinel_utils` is lock-protected;
+    d. Duquesne (V_APPLIANCE D9): composition primary-confirmed from Duquesne Light Supplement
+       No. 108 to Electric Pa. P.U.C. No. 25,
+       `temppapers/currenttariff_108_256018e393-caba-4589-8360-f64513d80451.pdf` (168 pages;
+       read only the TOC and the needed pages). 13.75 c/kWh unchanged.
 
 **Phase P1: Step 1 paper edits (subagent, can run in parallel with Phase I or R).**
 - First, per `CLAUDE.md`'s paper reading protocol, map the section structure with an explore

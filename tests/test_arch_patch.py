@@ -71,7 +71,11 @@ def _env(monkeypatch):
 
 def good_content(key, dt):
     if key == "AH":
-        return AH_HIST[SCN[dt][0]]
+        # The stored Gemini 3.5 reply for Appliance test 71 misspells the appliance
+        # ("Waser"). The installed calculator rejects unknown appliance names (sentinel,
+        # see test_ah_misspelled_appliance_is_sentinel), so the success fixture uses the
+        # canonical name.
+        return AH_HIST[SCN[dt][0]].replace('"Waser"', '"washer"')
     return H.SCORES_JSON
 
 
@@ -290,6 +294,15 @@ def test_ah_api_exhausted_marks_scenario_failed(tmp_path):
     assert len(poster.calls) == MAX_RETRIES
     assert [a["alternative"] for a in result["alternatives_scores"]] == [
         str(SCN["HVAC"][1][c]) for c in H.ALT_COLS]
+
+
+def test_ah_misspelled_appliance_is_sentinel(tmp_path):
+    """The stored reply with appliance "Waser" must surface as the sentinel,
+    never as a score computed for a guessed appliance type."""
+    raw = AH_HIST[SCN["Appliance"][0]]
+    assert '"Waser"' in raw
+    result, _, _ = run_one("AH", "Appliance", [H.ok(raw)], tmp_path)
+    assert all(SU.is_sentinel(v) for a in alt_scores("AH", result) for v in a.values())
 
 
 # ---------------------------------------------------------------------------

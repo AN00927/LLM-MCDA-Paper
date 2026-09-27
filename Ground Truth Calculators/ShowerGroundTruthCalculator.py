@@ -15,8 +15,8 @@ from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_sc
 
 class ShowerGroundTruthCalculator:
     """Key sources:
-- DeOreo et al. (2016). Average shower 7.8 min; 0.9 showers/person/day.
-- Burch & Christensen (2007). Mains temp model.
+- DeOreo et al. (2016). Average shower 7.8 min. (0.9 showers/person/day is our assumption.)
+- Burch & Christensen (2007). Mains temp model (our linear approximation to it).
 - Backman & Hoeschele (2013). Hot water distribution validation.
 - Rheem Manufacturing Company (2025). Electric Tank Water Heaters product specs.
 - CDC (2026). Monitoring Building Water: Legionella control guidance.
@@ -24,12 +24,13 @@ class ShowerGroundTruthCalculator:
 """
 
     # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Annual (2025)
-    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to
-    # ~19-21 c/kWh through 2025 -- 0.19 is a defensible flat-rate proxy).
+    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024). 0.19 is the bundled default-service
+    # rate (supply + delivery + riders) the paper derives from PA PUC (2025), not an EIA figure.
     ELECTRICITY_RATE_PA = 0.19
 
     # PA seasonal mains water temperatures.
-    # Sources: Burch & Christensen (2007), OSTI 981988; Maguire et al. (2013), NREL/TP-5500-58756.
+    # Our linear approximation to Burch & Christensen (2007), OSTI 981988 (a sinusoid that runs
+    # ~2-5 F warmer for PA); see also Maguire et al. (2013), NREL/TP-5500-58756.
     # Shoulder-season inlet temperature is interpolated between these two anchors
     # in determine_inlet_temp rather than stored as a third constant.
     INLET_TEMP_WINTER = 45  # F, outdoor <=32F
@@ -38,8 +39,9 @@ class ShowerGroundTruthCalculator:
     # UEF 0.90-0.93 for 40-55 gal electric tank.
     # Source: Rheem Manufacturing Company. (2025). Residential Tank Water Heaters
     #         Product Specifications (electric models 40-55 gal). Midpoint: 0.92.
+    # Federal minimum: 10 CFR 430.32(d), 0.9307 - (0.0002 x Vr) = 0.9207 at 50 gal.
     ELECTRIC_HEATER_EFFICIENCY = 0.92
-    TARGET_SHOWER_TEMP = 105.0  # F, upper end of the comfortable shower delivery band (~98-105F); Zhang et al. (2023)
+    TARGET_SHOWER_TEMP = 105.0  # F, our delivery convention; Zhang et al. (2023) assume 89.6-104 F (32-40 C)
     WATER_DENSITY = 8.33  # lbs/gallon (standard)
     BTU_PER_KWH = 3412  # Conversion factor (standard)
 
@@ -63,11 +65,11 @@ class ShowerGroundTruthCalculator:
     COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (6 C) drop (modeling assumption)
     COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer envelope (Ibanez-Rueda et al. (2023))
 
-    # Water-heater temp thresholds. CDC Legionella guidance (CDC (2026)): store >=140F,
-    # deliver/recirculate >=120F. 110F and 130F are code-defined comfort/scald
+    # Water-heater temp thresholds. CDC Legionella guidance (CDC (2026)): store above 140F;
+    # hot water in circulation should not fall below 120F. 110F and 130F are code-defined comfort/scald
     # boundaries, NOT CDC setpoints.
     HEATER_TEMP_MINIMUM = 110  # F, lukewarm boundary (within CDC Legionella growth range 77-113F, CDC (2026))
-    HEATER_TEMP_OPTIMAL = 120  # F, standard delivery setpoint (CDC (2026))
+    HEATER_TEMP_OPTIMAL = 120  # F, CDC circulation floor (CDC (2026)), used as the setpoint floor
     HEATER_TEMP_SCALD_RISK = 130  # F, scald-risk threshold (~30s to a deep burn; Moritz & Henriques (1947))
     HEATER_TEMP_LEGIONELLA_SAFE = 140  # F, CDC minimum storage temp (CDC (2026))
 
@@ -75,7 +77,8 @@ class ShowerGroundTruthCalculator:
     # = 120-140F. water_heater_temp is a STORAGE temperature, so the band must be
     # anchored to storage guidance, not to delivery thresholds. Below 120F the tank
     # cannot deliver the 105F TARGET_SHOWER_TEMP with any mixing margin and sits inside
-    # the CDC Legionella amplification range (77-113F); above 140F adds standby loss and
+    # the CDC Legionella amplification range (77-113F); above 140F (our assumption, not a CDC
+    # limit -- CDC recommends storing above 140F) adds standby loss and
     # scald exposure with no comfort benefit, since delivery is fixed at 105F by the
     # mixing fraction. The earlier band, [MINIMUM, SCALD_RISK] = 110-130F, applied
     # delivery-oriented thresholds to a storage quantity and gave full comfort credit to
@@ -98,7 +101,8 @@ class ShowerGroundTruthCalculator:
 
     def determine_inlet_temp(self, outdoor_temp: float) -> float:
         # PA seasonal mains temps, linearly interpolated across the 32-75F outdoor band
-        # between the winter and summer anchors (Burch & Christensen (2007); Backman & Hoeschele (2013)).
+        # between the winter and summer anchors: our linear approximation to Burch &
+        # Christensen (2007) (see also Backman & Hoeschele (2013)).
         if outdoor_temp <= 32:
             return float(self.INLET_TEMP_WINTER)
         elif outdoor_temp >= 75:
@@ -184,7 +188,7 @@ class ShowerGroundTruthCalculator:
         if water_heater_temp < ShowerGroundTruthCalculator.COMFORT_HEATER_TEMP_MIN:
             temp_penalty = 2.0  # No mixing margin above the 105F target; within Legionella growth range
         elif water_heater_temp > ShowerGroundTruthCalculator.COMFORT_HEATER_TEMP_MAX:
-            temp_penalty = 1.0  # Standby loss and scald exposure, no extra comfort benefit
+            temp_penalty = 1.0  # Standby loss and scald exposure, no extra comfort benefit (our assumption)
 
         # Larger households experience pressure to keep showers short
         contention_penalty = 0.0
@@ -250,11 +254,10 @@ class ShowerGroundTruthCalculator:
             return 1.0
         elif utilization < 1.0:
             return 1.0 - 2.5 * (utilization - 0.80)
-        elif utilization < 1.5:
+        else:
+            # u >= 1.0: exponential decline, continuous for every u (no drop to 0 at u = 1.5).
             import math
             return 0.5 * math.exp(-3.0 * (utilization - 1.0))
-        else:
-            return 0.0
 
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
@@ -444,7 +447,7 @@ class ShowerGroundTruthCalculator:
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost'],
                     occupants,
-                    showers_per_person_per_day=0.9  # Q21: REU2016 average
+                    showers_per_person_per_day=0.9  # our assumption, not an REU2016 figure
                 )
 
                 budget_penalty = self.calculate_budget_penalty(

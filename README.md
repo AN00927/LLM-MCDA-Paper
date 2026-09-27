@@ -346,8 +346,8 @@ All four criterion scores are on a 0--1 scale before weighting. Energy cost and 
 
 | Criterion | HVAC | Appliance | Shower |
 | --- | --- | --- | --- |
-| Energy Cost ($) | $0.38 - $3.29 | $0.025 - $0.71 | $0.14 - $1.14 |
-| Environmental Impact | 1.96 - 18.04 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
+| Energy Cost ($) | $0.59 - $3.27 | $0.028 - $0.774 | $0.14 - $1.14 |
+| Environmental Impact | 3.03 - 17.90 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
 | Comfort | 0.0 - 1.0 | 0.0 - 1.0 | 0.0 - 1.0 |
 | Practicality | 0.05 - 1.0 | 0.05 - 1.0 | 0.05 - 1.0 |
 
