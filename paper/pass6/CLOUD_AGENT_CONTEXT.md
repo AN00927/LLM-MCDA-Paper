@@ -1,6 +1,6 @@
 # Cloud agent context (temporary; written 2026-09-27)
 
-**New session? Start with `paper/pass6/NEXT_SESSION_HANDOFF.md`** (current state and next tasks).
+**New session? Read the section "State at the end of the second cloud session" below first**; `paper/pass6/NEXT_SESSION_HANDOFF.md` sections 2-4 are done.
 
 Read this first, then `CLAUDE.md`, then `paper/pass6/PASS6_HANDOFF.md` and
 `paper/pass6/RERUN_RUNBOOK.md`. This file carries the standing rules and decisions that live in
@@ -62,6 +62,27 @@ the author's local agent memory, which a cloned repo does not have.
   the current files against the pre-S1 copies in `paper/pass6/s1_snapshot/` (paper_draft_v2.tex,
   supplementary.tex, cas-refs.bib, README.md, taken 2026-09-26 before S1 started). All four
   differ from the current files. Some of that difference may be edits the author made later.
+
+## State at the end of the second cloud session (2026-09-27, later)
+
+Everything from `NEXT_SESSION_HANDOFF.md` sections 2-4 is done and pushed to `cloud-work`:
+- Value review of every provenance row: `paper/pass6/verify/VALUE_REVIEW.md` (+ `value_review/`).
+  The author approved A1-A8 and they are installed (commit 95d7fce): HVAC solar gain from IECC
+  R405 SHGC/IAC and Harrisburg TMY3 24-h irradiance (7.85 / 11.19 Btu/h per ft2 glass), attached
+  glazing factor F (0.75 / 0.56), IECC internal gains, HSP Eq. 20 degradation (M = 0.02); Shower
+  inlet 48.5 / 68.2 F and 0.69 showers/day; fixed default tank 40 gal and dryer 2.27 kWh.
+  Bounds: HVAC $0.40-$2.81, 2.05-15.40 lbs; Shower $0.13-$1.07. GT, RAG scores, both baselines,
+  `baseline_metrics.csv`, the Chroma index, entropy/MEREC weights refreshed; 388 tests pass
+  under all four MODEL_KEYs; pipeline gate differences are only the caused score changes.
+- `docs/CALCULATOR_PROVENANCE.md` updated (open items 1-10 closed; item 11 lists what stays
+  unverified). `tests/audit_scenarios.py` deleted; `tests/test_appliance_validation.py` added.
+- Paper: S1 done (`S1_APPLY_LOG.md`), S-CALC done (`SCALC_APPLY_LOG.md`), ground-truth-derived
+  stale text fixed (`STALE_FIX_LOG.md`). No local LaTeX: the author compiles in Overleaf.
+- Network: all *.nrel.gov hosts and codes.iccsafe.org stay blocked; mirrors were used.
+
+Next: Phase R (smoke test, then collection) only on the author's go-ahead with the cost shown
+first, then S4/S5/S6. Items `STALE_FIX_LOG.md` lists under "needs the rerun" belong to S4.
+Still open for the author: B10, B11, B63, B77, the title.
 
 ## State on 2026-09-27
 
