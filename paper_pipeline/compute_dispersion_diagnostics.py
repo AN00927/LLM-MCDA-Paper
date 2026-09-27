@@ -56,6 +56,9 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import CRITERION_WEIGHTS, MODEL_SPECS, get_output_folder
 from sentinel_utils import CRITERIA, _is_complete_run_file, read_table_clean
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from single_criterion import top1_credit  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Reuse the shipped matching / filtering machinery rather than re-implementing.
 # ---------------------------------------------------------------------------
@@ -187,26 +190,25 @@ def all_stats_for_frame(df, prefix):
 def single_criterion_recovery(df, rank_col, score_prefix, group_col):
     """Share of scenarios whose GT top-1 alternative is the argmax of one criterion.
 
-    Ties are resolved by first-occurrence in the frame's existing row order
-    (`idxmax` on a stably ordered frame), so the result is deterministic.
+    A tie for the best criterion value earns fractional credit, 1/k when the
+    GT winner is among the k tied alternatives (single_criterion.top1_credit,
+    shared with competitive_baselines.py): the expected Top-1 under a uniform
+    random tie-break, so the result does not depend on list order.
     """
     out = {}
     work = df.sort_index(kind="mergesort")
     for c in CRITERIA:
-        hits = 0
+        hits = 0.0
         n = 0
         for _, g in work.groupby(group_col, sort=True):
             ranks = g[rank_col].astype(float)
             if ranks.isna().any():
                 continue
-            top = g.loc[ranks.idxmin(), "_alt_key"]
             crit = g[f"{score_prefix}{c}"].astype(float)
             if crit.isna().any():
                 continue
-            argmax = g.loc[crit.idxmax(), "_alt_key"]
             n += 1
-            if top == argmax:
-                hits += 1
+            hits += top1_credit(ranks.tolist(), crit.tolist())
         out[c] = (100.0 * hits / n if n else np.nan, n)
     return out
 
@@ -245,10 +247,15 @@ def build_merged_runs():
                     continue
                 gt_cols = ["arch_scenario_id", "decision_type", "norm_alternative",
                            "gt_rank"] + [f"gt_{c}" for c in CRITERIA]
-                gt_frames.append(merged[gt_cols].copy())
                 clean, _, _ = _cm.filter_failed_scenarios(merged)
                 if clean.empty:
                     continue
+                # Reference rows come from the clean frame only: a failed
+                # scenario's rows carry placeholder labels such as
+                # "Alternative 1 (extraction failed)", which the dedupe below
+                # cannot collapse onto the real labels, so the scenario would
+                # enter the reference table twice (54 of 195 on the old runs).
+                gt_frames.append(clean[gt_cols].copy())
                 per_run[(model, arch, run)] = clean
 
     gt_test = pd.concat(gt_frames, ignore_index=True).drop_duplicates(
@@ -400,8 +407,10 @@ def emit_recovery_table(test_rec, full_rec, out_path):
     lines.append(r"    \item Percentage of scenarios in which the physics reference's"
                  r" top-ranked alternative is also the argmax of the named criterion"
                  r" taken alone, over the 195 Test scenarios. With three alternatives"
-                 r" per scenario, chance agreement is 33.3\%. Ties are broken by first"
-                 r" occurrence, so the statistic is deterministic. Values on the full"
+                 r" per scenario, chance agreement is 33.3\%. A tie for the best value"
+                 r" of the criterion earns $1/k$ when the reference winner is one of the"
+                 r" $k$ tied alternatives (the expected value under a random tie-break)."
+                 r" Values on the full"
                  r" 285-scenario dataset, reported in"
                  r" \texttt{paper/dispersion\_diagnostics.csv}, are: "
                  + "; ".join(

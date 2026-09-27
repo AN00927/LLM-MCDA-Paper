@@ -1,0 +1,74 @@
+source,model,arch,unit,n,mean,p99,max
+main diagnostics (mean/call per run),Output Files DeepSeek V4 Flash,Direct_LLM_Scoring,run-mean per call,5,506.8298969072165,599.5313402061856,601.3333333333334
+main diagnostics (mean/call per run),Output Files DeepSeek V4 Flash,Example-Guided_LLM_Scoring,run-mean per call,5,36.00307692307693,36.00676923076923,36.00683760683761
+main diagnostics (mean/call per run),Output Files DeepSeek V4 Flash,LLM-Parameterized_Reference_Scoring,run-mean per call,5,62.839999999999996,62.876717948717946,62.87692307692308
+main diagnostics (mean/call per run),Output Files Gemini 3.5 Flash,Direct_LLM_Scoring,run-mean per call,5,41.11008547008548,41.23712820512821,41.23760683760684
+main diagnostics (mean/call per run),Output Files Gemini 3.5 Flash,Example-Guided_LLM_Scoring,run-mean per call,5,86.90598290598291,154.3716923076923,154.3863247863248
+main diagnostics (mean/call per run),Output Files Gemini 3.5 Flash,LLM-Parameterized_Reference_Scoring,run-mean per call,5,75.18666666666667,75.26892307692307,75.27179487179487
+main diagnostics (mean/call per run),Output Files GPT-OSS 20B,Direct_LLM_Scoring,run-mean per call,5,139.98940170940173,141.67610256410256,141.6991452991453
+main diagnostics (mean/call per run),Output Files GPT-OSS 20B,Example-Guided_LLM_Scoring,run-mean per call,5,145.768547008547,147.71097435897437,147.76923076923077
+main diagnostics (mean/call per run),Output Files GPT-OSS 20B,LLM-Parameterized_Reference_Scoring,run-mean per call,5,123.55589743589744,125.0465641025641,125.06153846153846
+main diagnostics (mean/call per run),Output Files Qwen3.5 9B,Direct_LLM_Scoring,run-mean per call,5,37.829743589743586,37.91193162393162,37.91282051282051
+main diagnostics (mean/call per run),Output Files Qwen3.5 9B,Example-Guided_LLM_Scoring,run-mean per call,5,37.96239316239316,38.01312820512821,38.01538461538462
+main diagnostics (mean/call per run),Output Files Qwen3.5 9B,LLM-Parameterized_Reference_Scoring,run-mean per call,5,72.69333333333334,72.72307692307692,72.72307692307692
+A_H order-arm raw jsonl,Output Files DeepSeek V4 Flash,LLM-Parameterized_Reference_Scoring,per call,1560,63.67371794871795,68.0,69.0
+A_H order-arm raw jsonl,Output Files Gemini 3.5 Flash,LLM-Parameterized_Reference_Scoring,per call,1560,75.23589743589744,86.0,87.0
+A_H order-arm raw jsonl,Output Files GPT-OSS 20B,LLM-Parameterized_Reference_Scoring,per call,1560,123.26282051282051,197.41000000000008,247.0
+A_H order-arm raw jsonl,Output Files Qwen3.5 9B,LLM-Parameterized_Reference_Scoring,per call,1560,72.54423076923077,80.0,82.0
+prompt ablation control (scenario sum of 3 calls),deepseek,AD,scenario sum = upper bound per call,1950,110.32564102564102,111.0,115.0
+prompt ablation control (scenario sum of 3 calls),gemini,AD,scenario sum = upper bound per call,585,122.31794871794872,154.0,158.0
+prompt ablation control (scenario sum of 3 calls),gptoss,AD,scenario sum = upper bound per call,1950,428.2748717948718,620.51,828.0
+prompt ablation control (scenario sum of 3 calls),qwen,AD,scenario sum = upper bound per call,1950,113.89179487179487,127.0,214.0
+prompt ablation control (scenario sum of 3 calls),deepseek,AE,scenario sum = upper bound per call,975,110.34358974358975,111.0,111.0
+prompt ablation control (scenario sum of 3 calls),gemini,AE,scenario sum = upper bound per call,585,129.62905982905983,153.0,156.0
+prompt ablation control (scenario sum of 3 calls),gptoss,AE,scenario sum = upper bound per call,975,449.52102564102563,621.52,713.0
+prompt ablation control (scenario sum of 3 calls),qwen,AE,scenario sum = upper bound per call,975,113.48410256410257,122.0,123.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),deepseek,AD,scenario sum = upper bound per call,975,1409.0153846153846,1682.78,1789.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),gemini,AD,scenario sum = upper bound per call,585,1946.1641025641027,2290.96,2415.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),gptoss,AD,scenario sum = upper bound per call,975,780.2943589743589,1518.78,1728.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),qwen,AD,scenario sum = upper bound per call,975,17108.901538461538,82114.87999999999,139044.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),deepseek,AE,scenario sum = upper bound per call,975,1496.7405128205128,2011.4199999999994,3161.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),gemini,AE,scenario sum = upper bound per call,585,1926.0700854700854,2340.9199999999996,2539.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),gptoss,AE,scenario sum = upper bound per call,975,961.011282051282,1945.2799999999997,2021.0
+prompt ablation cot_scaffold (scenario sum of 3 calls),qwen,AE,scenario sum = upper bound per call,975,7431.826666666667,69724.4,82400.0
+prompt ablation no_anchors (scenario sum of 3 calls),deepseek,AD,scenario sum = upper bound per call,1950,110.52871794871795,114.0,121.0
+prompt ablation no_anchors (scenario sum of 3 calls),gemini,AD,scenario sum = upper bound per call,585,118.74358974358974,154.63999999999987,162.0
+prompt ablation no_anchors (scenario sum of 3 calls),gptoss,AD,scenario sum = upper bound per call,1950,481.52564102564105,686.51,2501.0
+prompt ablation no_anchors (scenario sum of 3 calls),qwen,AD,scenario sum = upper bound per call,1950,117.49435897435897,123.0,123.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),deepseek,AD,scenario sum = upper bound per call,975,109.26871794871795,111.0,111.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),gemini,AD,scenario sum = upper bound per call,585,122.45128205128205,150.0,151.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),gptoss,AD,scenario sum = upper bound per call,975,407.75589743589745,561.1599999999999,797.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),qwen,AD,scenario sum = upper bound per call,975,111.00615384615385,111.0,114.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),deepseek,AE,scenario sum = upper bound per call,975,110.04307692307692,111.0,117.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),gemini,AE,scenario sum = upper bound per call,585,134.5145299145299,152.15999999999997,154.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),gptoss,AE,scenario sum = upper bound per call,975,412.734358974359,605.52,741.0
+prompt ablation scale_0_10 (scenario sum of 3 calls),qwen,AE,scenario sum = upper bound per call,975,111.07282051282051,113.0,115.0
+RAG ablation alternate_embedding_k3 (row),deepseek,AE-like,row completion_tokens,270,110.77777777777777,112.86000000000001,117.0
+RAG ablation control_k3 (row),deepseek,AE-like,row completion_tokens,270,110.55555555555556,117.0,117.0
+RAG ablation descriptions_no_scores_ranks (row),deepseek,AE-like,row completion_tokens,270,110.65555555555555,116.31,117.0
+RAG ablation exemplars_no_hidden_params (row),deepseek,AE-like,row completion_tokens,270,110.73333333333333,116.0,116.0
+RAG ablation random_exemplars_k3 (row),deepseek,AE-like,row completion_tokens,270,111.13333333333334,117.86000000000001,122.0
+RAG ablation retrieval_k1 (row),deepseek,AE-like,row completion_tokens,270,110.85555555555555,112.86000000000001,117.0
+RAG ablation retrieval_k5 (row),deepseek,AE-like,row completion_tokens,270,111.03333333333333,117.0,117.0
+RAG ablation alternate_embedding_k3 (row),gemini,AE-like,row completion_tokens,270,105.1,107.93,110.0
+RAG ablation control_k3 (row),gemini,AE-like,row completion_tokens,270,105.07777777777778,108.0,108.0
+RAG ablation descriptions_no_scores_ranks (row),gemini,AE-like,row completion_tokens,270,111.63333333333334,148.89000000000004,162.0
+RAG ablation exemplars_no_hidden_params (row),gemini,AE-like,row completion_tokens,270,105.04444444444445,106.62,108.0
+RAG ablation random_exemplars_k3 (row),gemini,AE-like,row completion_tokens,270,113.46666666666667,147.0,147.0
+RAG ablation retrieval_k1 (row),gemini,AE-like,row completion_tokens,270,106.52222222222223,124.65000000000003,135.0
+RAG ablation retrieval_k5 (row),gemini,AE-like,row completion_tokens,270,105.0111111111111,105.31,106.0
+RAG ablation alternate_embedding_k3 (row),gptoss,AE-like,row completion_tokens,270,446.8,695.55,699.0
+RAG ablation control_k3 (row),gptoss,AE-like,row completion_tokens,270,440.68888888888887,606.4600000000002,652.0
+RAG ablation descriptions_no_scores_ranks (row),gptoss,AE-like,row completion_tokens,270,469.1222222222222,652.1700000000001,657.0
+RAG ablation exemplars_no_hidden_params (row),gptoss,AE-like,row completion_tokens,270,438.7111111111111,653.58,666.0
+RAG ablation random_exemplars_k3 (row),gptoss,AE-like,row completion_tokens,270,467.15555555555557,646.7700000000002,693.0
+RAG ablation retrieval_k1 (row),gptoss,AE-like,row completion_tokens,270,452.03333333333336,620.4600000000002,666.0
+RAG ablation retrieval_k5 (row),gptoss,AE-like,row completion_tokens,270,452.03333333333336,639.95,671.0
+RAG ablation nearest_neighbor_k3 (row),offline,AE-like,row completion_tokens,270,0.0,0.0,0.0
+RAG ablation alternate_embedding_k3 (row),qwen,AE-like,row completion_tokens,270,111.44444444444444,117.31,118.0
+RAG ablation control_k3 (row),qwen,AE-like,row completion_tokens,270,111.38888888888889,115.0,115.0
+RAG ablation descriptions_no_scores_ranks (row),qwen,AE-like,row completion_tokens,270,115.87777777777778,122.31,123.0
+RAG ablation exemplars_no_hidden_params (row),qwen,AE-like,row completion_tokens,270,111.44444444444444,119.0,119.0
+RAG ablation random_exemplars_k3 (row),qwen,AE-like,row completion_tokens,270,116.12222222222222,123.0,123.0
+RAG ablation retrieval_k1 (row),qwen,AE-like,row completion_tokens,270,112.18888888888888,121.0,121.0
+RAG ablation retrieval_k5 (row),qwen,AE-like,row completion_tokens,270,111.07777777777778,113.62,115.0

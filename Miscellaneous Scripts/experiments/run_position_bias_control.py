@@ -49,7 +49,7 @@ RESULT_COLUMNS = [
     "scenario_id", "decision_type", "question", "location", "outdoor_temp",
     "appliance_age", "flow_rate", "alternative",
     "energy_cost", "environmental", "comfort", "practicality",
-    "rank", "weighted_score", "collected_utc",
+    "rank", "weighted_score", "collected_utc", "model_id",
 ]
 
 
@@ -329,6 +329,7 @@ def run_reversed_arm(model_key, n_total, seed, n_runs=1):
             new_rows = normalize_result(result, reversed_scenario)
             for row in new_rows:
                 row["collected_utc"] = collected_utc
+                row["model_id"] = mod.API_CONFIG["model"]
             rows.extend(new_rows)
             with open(ckpt_path, "a", encoding="utf-8") as f:
                 for row in new_rows:
@@ -733,23 +734,30 @@ def analyze(model_key):
 def main():
     parser = argparse.ArgumentParser(description="Position-bias control arm")
     parser.add_argument("command", choices=["run", "analyze"])
-    parser.add_argument("--model", choices=list(MODEL_SPECS.keys()),
-                        default="qwen",
-                        help="Default qwen: position bias hits weaker scorers "
-                             "harder, so a null there is stronger evidence.")
+    # Defaults reproduce the paper's design with no flags: A_D reversed on all
+    # 195 Test scenarios, one reversed run per model, for all four models
+    # (main text, "position" paragraph of the robustness checks; S2 McNemar
+    # table compares that one run against each model's five original runs).
+    parser.add_argument("--model", "--models", dest="models", nargs="+",
+                        choices=list(MODEL_SPECS.keys()),
+                        default=list(MODEL_SPECS.keys()),
+                        help="Model key(s), run one after another. Default: all "
+                             "four, the set the paper reports.")
     parser.add_argument("--n", type=int, default=DEFAULT_N,
-                        help=f"Scenarios to sample (default {DEFAULT_N})")
+                        help=f"Scenarios to sample (default {DEFAULT_N}, all Test scenarios)")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--runs", type=int, default=1,
-                        help="Repeat runs of the arm. Use >1 when the expected "
-                             "result is a null, so the comparison has a "
-                             "variance estimate on both sides.")
+                        help="Reversed runs per model (default 1, the paper's "
+                             "design: each is compared against the model's five "
+                             "original runs).")
     args = parser.parse_args()
 
-    if args.command == "run":
-        run_reversed_arm(args.model, args.n, args.seed, n_runs=args.runs)
-    else:
-        analyze(args.model)
+    for model_key in args.models:
+        print(f"\n##### model: {model_key} #####")
+        if args.command == "run":
+            run_reversed_arm(model_key, args.n, args.seed, n_runs=args.runs)
+        else:
+            analyze(model_key)
 
 
 if __name__ == "__main__":

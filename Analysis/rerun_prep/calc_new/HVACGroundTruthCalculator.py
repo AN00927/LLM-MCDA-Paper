@@ -64,8 +64,8 @@ class HVACGroundTruthCalculator:
     # explicit hvac_mode. No outdoor-temperature season test is used anywhere. The mode sets
     # the Comfort optimum, the load direction, Practicality and the "Off" free-float.
     HVAC_MODES = ('heat', 'cool')
-    _HEAT_WORDS = re.compile(r"\bheat(?:ing)?\b", re.IGNORECASE)
-    _COOL_WORDS = re.compile(r"\bAC\b|\bA/C\b|\bair[- ]condition(?:ing|er)\b")
+    _HEAT_WORDS = re.compile(r"\bheat(?:ing)?\b(?!\s*waves?\b)", re.IGNORECASE)
+    _COOL_WORDS = re.compile(r"\bAC\b|\bA/C\b|\b(?i:air[- ]condition(?:ing|er))\b")
 
     # Thermostat optima by mode: Building America HSP, "Thermostat set points based on the
     # optimum seasonal temperature for human comfort as defined in ASHRAE Standard 55-2004 ...
@@ -117,8 +117,8 @@ class HVACGroundTruthCalculator:
 
         conductive_load = u_factor * envelope_area * delta_t
 
-        # Formula: occupants (230 BTU/hr sensible each) + lighting & equipment (1.0 BTU/hr/sqft) + baseline (800)
-        # Example: for 3-person, 1500 sqft home: (3 x 230) + (1500 x 1.0) + 800 = 2,990 BTU/hr
+        # Formula: occupants (220 BTU/hr sensible each) + lighting & equipment (1.0 BTU/hr/sqft) + baseline (800)
+        # Example: for 3-person, 1500 sqft home: (3 x 220) + (1500 x 1.0) + 800 = 2,960 BTU/hr
         # Occupant gain per Building America HSP Table 44 (sensible); 1.0/sqft and 800 are our assumptions
         internal_gains = ((household_size * self.OCCUPANT_SENSIBLE_GAIN_BTUH)
                           + (square_footage * self.EQUIPMENT_GAIN_BTUH_PER_SQFT)
@@ -385,7 +385,7 @@ class HVACGroundTruthCalculator:
         must be folded to 'occupied_all_day' / 'occupied_sleep' / 'unoccupied_<H>'.
         """
         if occupancy_value is None or pd.isna(occupancy_value):
-            return "occupied_all_day"
+            return None
 
         value = str(occupancy_value).strip().lower()
 
@@ -402,7 +402,8 @@ class HVACGroundTruthCalculator:
                 return f"unoccupied_{hours_away}"
             return "unoccupied_8"
 
-        return "occupied_all_day"
+        # Unrecognized token: no silent default; calculate_scenario_scores emits the sentinel.
+        return None
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         reference_ranges = {
@@ -520,6 +521,22 @@ class HVACGroundTruthCalculator:
         # cooling-season sign was physically backwards.
         return outdoor_temp + 5 if ac_mode else outdoor_temp + 10
 
+    def _inputs_valid(self, scenario: Dict) -> bool:
+        """False when an input the load needs is non-physical (sqft, R-value, SEER or
+        household size <= 0, non-finite outdoor temperature) or the occupancy token is
+        unrecognized, so the scenario surfaces as the sentinel instead of a silent score."""
+        import math
+        try:
+            positives = [float(scenario[k]) for k in
+                         ('square_footage', 'r_value', 'seer', 'household_size')]
+            outdoor = float(scenario['outdoor_temp'])
+        except (KeyError, TypeError, ValueError):
+            return False
+        if not all(math.isfinite(v) and v > 0 for v in positives) or not math.isfinite(outdoor):
+            return False
+        occupancy = scenario.get('occupancy_context', 'occupied_all_day')
+        return self.normalize_occupancy_context(occupancy) is not None
+
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
         # Operating mode from the question (or an explicit hvac_mode). It sets the "Off"
         # drift, the Comfort optimum, the load direction, Practicality and whether solar gain
@@ -528,6 +545,9 @@ class HVACGroundTruthCalculator:
         mode = self.resolve_hvac_mode(scenario)
         if mode is None:
             print(f"   Could not determine heat/AC mode from the question; emitting sentinel {SENTINEL_VALUE}")
+        elif not self._inputs_valid(scenario):
+            print(f"   Invalid physical input or occupancy_context; emitting sentinel {SENTINEL_VALUE}")
+            mode = None
         ac_mode = (mode == 'cool')
 
         raw_results = {}

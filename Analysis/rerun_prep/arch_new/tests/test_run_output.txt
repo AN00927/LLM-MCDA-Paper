@@ -1,0 +1,188 @@
+# pytest Analysis/rerun_prep/arch_new/tests  (2026-09-27T02:13:09Z, no network)
+[tie] 20 noise-tie pairs; live AE+AH mis-ranked 40 of 40
+[regression A_H] 6240 historical responses {'Output Files DeepSeek V4 Flash': 1560, 'Output Files Gemini 3.5 Flash': 1560, 'Output Files GPT-OSS 20B': 1560, 'Output Files Qwen3.5 9B': 1560}; differ from live code: 0; differ from stored outcome: 0
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 72
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 76
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 80
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 2:00 PM
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 9:00 PM
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 6:00 AM
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 3
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 5
+ERROR    root:Direct_LLM_Scoring.py:394 LLM scoring failed for alternative: 8
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 72
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 76
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 80
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 2:00 PM
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 9:00 PM
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 6:00 AM
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 3
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 5
+ERROR    root:Direct_LLM_Scoring.py:388 LLM response truncated (finish_reason=length) for alternative: 8
+ERROR    patched_AD:sentinel_utils.py:550   API bad_request (attempt 1, status 400): {"error": {"code": 400, "message": "bad parameter"}}
+ERROR    patched_AD:sentinel_utils.py:550   API bad_request (attempt 2, status 400): {"error": {"code": 400, "message": "bad parameter"}}
+ERROR    patched_AE:sentinel_utils.py:550   API bad_request (attempt 1, status 400): {"error": {"code": 400, "message": "bad parameter"}}
+ERROR    patched_AE:sentinel_utils.py:550   API bad_request (attempt 2, status 400): {"error": {"code": 400, "message": "bad parameter"}}
+ERROR    patched_AH:sentinel_utils.py:550   API bad_request (attempt 1, status 400): {"error": {"code": 400, "message": "bad parameter"}}
+ERROR    patched_AH:sentinel_utils.py:550   API bad_request (attempt 2, status 400): {"error": {"code": 400, "message": "bad parameter"}}
+ERROR    patched_AD:sentinel_utils.py:550   API fatal_http (attempt 1, status 401): {"error": {"code": 401, "message": "nope"}}
+ERROR    patched_AD:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {"error": {"code": 402, "message": "nope"}}
+ERROR    patched_AD:sentinel_utils.py:550   API fatal_http (attempt 1, status 403): {"error": {"code": 403, "message": "nope"}}
+ERROR    patched_AE:sentinel_utils.py:550   API fatal_http (attempt 1, status 401): {"error": {"code": 401, "message": "nope"}}
+ERROR    patched_AE:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {"error": {"code": 402, "message": "nope"}}
+ERROR    patched_AE:sentinel_utils.py:550   API fatal_http (attempt 1, status 403): {"error": {"code": 403, "message": "nope"}}
+ERROR    patched_AH:sentinel_utils.py:550   API fatal_http (attempt 1, status 401): {"error": {"code": 401, "message": "nope"}}
+ERROR    patched_AH:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {"error": {"code": 402, "message": "nope"}}
+ERROR    patched_AH:sentinel_utils.py:550   API fatal_http (attempt 1, status 403): {"error": {"code": 403, "message": "nope"}}
+ERROR    patched_AD:sentinel_utils.py:550   API bad_request (attempt 1, status 400): {"error": {"code": 400, "message": "effort 'minimal' not supported"}}
+ERROR    patched_AD:sentinel_utils.py:550   API bad_request (attempt 2, status 400): {"error": {"code": 400, "message": "effort 'minimal' not supported"}}
+ERROR    patched_AD:sentinel_utils.py:550   API bad_request (attempt 1, status 400): {"error": {"code": 400}}
+ERROR    patched_AD:sentinel_utils.py:550   API bad_request (attempt 2, status 400): {"error": {"code": 400}}
+ERROR    patched_AD:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {"error": {"code": 402, "message": "Insufficient credits"}}
+ERROR    patched_AE:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {"error": {"code": 402, "message": "Insufficient credits"}}
+ERROR    patched_AH:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {"error": {"code": 402, "message": "Insufficient credits"}}
+ERROR    root:Direct_LLM_Scoring.py:453 JSON parse failed: Expecting value: line 1 column 1 (char 0). Raw response: Sure! {"energy_cost": 0.6, "environmental": 0.5, "comfort": 0.7, "practicality": 0.8}
+ERROR    root:Direct_LLM_Scoring.py:463 JSON parse failed: Expecting value: line 1 column 1 (char 0). Raw response: Sure! {"energy_cost": 0.6, "environmental": 0.5, "comfort": 0.7, "practicality": 0.8}
+ERROR    root:Direct_LLM_Scoring.py:453 JSON parse failed: Expecting value: line 1 column 1 (char 0). Raw response: not json at all
+ERROR    root:Direct_LLM_Scoring.py:463 JSON parse failed: Expecting value: line 1 column 1 (char 0). Raw response: not json at all
+ERROR    patched_AH_hybrid:sentinel_utils.py:550   API fatal_http (attempt 1, status 402): {}
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[success-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[null_content-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_then_ok-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[error_body_then_ok-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[empty_choices_always-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[truncated_valid_json-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[429_then_ok-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_then_ok-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[timeout_always-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AD-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AD-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AD-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AE-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AE-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AE-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AH-HVAC]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AH-Appliance]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_response_kinds[400-AH-Shower]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_success_logs_distances_and_true_api_success
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ah_api_exhausted_marks_scenario_failed
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AD-401]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AD-402]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AD-403]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AE-401]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AE-402]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AE-403]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AH-401]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AH-402]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_fatal_status_aborts[AH-403]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_consecutive_bad_requests_abort
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_success_resets_consecutive_counter
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_test_set_outputs[AD]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_test_set_outputs[AE]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_test_set_outputs[AH]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_multi_fatal_aborts_without_saving[AD]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_multi_fatal_aborts_without_saving[AE]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_multi_fatal_aborts_without_saving[AH]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_resume_guard[AD]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_resume_guard[AE]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_resume_guard[AH]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_run_file_state_missing_and_tmp
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_retrieval_failure[raise]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_retrieval_failure[empty]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_retrieval_failure[uninitialised]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_consecutive_retrieval_failures_abort
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_rag_top_k_env
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ae_real_chroma_retrieval_distances
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_tie_rounding_per_run_ae_ah
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_tie_rounding_aggregate[AD]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_tie_rounding_aggregate[AE]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_tie_rounding_aggregate[AH]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_ah_key_override_blocked
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_regression_ah_historical_raw_jsonl
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_regression_ad_ae_synthetic[AD]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_regression_ad_ae_synthetic[AE]
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_position_bias_normalize_result_compat
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_hybrid_order_arm_capture_compat
+PASSED Analysis/rerun_prep/arch_new/tests/test_arch_patch.py::test_provider_prefs_follow_model_id
+139 passed, 1 warning in 29.21s

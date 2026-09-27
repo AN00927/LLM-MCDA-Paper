@@ -97,11 +97,13 @@ key = ["quantity", "model", "decision_type", "metric", "occ"]
 j = nb.merge(na, on=key, how="outer", suffixes=("_b", "_a"), indicator=True)
 # Excluded from the unchanged-rows check, each for a stated reason:
 #   GPTOSS_recovery      -- changed on purpose (P2)
-#   the pooled tables    -- removed on purpose (P2 follow-up; nothing prints them)
+#   the pooled tables    -- removed on purpose (P2 follow-up; nothing prints them).
+#                           RobustnessComparison (four-model mean per architecture)
+#                           joined them on 2026-09-26 (SCRIPT_FIXES_REPORT item 7)
 #   Table8_cost_per_run  -- priced from the MODEL_SPECS labels, which P3 changed
 #                           for the rerun models; reported separately below
 REMOVED = {"NUMBERS:Table5_pooled_overall", "NUMBERS:Table6_per_criterion_mae",
-           "NUMBERS:Table7_per_decision_type_pooled"}
+           "NUMBERS:Table7_per_decision_type_pooled", "NUMBERS:RobustnessComparison"}
 other = j[~j.quantity.isin({"NUMBERS:GPTOSS_recovery", "NUMBERS:Table8_cost_per_run"} | REMOVED)]
 n_diff = int(((other.v_b - other.v_a).abs() > 1e-12).sum() + (other["_merge"] != "both").sum())
 rows.append({"gate": "G4", "item": "numbers_master rows (not recovery / pooled / cost) that changed",
@@ -110,7 +112,8 @@ rows.append({"gate": "G4", "item": "numbers_master rows (not recovery / pooled /
 removed_left = int(j[j.quantity.isin(REMOVED)]["v_a"].notna().sum())
 rows.append({"gate": "G4", "item": "pooled-across-model rows still written", "reference": 0,
              "new": removed_left, "abs_diff": removed_left, "compare_digits": 0,
-             "pass": removed_left == 0, "note": "Table5 / Table6 pooled / Table7 pooled"})
+             "pass": removed_left == 0,
+             "note": "Table5 / Table6 pooled / Table7 pooled / RobustnessComparison"})
 cost = j[j.quantity == "NUMBERS:Table8_cost_per_run"]
 rows.append({"gate": "G4-info", "item": "Table8 cost rows changed (MODEL_SPECS prices, P3)",
              "reference": 0, "new": int(((cost.v_b - cost.v_a).abs() > 1e-12).sum()),

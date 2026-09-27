@@ -11,7 +11,8 @@ _ap.add_argument("--output", default="paper/numbers_master.csv",
 OUT = _ap.parse_args().output
 rows = []
 
-def add(category, architecture, model_or_pooled, decision_type, metric, value, sd=None):
+def add(category, architecture, model_or_pooled, decision_type, metric, value, sd=None,
+        cost_source=None):
     rows.append({
         "category": category,
         "architecture": architecture,
@@ -20,6 +21,8 @@ def add(category, architecture, model_or_pooled, decision_type, metric, value, s
         "metric": metric,
         "value": round(value, 6) if pd.notna(value) else np.nan,
         "sd": round(sd, 6) if sd is not None and pd.notna(sd) else np.nan,
+        # Table 8 only: which price source the row's cost came from.
+        "cost_source": cost_source if cost_source is not None else np.nan,
     })
 
 ARCH_SHORT = {
@@ -36,8 +39,6 @@ for f in MODELS:
     df = pd.read_csv(f"paper/per_run_metrics/per_run_metrics_{f}.csv")
     per_run_frames.append(df)
 per_run = pd.concat(per_run_frames, ignore_index=True)
-
-imputed = pd.read_excel("Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx")
 
 rag = pd.read_excel("Analysis/RAG_Ablation/rag_ablation_summary.xlsx")
 
@@ -106,15 +107,23 @@ for arch in LLM_ARCHS:
                             np.mean(vals), np.std(vals, ddof=1))
 
 # ────────────────────────────────────────────────────────────────
-# TABLE 8: Cost per run, COMPUTED from measured token usage.
+# TABLE 8: Cost per run, COMPUTED from the run diagnostics.
 #
 # Previously these values were transcribed from the LaTeX by hand, which let the
 # table drift from the run data (three cells disagreed materially). They are now
-# derived: per-run token totals come from the architecture diagnostics JSON
-# (total_tokens_input / total_tokens_output, averaged over the 5 runs) and are
-# priced with the list rates in model_config.MODEL_SPECS. Token counts and
-# calls/scenario are emitted alongside the cost so the prose figures are also
-# traceable.
+# derived from each run's architecture diagnostics JSON, averaged over the runs:
+#   * cost: the charged cost `total_cost_usd` (OpenRouter usage.cost summed over
+#     the run's calls) when the JSON has it. Under :floor routing the provider,
+#     and so the price, varies call to call, so this is the only exact figure.
+#   * fallback, for a run whose JSON predates that field: its token totals
+#     (total_tokens_input / total_tokens_output) priced at the list rates in the
+#     model_config.MODEL_SPECS label, which are hand-typed and can drift.
+# The cost row's `cost_source` column says which: "charged" (every run had
+# total_cost_usd), "label_price" (none had) or "mixed:<k>/<n>_charged", with
+# ";cost_covers_<a>/<b>_calls" appended when a charged run's calls_with_cost
+# shows that some calls reported no cost (their cost is then missing, not zero).
+# Token counts and calls/scenario are emitted alongside the cost so the prose
+# figures are also traceable.
 # ────────────────────────────────────────────────────────────────
 import json
 import glob
@@ -137,7 +146,6 @@ MODEL_KEY_TO_LABEL = {"gptoss": "GPT-OSS", "qwen": "Qwen",
 N_SCENARIOS = 195
 
 for model_key, spec in MODEL_SPECS.items():
-    price_in, price_out = _parse_prices(spec["label"])
     folder = spec["output_folder"]
     label = MODEL_KEY_TO_LABEL[model_key]
     for arch in LLM_ARCHS:
@@ -146,16 +154,36 @@ for model_key, spec in MODEL_SPECS.items():
         if not paths:
             continue
         tok_in = tok_out = calls = 0
+        cost = 0.0
+        n_charged = 0
+        calls_charged = calls_covered = 0
         for p in paths:
             with open(p) as fh:
                 diag = json.load(fh)
-            tok_in += diag.get("total_tokens_input", 0)
-            tok_out += diag.get("total_tokens_output", 0)
+            run_in = diag.get("total_tokens_input", 0)
+            run_out = diag.get("total_tokens_output", 0)
+            tok_in += run_in
+            tok_out += run_out
             calls += diag.get("total_api_calls", 0)
+            charged = diag.get("total_cost_usd")
+            if charged is not None and pd.notna(charged):
+                cost += float(charged)
+                n_charged += 1
+                # calls_with_cost: how many of the run's calls reported a cost
+                run_calls = diag.get("total_api_calls", 0)
+                calls_charged += run_calls
+                calls_covered += diag.get("calls_with_cost", run_calls)
+            else:
+                price_in, price_out = _parse_prices(spec["label"])
+                cost += run_in / 1e6 * price_in + run_out / 1e6 * price_out
         n = len(paths)
-        tok_in, tok_out, calls = tok_in / n, tok_out / n, calls / n
-        cost = tok_in / 1e6 * price_in + tok_out / 1e6 * price_out
-        add("Table8_cost_per_run", arch, label, "Overall", "cost_usd", cost)
+        tok_in, tok_out, calls, cost = tok_in / n, tok_out / n, calls / n, cost / n
+        source = ("charged" if n_charged == n else
+                  "label_price" if n_charged == 0 else f"mixed:{n_charged}/{n}_charged")
+        if n_charged and calls_covered < calls_charged:
+            source += f";cost_covers_{calls_covered}/{calls_charged}_calls"
+        add("Table8_cost_per_run", arch, label, "Overall", "cost_usd", cost,
+            cost_source=source)
         add("Table8_cost_per_run", arch, label, "Overall", "tokens_in_per_run", tok_in)
         add("Table8_cost_per_run", arch, label, "Overall", "tokens_out_per_run", tok_out)
         add("Table8_cost_per_run", arch, label, "Overall", "tokens_per_scenario",
@@ -382,32 +410,12 @@ for arch in LLM_ARCHS:
                     np.mean(vals), np.std(vals, ddof=1))
 
 # ────────────────────────────────────────────────────────────────
+# ROBUSTNESS (Method A vs imputed): removed. This block used to write
+# RobustnessComparison rows that averaged all four models' runs per
+# architecture. The paper prints no such value (re-checked 2026-09-26; the
+# per-model imputed comparison comes from generate_imputed_robustness_tables.py)
+# and the project never pools a metric across models.
 # ────────────────────────────────────────────────────────────────
-# ────────────────────────────────────────────────────────────────
-# ROBUSTNESS: Method A (per-run) vs Imputed (per-run) comparison
-# ────────────────────────────────────────────────────────────────
-print("\n=== ROBUSTNESS: Method A vs Imputed (per-run) ===")
-print(f"{'Arch':4s} {'Metric':6s} {'MethodA':>8s} {'Imputed':>8s} {'diff':>8s}")
-for arch in LLM_ARCHS:
-    for metric in ["kendall_tau", "overall_mae", "top1_accuracy"]:
-        nice = {"kendall_tau": "tau", "overall_mae": "MAE", "top1_accuracy": "Top-1"}[metric]
-        # Method A: per-run CSVs, mean across all runs
-        pr_vals = per_run[(per_run["architecture"] == arch) &
-                          (per_run["decision_type"] == "Overall")][metric].dropna().values
-        pr_mean = np.mean(pr_vals) if len(pr_vals) > 0 else np.nan
-        # Imputed: from imputed per-run xlsx (comparison sheet has variant ImputedPerRun and lowercase metric names)
-        imp_sub = imputed[(imputed["variant"] == "ImputedPerRun") &
-                          (imputed["architecture"] == arch) &
-                          (imputed["decision_type"] == "Overall") &
-                          (imputed["metric"] == metric)]
-        imp_vals = imp_sub["value"].dropna().values
-        imp_mean = np.mean(imp_vals) if len(imp_vals) > 0 else np.nan
-        if pd.notna(pr_mean) and pd.notna(imp_mean):
-            diff = abs(pr_mean - imp_mean)
-            flag = " ***" if diff > 0.005 else ""
-            add("RobustnessComparison", arch, "MethodA", "Overall", nice, pr_mean)
-            add("RobustnessComparison", arch, "Imputed", "Overall", nice, imp_mean)
-            print(f"{ARCH_SHORT[arch]:4s} {nice:6s} {pr_mean:8.4f} {imp_mean:8.4f} {diff:8.4f}{flag}")
 
 df_out = pd.DataFrame(rows)
 df_out.to_csv(OUT, index=False)

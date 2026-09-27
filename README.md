@@ -30,7 +30,7 @@ The three decision types were chosen for high behavioral plasticity and contribu
 Requires **Python 3.11 or newer**.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/AN00927/LLM-MCDA-Paper.git
 cd LLM-MCDA-Paper
 
 # Create and activate a virtual environment
@@ -441,13 +441,13 @@ The reported sensitivity check reweights both the reference ranking and the arch
 - **The LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional**: it holds in all 20 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
 - **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
 
-Per the project's no-pooling-across-models convention (see `CLAUDE.md`), sensitivity results are reported and should be read per model, not as a four-model mean.
+Per the project's no-pooling-across-models convention, sensitivity results are reported and should be read per model, not as a four-model mean.
 
 ---
 
 ## Ablation Suites
 
-Three ablation suites, run on top of the main benchmark, test whether the reported architecture ordering depends on design choices inside the architectures rather than on the architectures themselves. All three cover the same four models and use a Holm-corrected nonparametric protocol within each model (never pooled across models). Full methodology and results are in the paper (Sections 4.5 and 5.5) and `docs/EXPERIMENTS.md`.
+Four ablation suites, run on top of the main benchmark, test whether the reported architecture ordering depends on design choices inside the architectures rather than on the architectures themselves. All four cover the same four models and use a Holm-corrected nonparametric protocol within each model (never pooled across models). Full methodology and results are in the paper (Sections 4.5 and 5.5) and `docs/EXPERIMENTS.md`.
 
 - **Prompt-sensitivity ablation** (`run_prompt_ablation_experiments.py`, `test_prompt_ablation_significance.py`, `AggregatePromptAblations.py`) -- reruns direct LLM scoring and the example-guided architecture under three prompt perturbations (removing scoring anchors, adding a chain-of-thought scaffold, rescaling the 0--1 response range to 0--10) on the full 195-scenario test set. The architecture ordering survives every variant.
 - **RAG ablation** (`run_rag_ablation_experiments.py`, `compare_retrieval_k_bootstrap_ci.py`, `measure_rag_retrieval_distance.py`) -- runs on the 90-scenario RAG corpus under leave-one-out retrieval, varying retrieval depth (k=1, 3, 5), the embedding model, and what the retrieved exemplar exposes (scores, ranks, hidden engineering parameters). Removing exemplar scores hurts far more than removing hidden parameters.
@@ -510,6 +510,6 @@ Code is released under the MIT License ([LICENSE](LICENSE)). The scenario workbo
 
 ---
 
-## Citation / Collaborator
+## Citation
 
 This project is being developed into a journal paper with **River Huang (Paul Scherrer Institut, Switzerland)**, targeting *Environmental Modelling & Software*.

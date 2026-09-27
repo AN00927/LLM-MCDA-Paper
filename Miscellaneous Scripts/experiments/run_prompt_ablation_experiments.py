@@ -281,6 +281,27 @@ def _assert_control_matches_shipped() -> None:
 # API
 # ---------------------------------------------------------------------------
 
+def _response_meta(data: Dict) -> Dict:
+    """Per-call provenance from an OpenRouter 200 body, for the raw log: the
+    generation id (lets cost/provider be re-queried via /api/v1/generation),
+    the serving provider and resolved model (both vary call to call under
+    :floor routing), finish_reason (a 'length' stop is a truncation), the full
+    usage block (reasoning tokens, cost) and any separate reasoning text."""
+    choice = (data.get("choices") or [{}])[0] or {}
+    message = choice.get("message") or {}
+    return {
+        "response_id": data.get("id"),
+        "response_model": data.get("model"),
+        "provider": data.get("provider"),
+        "system_fingerprint": data.get("system_fingerprint"),
+        "finish_reason": choice.get("finish_reason"),
+        "native_finish_reason": choice.get("native_finish_reason"),
+        "usage": data.get("usage"),
+        "reasoning": message.get("reasoning"),
+        "body_error": data.get("error") or choice.get("error"),
+    }
+
+
 def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tuple[Optional[str], Dict]:
     """POST to OpenRouter under the shared retry policy from model_config.
 
@@ -300,7 +321,9 @@ def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tup
         payload["reasoning"] = reasoning_payload
 
     diagnostics = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
-                   "latency_ms": 0.0, "model": model_id, "retries": 0}
+                   "latency_ms": 0.0, "model": model_id, "retries": 0,
+                   "request_params": {k: v for k, v in payload.items() if k != "messages"},
+                   "attempt_errors": []}
     last_error = None
     attempt = 0
     retry_forever = MAX_RETRIES <= 0
@@ -322,6 +345,7 @@ def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tup
                     "completion_tokens": usage.get("completion_tokens", 0),
                     "total_tokens": usage.get("total_tokens", 0),
                     "latency_ms": latency_ms,
+                    **_response_meta(data),
                 })
                 return content, diagnostics
             last_error = f"Status {response.status_code}: {response.text[:200]}"
@@ -330,6 +354,7 @@ def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tup
         except Exception as exc:
             last_error = str(exc)
             logger.debug("Request failed on attempt %s: %s", attempt, exc)
+        diagnostics["attempt_errors"].append(last_error)
 
         if not retry_forever and attempt >= MAX_RETRIES:
             break
@@ -478,7 +503,8 @@ def preload_ae_module():
     _load_ae_module()
 
 
-def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative: str) -> List[Dict]:
+def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative: str,
+                   retrieved_out: Optional[List] = None) -> List[Dict]:
     system_prompt = variant["system"][architecture]
     user_prompt = build_user_prompt(scenario, alternative)
     if ARCHITECTURES[architecture]["rag"]:
@@ -488,6 +514,9 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
         # fast relative to the network wait, so this costs little parallelism.
         with _retrieval_lock:
             retrieved = ae.retrieve_similar_scenarios(scenario, k=ae.RETRIEVE_K)
+        if retrieved_out is not None:
+            # Exemplar ids for the raw log, so retrieval can be audited later.
+            retrieved_out.extend(r.get("id", "") for r in retrieved)
         rag_context = ae.format_rag_context(retrieved)
         if rag_context:
             user_prompt = user_prompt + "\n" + rag_context
@@ -514,21 +543,30 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
     failure_types = []
 
     for alternative in alternatives:
-        messages = build_messages(architecture, variant, scenario, alternative)
+        retrieved_ids: List = []
+        messages = build_messages(architecture, variant, scenario, alternative,
+                                  retrieved_out=retrieved_ids)
         diag["api_calls"] += 1
         response, call_diag = query_openrouter(messages, model_id, model_key)
         for key in ("prompt_tokens", "completion_tokens", "total_tokens", "latency_ms"):
             diag[key] += call_diag.get(key, 0)
 
         user_prompt = messages[-1]["content"]
+        system_prompt = messages[0]["content"]
+        scores, error = parse_scores(response, variant["scale_max"]) if response else (None, "failed_api_exhausted")
         with _raw_log_lock:
             RAW_LOG.record(
                 scenario_id=scenario.get("scenario_id"),
                 decision_type=scenario.get("decision_type", ""),
+                architecture=architecture,
+                variant=variant["label"],
                 alternative=alternative,
+                model_key=model_key,
                 model=model_id,
+                system_prompt_sha256=hashlib.sha256(system_prompt.encode("utf-8")).hexdigest(),
                 prompt=user_prompt,
                 prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
+                rag_exemplar_ids=retrieved_ids if ARCHITECTURES[architecture]["rag"] else None,
                 response=response or "",
                 prompt_tokens=call_diag.get("prompt_tokens", 0),
                 completion_tokens=call_diag.get("completion_tokens", 0),
@@ -536,10 +574,21 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
                 retries=call_diag.get("retries", 0),
                 attempts=call_diag.get("retries", 0) + 1,
                 error=call_diag.get("error", ""),
+                attempt_errors=call_diag.get("attempt_errors", []),
+                request_params=call_diag.get("request_params"),
+                response_id=call_diag.get("response_id"),
+                response_model=call_diag.get("response_model"),
+                provider=call_diag.get("provider"),
+                system_fingerprint=call_diag.get("system_fingerprint"),
+                finish_reason=call_diag.get("finish_reason"),
+                native_finish_reason=call_diag.get("native_finish_reason"),
+                usage=call_diag.get("usage"),
+                reasoning=call_diag.get("reasoning"),
+                body_error=call_diag.get("body_error"),
                 api_success=response is not None,
+                parse_error=error,
             )
 
-        scores, error = parse_scores(response, variant["scale_max"]) if response else (None, "failed_api_exhausted")
         if error:
             diag["failed_calls"] += 1
             failure_types.append(error)
@@ -664,7 +713,8 @@ def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture:
     excluded from every mean, with the error preserved for diagnosis."""
     return {
         "variant": variant_id, "variant_label": variant["label"],
-        "architecture": architecture, "model": model_key, "run": run_idx,
+        "architecture": architecture, "model": model_key,
+        "model_id": MODEL_SPECS[model_key]["openrouter_id"], "run": run_idx,
         "collected_utc": collected_utc,
         "scenario_id": scenario["scenario_id"],
         "decision_type": scenario.get("decision_type", ""),
@@ -694,10 +744,16 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
             "variant_label": variant["label"],
             "architecture": architecture,
             "model": model_key,
+            "model_id": model_id,
             "run": run_idx,
             "collected_utc": collected_utc,
             "scenario_id": scenario["scenario_id"],
             "decision_type": scenario.get("decision_type", ""),
+            # Per-alternative scores and tie-broken ranks, so tau/Top-1 can be
+            # recomputed from this sheet without re-parsing the raw log.
+            "alt_scores_json": json.dumps([
+                {**a, "rank": r} for a, r in zip(result["scored"], result["ranking"]["ranks"])
+            ]),
             "kendall_tau": metrics["kendall_tau"],
             "top1": metrics["top1"],
             "failed": metrics["failed"],

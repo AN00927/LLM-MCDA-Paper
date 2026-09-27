@@ -116,6 +116,17 @@ class ApplianceGroundTruthCalculator:
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
+    APPLIANCE_TYPES = ('dishwasher', 'washer', 'washing_machine', 'dryer')
+
+    def _canonical_appliance(self, appliance) -> str:
+        """Lower-case, trimmed, spaces/hyphens as underscores. Anything outside
+        APPLIANCE_TYPES raises, so the caller emits the sentinel instead of scoring
+        an unknown appliance with default delay, cycle and noise values."""
+        value = str(appliance).strip().lower().replace(' ', '_').replace('-', '_')
+        if value not in self.APPLIANCE_TYPES:
+            raise ValueError(f"Unknown appliance type: {appliance!r}")
+        return value
+
     def _max_acceptable_delay(self, appliance_type: str) -> float:
         delays = {
             'dishwasher': 12.0,
@@ -312,6 +323,8 @@ class ApplianceGroundTruthCalculator:
 
         hour = int(time_match.group(1))
         am_pm = time_match.group(2).lower()
+        if not 1 <= hour <= 12:
+            raise ValueError(f"Invalid 12-hour run time in alternative: {alt!r}")
 
         if am_pm == "pm" and hour != 12:
             run_time_hour = hour + 12
@@ -320,8 +333,8 @@ class ApplianceGroundTruthCalculator:
         else:
             run_time_hour = hour
 
-        baseline_str = scenario.get('baseline_time', '7pm')
-        baseline_hour = self._parse_time_to_hour(baseline_str)
+        # No default baseline: a missing or unparseable one raises -> sentinel.
+        baseline_hour = self._parse_time_to_hour(scenario['baseline_time'])
 
         # Calculate delay from baseline as circular clock distance.
         # This treats near wrap-around differences as short delays (e.g., 2 hours),
@@ -334,13 +347,24 @@ class ApplianceGroundTruthCalculator:
     def _parse_time_to_hour(self, time_str: str) -> int:
         import re
 
-        match =re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', time_str, re.IGNORECASE)
+        # Accepts "7pm", "7:00 PM", "7 p.m." and 24-hour "19:00". Anything else raises so
+        # the caller emits the sentinel; a baseline is never guessed.
+        text = str(time_str).strip()
+        match_24h = re.fullmatch(r'(\d{1,2}):(\d{2})', text)
+        if match_24h:
+            hour_24 = int(match_24h.group(1))
+            if 0 <= hour_24 <= 23 and int(match_24h.group(2)) <= 59:
+                return hour_24
+            raise ValueError(f"Invalid 24-hour baseline time: {time_str!r}")
+
+        match = re.search(r'(\d{1,2})(?::\d{2})?\s*([ap])\.?\s*m\b\.?', text, re.IGNORECASE)
         if not match:
-            print(f"  : Could not parse baseline time '{time_str}', defaulting to 7pm")
-            return 19
+            raise ValueError(f"Could not parse baseline time: {time_str!r}")
 
         hour = int(match.group(1))
-        am_pm = match.group(2).lower()
+        am_pm = match.group(2).lower() + "m"
+        if not 1 <= hour <= 12:
+            raise ValueError(f"Invalid 12-hour baseline time: {time_str!r}")
 
         if am_pm == "pm" and hour != 12:
             return hour + 12
@@ -478,6 +502,10 @@ class ApplianceGroundTruthCalculator:
             print(f"\nProcessing alternative: {alt}")
 
             try:
+                appliance = self._canonical_appliance(scenario['appliance'])
+                utility_budget = float(scenario['utility_budget'])
+                if not utility_budget > 0:
+                    raise ValueError(f"utility_budget must be positive: {utility_budget!r}")
                 run_time_hour, delay_hours = self.parse_alternative(alt, scenario)
                 # kwh_per_cycle already reflects the appliance's age: within each
                 # appliance type the dataset's per-cycle energy is moderately
@@ -491,11 +519,11 @@ class ApplianceGroundTruthCalculator:
                 )
                 comfort = self.calculate_comfort_score(
                     delay_hours, run_time_hour, scenario['housing_type'],
-                    scenario['household_size'], scenario['appliance']
+                    scenario['household_size'], appliance
                 )
                 practicality = self.calculate_practicality_score(
                     delay_hours, run_time_hour, scenario['housing_type'],
-                    scenario['household_size'], scenario['appliance']
+                    scenario['household_size'], appliance
                 )
             except Exception as e:
                 print(f"  scoring failed for {alt}: {e}; emitting sentinel {SENTINEL_VALUE}")
@@ -506,7 +534,9 @@ class ApplianceGroundTruthCalculator:
                 'energy_cost_dollars': energy_cost,
                 'emissions_lbs': emissions,
                 'comfort_raw': comfort,
-                'practicality_raw': practicality
+                'practicality_raw': practicality,
+                'appliance': appliance,
+                'utility_budget': utility_budget,
             }
 
         final_scores = {}
@@ -529,19 +559,18 @@ class ApplianceGroundTruthCalculator:
                 'energy_cost'
             )
 
-            if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
-                monthly_cost = self.calculate_monthly_cost(
-                    raw['energy_cost_dollars'],
-                    cycles_per_month=self._cycles_per_month(scenario['appliance'])
-                )
+            monthly_cost = self.calculate_monthly_cost(
+                raw['energy_cost_dollars'],
+                cycles_per_month=self._cycles_per_month(raw['appliance'])
+            )
 
-                budget_penalty = self.calculate_budget_penalty(
-                    monthly_cost,
-                    scenario['utility_budget']
-                )
+            budget_penalty = self.calculate_budget_penalty(
+                monthly_cost,
+                raw['utility_budget']
+            )
 
-                energy_vf_penalized = energy_vf * budget_penalty
-                energy_vf = energy_vf_penalized
+            energy_vf_penalized = energy_vf * budget_penalty
+            energy_vf = energy_vf_penalized
 
             env_vf = self.apply_value_function(
                 raw['emissions_lbs'],

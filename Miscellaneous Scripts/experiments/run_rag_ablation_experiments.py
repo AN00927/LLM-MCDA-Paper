@@ -31,6 +31,7 @@ from model_config import (
     REQUEST_TIMEOUT,
     RETRY_BASE_DELAY,
     TEMPERATURE,
+    _is_transient_http_status,
     get_model_id,
     get_output_folder,
     get_reasoning_payload,
@@ -510,6 +511,27 @@ def format_rag_context(retrieved: List[Dict], spec: Dict) -> str:
     return context
 
 
+def _response_meta(data: Dict) -> Dict:
+    """Per-call provenance from an OpenRouter 200 body, for the raw log: the
+    generation id (lets cost/provider be re-queried via /api/v1/generation),
+    the serving provider and resolved model (both vary call to call under
+    :floor routing), finish_reason (a 'length' stop is a truncation), the full
+    usage block (reasoning tokens, cost) and any separate reasoning text."""
+    choice = (data.get("choices") or [{}])[0] or {}
+    message = choice.get("message") or {}
+    return {
+        "response_id": data.get("id"),
+        "response_model": data.get("model"),
+        "provider": data.get("provider"),
+        "system_fingerprint": data.get("system_fingerprint"),
+        "finish_reason": choice.get("finish_reason"),
+        "native_finish_reason": choice.get("native_finish_reason"),
+        "usage": data.get("usage"),
+        "reasoning": message.get("reasoning"),
+        "body_error": data.get("error") or choice.get("error"),
+    }
+
+
 def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
     if not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY not found. Use --ablations nearest-neighbor for an offline-only run.")
@@ -534,6 +556,7 @@ def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
     if reasoning_payload is not None:
         payload["reasoning"] = reasoning_payload
     last_error = None
+    attempt_errors = []
     response = None
     attempt = 0
     retry_forever = MAX_RETRIES <= 0
@@ -555,8 +578,13 @@ def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
                     "total_tokens": usage.get("total_tokens", 0),
                     "latency_ms": latency_ms,
                     "model": model_id,
+                    "retries": attempt - 1,
+                    "attempt_errors": attempt_errors,
+                    "request_params": {k: v for k, v in payload.items() if k != "messages"},
+                    **_response_meta(data),
                 }
             last_error = f"Status {response.status_code}: {response.text}"
+            attempt_errors.append(last_error[:500])
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
             if _is_transient_http_status(response.status_code):
@@ -564,11 +592,14 @@ def query_openrouter(messages: List[Dict], model_id: str) -> Tuple[str, Dict]:
             time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
         except Exception as exc:
             last_error = str(exc)
+            attempt_errors.append(last_error[:500])
             logging.info("Request failed on attempt %s: %s", attempt, exc)
             if not retry_forever and attempt >= MAX_RETRIES:
                 break
             time.sleep(min(RETRY_BASE_DELAY * (2 ** min(attempt - 1, 5)), MAX_RETRY_BACKOFF))
-    raise RuntimeError(f"failed_api_exhausted: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
+    exhausted = RuntimeError(f"failed_api_exhausted: Failed after {MAX_RETRIES} attempts. Last error: {last_error}")
+    exhausted.attempt_errors = attempt_errors
+    raise exhausted
 
 
 def retrieve_similar(collection, model, scenario: Dict, k: int) -> List[Dict]:
@@ -684,27 +715,121 @@ def rank_from_scores(scores: List[float]) -> List[int]:
     return ranks
 
 
-def nearest_neighbor_prediction(scenario: Dict, retrieved: List[Dict]) -> Dict:
+NN_FALLBACKS = ("tie", "nearest", "unscored")
+
+
+def canonical_alternative(value, decision_type: str):
+    """One comparable key for an alternative label, used on BOTH sides of the
+    nearest-neighbour match. The three callers spell the same alternative
+    differently: the index metadata stores Shower as "8 min", the test-set NN
+    passes 8.0 and the RAG ablation passes "8"; HVAC comes as 72 or "72".
+    Returns:
+      HVAC      -> int setpoint (72), or "off" (plus "_<n>" if a number follows)
+      Appliance -> minutes after midnight (int), from "2:00 PM" / "2pm" / "14:00"
+      Shower    -> duration in minutes (float), from 8, "8", "8.0", "8 min"
+    Anything unparseable comes back as the stripped upper-case string, so it
+    can still match itself exactly."""
+    import re
+    text = _clean_text(value)
+    if decision_type == "Shower":
+        m = re.search(r"(\d+(?:\.\d+)?)", text)
+        return float(m.group(1)) if m else text.upper()
+    if decision_type == "HVAC":
+        low = text.lower()
+        if "off" in low:
+            m = re.search(r"(\d+(?:\.\d+)?)", low)
+            return f"off_{m.group(1)}" if m else "off"
+        try:
+            return int(round(float(text)))
+        except ValueError:
+            return text.upper()
+    if decision_type == "Appliance":
+        m = re.search(r"(\d{1,2})(?::(\d{2}))?\s*([AaPp])\.?\s*[Mm]", text)
+        if m:
+            hour, minute = int(m.group(1)) % 12, int(m.group(2) or 0)
+            if m.group(3).lower() == "p":
+                hour += 12
+            return hour * 60 + minute
+        m = re.fullmatch(r"(\d{1,2}):(\d{2})", text)
+        if m:
+            return int(m.group(1)) * 60 + int(m.group(2))
+        return text.upper()
+    return text
+
+
+def _alternative_distance(a, b, decision_type: str) -> Optional[float]:
+    """Distance between two canonical keys in the alternative's own unit:
+    setpoint degrees (HVAC), clock minutes on a 24 h circle (Appliance),
+    shower minutes (Shower). None if either side has no numeric value (HVAC
+    "off")."""
+    if isinstance(a, str) or isinstance(b, str):
+        return None
+    d = abs(float(a) - float(b))
+    if decision_type == "Appliance":
+        d = min(d, 1440.0 - d)
+    return d
+
+
+def nearest_neighbor_prediction(scenario: Dict, retrieved: List[Dict], fallback: str = "tie") -> Dict:
+    """Copy-only prediction: each target alternative gets the mean criterion
+    scores of the retrieved exemplars' alternatives with the same label, both
+    labels compared through `canonical_alternative`.
+
+    `fallback` decides a target alternative that no exemplar shares:
+      tie      -- mean over every retrieved alternative (the original rule; if
+                  all three targets miss, all three tie and the tie-break,
+                  finally list order, decides)
+      nearest  -- mean over the exemplar alternatives nearest in value
+                  (`_alternative_distance`); a target with no numeric value
+                  (HVAC "Off") or no numeric exemplar falls back to `tie`
+      unscored -- if NO target alternative matches (the case where `tie`
+                  gives three identical predictions), the scenario is unscored:
+                  every alternative gets the sentinel, so it drops out of the
+                  means like any failed prediction. A partial miss keeps the
+                  `tie` rule for the missing alternative."""
+    if fallback not in NN_FALLBACKS:
+        raise ValueError(f"fallback must be one of {NN_FALLBACKS}, got {fallback!r}")
+    decision_type = scenario["decision_type"]
+    exemplar_alts = []  # (canonical key, {criterion: value}) for every retrieved alternative
+    for item in retrieved:
+        md = item["metadata"]
+        for j in range(1, 4):
+            label = md.get(f"alt{j}")
+            if label in (None, ""):
+                continue
+            scores = {c: _to_float(md.get(f"alt{j}_{c}")) for c in CRITERIA}
+            exemplar_alts.append((canonical_alternative(label, decision_type), scores))
+
+    def _collect(keys_ok):
+        values = {c: [] for c in CRITERIA}
+        for key, scores in exemplar_alts:
+            if keys_ok(key):
+                for criterion in CRITERIA:
+                    if not pd.isna(scores[criterion]):
+                        values[criterion].append(scores[criterion])
+        return values
+
     predictions = []
+    unmatched = 0
     for target_alt in scenario["alternatives"]:
         alt_name = target_alt["alternative"]
-        criterion_values = {c: [] for c in CRITERIA}
-        for item in retrieved:
-            md = item["metadata"]
-            for j in range(1, 4):
-                if md.get(f"alt{j}") == alt_name:
-                    for criterion in CRITERIA:
-                        value = _to_float(md.get(f"alt{j}_{criterion}"))
-                        if not pd.isna(value):
-                            criterion_values[criterion].append(value)
+        target_key = canonical_alternative(alt_name, decision_type)
+        criterion_values = _collect(lambda key: key == target_key)
         if all(not values for values in criterion_values.values()):
-            for item in retrieved:
-                md = item["metadata"]
-                for j in range(1, 4):
-                    for criterion in CRITERIA:
-                        value = _to_float(md.get(f"alt{j}_{criterion}"))
-                        if not pd.isna(value):
-                            criterion_values[criterion].append(value)
+            unmatched += 1
+            if fallback == "nearest":
+                dists = [_alternative_distance(target_key, key, decision_type) for key, _ in exemplar_alts]
+                finite = [d for d in dists if d is not None]
+                if finite:
+                    best = min(finite)
+                    criterion_values = {c: [] for c in CRITERIA}
+                    for (_, scores), d in zip(exemplar_alts, dists):
+                        if d is not None and d <= best + 1e-9:
+                            for criterion in CRITERIA:
+                                if not pd.isna(scores[criterion]):
+                                    criterion_values[criterion].append(scores[criterion])
+            if all(not values for values in criterion_values.values()):
+                criterion_values = _collect(lambda key: True)
         pred_scores = {
             criterion: float(np.mean(values)) if values else SENTINEL
             for criterion, values in criterion_values.items()
@@ -715,6 +840,12 @@ def nearest_neighbor_prediction(scenario: Dict, retrieved: List[Dict]) -> Dict:
             "weighted_score": weighted_score(pred_scores) if all(pred_scores[c] != SENTINEL for c in CRITERIA) else SENTINEL,
             "failed": False,
         })
+    if fallback == "unscored" and predictions and unmatched == len(predictions):
+        for pred in predictions:
+            pred["scores"] = {c: SENTINEL for c in CRITERIA}
+            pred["weighted_score"] = SENTINEL
+            pred["failed"] = True
+            pred["error"] = "nn_unscored: no alternative shares a label with any retrieved exemplar"
     # Tie-broken via apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY sort
     # key (B60), not rank_from_scores's positional stable-sort tie-break.
     mavt_input = [{"alternative": p["alternative"], **p["scores"]} for p in predictions]
@@ -767,12 +898,19 @@ def llm_prediction(scenario: Dict, spec: Dict, retrieved: List[Dict], model_id: 
                     RAW_LOG.record(
                         scenario_id=scenario.get("source_scenario_id"),
                         decision_type=scenario.get("decision_type", ""),
+                        ablation=spec.get("label"),
+                        k=spec.get("k"),
+                        retrieval_mode=spec.get("retrieval"),
+                        retrieved_ids=[r.get("id") for r in retrieved],
+                        retrieved_distances=[r.get("distance") for r in retrieved],
                         alternative=alt["alternative"],
                         model=model_id,
+                        system_prompt_sha256=hashlib.sha256(messages[0]["content"].encode("utf-8")).hexdigest(),
                         prompt=user_prompt,
                         prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
                         response="",
                         error=str(call_exc),
+                        attempt_errors=getattr(call_exc, "attempt_errors", None),
                         attempts=MAX_RETRIES if MAX_RETRIES > 0 else None,
                         api_success=False,
                     )
@@ -781,21 +919,43 @@ def llm_prediction(scenario: Dict, spec: Dict, retrieved: List[Dict], model_id: 
             diagnostics["completion_tokens"] += call_diag.get("completion_tokens", 0)
             diagnostics["total_tokens"] += call_diag.get("total_tokens", 0)
             diagnostics["latency_ms"] += call_diag.get("latency_ms", 0.0)
+            try:
+                scores, error = parse_scores(response_text)
+            except Exception as parse_exc:
+                scores, error = None, f"failed_parse_exception: {parse_exc}"
             with _raw_log_lock:
                 RAW_LOG.record(
                     scenario_id=scenario.get("source_scenario_id"),
                     decision_type=scenario.get("decision_type", ""),
+                    ablation=spec.get("label"),
+                    k=spec.get("k"),
+                    retrieval_mode=spec.get("retrieval"),
+                    retrieved_ids=[r.get("id") for r in retrieved],
+                    retrieved_distances=[r.get("distance") for r in retrieved],
                     alternative=alt["alternative"],
                     model=model_id,
+                    system_prompt_sha256=hashlib.sha256(messages[0]["content"].encode("utf-8")).hexdigest(),
                     prompt=user_prompt,
                     prompt_sha256=hashlib.sha256(user_prompt.encode("utf-8")).hexdigest(),
                     response=response_text or "",
                     prompt_tokens=call_diag.get("prompt_tokens", 0),
                     completion_tokens=call_diag.get("completion_tokens", 0),
                     latency_ms=call_diag.get("latency_ms", 0),
+                    retries=call_diag.get("retries"),
+                    attempt_errors=call_diag.get("attempt_errors"),
+                    request_params=call_diag.get("request_params"),
+                    response_id=call_diag.get("response_id"),
+                    response_model=call_diag.get("response_model"),
+                    provider=call_diag.get("provider"),
+                    system_fingerprint=call_diag.get("system_fingerprint"),
+                    finish_reason=call_diag.get("finish_reason"),
+                    native_finish_reason=call_diag.get("native_finish_reason"),
+                    usage=call_diag.get("usage"),
+                    reasoning=call_diag.get("reasoning"),
+                    body_error=call_diag.get("body_error"),
                     api_success=True,
+                    parse_error=error,
                 )
-            scores, error = parse_scores(response_text)
             if error:
                 raise RuntimeError(error)
             predictions.append({
@@ -864,11 +1024,12 @@ def scenario_metrics(predictions: List[Dict], scenario: Dict) -> Dict:
             tau = np.nan
     else:
         tau = np.nan
-    gt_top1 = sorted(common, key=lambda alt: gt_by_alt[alt]["mavt_score"], reverse=True)[0] if common else ""
-    ranked_common = [alt for alt in common if pred_by_alt[alt]["weighted_score"] != SENTINEL]
-    pred_order = sorted(ranked_common, key=lambda alt: pred_by_alt[alt]["weighted_score"], reverse=True) if ranked_common else []
-    pred_top1 = pred_order[0] if pred_order else ""
-    pred_top2 = set(pred_order[:2])
+    # Top-1 / Top-2 also come from the tie-broken ranks (rank == 1, rank <= 2),
+    # so an exact score tie is decided by TIE_BREAK_PRIORITY, as for tau,
+    # rather than by input order in a sort on the raw sums.
+    gt_top1 = next((alt for alt in common if gt_by_alt[alt]["rank"] == 1), "")
+    pred_top1 = next((alt for alt in rank_common if pred_by_alt[alt]["rank"] == 1), "")
+    pred_top2 = {alt for alt in rank_common if pred_by_alt[alt]["rank"] <= 2}
     return {
         "score_mae": score_mae,
         "score_rmse": score_rmse,
@@ -1250,8 +1411,89 @@ def bootstrap_ci_per_config(scenario_df: pd.DataFrame, metric: str,
     return pd.DataFrame(results)
 
 
-def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator, model_keys: Optional[List[str]] = None, workers: int = 1) -> List[Dict]:
+CHECKPOINT_FORMAT = 1
+
+
+def _json_default(value):
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.floating):
+        return float(value)
+    if isinstance(value, np.bool_):
+        return bool(value)
+    raise TypeError(f"not JSON serialisable: {type(value).__name__}")
+
+
+def source_files_sha256() -> Dict[str, str]:
+    """SHA-256 of each RAG source sheet, so a checkpoint written before a data
+    change is never resumed into a collection over the changed data."""
+    return {
+        name: hashlib.sha256((SCENARIO_DIR / name).read_bytes()).hexdigest()
+        for name in RAG_FILES.values()
+    }
+
+
+def checkpoint_path(checkpoint_dir: Path, ablation_id: str, model_key: str) -> Path:
+    return Path(checkpoint_dir) / f"{ablation_id}__{model_key}.json"
+
+
+def _checkpoint_header(ablation_id: str, spec: Dict, model_key: str, model_id: str,
+                       sample: List[Dict], run_meta: Dict) -> Dict:
+    """Everything that must be equal for a saved unit to be reused."""
+    return {
+        "format": CHECKPOINT_FORMAT,
+        "ablation_id": ablation_id,
+        "spec": {k: v for k, v in spec.items() if k != "label"},
+        "model_key": model_key,
+        "model_id": model_id,
+        "seed": run_meta.get("seed"),
+        "sample_size": run_meta.get("sample_size"),
+        "source_sha256": run_meta.get("source_sha256"),
+        "nn_fallback": None if spec["llm"] else run_meta.get("nn_fallback", "tie"),
+        "source_scenario_ids": [s["source_scenario_id"] for s in sample],
+    }
+
+
+def load_checkpoint(path: Path, expected_header: Dict) -> Optional[Dict]:
+    """Return the saved unit, None if there is none. Raises if the file exists
+    but was written for a different configuration, since silently re-running
+    it would mix two collections and silently reusing it would be worse."""
+    if not path.exists():
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        saved = json.load(f)
+    header = saved.get("header", {})
+    diffs = sorted(k for k in expected_header if header.get(k) != expected_header[k])
+    if diffs:
+        raise RuntimeError(
+            f"Checkpoint {path} was written for a different configuration "
+            f"(differs in: {', '.join(diffs)}). Move it aside before rerunning.")
+    return saved
+
+
+def write_checkpoint(path: Path, header: Dict, rows: List[Dict], unit_meta: Dict) -> None:
+    """Atomic write (tmp + os.replace). Called from the main thread only, after
+    the unit's thread pool has been joined, so no two writers ever race."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"header": header, "unit": unit_meta, "rows": rows}, f, default=_json_default)
+    os.replace(tmp, path)
+
+
+def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator, model_keys: Optional[List[str]] = None, workers: int = 1, checkpoint_dir: Optional[Path] = None, run_meta: Optional[Dict] = None) -> List[Dict]:
     """Run every (ablation x model x scenario) cell and flatten to per-alternative rows.
+
+    Checkpointing (`checkpoint_dir`): each (ablation, model) unit is saved to
+    `<checkpoint_dir>/<ablation_id>__<model_key>.json` as soon as it finishes,
+    and a restart skips every unit whose checkpoint exists. The returned rows
+    are always read back from the checkpoints, so the final workbook is exactly
+    their union. A skipped unit still re-runs its (local, cheap) retrieval:
+    this keeps the random arm's shared `rng` on the same draw sequence as an
+    uninterrupted run, and the recomputed exemplar ids must equal the saved
+    ones or the run stops. A unit in which every API call failed (e.g. out of
+    credit) is not saved and stops the run, so it is retried on restart rather
+    than resumed as a unit of sentinels.
 
     Two phases per (ablation, model). Retrieval runs serially because Chroma
     collections and SentenceTransformer models are not documented thread-safe,
@@ -1264,6 +1506,8 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
     schedule, and the per-call `latency_ms` measurement are untouched: latency is
     still measured around a single successful POST, not around queue time.
     """
+    run_meta = run_meta or {}
+    nn_fallback = run_meta.get("nn_fallback", "tie")
     rows = []
     for ablation_id, spec in specs.items():
         temp_path, collection, model, groups_by_type = collections[spec["embedding_model"]]
@@ -1279,7 +1523,15 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
             if spec["llm"]:
                 logging.info("  Evaluating model: %s (%s)", model_key, model_id)
             else:
-                logging.info("  Evaluating offline NN prediction")
+                logging.info("  Evaluating offline NN prediction (fallback=%s)", nn_fallback)
+
+            ckpt_path = None
+            saved = None
+            header = None
+            if checkpoint_dir is not None:
+                ckpt_path = checkpoint_path(checkpoint_dir, ablation_id, model_key)
+                header = _checkpoint_header(ablation_id, spec, model_key, model_id, sample, run_meta)
+                saved = load_checkpoint(ckpt_path, header)
 
             # Serial retrieval, preserving rng draw order.
             retrieved_by_scenario = []
@@ -1293,6 +1545,23 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                 else:
                     retrieved = retrieve_similar(collection, model, scenario, spec["k"])
                 retrieved_by_scenario.append(retrieved)
+
+            if saved is not None:
+                expected_ids = {
+                    s["source_scenario_id"]: json.dumps([str(item.get("id")) for item in r])
+                    for s, r in zip(sample, retrieved_by_scenario)
+                }
+                for row in saved["rows"]:
+                    if row["retrieved_ids"] != expected_ids.get(row["source_scenario_id"]):
+                        raise RuntimeError(
+                            f"Checkpoint {ckpt_path}: saved exemplars for {row['source_scenario_id']} "
+                            f"differ from this run's retrieval; move the checkpoint aside.")
+                logging.info("    resumed from checkpoint %s (%s rows)", ckpt_path.name, len(saved["rows"]))
+                rows.extend(saved["rows"])
+                continue
+
+            unit_start_utc = datetime.now(timezone.utc).isoformat()
+            unit_rows = []
 
             # Parallel only for LLM arms with workers > 1.
             n_workers = max(1, int(workers)) if spec["llm"] else 1
@@ -1317,7 +1586,9 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                     if spec["llm"]:
                         results.append(llm_prediction(scenario, spec, retrieved_by_scenario[i], model_id))
                     else:
-                        results.append(nearest_neighbor_prediction(scenario, retrieved_by_scenario[i]))
+                        results.append(nearest_neighbor_prediction(scenario, retrieved_by_scenario[i],
+                                                                   fallback=nn_fallback))
+            unit_end_utc = datetime.now(timezone.utc).isoformat()
 
             for scenario, retrieved, result in zip(sample, retrieved_by_scenario, results):
                 decision_type = scenario["decision_type"]
@@ -1326,8 +1597,9 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                 metrics = scenario_metrics(predictions, scenario)
                 mean_distance = float(np.mean([item["distance"] for item in retrieved])) if retrieved else np.nan
                 for pred in predictions:
-                    rows.append({
+                    unit_rows.append({
                         "model_key": model_key,
+                        "model_id": model_id,
                         "ablation_id": ablation_id,
                         "ablation_label": spec["label"],
                         "sample_seed": scenario.get("source_scenario_numeric", scenario.get("source_position", 0)),
@@ -1354,6 +1626,8 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                         "gt_rank": next((alt["rank"] for alt in scenario["alternatives"] if alt["alternative"] == pred["alternative"]), SENTINEL),
                         "mean_retrieval_distance": mean_distance,
                         "retrieval_count": len(retrieved),
+                        "retrieved_ids": json.dumps([str(item.get("id")) for item in retrieved]),
+                        "retrieved_distances": json.dumps([item.get("distance") for item in retrieved]),
                         "score_mae": metrics["score_mae"],
                         "score_rmse": metrics["score_rmse"],
                         "kendall_tau": metrics["kendall_tau"],
@@ -1370,7 +1644,29 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                         "total_tokens": int(diag.get("total_tokens", 0)),
                         "latency_ms": float(diag.get("latency_ms", 0.0)),
                         "error": pred.get("error", ""),
+                        "nn_fallback": "" if spec["llm"] else nn_fallback,
+                        "collected_utc": unit_start_utc,
+                        "collected_utc_end": unit_end_utc,
                     })
+
+            if checkpoint_dir is None:
+                rows.extend(unit_rows)
+                continue
+            n_calls = sum(int(r["diagnostics"].get("api_calls", 0)) for r in results)
+            n_failed = sum(int(r["diagnostics"].get("failed_calls", 0)) for r in results)
+            if spec["llm"] and n_calls and n_failed == n_calls:
+                raise RuntimeError(
+                    f"Every one of the {n_calls} API calls failed for {ablation_id} / {model_key}; "
+                    f"the unit is not checkpointed. Check credit and the raw log, then rerun: "
+                    f"completed units resume from {checkpoint_dir}.")
+            write_checkpoint(ckpt_path, header, unit_rows, {
+                "collected_utc_start": unit_start_utc,
+                "collected_utc_end": unit_end_utc,
+                "api_calls": n_calls,
+                "failed_calls": n_failed,
+            })
+            # Read back, so the final workbook is assembled from the checkpoints.
+            rows.extend(load_checkpoint(ckpt_path, header)["rows"])
     return rows
 
 
@@ -1495,14 +1791,26 @@ def run(args) -> Dict:
 
     rng = np.random.default_rng(args.seed)
     collected_utc = datetime.now(timezone.utc).isoformat()
+    run_meta = {
+        "seed": args.seed,
+        "sample_size": sample_size,
+        "source_sha256": source_files_sha256(),
+        "nn_fallback": getattr(args, "nn_fallback", "tie"),
+    }
+    checkpoint_dir = None if getattr(args, "no_checkpoint", False) else output_dir / "checkpoints"
     RAW_LOG.start(output_dir / "rag_ablation_results_raw.jsonl")
     try:
         rows = build_result_rows(sample, specs, collections, rng, getattr(args, "models", None),
-                                 workers=getattr(args, "workers", 1))
+                                 workers=getattr(args, "workers", 1),
+                                 checkpoint_dir=checkpoint_dir, run_meta=run_meta)
     finally:
         RAW_LOG.stop()
     rows_df = pd.DataFrame(rows)
-    rows_df["collected_utc"] = collected_utc
+    # Each (ablation, model) unit carries its own collection window; the run
+    # start fills in only if a row somehow has none.
+    if "collected_utc" not in rows_df:
+        rows_df["collected_utc"] = collected_utc
+    rows_df["collected_utc"] = rows_df["collected_utc"].fillna(collected_utc)
     rows_df["top1_accuracy"] = rows_df["top1_correct"].astype(float)
     rows_df["top2_accuracy"] = rows_df["top2_correct"].astype(float)
     rows_df["success_rate"] = np.where(rows_df["api_calls"] > 0, rows_df["successful_calls"] / rows_df["api_calls"], np.nan)
@@ -1773,6 +2081,24 @@ def parse_args():
         "--output",
         default=str(PROJECT_ROOT / "rag_ablation_results.md"),
         help="Markdown report output path.",
+    )
+    parser.add_argument(
+        "--nn-fallback",
+        choices=list(NN_FALLBACKS),
+        default="tie",
+        help="Copy-only (nearest_neighbor_k3) rule for a target alternative that no "
+             "retrieved exemplar shares: 'tie' = mean over all retrieved alternatives "
+             "(original rule; an all-miss scenario is decided by the tie-break), "
+             "'nearest' = the exemplar alternatives nearest in value, 'unscored' = "
+             "a scenario with no label match at all gets the sentinel and drops out "
+             "of the means.",
+    )
+    parser.add_argument(
+        "--no-checkpoint",
+        action="store_true",
+        help="Do not write or resume per-(ablation, model) checkpoints under "
+             "<output-dir>/checkpoints/. By default each finished unit is saved "
+             "there and a restart skips it.",
     )
     parser.add_argument(
         "--recompute-significance-only",

@@ -27,8 +27,11 @@ SOURCES
                   scenarios by matching against a shipped run file, so the
                   scenario set is exactly the one the architectures were scored on.
 
-Ties in a single-criterion ranking are broken by first occurrence, matching
-paper/single_criterion_recovery.tex, so the statistic is deterministic.
+Ties in a single-criterion ranking are not broken by list order: Top-1 and tau
+are their expected values under a uniform random tie-break (1/k credit when the
+reference winner is among k alternatives tied for the best value; tied pairs
+count 0 in tau), from paper_pipeline/single_criterion.py, the implementation
+paper/single_criterion_recovery.tex also uses.
 
 Output: Analysis/competitive_baselines.xlsx (3 sheets) + .md
 
@@ -49,6 +52,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERIA, MODEL_SPECS  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from single_criterion import expected_tau, top1_credit  # noqa: E402
 
 _cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _cm_path)
@@ -111,16 +116,6 @@ def fixeddefault_by_type():
 # Single-criterion argmax baseline, on the 195 Test scenarios
 # ---------------------------------------------------------------------------
 
-def _rank_desc_first_occurrence(values):
-    """Rank 1 = largest. Ties broken by first occurrence (stable), so the
-    ranking is deterministic and matches single_criterion_recovery.tex."""
-    order = sorted(range(len(values)), key=lambda i: (-values[i], i))
-    ranks = [0] * len(values)
-    for pos, i in enumerate(order):
-        ranks[i] = pos + 1
-    return ranks
-
-
 def _tau(gt_ranks, pred_ranks):
     if len(set(gt_ranks)) > 1 and len(set(pred_ranks)) > 1:
         t, _ = stats.kendalltau(gt_ranks, pred_ranks)
@@ -167,11 +162,10 @@ def single_criterion_baseline(ref):
                 sc = sub[sub["arch_scenario_id"] == sid]
                 gt_ranks = list(sc["gt_rank"].astype(float))
                 vals = list(sc[f"gt_{crit}"].astype(float))
-                pred = _rank_desc_first_occurrence(vals)
-                taus.append(_tau(gt_ranks, pred))
-                gt_win = sc.iloc[int(np.argmin(gt_ranks))]["norm_alternative"]
-                pred_win = sc.iloc[int(np.argmin(pred))]["norm_alternative"]
-                top1s.append(1.0 if gt_win == pred_win else 0.0)
+                # Expected values under a uniform random tie-break (shared
+                # with compute_dispersion_diagnostics.py), not first occurrence.
+                taus.append(expected_tau(gt_ranks, vals))
+                top1s.append(top1_credit(gt_ranks, vals))
             rows.append({
                 "decision_type": dt,
                 "criterion": crit,

@@ -1,45 +1,45 @@
 #!/usr/bin/env python3
 """
-emit_collection_window.py -- recover approximate collection times for the
-shipped benchmark runs from the filesystem.
+emit_collection_window.py -- the collection window of every run artifact, from
+the UTC timestamps the runs record, falling back to filesystem times only for
+files that carry none.
 
-IMPORTANT CAVEAT
-----------------
-These timestamps are filesystem modification times (`st_mtime`), NOT wall-clock
-collection timestamps recorded inside the artifacts. No shipped run output
-carries an internal UTC timestamp (see the "Every run must record a UTC
-collection timestamp" note in CLAUDE.md); this script reconstructs the closest
-available proxy after the fact.
+Sources, in order of preference, per artifact
+---------------------------------------------
+  diagnostics JSON  `collected_utc_start` / `collected_utc_end` (the rerun's
+                    architectures), else `collected_utc` (run start only)
+  per-run xlsx      the `collected_utc` column (min and max over its rows)
+  raw JSONL         every record's `collected_utc` (min and max); one record
+                    per API call, so this is the tightest window
+  mtime             filesystem modification time, only for an artifact with no
+                    internal timestamp (the pre-rerun shipped runs)
 
-An mtime is therefore an upper bound on when the run finished, and it is only
-that if nothing has touched the file since. Copying, moving across
-filesystems, restoring from backup, or re-saving a workbook all rewrite mtime
-without any data changing. Treat the output as "these files were last written
-around here", suitable for establishing that arms of an experiment are roughly
-contemporaneous, and NOT as provenance strong enough to rule out provider
-drift on its own. New runs should record a real UTC timestamp in the per-run
-xlsx and the raw JSONL rather than relying on this.
+Every row says which source it used (`time_source`). An mtime is NOT a
+collection time: copying, restoring or re-saving a file rewrites it without any
+data changing, and in this repository the shipped runs' mtimes are all within
+seconds of each other (a bulk checkout). For those files the script also
+records the author date of the last git commit that touched the artifact (one
+read-only `git log`), still only an upper bound.
 
-In this repository the mtimes turned out to be uninformative: every run
-artifact carries the same mtime to within a few seconds, which is the
-signature of a bulk checkout or copy rather than of the runs themselves. The
-script therefore also records, for each artifact, the author date of the most
-recent git commit that touched it. That is a stronger proxy here -- the runs
-were committed shortly after collection -- though it is still an upper bound
-and still external to the artifact.
+Covered: each model's main runs (the three architectures), the A_D position-bias
+arm (`position_bias/`) and the A_H order arms (`hybrid_order_reversal/`).
 
 Outputs
 -------
   paper/collection_window.csv          one row per artifact:
-      model, architecture, run, artifact, mtime_utc_iso,
-      last_commit_utc_iso, last_commit_sha, last_commit_subject
+      model, architecture, run, artifact, filename, start_utc_iso,
+      end_utc_iso, time_source, mtime_utc_iso, last_commit_utc_iso,
+      last_commit_sha, last_commit_subject
   paper/collection_window_summary.csv  one row per (model, architecture):
-      min and max mtime and commit date, artifact count, span in hours
+      earliest start, latest end, span in hours, sources used, and how many
+      artifacts fell back to mtime
 
 Usage:
-    python paper_pipeline/emit_collection_window.py
+    python paper_pipeline/emit_collection_window.py [--out-dir DIR]
 """
 
+import argparse
+import json
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -54,8 +54,6 @@ if str(PROJECT_ROOT) not in sys.path:
 from model_config import MODEL_SPECS
 
 PAPER_DIR = PROJECT_ROOT / "paper"
-OUT_ROWS = PAPER_DIR / "collection_window.csv"
-OUT_SUMMARY = PAPER_DIR / "collection_window_summary.csv"
 
 ARCHITECTURES = [
     "Direct_LLM_Scoring",
@@ -68,12 +66,105 @@ def _iso_utc(ts):
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(timespec="seconds")
 
 
+def _parse_iso(value):
+    """datetime (UTC) from an ISO string, or None."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    try:
+        dt = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _run_number(path):
     stem = path.stem
+    if stem.endswith("_raw"):
+        stem = stem[: -len("_raw")]
     if "_run_" not in stem:
         return None
     tail = stem.split("_run_")[-1]
     return int(tail) if tail.isdigit() else None
+
+
+def window_from_json(path):
+    with open(path, "r", encoding="utf-8") as fh:
+        diag = json.load(fh)
+    start = _parse_iso(diag.get("collected_utc_start"))
+    end = _parse_iso(diag.get("collected_utc_end"))
+    if start is not None:
+        return start, end or start, ("diagnostics_json:collected_utc_start/_end"
+                                     if end is not None else
+                                     "diagnostics_json:collected_utc_start")
+    start = _parse_iso(diag.get("collected_utc"))
+    if start is not None:
+        return start, start, "diagnostics_json:collected_utc (start only)"
+    return None, None, None
+
+
+def window_from_xlsx(path):
+    try:
+        df = pd.read_excel(path)
+    except Exception:
+        return None, None, None
+    if "collected_utc" not in df.columns:
+        return None, None, None
+    times = [t for t in (_parse_iso(v) for v in df["collected_utc"]) if t is not None]
+    if not times:
+        return None, None, None
+    return min(times), max(times), "xlsx:collected_utc"
+
+
+def window_from_jsonl(path):
+    times = []
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                t = _parse_iso(json.loads(line).get("collected_utc"))
+            except (ValueError, AttributeError):
+                continue
+            if t is not None:
+                times.append(t)
+    if not times:
+        return None, None, None
+    return min(times), max(times), "raw_jsonl:collected_utc"
+
+
+READERS = {"diagnostics_json": window_from_json, "results_xlsx": window_from_xlsx,
+           "raw_jsonl": window_from_jsonl}
+
+
+def artifact_specs(folder):
+    """(architecture label, directory, glob, artifact kind) for one model folder."""
+    specs = []
+    for arch in ARCHITECTURES:
+        specs += [
+            (arch, folder, f"{arch}_results_run_*.xlsx", "results_xlsx"),
+            (arch, folder, f"{arch}_results_diagnostics_run_*.json", "diagnostics_json"),
+            (arch, folder, f"{arch}_results_run_*_raw.jsonl", "raw_jsonl"),
+        ]
+    pb = folder / "position_bias"
+    specs += [
+        ("Direct_LLM_Scoring[position_bias_reversed]", pb, "Direct_LLM_Scoring_reversed_run_*.xlsx", "results_xlsx"),
+        ("Direct_LLM_Scoring[position_bias_reversed]", pb, "Direct_LLM_Scoring_reversed_run_*_raw.jsonl", "raw_jsonl"),
+    ]
+    ho = folder / "hybrid_order_reversal"
+    for arm in ("reversed", "control"):
+        specs += [
+            (f"AH_order_{arm}", ho, f"AH_extraction_order_{arm}_run_*.xlsx", "results_xlsx"),
+            (f"AH_order_{arm}", ho, f"AH_extraction_order_{arm}_run_*_raw.jsonl", "raw_jsonl"),
+        ]
+    return specs
 
 
 def last_commit_index():
@@ -82,7 +173,10 @@ def last_commit_index():
     One read-only `git log` walk over the output folders. Read-only: this
     script never writes to the repository.
     """
-    folders = [spec["output_folder"] for spec in MODEL_SPECS.values()]
+    folders = [spec["output_folder"] for spec in MODEL_SPECS.values()
+               if (PROJECT_ROOT / spec["output_folder"]).exists()]
+    if not folders:
+        return {}
     cmd = ["git", "log", "--name-only", "--date=iso-strict",
            "--format=@@@|%H|%aI|%s", "--"] + folders
     try:
@@ -104,6 +198,14 @@ def last_commit_index():
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    ap.add_argument("--out-dir", default=str(PAPER_DIR),
+                    help="Where collection_window*.csv go (default paper/)")
+    args = ap.parse_args()
+    out_dir = Path(args.out_dir)
+    out_rows = out_dir / "collection_window.csv"
+    out_summary = out_dir / "collection_window_summary.csv"
+
     commits = last_commit_index()
     rows = []
     for model_key, spec in MODEL_SPECS.items():
@@ -111,30 +213,38 @@ def main():
         if not folder.exists():
             print(f"  [SKIP] {model_key}: {folder} does not exist")
             continue
-        for arch in ARCHITECTURES:
-            patterns = [
-                (f"{arch}_results_run_*.xlsx", "results_xlsx"),
-                (f"{arch}_results_diagnostics_run_*.json", "diagnostics_json"),
-            ]
-            for pattern, kind in patterns:
-                for path in sorted(folder.glob(pattern)):
-                    run = _run_number(path)
-                    if run is None:
-                        continue
-                    rel = path.relative_to(PROJECT_ROOT).as_posix()
-                    cdate, csha, csubj = commits.get(rel, ("", "", ""))
-                    rows.append({
-                        "model": model_key,
-                        "architecture": arch,
-                        "run": run,
-                        "artifact": kind,
-                        "filename": path.name,
-                        "mtime_utc_iso": _iso_utc(path.stat().st_mtime),
-                        "last_commit_utc_iso": cdate,
-                        "last_commit_sha": csha,
-                        "last_commit_subject": csubj,
-                        "mtime_epoch": path.stat().st_mtime,
-                    })
+        for arch, directory, pattern, kind in artifact_specs(folder):
+            if not directory.exists():
+                continue
+            for path in sorted(directory.glob(pattern)):
+                if kind == "results_xlsx" and path.stem.endswith("_raw"):
+                    continue
+                run = _run_number(path)
+                if run is None:
+                    continue
+                start, end, source = READERS[kind](path)
+                mtime = path.stat().st_mtime
+                if start is None:
+                    start = end = datetime.fromtimestamp(mtime, tz=timezone.utc)
+                    source = "mtime"
+                rel = path.relative_to(PROJECT_ROOT).as_posix()
+                cdate, csha, csubj = commits.get(rel, ("", "", ""))
+                rows.append({
+                    "model": model_key,
+                    "architecture": arch,
+                    "run": run,
+                    "artifact": kind,
+                    "filename": path.name,
+                    "start_utc_iso": start.isoformat(timespec="seconds"),
+                    "end_utc_iso": end.isoformat(timespec="seconds"),
+                    "time_source": source,
+                    "mtime_utc_iso": _iso_utc(mtime),
+                    "last_commit_utc_iso": cdate,
+                    "last_commit_sha": csha,
+                    "last_commit_subject": csubj,
+                    "_start": start.timestamp(),
+                    "_end": end.timestamp(),
+                })
 
     if not rows:
         print("ERROR: no run artifacts found")
@@ -144,28 +254,39 @@ def main():
         ["model", "architecture", "run", "artifact"], kind="mergesort"
     ).reset_index(drop=True)
 
-    PAPER_DIR.mkdir(parents=True, exist_ok=True)
-    df.drop(columns=["mtime_epoch"]).to_csv(OUT_ROWS, index=False)
-    print(f"[OK] wrote {OUT_ROWS} ({len(df)} artifacts)")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    df.drop(columns=["_start", "_end"]).to_csv(out_rows, index=False)
+    print(f"[OK] wrote {out_rows} ({len(df)} artifacts)")
 
     summary = df.groupby(["model", "architecture"]).agg(
         n_artifacts=("filename", "count"),
         n_runs=("run", "nunique"),
-        min_mtime_utc_iso=("mtime_epoch", lambda s: _iso_utc(s.min())),
-        max_mtime_utc_iso=("mtime_epoch", lambda s: _iso_utc(s.max())),
-        span_hours=("mtime_epoch", lambda s: round((s.max() - s.min()) / 3600.0, 2)),
+        start_utc_iso=("_start", lambda s: _iso_utc(s.min())),
+        end_utc_iso=("_end", lambda s: _iso_utc(s.max())),
+        time_sources=("time_source", lambda s: "; ".join(sorted(set(s)))),
+        n_mtime_fallback=("time_source", lambda s: int((s == "mtime").sum())),
         min_commit_utc_iso=("last_commit_utc_iso", lambda s: min(x for x in s if x) if any(s) else ""),
         max_commit_utc_iso=("last_commit_utc_iso", lambda s: max(x for x in s if x) if any(s) else ""),
     ).reset_index()
-    summary.to_csv(OUT_SUMMARY, index=False)
-    print(f"[OK] wrote {OUT_SUMMARY} ({len(summary)} rows)")
+    bounds = df.groupby(["model", "architecture"]).agg(lo=("_start", "min"), hi=("_end", "max")).reset_index()
+    summary = summary.merge(bounds, on=["model", "architecture"])
+    summary.insert(summary.columns.get_loc("end_utc_iso") + 1, "span_hours",
+                   ((summary.pop("hi") - summary.pop("lo")) / 3600.0).round(2))
+    summary.to_csv(out_summary, index=False)
+    print(f"[OK] wrote {out_summary} ({len(summary)} rows)")
 
-    print("\nApproximate collection window per (model, architecture) "
-          "-- filesystem mtime, not an internal timestamp:")
-    print(summary.to_string(index=False))
+    print("\nCollection window per (model, architecture); time_sources says whether "
+          "it is a recorded UTC timestamp or an mtime fallback:")
+    print(summary.drop(columns=["min_commit_utc_iso", "max_commit_utc_iso"]).to_string(index=False))
 
-    print(f"\nOverall span: {_iso_utc(df['mtime_epoch'].min())} "
-          f"to {_iso_utc(df['mtime_epoch'].max())}")
+    internal = df[df["time_source"] != "mtime"]
+    n_fallback = int((df["time_source"] == "mtime").sum())
+    if len(internal):
+        print(f"\nOverall span from recorded timestamps ({len(internal)} artifacts): "
+              f"{_iso_utc(internal['_start'].min())} to {_iso_utc(internal['_end'].max())}")
+    if n_fallback:
+        print(f"{n_fallback} artifact(s) carry no recorded timestamp and use the file mtime "
+              f"(an upper bound on when the file was last written, not a collection time).")
 
 
 if __name__ == "__main__":
