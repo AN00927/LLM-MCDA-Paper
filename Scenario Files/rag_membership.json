@@ -1,0 +1,1738 @@
+{
+ "description": "RAG/Test partition for build_scenario_workbooks.py. Each entry is one RAG scenario: its scenario_id and the master-row signature (parameters + alternative set; question text and engineering-only values excluded). master_row (0-based data index) and question are informational.",
+ "created_utc": "2026-09-27T02:40:42Z",
+ "created_from": "current RAG sheets in Scenario Files",
+ "types": {
+  "HVAC": [
+   {
+    "scenario_id": 1,
+    "master_row": 19,
+    "question": "I'm heading out for a quick errand, what AC temperature should I set for the townhouse?",
+    "signature": {
+     "location": "King of Prussia, PA",
+     "square_footage": 2200.0,
+     "insulation": "Medium",
+     "household_size": 5.0,
+     "utility_budget": 285.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 93.0,
+     "house_age": 12.0,
+     "alternatives": [
+      "75",
+      "78",
+      "81"
+     ]
+    }
+   },
+   {
+    "scenario_id": 2,
+    "master_row": 25,
+    "question": "With 2 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "Carlisle, PA",
+     "square_footage": 1650.0,
+     "insulation": "Poor",
+     "household_size": 2.0,
+     "utility_budget": 255.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 23.0,
+     "house_age": 21.0,
+     "alternatives": [
+      "65",
+      "68",
+      "71"
+     ]
+    }
+   },
+   {
+    "scenario_id": 3,
+    "master_row": 27,
+    "question": "With 3 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "Lebanon, PA",
+     "square_footage": 2350.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 335.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 21.0,
+     "house_age": 25.0,
+     "alternatives": [
+      "66",
+      "69",
+      "72"
+     ]
+    }
+   },
+   {
+    "scenario_id": 4,
+    "master_row": 28,
+    "question": "With 5 people home, what AC temperature should I set?",
+    "signature": {
+     "location": "Gettysburg, PA",
+     "square_footage": 1800.0,
+     "insulation": "Good",
+     "household_size": 5.0,
+     "utility_budget": 360.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 88.0,
+     "house_age": 26.0,
+     "alternatives": [
+      "74",
+      "77",
+      "80"
+     ]
+    }
+   },
+   {
+    "scenario_id": 5,
+    "master_row": 32,
+    "question": "With 3 people home, what AC temperature should I set?",
+    "signature": {
+     "location": "Monroeville, PA",
+     "square_footage": 2000.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 270.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 92.0,
+     "house_age": 25.0,
+     "alternatives": [
+      "76",
+      "78",
+      "80"
+     ]
+    }
+   },
+   {
+    "scenario_id": 6,
+    "master_row": 35,
+    "question": "With 3 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "Indiana, PA",
+     "square_footage": 1900.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 235.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 18.0,
+     "house_age": 60.0,
+     "alternatives": [
+      "65",
+      "68",
+      "71"
+     ]
+    }
+   },
+   {
+    "scenario_id": 7,
+    "master_row": 36,
+    "question": "With 3 people home, what AC temperature should I set?",
+    "signature": {
+     "location": "DuBois, PA",
+     "square_footage": 1950.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 305.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 89.0,
+     "house_age": 18.0,
+     "alternatives": [
+      "76",
+      "77",
+      "78"
+     ]
+    }
+   },
+   {
+    "scenario_id": 8,
+    "master_row": 38,
+    "question": "With 3 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "Reading, PA",
+     "square_footage": 2000.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 340.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 20.0,
+     "house_age": 18.0,
+     "alternatives": [
+      "65",
+      "72",
+      "79"
+     ]
+    }
+   },
+   {
+    "scenario_id": 9,
+    "master_row": 40,
+    "question": "We're just getting in for the night, what heat temperature should I set overnight?",
+    "signature": {
+     "location": "Quakertown, PA",
+     "square_footage": 1900.0,
+     "insulation": "Good",
+     "household_size": 3.0,
+     "utility_budget": 280.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 22.0,
+     "house_age": 11.0,
+     "alternatives": [
+      "60",
+      "65",
+      "70"
+     ]
+    }
+   },
+   {
+    "scenario_id": 10,
+    "master_row": 42,
+    "question": "We're done for the day, what heat temperature should I set overnight?",
+    "signature": {
+     "location": "Wilkes-Barre, PA",
+     "square_footage": 1900.0,
+     "insulation": "Good",
+     "household_size": 2.0,
+     "utility_budget": 290.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 17.0,
+     "house_age": 9.0,
+     "alternatives": [
+      "65",
+      "68",
+      "70"
+     ]
+    }
+   },
+   {
+    "scenario_id": 11,
+    "master_row": 47,
+    "question": "I'm sticking around the house with 2 people, what AC temperature should I set?",
+    "signature": {
+     "location": "West Chester, PA",
+     "square_footage": 1400.0,
+     "insulation": "Good",
+     "household_size": 2.0,
+     "utility_budget": 220.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 79.0,
+     "house_age": 8.0,
+     "alternatives": [
+      "73",
+      "77",
+      "80"
+     ]
+    }
+   },
+   {
+    "scenario_id": 12,
+    "master_row": 52,
+    "question": "With 4 people home, what AC temperature should I set?",
+    "signature": {
+     "location": "Reading, PA",
+     "square_footage": 2400.0,
+     "insulation": "Poor",
+     "household_size": 4.0,
+     "utility_budget": 380.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 90.0,
+     "house_age": 28.0,
+     "alternatives": [
+      "70",
+      "76",
+      "79"
+     ]
+    }
+   },
+   {
+    "scenario_id": 13,
+    "master_row": 53,
+    "question": "I'm heading out and won't be back for hours, what AC temperature should I set?",
+    "signature": {
+     "location": "King of Prussia, PA",
+     "square_footage": 1800.0,
+     "insulation": "Good",
+     "household_size": 2.0,
+     "utility_budget": 270.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 92.0,
+     "house_age": 14.0,
+     "alternatives": [
+      "73",
+      "77",
+      "82"
+     ]
+    }
+   },
+   {
+    "scenario_id": 14,
+    "master_row": 54,
+    "question": "With 3 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "Williamsport, PA",
+     "square_footage": 2100.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 280.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 18.0,
+     "house_age": 25.0,
+     "alternatives": [
+      "64",
+      "68",
+      "74"
+     ]
+    }
+   },
+   {
+    "scenario_id": 15,
+    "master_row": 63,
+    "question": "I'm spending the day at home with 3 people, what AC temperature should I set?",
+    "signature": {
+     "location": "Stroudsburg, PA",
+     "square_footage": 2300.0,
+     "insulation": "Good",
+     "household_size": 3.0,
+     "utility_budget": 340.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 77.0,
+     "house_age": 22.0,
+     "alternatives": [
+      "73",
+      "77",
+      "80"
+     ]
+    }
+   },
+   {
+    "scenario_id": 16,
+    "master_row": 64,
+    "question": "I'm heading out for the day, what heat temperature should I set?",
+    "signature": {
+     "location": "Lebanon, PA",
+     "square_footage": 2000.0,
+     "insulation": "Poor",
+     "household_size": 2.0,
+     "utility_budget": 230.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 44.0,
+     "house_age": 32.0,
+     "alternatives": [
+      "65",
+      "68",
+      "71"
+     ]
+    }
+   },
+   {
+    "scenario_id": 17,
+    "master_row": 66,
+    "question": "With 2 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "DuBois, PA",
+     "square_footage": 1850.0,
+     "insulation": "Good",
+     "household_size": 2.0,
+     "utility_budget": 275.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 10.0,
+     "house_age": 33.0,
+     "alternatives": [
+      "63",
+      "68",
+      "75"
+     ]
+    }
+   },
+   {
+    "scenario_id": 18,
+    "master_row": 70,
+    "question": "We're just getting in for the night, what heat temperature should I set overnight?",
+    "signature": {
+     "location": "Erie, PA",
+     "square_footage": 2750.0,
+     "insulation": "Good",
+     "household_size": 6.0,
+     "utility_budget": 285.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 5.0,
+     "house_age": 11.0,
+     "alternatives": [
+      "63",
+      "66",
+      "69"
+     ]
+    }
+   },
+   {
+    "scenario_id": 19,
+    "master_row": 72,
+    "question": "I'm stepping out for a few hours, what heat temperature should I set for the condo?",
+    "signature": {
+     "location": "King of Prussia, PA",
+     "square_footage": 1120.0,
+     "insulation": "Good",
+     "household_size": 1.0,
+     "utility_budget": 155.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 50.0,
+     "house_age": 9.0,
+     "alternatives": [
+      "62",
+      "66",
+      "69"
+     ]
+    }
+   },
+   {
+    "scenario_id": 20,
+    "master_row": 73,
+    "question": "With 3 people home, what heat temperature should I set?",
+    "signature": {
+     "location": "Reading, PA",
+     "square_footage": 2250.0,
+     "insulation": "Poor",
+     "household_size": 3.0,
+     "utility_budget": 245.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 54.0,
+     "house_age": 52.0,
+     "alternatives": [
+      "65",
+      "68",
+      "70"
+     ]
+    }
+   },
+   {
+    "scenario_id": 21,
+    "master_row": 74,
+    "question": "I'm staying put today with 1 person, what heat temperature should I set?",
+    "signature": {
+     "location": "State College, PA",
+     "square_footage": 760.0,
+     "insulation": "Medium",
+     "household_size": 1.0,
+     "utility_budget": 135.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 62.0,
+     "house_age": 24.0,
+     "alternatives": [
+      "68",
+      "72",
+      "76"
+     ]
+    }
+   },
+   {
+    "scenario_id": 22,
+    "master_row": 76,
+    "question": "We're done for the day, what heat temperature should I set overnight?",
+    "signature": {
+     "location": "York, PA",
+     "square_footage": 1480.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 180.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 59.0,
+     "house_age": 35.0,
+     "alternatives": [
+      "64",
+      "68",
+      "72"
+     ]
+    }
+   },
+   {
+    "scenario_id": 23,
+    "master_row": 77,
+    "question": "With 4 people home, what AC temperature should I set?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "square_footage": 1320.0,
+     "insulation": "Poor",
+     "household_size": 4.0,
+     "utility_budget": 215.0,
+     "housing_type": "Rowhouse",
+     "outdoor_temp": 72.0,
+     "house_age": 74.0,
+     "alternatives": [
+      "68",
+      "72",
+      "76"
+     ]
+    }
+   },
+   {
+    "scenario_id": 24,
+    "master_row": 79,
+    "question": "I'm away most of today, what AC temperature should I set?",
+    "signature": {
+     "location": "Lancaster, PA",
+     "square_footage": 1550.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 195.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 82.0,
+     "house_age": 31.0,
+     "alternatives": [
+      "76",
+      "80",
+      "83"
+     ]
+    }
+   },
+   {
+    "scenario_id": 25,
+    "master_row": 80,
+    "question": "With 1 person home, what AC temperature should I set?",
+    "signature": {
+     "location": "Wilkes-Barre, PA",
+     "square_footage": 880.0,
+     "insulation": "Poor",
+     "household_size": 1.0,
+     "utility_budget": 145.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 80.0,
+     "house_age": 44.0,
+     "alternatives": [
+      "74",
+      "77",
+      "81"
+     ]
+    }
+   },
+   {
+    "scenario_id": 26,
+    "master_row": 81,
+    "question": "I'm out running errands all day, what AC temperature should I set?",
+    "signature": {
+     "location": "West Chester, PA",
+     "square_footage": 2950.0,
+     "insulation": "Medium",
+     "household_size": 5.0,
+     "utility_budget": 300.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 83.0,
+     "house_age": 22.0,
+     "alternatives": [
+      "77",
+      "81",
+      "84"
+     ]
+    }
+   },
+   {
+    "scenario_id": 27,
+    "master_row": 83,
+    "question": "I'm leaving for work shortly, what AC temperature should I set?",
+    "signature": {
+     "location": "Norristown, PA",
+     "square_footage": 1180.0,
+     "insulation": "Medium",
+     "household_size": 2.0,
+     "utility_budget": 175.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 98.0,
+     "house_age": 26.0,
+     "alternatives": [
+      "78",
+      "81",
+      "84"
+     ]
+    }
+   },
+   {
+    "scenario_id": 28,
+    "master_row": 87,
+    "question": "I'm gone for the entire workday, what heat temperature should I set?",
+    "signature": {
+     "location": "Erie, PA",
+     "square_footage": 1700.0,
+     "insulation": "Medium",
+     "household_size": 2.0,
+     "utility_budget": 220.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 18.0,
+     "house_age": 25.0,
+     "alternatives": [
+      "60",
+      "63",
+      "66"
+     ]
+    }
+   },
+   {
+    "scenario_id": 29,
+    "master_row": 88,
+    "question": "I'm working from home today with 3 people, what AC temperature should I set?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "square_footage": 1750.0,
+     "insulation": "Good",
+     "household_size": 3.0,
+     "utility_budget": 250.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 87.0,
+     "house_age": 15.0,
+     "alternatives": [
+      "73",
+      "76",
+      "79"
+     ]
+    }
+   },
+   {
+    "scenario_id": 30,
+    "master_row": 89,
+    "question": "I'm heading out for the day, what heat temperature should I set?",
+    "signature": {
+     "location": "West Mifflin, PA",
+     "square_footage": 1500.0,
+     "insulation": "Medium",
+     "household_size": 2.0,
+     "utility_budget": 200.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 22.0,
+     "house_age": 30.0,
+     "alternatives": [
+      "60",
+      "63",
+      "66"
+     ]
+    }
+   },
+   {
+    "scenario_id": 31,
+    "master_row": 90,
+    "question": "With 4 people home, what AC temperature should I set?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "square_footage": 2200.0,
+     "insulation": "Medium",
+     "household_size": 4.0,
+     "utility_budget": 320.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 92.0,
+     "house_age": 28.0,
+     "alternatives": [
+      "76",
+      "79",
+      "82"
+     ]
+    }
+   },
+   {
+    "scenario_id": 32,
+    "master_row": 101,
+    "question": "I'm gone most of the day, what heat temperature should I set?",
+    "signature": {
+     "location": "Philadelphia, PA",
+     "square_footage": 1350.0,
+     "insulation": "Poor",
+     "household_size": 3.0,
+     "utility_budget": 210.0,
+     "housing_type": "Rowhouse",
+     "outdoor_temp": 12.0,
+     "house_age": 68.0,
+     "alternatives": [
+      "60",
+      "64",
+      "68"
+     ]
+    }
+   },
+   {
+    "scenario_id": 33,
+    "master_row": 102,
+    "question": "We're winding down for the night, what AC temperature should I set overnight?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "square_footage": 2050.0,
+     "insulation": "Medium",
+     "household_size": 3.0,
+     "utility_budget": 220.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 87.0,
+     "house_age": 33.0,
+     "alternatives": [
+      "72",
+      "75",
+      "78"
+     ]
+    }
+   },
+   {
+    "scenario_id": 34,
+    "master_row": 103,
+    "question": "I'm setting the thermostat for bedtime during a spring cold snap. What heat temperature is best for sleeping?",
+    "signature": {
+     "location": "Harrisburg, PA",
+     "square_footage": 1600.0,
+     "insulation": "Medium",
+     "household_size": 2.0,
+     "utility_budget": 230.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 34.0,
+     "house_age": 30.0,
+     "alternatives": [
+      "64",
+      "67",
+      "70"
+     ]
+    }
+   },
+   {
+    "scenario_id": 35,
+    "master_row": 104,
+    "question": "It's a very humid summer night and we're going to sleep. What AC temperature should I use?",
+    "signature": {
+     "location": "York, PA",
+     "square_footage": 1450.0,
+     "insulation": "Good",
+     "household_size": 3.0,
+     "utility_budget": 240.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 86.0,
+     "house_age": 18.0,
+     "alternatives": [
+      "74",
+      "76",
+      "79"
+     ]
+    }
+   }
+  ],
+  "Appliance": [
+   {
+    "scenario_id": 1,
+    "master_row": 39,
+    "question": "It's mid-morning, about 10 and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Johnstown, PA",
+     "utility_budget": 260.0,
+     "appliance": "dryer",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 2.8,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "12:00 PM",
+      "4:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 2,
+    "master_row": 40,
+    "question": "It's just past 9 AM, when should I run the dryer?",
+    "signature": {
+     "location": "Meadville, PA",
+     "utility_budget": 320.0,
+     "appliance": "dryer",
+     "housing_type": "Single-family",
+     "household_size": 4.0,
+     "kwh_per_cycle": 3.5,
+     "appliance_age": 8.0,
+     "alternatives": [
+      "1:00 PM",
+      "5:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 3,
+    "master_row": 43,
+    "question": "It's just past 9 AM and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Lancaster, PA",
+     "utility_budget": 150.0,
+     "appliance": "washing_machine",
+     "housing_type": "Single-family",
+     "household_size": 4.0,
+     "kwh_per_cycle": 0.35,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "12:00 AM",
+      "3:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 4,
+    "master_row": 45,
+    "question": "It's late morning, around 11 and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "Norristown, PA",
+     "utility_budget": 175.0,
+     "appliance": "dishwasher",
+     "housing_type": "Apartment",
+     "household_size": 2.0,
+     "kwh_per_cycle": 1.1,
+     "appliance_age": 3.0,
+     "alternatives": [
+      "11:00 AM",
+      "4:00 PM",
+      "8:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 5,
+    "master_row": 46,
+    "question": "It's just past 9 AM and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Reading, PA",
+     "utility_budget": 150.0,
+     "appliance": "washing_machine",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 0.45,
+     "appliance_age": 7.0,
+     "alternatives": [
+      "12:00 AM",
+      "8:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 6,
+    "master_row": 49,
+    "question": "It's just past 9 AM, when should I run the dryer?",
+    "signature": {
+     "location": "McKeesport, PA",
+     "utility_budget": 200.0,
+     "appliance": "dryer",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 2.8,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "11:00 PM",
+      "2:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 7,
+    "master_row": 52,
+    "question": "It's late afternoon, around 4 and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "State College, PA",
+     "utility_budget": 150.0,
+     "appliance": "washing_machine",
+     "housing_type": "Apartment",
+     "household_size": 2.0,
+     "kwh_per_cycle": 0.2,
+     "appliance_age": 2.0,
+     "alternatives": [
+      "12:00 AM",
+      "4:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 8,
+    "master_row": 53,
+    "question": "It's around 5 in the evening, when should I run the washing machine?",
+    "signature": {
+     "location": "Harrisburg, PA",
+     "utility_budget": 120.0,
+     "appliance": "washing_machine",
+     "housing_type": "Single-family",
+     "household_size": 3.0,
+     "kwh_per_cycle": 0.23,
+     "appliance_age": 1.0,
+     "alternatives": [
+      "10:00 PM",
+      "5:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 9,
+    "master_row": 55,
+    "question": "It's just past 7 PM, when should I run the dryer?",
+    "signature": {
+     "location": "Bethlehem, PA",
+     "utility_budget": 175.0,
+     "appliance": "dryer",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 3.5,
+     "appliance_age": 12.0,
+     "alternatives": [
+      "12:00 AM",
+      "7:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 10,
+    "master_row": 56,
+    "question": "It's around 3 in the afternoon and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "Exton, PA",
+     "utility_budget": 150.0,
+     "appliance": "dishwasher",
+     "housing_type": "Apartment",
+     "household_size": 2.0,
+     "kwh_per_cycle": 0.72,
+     "appliance_age": 2.0,
+     "alternatives": [
+      "10:00 PM",
+      "3:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 11,
+    "master_row": 58,
+    "question": "It's late, just past 10 PM and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Philadelphia, PA",
+     "utility_budget": 150.0,
+     "appliance": "dryer",
+     "housing_type": "Apartment",
+     "household_size": 4.0,
+     "kwh_per_cycle": 2.5,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "10:00 PM",
+      "2:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 12,
+    "master_row": 61,
+    "question": "It's getting close to midnight, when should I run the washing machine?",
+    "signature": {
+     "location": "Greensburg, PA",
+     "utility_budget": 175.0,
+     "appliance": "washing_machine",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 0.45,
+     "appliance_age": 5.0,
+     "alternatives": [
+      "11:00 PM",
+      "3:00 PM",
+      "8:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 13,
+    "master_row": 63,
+    "question": "It's mid-afternoon, about 2 and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Wilkes-Barre, PA",
+     "utility_budget": 200.0,
+     "appliance": "dryer",
+     "housing_type": "Single-family",
+     "household_size": 5.0,
+     "kwh_per_cycle": 2.5,
+     "appliance_age": 7.0,
+     "alternatives": [
+      "2:00 PM",
+      "4:00 PM",
+      "8:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 14,
+    "master_row": 64,
+    "question": "It's just after 8 AM, when should I run the dishwasher?",
+    "signature": {
+     "location": "Lebanon, PA",
+     "utility_budget": 150.0,
+     "appliance": "dishwasher",
+     "housing_type": "Townhouse",
+     "household_size": 4.0,
+     "kwh_per_cycle": 1.1,
+     "appliance_age": 5.0,
+     "alternatives": [
+      "3:00 PM",
+      "8:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 15,
+    "master_row": 65,
+    "question": "It's around 2 in the morning and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Allentown, PA",
+     "utility_budget": 120.0,
+     "appliance": "washing_machine",
+     "housing_type": "Apartment",
+     "household_size": 6.0,
+     "kwh_per_cycle": 0.38,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "10:00 AM",
+      "2:00 AM",
+      "3:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 16,
+    "master_row": 67,
+    "question": "It's late morning, just before noon and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Easton, PA",
+     "utility_budget": 190.0,
+     "appliance": "dryer",
+     "housing_type": "Single-family",
+     "household_size": 3.0,
+     "kwh_per_cycle": 2.5,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "11:00 AM",
+      "12:00 AM",
+      "3:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 17,
+    "master_row": 68,
+    "question": "It's around 10 in the morning and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Chambersburg, PA",
+     "utility_budget": 165.0,
+     "appliance": "washing_machine",
+     "housing_type": "Apartment",
+     "household_size": 2.0,
+     "kwh_per_cycle": 0.32,
+     "appliance_age": 4.0,
+     "alternatives": [
+      "10:00 AM",
+      "10:00 PM",
+      "4:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 18,
+    "master_row": 70,
+    "question": "It's around 3 in the afternoon and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Philadelphia, PA",
+     "utility_budget": 140.0,
+     "appliance": "washing_machine",
+     "housing_type": "Apartment",
+     "household_size": 1.0,
+     "kwh_per_cycle": 0.15,
+     "appliance_age": 1.0,
+     "alternatives": [
+      "11:00 PM",
+      "3:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 19,
+    "master_row": 71,
+    "question": "It's just past midnight and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "utility_budget": 180.0,
+     "appliance": "dryer",
+     "housing_type": "Apartment",
+     "household_size": 3.0,
+     "kwh_per_cycle": 2.5,
+     "appliance_age": 5.0,
+     "alternatives": [
+      "12:00 AM",
+      "2:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 20,
+    "master_row": 72,
+    "question": "It's nearly 11 at night, when should I run the washing machine?",
+    "signature": {
+     "location": "Altoona, PA",
+     "utility_budget": 155.0,
+     "appliance": "washing_machine",
+     "housing_type": "Apartment",
+     "household_size": 4.0,
+     "kwh_per_cycle": 0.42,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "10:00 AM",
+      "11:00 PM",
+      "3:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 21,
+    "master_row": 73,
+    "question": "It's barely 5 in the morning and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "King of Prussia, PA",
+     "utility_budget": 165.0,
+     "appliance": "dishwasher",
+     "housing_type": "Single-family",
+     "household_size": 3.0,
+     "kwh_per_cycle": 1.2,
+     "appliance_age": 4.0,
+     "alternatives": [
+      "5:00 AM",
+      "7:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 22,
+    "master_row": 75,
+    "question": "It's late afternoon, just past 3, when should I run the dishwasher?",
+    "signature": {
+     "location": "Greensburg, PA",
+     "utility_budget": 180.0,
+     "appliance": "dishwasher",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 1.05,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "11:00 PM",
+      "3:00 PM",
+      "9:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 23,
+    "master_row": 76,
+    "question": "It's around 8 in the morning and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "utility_budget": 185.0,
+     "appliance": "dishwasher",
+     "housing_type": "Single-family",
+     "household_size": 3.0,
+     "kwh_per_cycle": 1.85,
+     "appliance_age": 35.0,
+     "alternatives": [
+      "11:00 PM",
+      "2:00 PM",
+      "8:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 24,
+    "master_row": 77,
+    "question": "It's around 2 in the afternoon and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Erie, PA",
+     "utility_budget": 215.0,
+     "appliance": "dryer",
+     "housing_type": "Townhouse",
+     "household_size": 4.0,
+     "kwh_per_cycle": 4.1,
+     "appliance_age": 38.0,
+     "alternatives": [
+      "2:00 AM",
+      "2:00 PM",
+      "9:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 25,
+    "master_row": 79,
+    "question": "It's about 10 in the morning and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "Allentown, PA",
+     "utility_budget": 200.0,
+     "appliance": "dishwasher",
+     "housing_type": "Single-family",
+     "household_size": 4.0,
+     "kwh_per_cycle": 2.1,
+     "appliance_age": 40.0,
+     "alternatives": [
+      "10:00 AM",
+      "11:00 PM",
+      "2:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 26,
+    "master_row": 80,
+    "question": "It's just past 5 PM and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "King of Prussia, PA",
+     "utility_budget": 165.0,
+     "appliance": "dishwasher",
+     "housing_type": "Condo",
+     "household_size": 2.0,
+     "kwh_per_cycle": 1.15,
+     "appliance_age": 7.0,
+     "alternatives": [
+      "11:00 PM",
+      "5:00 PM",
+      "8:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 27,
+    "master_row": 81,
+    "question": "It's around 10 in the morning and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Blue Bell, PA",
+     "utility_budget": 145.0,
+     "appliance": "washing_machine",
+     "housing_type": "Condo",
+     "household_size": 2.0,
+     "kwh_per_cycle": 0.32,
+     "appliance_age": 5.0,
+     "alternatives": [
+      "10:00 AM",
+      "11:00 PM",
+      "3:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 28,
+    "master_row": 82,
+    "question": "It's just past 9 AM and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Doylestown, PA",
+     "utility_budget": 175.0,
+     "appliance": "dryer",
+     "housing_type": "Condo",
+     "household_size": 3.0,
+     "kwh_per_cycle": 2.9,
+     "appliance_age": 9.0,
+     "alternatives": [
+      "10:00 PM",
+      "2:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 29,
+    "master_row": 83,
+    "question": "It's around 2 in the afternoon and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "Philadelphia, PA",
+     "utility_budget": 165.0,
+     "appliance": "dishwasher",
+     "housing_type": "Rowhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 1.2,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "2:00 AM",
+      "2:00 PM",
+      "8:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 30,
+    "master_row": 84,
+    "question": "It's about 7 in the evening and I need to run the washing machine. When should I start it?",
+    "signature": {
+     "location": "Lancaster, PA",
+     "utility_budget": 170.0,
+     "appliance": "washing_machine",
+     "housing_type": "Rowhouse",
+     "household_size": 4.0,
+     "kwh_per_cycle": 0.42,
+     "appliance_age": 8.0,
+     "alternatives": [
+      "11:00 PM",
+      "7:00 PM",
+      "8:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 31,
+    "master_row": 85,
+    "question": "It's around 8 in the morning and I need to run the dryer. When should I start it?",
+    "signature": {
+     "location": "Norristown, PA",
+     "utility_budget": 195.0,
+     "appliance": "dryer",
+     "housing_type": "Rowhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 3.1,
+     "appliance_age": 11.0,
+     "alternatives": [
+      "11:00 PM",
+      "3:00 PM",
+      "8:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 32,
+    "master_row": 96,
+    "question": "It's around 2 in the afternoon, when should I run the dryer?",
+    "signature": {
+     "location": "McKeesport, PA",
+     "utility_budget": 220.0,
+     "appliance": "dryer",
+     "housing_type": "Townhouse",
+     "household_size": 4.0,
+     "kwh_per_cycle": 2.6,
+     "appliance_age": 7.0,
+     "alternatives": [
+      "10:00 PM",
+      "2:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 33,
+    "master_row": 97,
+    "question": "I've just got home, it's around 6 PM, and I need to run the dishwasher. When should I start it?",
+    "signature": {
+     "location": "Harrisburg, PA",
+     "utility_budget": 200.0,
+     "appliance": "dishwasher",
+     "housing_type": "Single-family",
+     "household_size": 6.0,
+     "kwh_per_cycle": 1.7,
+     "appliance_age": 10.0,
+     "alternatives": [
+      "10:00 PM",
+      "6:00 PM",
+      "9:00 AM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 34,
+    "master_row": 98,
+    "question": "Laundry finished around 6 PM in Harrisburg. When should I run the dryer?",
+    "signature": {
+     "location": "Harrisburg, PA",
+     "utility_budget": 260.0,
+     "appliance": "dryer",
+     "housing_type": "Rowhouse",
+     "household_size": 4.0,
+     "kwh_per_cycle": 2.4,
+     "appliance_age": 9.0,
+     "alternatives": [
+      "10:00 PM",
+      "6:00 AM",
+      "6:00 PM"
+     ]
+    }
+   },
+   {
+    "scenario_id": 35,
+    "master_row": 99,
+    "question": "It's around 8 in the morning and I need to run the dishwasher in Doylestown. When should I start it?",
+    "signature": {
+     "location": "Doylestown, PA",
+     "utility_budget": 210.0,
+     "appliance": "dishwasher",
+     "housing_type": "Townhouse",
+     "household_size": 3.0,
+     "kwh_per_cycle": 1.05,
+     "appliance_age": 6.0,
+     "alternatives": [
+      "11:00 PM",
+      "2:00 PM",
+      "8:00 AM"
+     ]
+    }
+   }
+  ],
+  "Shower": [
+   {
+    "scenario_id": 1,
+    "master_row": 43,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Blue Bell, PA",
+     "household_size": 2.0,
+     "gpm": 2.0,
+     "utility_budget": 195.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 75.0,
+     "alternatives": [
+      "12",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 2,
+    "master_row": 54,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Media, PA",
+     "household_size": 3.0,
+     "gpm": 2.5,
+     "utility_budget": 255.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 85.0,
+     "alternatives": [
+      "12",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 3,
+    "master_row": 60,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Indiana, PA",
+     "household_size": 1.0,
+     "gpm": 2.0,
+     "utility_budget": 155.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 48.0,
+     "alternatives": [
+      "10",
+      "4",
+      "6"
+     ]
+    }
+   },
+   {
+    "scenario_id": 4,
+    "master_row": 61,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "household_size": 3.0,
+     "gpm": 2.5,
+     "utility_budget": 245.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 62.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 5,
+    "master_row": 62,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "West Mifflin, PA",
+     "household_size": 4.0,
+     "gpm": 3.0,
+     "utility_budget": 295.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 70.0,
+     "alternatives": [
+      "3",
+      "4",
+      "6"
+     ]
+    }
+   },
+   {
+    "scenario_id": 6,
+    "master_row": 63,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Pittsburgh, PA",
+     "household_size": 2.0,
+     "gpm": 2.0,
+     "utility_budget": 185.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 28.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 7,
+    "master_row": 64,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Exton, PA",
+     "household_size": 3.0,
+     "gpm": 2.5,
+     "utility_budget": 260.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 62.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 8,
+    "master_row": 65,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Pottstown, PA",
+     "household_size": 2.0,
+     "gpm": 2.0,
+     "utility_budget": 195.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 75.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 9,
+    "master_row": 66,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Phoenixville, PA",
+     "household_size": 4.0,
+     "gpm": 2.5,
+     "utility_budget": 310.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 55.0,
+     "alternatives": [
+      "3",
+      "5",
+      "7"
+     ]
+    }
+   },
+   {
+    "scenario_id": 10,
+    "master_row": 67,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Bethlehem, PA",
+     "household_size": 2.0,
+     "gpm": 2.0,
+     "utility_budget": 200.0,
+     "housing_type": "Rowhouse",
+     "outdoor_temp": 62.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 11,
+    "master_row": 68,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Hazleton, PA",
+     "household_size": 3.0,
+     "gpm": 2.5,
+     "utility_budget": 250.0,
+     "housing_type": "Rowhouse",
+     "outdoor_temp": 48.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 12,
+    "master_row": 69,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Wilkes-Barre, PA",
+     "household_size": 4.0,
+     "gpm": 2.0,
+     "utility_budget": 280.0,
+     "housing_type": "Rowhouse",
+     "outdoor_temp": 70.0,
+     "alternatives": [
+      "3",
+      "5",
+      "7"
+     ]
+    }
+   },
+   {
+    "scenario_id": 13,
+    "master_row": 70,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Meadville, PA",
+     "household_size": 1.0,
+     "gpm": 1.5,
+     "utility_budget": 140.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 38.0,
+     "alternatives": [
+      "10",
+      "4",
+      "6"
+     ]
+    }
+   },
+   {
+    "scenario_id": 14,
+    "master_row": 72,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Uniontown, PA",
+     "household_size": 2.0,
+     "gpm": 2.0,
+     "utility_budget": 160.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 52.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 15,
+    "master_row": 73,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Williamsport, PA",
+     "household_size": 3.0,
+     "gpm": 2.5,
+     "utility_budget": 255.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 48.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 16,
+    "master_row": 74,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "Williamsport, PA",
+     "household_size": 2.0,
+     "gpm": 2.0,
+     "utility_budget": 195.0,
+     "housing_type": "Apartment",
+     "outdoor_temp": 35.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 17,
+    "master_row": 75,
+    "question": "How long should I shower?",
+    "signature": {
+     "location": "West Mifflin, PA",
+     "household_size": 3.0,
+     "gpm": 2.5,
+     "utility_budget": 250.0,
+     "housing_type": "Townhouse",
+     "outdoor_temp": 60.0,
+     "alternatives": [
+      "3",
+      "5",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 18,
+    "master_row": 77,
+    "question": "With a high-flow showerhead and small tank on a cold morning, how long should I shower?",
+    "signature": {
+     "location": "Altoona, PA",
+     "household_size": 4.0,
+     "gpm": 3.5,
+     "utility_budget": 240.0,
+     "housing_type": "Rowhouse",
+     "outdoor_temp": 18.0,
+     "alternatives": [
+      "4",
+      "6",
+      "8"
+     ]
+    }
+   },
+   {
+    "scenario_id": 19,
+    "master_row": 78,
+    "question": "On a hot day with a low-flow showerhead, what shower duration makes sense?",
+    "signature": {
+     "location": "Chester, PA",
+     "household_size": 1.0,
+     "gpm": 1.5,
+     "utility_budget": 150.0,
+     "housing_type": "Condo",
+     "outdoor_temp": 90.0,
+     "alternatives": [
+      "10",
+      "4",
+      "7"
+     ]
+    }
+   },
+   {
+    "scenario_id": 20,
+    "master_row": 79,
+    "question": "With six people sharing a tank tonight, how long should showers be?",
+    "signature": {
+     "location": "Johnstown, PA",
+     "household_size": 6.0,
+     "gpm": 2.5,
+     "utility_budget": 340.0,
+     "housing_type": "Single-family",
+     "outdoor_temp": 40.0,
+     "alternatives": [
+      "12",
+      "5",
+      "8"
+     ]
+    }
+   }
+  ]
+ }
+}

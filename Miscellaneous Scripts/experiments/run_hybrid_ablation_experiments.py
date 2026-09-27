@@ -130,6 +130,7 @@ from sentinel_utils import (
     _atomic_write_xlsx,
     _is_complete_run_file,
     apply_mavt_ranking,
+    call_log_fields,
     is_sentinel,
     read_table_clean,
 )
@@ -539,6 +540,15 @@ def collect_order_arm(model_key: str, run: int = 1, arm: str = "reversed") -> Pa
                     "completion_tokens": call.get("completion_tokens", 0),
                     "latency_ms": call.get("latency_ms", 0),
                     "api_diag": call.get("api_diag"),
+                    # A_H's own per-call record (provider, generation id,
+                    # usage.cost, finish_reason, reasoning tokens, request_params,
+                    # attempt_errors). On a failed call A_H returns it in
+                    # diag["api_diagnostics"] (api_diag above stays empty because
+                    # the wrapped call raised); on success it comes from the
+                    # captured call.
+                    "api_diagnostics": (diag.get("api_diagnostics")
+                                        or (call_log_fields(call["api_diag"])
+                                            if call.get("api_diag") else None)),
                 }
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 f.flush()

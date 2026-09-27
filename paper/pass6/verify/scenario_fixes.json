@@ -1499,12 +1499,12 @@
   "file": "Scenario Files/ApplianceScenarios.xlsx",
   "sheet": "Sheet1",
   "row_index_0based_data": 64,
-  "column_header": "baseline_time",
-  "old": "9:00 AM",
-  "new": "8:00 AM",
-  "kind": "other",
+  "column_header": "question",
+  "old": "It's just after 8 AM. When should I run the dishwasher?",
+  "new": "It's just after 9 AM. When should I run the dishwasher?",
+  "kind": "other-approved",
   "source_md_id": 73,
-  "note": "Resolves contradiction with question 'It's just after 8 AM...'. ALTERNATIVE DIRECTION (not applied here, flagged for author): edit the question to 'just after 9 AM' instead, which is score-inert (baseline_time drives the committed RAG/GT time-of-day cost calc; changing baseline_time changes that reference score and needs recomputation). Author should pick one."
+  "note": "AUTHOR-DECIDED (2026-09-26): resolve the question/baseline_time contradiction by editing the QUESTION to 9 AM; baseline_time and the alternatives stay at 9:00 AM, so no reference score changes. Chained after #28 (same cell): 'old' is the text #28 leaves. Changes the Appliance embedding text of this RAG scenario (Lebanon, dishwasher; RAG id 14)."
  },
  {
   "file": "Scenario Files/ApplianceScenarios.xlsx",
@@ -1615,5 +1615,16 @@
   "kind": "type",
   "source_md_id": 83,
   "note": ""
+ },
+ {
+  "file": "Scenario Files/HVACScenarios.xlsx",
+  "sheet": "Sheet1",
+  "row_index_0based_data": 30,
+  "column_header": "hvac_age",
+  "old": 95,
+  "new": 40,
+  "kind": "other-approved",
+  "source_md_id": 84,
+  "note": "AUTHOR-DECIDED data fix (PASS6_HANDOFF.md, Data row): Stroudsburg, PA HVAC scenario, hvac_age 95 -> 40. Row confirmed Stroudsburg on 2026-09-26. Test scenario (not RAG), and hvac_age is not in TestScenarios, so no derived-file change; the calculator input changes but degradation is capped at 40 years."
  }
 ]

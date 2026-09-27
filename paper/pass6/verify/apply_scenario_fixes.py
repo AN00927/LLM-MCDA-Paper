@@ -23,13 +23,21 @@ Safety:
     number_format the cell already had (per-cell, not reformatted to "0").
   - Rows whose kind == "other" are SKIPPED unless --include-other is passed
     (these are question-vs-field contradictions flagged for author review,
-    not mechanical typo/type corrections).
+    not mechanical typo/type corrections). kind == "other-approved" marks an
+    author-decided fix and is applied by default like typo/grammar/type.
+  - Fixes are checked and applied IN FILE ORDER. When two fixes touch the same
+    cell, the later fix's "old" is compared against the value the earlier fix
+    leaves (chained edits, e.g. #28 then #73 on Appliance row 64's question).
+  - --masters-dir DIR points the script at copies of the masters (each fix's
+    file is looked up by basename in DIR) and puts backups in DIR/Backups/,
+    so a dry run of the whole chain never touches Scenario Files/.
 
 Usage:
     python apply_scenario_fixes.py                # dry-run (default)
     python apply_scenario_fixes.py --dry-run
     python apply_scenario_fixes.py --apply
     python apply_scenario_fixes.py --apply --include-other
+    python apply_scenario_fixes.py --apply --masters-dir SCRATCH_DIR
 """
 import argparse
 import json
@@ -51,8 +59,11 @@ def load_fixes():
         return json.load(f)
 
 
-def resolve_path(rel_file):
-    """rel_file is like 'Scenario Files/HVACScenarios.xlsx' (repo-relative)."""
+def resolve_path(rel_file, masters_dir=None):
+    """rel_file is like 'Scenario Files/HVACScenarios.xlsx' (repo-relative).
+    With masters_dir, the file is looked up by basename in that directory."""
+    if masters_dir:
+        return os.path.join(masters_dir, rel_file.split("/")[-1])
     return os.path.join(REPO_ROOT, *rel_file.split("/"))
 
 
@@ -74,12 +85,12 @@ def values_equal(cell_value, expected):
         return False
 
 
-def backup_file(path, do_copy):
+def backup_file(path, do_copy, backup_dir=BACKUP_DIR):
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     stem, ext = os.path.splitext(os.path.basename(path))
-    dest = os.path.join(BACKUP_DIR, f"{stem}_BACKUP_{ts}{ext}")
+    dest = os.path.join(backup_dir, f"{stem}_BACKUP_{ts}{ext}")
     if do_copy:
-        os.makedirs(BACKUP_DIR, exist_ok=True)
+        os.makedirs(backup_dir, exist_ok=True)
         shutil.copy2(path, dest)
         if not os.path.exists(dest) or os.path.getsize(dest) == 0:
             raise RuntimeError(f"Backup failed or empty for {path} -> aborting")
@@ -93,7 +104,12 @@ def main():
     ap.add_argument("--include-other", action="store_true",
                      help="Also apply kind=='other' rows (question-vs-field contradictions). "
                           "Off by default -- those need author sign-off on which side to change.")
+    ap.add_argument("--masters-dir", default=None,
+                    help="Directory holding COPIES of the master workbooks to edit instead of "
+                         "Scenario Files/ (backups then go to <masters-dir>/Backups/).")
     args = ap.parse_args()
+    masters_dir = os.path.abspath(args.masters_dir) if args.masters_dir else None
+    backup_dir = os.path.join(masters_dir, "Backups") if masters_dir else BACKUP_DIR
 
     do_apply = args.apply and not args.dry_run
     mode = "APPLY" if do_apply else "DRY-RUN"
@@ -111,7 +127,7 @@ def main():
     total_would_apply = 0
 
     for rel_file, file_fixes in by_file.items():
-        abs_path = resolve_path(rel_file)
+        abs_path = resolve_path(rel_file, masters_dir)
         if not os.path.exists(abs_path):
             print(f"[ERROR] master file not found, skipping all its fixes: {abs_path}")
             continue
@@ -130,6 +146,7 @@ def main():
 
         file_needs_backup = False
         actions = []  # (fx, status, detail)
+        pending = {}  # (excel_row, col) -> value an earlier fix in this run leaves
 
         for fx in file_fixes:
             kind = fx.get("kind")
@@ -146,7 +163,7 @@ def main():
                 actions.append((fx, "MISMATCH", f"column '{col}' not found in {rel_file} header"))
                 continue
             cell = ws.cell(excel_row, col_idx[col])
-            current = cell.value
+            current = pending.get((excel_row, col), cell.value)
             expected_old = fx["old"]
 
             if not values_equal(current, expected_old):
@@ -158,6 +175,7 @@ def main():
 
             new_val = fx["new"]
             preserved_fmt = cell.number_format
+            pending[(excel_row, col)] = new_val
 
             if do_apply:
                 file_needs_backup = True
@@ -168,7 +186,7 @@ def main():
 
         # backup + write pass (only in --apply mode, only if at least one real change)
         if do_apply and file_needs_backup:
-            dest = backup_file(abs_path, do_copy=True)
+            dest = backup_file(abs_path, do_copy=True, backup_dir=backup_dir)
             print(f"  [backup] {dest}")
             for fx, status, detail in actions:
                 if status != "WILL_APPLY":

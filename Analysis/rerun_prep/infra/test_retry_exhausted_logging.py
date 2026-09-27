@@ -160,7 +160,12 @@ def check_position_bias():
 
 
 if __name__ == "__main__":
-    check_prompt_ablation()
-    check_rag_ablation()
-    check_position_bias()
+    import sentinel_utils
+    # Each check makes 3 exhausted calls. sentinel_utils.openrouter_chat aborts
+    # the process after MAX_CONSECUTIVE_API_FAILURES (5) such calls in a row,
+    # which is the intended behaviour in a real run; these are independent
+    # checks, so the streak is reset before each one.
+    for check in (check_prompt_ablation, check_rag_ablation, check_position_bias):
+        sentinel_utils._consecutive_api_failures = 0
+        check()
     print("\nAll three ablation scripts: retry-exhausted calls confirmed logged.")

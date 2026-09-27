@@ -43,6 +43,7 @@ MODEL_SPECS = {
         "provider": {
             "only": ["darkbloom/fp8"],
             "allow_fallbacks": False,
+            "require_parameters": True,
         },
     },
     "qwen": {
@@ -53,6 +54,7 @@ MODEL_SPECS = {
         "provider": {
             "only": ["venice/fp8"],
             "allow_fallbacks": False,
+            "require_parameters": True,
         },
     },
     "deepseek": {
@@ -63,6 +65,7 @@ MODEL_SPECS = {
         "provider": {
             "only": ["baseten/fp8"],
             "allow_fallbacks": False,
+            "require_parameters": True,
         },
     },
     "gemini": {
@@ -73,6 +76,7 @@ MODEL_SPECS = {
         "provider": {
             "only": ["google-ai-studio/flex"],
             "allow_fallbacks": False,
+            "require_parameters": True,
         },
     },
 }
