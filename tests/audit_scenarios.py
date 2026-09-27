@@ -59,24 +59,19 @@ def city(location):
     return str(location).split(",")[0].strip()
 
 
-CITY_TO_UTILITY = {
-    "Philadelphia": "PECO", "Norristown": "PECO", "Pottstown": "PECO",
-    "Phoenixville": "PECO", "West Chester": "PECO", "Exton": "PECO",
-    "King of Prussia": "PECO", "Blue Bell": "PECO", "Lower Merion": "PECO",
-    "Media": "PECO", "Coatesville": "PECO", "Newtown": "PECO",
-    "Doylestown": "PECO", "Chester": "PECO",
-    "Allentown": "PPL", "Bethlehem": "PPL", "Hazleton": "PPL",
-    "Reading": "PPL", "Scranton": "PPL", "Wilkes-Barre": "PPL",
-    "Stroudsburg": "PPL", "Lebanon": "PPL", "Lancaster": "PPL",
-    "State College": "PPL", "Harrisburg": "PPL", "Williamsport": "PPL",
-    "Greensburg": "WestPenn", "Monroeville": "WestPenn",
-    "Indiana": "WestPenn", "Uniontown": "WestPenn", "Butler": "WestPenn",
-    "DuBois": "Penelec", "Oil City": "Penelec", "Meadville": "Penelec",
-    "Erie": "Penelec", "Altoona": "Penelec", "Johnstown": "Penelec",
-    "York": "MetEd", "Chambersburg": "MetEd", "Gettysburg": "MetEd",
-    "Carlisle": "MetEd", "Easton": "MetEd",
-    "Pittsburgh": "Duquesne", "McKeesport": "Duquesne",
-}
+def _load_city_to_utility():
+    """City -> utility map from the installed Appliance calculator (single source)."""
+    import importlib.util
+    import sys
+    sys.path.insert(0, str(ROOT))
+    path = ROOT / "Ground Truth Calculators" / "ApplianceGroundTruthCalculator.py"
+    spec = importlib.util.spec_from_file_location("_appliance_calc_for_audit", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return dict(module.ApplianceGroundTruthCalculator.CITY_TO_UTILITY)
+
+
+CITY_TO_UTILITY = _load_city_to_utility()
 
 
 def time_bucket(value):

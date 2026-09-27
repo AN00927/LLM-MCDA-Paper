@@ -27,10 +27,12 @@ Significance-testing methodology (two correction layers, mirroring
 run_rag_ablation_experiments.py and test_hybrid_ablation_significance.py exactly):
   1. Friedman omnibus test per (architecture, model, metric): one test per
      stratum per metric, so the family size is (number of strata) x
-     (number of metrics) and grows whenever a model is added. With the four
-     models currently collected that is 8 strata x 2 metrics = 16 tests; it
-     was 12 before the Gemini arm. The script prints the realised count at
-     run time -- read that, not this comment, when reporting the family size.
+     (number of metrics) and grows whenever a model or metric is added. With
+     the four models currently collected and top2 added alongside kendall_tau
+     and top1 (2026-09-27), that is 8 strata x 3 metrics = 24 tests; it was
+     16 with two metrics, and 12 before the Gemini arm. The script prints the
+     realised count at run time -- read that, not this comment, when
+     reporting the family size.
      Holm-Bonferroni correction is applied ACROSS this whole family before
      anything downstream reads a p-value, because reporting every omnibus
      test side by side at nominal alpha=0.05 with no correction inflates the
@@ -74,9 +76,14 @@ if str(PROJECT_ROOT) not in sys.path:
 CELLS_DIR = PROJECT_ROOT / "Analysis" / "Prompt_Ablation"
 OUTPUT_XLSX = CELLS_DIR / "prompt_ablation_significance.xlsx"
 
-# Metrics tested. `top1` is binary per scenario; Friedman on a binary outcome
-# is valid but low-powered, so it is reported alongside tau rather than alone.
-METRIC_COLS = ["kendall_tau", "top1"]
+# Metrics tested. `top1` and `top2` are binary per scenario; Friedman on a
+# binary outcome is valid but low-powered, so they are reported alongside tau
+# rather than alone. Both follow the failure-as-wrong accuracy rule (author
+# decision, 2026-09-27, mirroring the RAG ablation): a failed or unscored
+# scenario's top1/top2 is 0.0 (never NaN), so it counts as wrong rather than
+# being dropped from the comparison. kendall_tau is not an accuracy metric and
+# is NaN for a failed scenario, which pandas' mean() skips -- unchanged.
+METRIC_COLS = ["kendall_tau", "top1", "top2"]
 
 
 def _load_rag_module():
@@ -89,14 +96,19 @@ def _load_rag_module():
 
 
 def load_matrix() -> pd.DataFrame:
+    """All per-scenario cell rows, failed scenarios included.
+
+    A failed scenario (`failed` True) carries kendall_tau = NaN, which
+    pandas' mean() skips, so tau still averages only the scored scenarios.
+    Its top1/top2 are 0.0 (never NaN) under the failure-as-wrong rule, so
+    keeping the row in -- rather than dropping it, as this used to -- is
+    what makes the paired tests see a failed scenario as a miss instead of
+    silently shrinking the comparison to the scored subset.
+    """
     files = sorted(glob.glob(str(CELLS_DIR / "cell_*.xlsx")))
     if not files:
         raise SystemExit(f"No cell files in {CELLS_DIR}")
-    df = pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
-
-    # Failed scenarios carry sentinel-derived metrics; excluding them keeps a
-    # parse failure from being scored as if it were a bad-but-valid ranking.
-    return df[~df["failed"].astype(bool)].copy()
+    return pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
 
 
 def main():
