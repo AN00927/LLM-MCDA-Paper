@@ -59,12 +59,14 @@ The arm is collected over several runs, because at temperature 0.3 the same
 prompt does not extract identical parameters twice, so "reversal changed
 something" only means anything relative to how much re-asking changes on its own.
 
-A same-session CONTROL arm is collected alongside it, sending the shipped order
-through the identical code path. This exists because the five shipped runs were
-collected days earlier and recorded no timestamps: a reversed-vs-shipped gap
-could be an ordering effect or provider-side drift, and the two are
-indistinguishable. Reversed-vs-control holds the session fixed and isolates
-ordering; control-vs-shipped measures the drift by itself.
+A same-session CONTROL arm can be collected alongside it, sending the shipped
+order through the identical code path. It existed because the old shipped runs
+were collected days earlier and recorded no timestamps, so a reversed-vs-shipped
+gap could be an ordering effect or provider-side drift. The 2026-09 rerun
+collects every arm and the main suite in one timestamped window, so the control
+arm is no longer collected by default (author decision 2026-09-27): the
+reference group is the main suite's five A_H runs, and the test has C(10,5) =
+252 relabelings (floor p = 0.004). `--order-arms control` still collects it.
 
 The headline test is an exact label-permutation test over the runs rather than
 per-pair McNemar. A_H's shipped runs disagree on top-1 for only about 5-15 of 195
@@ -81,9 +83,9 @@ set the paper reports:
 
     python "Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py" --collect-only
 
-With no flags that collects the paper's design: the reversed arm runs 1-5 and the
-same-session control arm runs 1-3 (ORDER_ARM_DEFAULT_RUNS), i.e. 195 x 8 x 4 =
-6,240 calls. Run one model per process to parallelise.
+With no flags that collects the paper's design: the reversed arm, runs 1-5
+(DEFAULT_ORDER_ARMS, ORDER_ARM_DEFAULT_RUNS), i.e. 195 x 5 x 4 = 3,900 calls.
+Run one model per process to parallelise.
 
 Raw prompts and raw model responses are written to a per-model jsonl alongside
 the tidy workbook, so any statistic here can be recomputed later without paying
@@ -154,11 +156,14 @@ ORDER_ARM_SUBDIR = "hybrid_order_reversal"
 ORDER_ARM_XLSX = "AH_extraction_order_{arm}_run_{run:02d}.xlsx"
 ORDER_ARM_JSONL = "AH_extraction_order_{arm}_run_{run:02d}_raw.jsonl"
 ORDER_ARMS = ("reversed", "control")
+# Arms collected when --order-arms is not given (author decision 2026-09-27: the
+# control arm is cut; see the module docstring).
+DEFAULT_ORDER_ARMS = ("reversed",)
 
-# Runs per order arm in the paper's design (main text and S2: each model's
-# thirteen runs are the five main-benchmark A_H runs, three same-session
-# original-order control runs and five reversed runs, so the permutation test
-# has C(13,5) = 1,287 labelings). A single reversed run could only be placed
+# Runs per order arm. The paper's design since 2026-09-27: each model's ten runs
+# are the five main-benchmark A_H runs and five reversed runs, so the
+# permutation test has C(10,5) = 252 labelings. The control total applies only
+# when --order-arms control is passed. A single reversed run could only be placed
 # against the shipped runs' spread, never given a spread of its own; five let
 # the reversed arm carry its own run-to-run variance. With no --order-runs,
 # each arm is collected up to its own total here.
@@ -1223,8 +1228,10 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
         #             within-reference spread, which shrinks the separation
         #             statistic, so this is the conservative direction.
         #
-        # `pooled` is primary when a control exists; without one only the
-        # confounded `shipped` basis is available and that is said plainly.
+        # `pooled` is primary when a control exists. Without one, `shipped` is
+        # the basis: in the 2026-09 rerun the main-suite A_H runs and the
+        # reversed arm share one timestamped collection window, so drift is
+        # bounded by that window rather than by an undated gap.
         bases = {"shipped": shipped_tags}
         if ctrl_tags:
             bases["control"] = ctrl_tags
@@ -1413,13 +1420,14 @@ def parse_args():
                         "per run per model (195 x runs each). Resumable.")
     p.add_argument("--collect-only", action="store_true",
                    help="Collect the order arm and stop, without running the analysis.")
-    p.add_argument("--order-arms", nargs="+", default=list(ORDER_ARMS),
+    p.add_argument("--order-arms", nargs="+", default=list(DEFAULT_ORDER_ARMS),
                    choices=list(ORDER_ARMS),
                    help="Which order arms to collect. 'control' re-sends the "
                         "shipped order in the same session, which is what makes "
                         "a reversed-vs-shipped gap attributable to ordering "
                         "rather than to provider drift between sessions. "
-                        "Default: both arms, the paper's design.")
+                        "Default: reversed only, the paper's design since "
+                        "2026-09-27 (all runs share one timestamped window).")
     p.add_argument("--order-run-start", type=int, default=1,
                    help="First run index to collect. Use this to extend an arm "
                         "without touching runs already collected: re-running a "
@@ -1536,10 +1544,11 @@ def main():
         _n_ctrl = int(order_summary["n_control_runs"].iloc[0])
         _n_rev = int(order_summary["n_reversed_runs"].iloc[0])
         _n_relab = int(order_summary["perm_n_relabelings"].iloc[0])
+        _basis = "pooled" if _n_ctrl else "shipped"
         lines += ["", "## Alternative-order arm", "",
-                  f"Exact label-permutation test, pooled basis, over the "
-                  f"{_n_ship + _n_ctrl + _n_rev} runs ({_n_ship} shipped, {_n_ctrl} "
-                  f"control, {_n_rev} reversed; shipped+control form the reference "
+                  f"Exact label-permutation test, {_basis} basis, over the "
+                  f"{_n_ship + _n_ctrl + _n_rev} runs ({_n_ship} main-suite, {_n_ctrl} "
+                  f"control, {_n_rev} reversed; the non-reversed runs form the reference "
                   f"group). Separation is mean within-group agreement minus mean "
                   f"between-group agreement; p is the fraction of the "
                   f"{_n_relab} relabelings matching or beating it. Floor p = "

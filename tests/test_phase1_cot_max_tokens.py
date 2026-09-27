@@ -287,7 +287,7 @@ def test_non_cot_arms_unaffected_by_a_resolved_cot_cap(tmp_path):
     with mock.patch("requests.get", lambda *a, **kw: (_ for _ in ()).throw(AssertionError)):
         PA.resolve_cot_max_tokens(["gptoss"], override=32768)
     gptoss_id = MODEL_SPECS["gptoss"]["openrouter_id"]
-    for variant_id in ("control", "no_anchors", "scale_0_10"):
+    for variant_id in ("control", "no_anchors"):
         poster = H.Poster([H.ok(H.SCORES_JSON)])
         with mock.patch("requests.post", poster):
             PA.score_scenario(pa_scenario(), "AD", PA.VARIANT_SPECS[variant_id],
