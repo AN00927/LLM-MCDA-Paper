@@ -325,9 +325,9 @@ The reference calculators receive exact engineering values; architectures receiv
 
 | Parameter | LLM Label | Calculator Value | Source |
 | --- | --- | --- | --- |
-| **HVAC - Insulation** | Poor / Medium / Good | R-11 / R-13 / R-19 | CEC JA4.3; ENERGY STAR |
+| **HVAC - Insulation** | Poor / Medium / Good | scenario R-value (tiers R-8-12 / R-13-18 / R-19-24) | CEC JA4.3; ENERGY STAR |
 | **Shower - Flow Rate** | low_flow / standard / high_flow | actual GPM from scenario | EPA WaterSense |
-| **Appliance - Age** | banded age label | true age in years -> kWh/cycle | ENERGY STAR certified datasets |
+| **Appliance - Age** | banded age label | scenario kWh/cycle (the calculator does not read age) | ENERGY STAR and DOE test procedures (cycles/year) |
 
 The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. Bands are computed by single-source helpers in `sentinel_utils.py` so the test-sheet label and the RAG-index embedding string stay byte-identical.
 
@@ -343,7 +343,7 @@ s_j = sum(w_i * v_i(x_ij))   for i in {energy_cost, environmental, comfort, prac
 
 All four criterion scores are on a 0--1 scale before weighting. Energy cost and environmental impact use a linear value function; comfort and practicality use a logarithmic one (shape parameter alpha = 1.5 and 1.2 respectively) to capture diminishing marginal returns near an already-acceptable outcome.
 
-### Reference Ranges (5th-95th percentile of scenario distributions)
+### Reference Ranges (5th-95th percentiles over the 285 test + RAG scenarios; HVAC environmental bounds convert the HVAC cost percentiles)
 
 | Criterion | HVAC | Appliance | Shower |
 | --- | --- | --- | --- |
@@ -390,7 +390,7 @@ Thermal load uses a four-component ASHRAE-style balance (conductive + infiltrati
 E_kWh = (Q_load / (EER_eff * 1000)) * 8 hr * m_occ
 ```
 
-EER comes from rated SEER via the AHRI 210/240 quadratic (`EER = -0.02*SEER^2 + 1.12*SEER`), applied identically whether the scenario is in heating or cooling mode -- the calculator has no separate heating-fuel-type field. Occupancy modifier `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 - 0.5*(h_away/24)`). Age/maintenance degradation enters only the practicality score (as a reliability factor), not the energy path.
+In cooling mode, EER comes from rated SEER via the Building America House Simulation Protocols conversion (Hendron & Engebrecht 2010, Eq. 3, citing Wassmer 2003: `EER = -0.02*SEER^2 + 1.12*SEER`). In heating mode the calculator models an electric air-source heat pump and divides the load by the HSPF paired with the SEER (HSP Tables 4 and 32 up to SEER 14; NREL ResStock options at SEER 18 and 22) in place of EER. Occupancy modifier `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 - 0.5*(h_away/24)`). Age/maintenance degradation enters only the practicality score (as a reliability factor), not the energy path.
 
 Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 F cooling, 70 F heating).
 
@@ -414,7 +414,7 @@ Shower energy:
 E_kWh = (GPM * f_hot * 8.33 * (T_heater - T_inlet) * duration_min) / (3412 * eta)
 ```
 
-where eta = 0.92 (electric water-heater efficiency). Because `f_hot` and the temperature rise move inversely, energy depends on inlet temperature but not on heater setpoint, for any setpoint at or above the delivery target. Environmental impact = GPM * duration (gallons of water used). Comfort peaks near the REU2016 average duration with penalties for temperature adequacy (CDC Legionella/scald thresholds) and household contention. Practicality penalizes alternatives that exhaust available tank capacity, using a fixed 0.8 tank-availability factor.
+where eta = 0.92 (electric water-heater efficiency; the federal minimum in 10 CFR 430.32(d) is 0.9307 - 0.0002 x V_r = 0.9207 for a 50-gal tank). Because `f_hot` and the temperature rise move inversely, energy depends on inlet temperature but not on heater setpoint, for any setpoint at or above the delivery target. Environmental impact = GPM * duration (gallons of water used). Comfort peaks near the REU2016 average duration with penalties for temperature adequacy (CDC Legionella/scald thresholds) and household contention. Practicality penalizes alternatives that exhaust available tank capacity, using a fixed 0.8 tank-availability factor.
 
 ---
 
