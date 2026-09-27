@@ -175,7 +175,7 @@
 
 \usepackage{xurl}
 \usepackage[hidelinks]{hyperref}
-\usepackage[authoryear,longnamesfirst]{natbib}
+\usepackage[numbers,sort&compress]{natbib}
 
 \newcounter{suppsectioncounter}
 \newcommand{\suppsection}[1]{%
@@ -1565,7 +1565,7 @@ Success rate (\%) & 100.0 & 100.0 & 88.0 & 99.8 & 100.0 & 99.8 \\
 
 Bolded values indicate the best architecture per metric per model. The inclusive rows score every one of the 195 scenarios, assigning a failed scenario the value a random ranking would earn ($\tau = 0$, Top-1 $= 1/3$) instead of dropping it; the success rate is the share of the 195 scenarios scored without a failure, averaged over the five runs. No significance test is run on the inclusive rows: every test reported in this paper is computed on the conditional metrics.
 
-\bibliographystyle{cas-model2-names}
+\bibliographystyle{elsarticle-num-names}
 \bibliography{cas-refs}
 
 \end{document}

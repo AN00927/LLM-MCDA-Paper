@@ -465,8 +465,9 @@ abstract and Conclusion consistency, the scope swaps, and the title once the aut
 ## 7. What only the author can supply or decide
 
 - **G3 title.** Candidates are in A5 of `PASS6_PROPOSAL.md`.
-- **B63** citation style; **B77** `CLAUDE.md` edit; **B11** delivered or total energy; **B10**
-  the real reason for the α values.
+- ~~**B63** citation style; **B77** `CLAUDE.md` edit; **B11** delivered or total energy; **B10**
+  the real reason for the α values.~~ Decided 2026-09-27: option (a) for B10, B11 and B63 and
+  B77 approved; all four applied.
 - **Stroudsburg and Quakertown utility assignment.** Both stay on PPL for now.
 - **Solar gain in HVAC heat mode**, and the three `model_config.py` inconsistencies (Section 2,
   "Model lineup").
