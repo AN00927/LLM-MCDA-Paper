@@ -69,7 +69,7 @@ MAX_CONSECUTIVE_RETRIEVAL_FAILURES = 5
 
 
 def coerce_score(value):
-    """Coerce a raw score value to float, returning NaN for non-numeric garbage.
+    """Coerce a raw score value to float, returning NaN for non-numeric or unparseable values.
 
     1928 / 1928.0 / "1928" are all treated as the sentinel (not NaN) so that
     callers can still distinguish "failed run" from "genuinely missing data".

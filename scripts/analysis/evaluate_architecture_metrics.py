@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 calculate_metrics.py - Metrics evaluation for MCDA architecture comparison
-Science Fair Project: LLM-assisted MCDA for Household Emissions Optimization
+LLM-assisted MCDA for Household Emissions Optimization
 
 Compares Direct LLM Scoring, Example-Guided LLM Scoring, and LLM-Parameterized Reference Scoring architectures against
 physics-based ground truth using MAVT scoring across HVAC, Appliance,
