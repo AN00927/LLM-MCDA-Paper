@@ -81,7 +81,7 @@ paper/Images/*
 !paper/Images/ArchitectureFlowcharts.png
 !paper/Images/OverallPerformanceByModel.pdf
 paper/Charts
-paper/per_run_metrics/
+paper/per_run_metrics/*.tex
 paper/Notebook (text format)
 paper/Charts_Significance_Notes.txt
 paper/incremental_contribution_table.tex
@@ -101,6 +101,9 @@ paper/paper_draft_singlecolumn.pdf
 paper/failure_analysis.csv
 paper/failure_analysis_tables.tex
 paper/pipeline_plan.md
+
+# Reference literature PDFs (downloaded papers)
+temppapers/
 
 # LaTeX distribution (vendored locally, never tracked)
 TinyTeX/
@@ -134,15 +137,19 @@ Analysis/workstream_f_report.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 !docs/*.md
-
-paper/Images/LifestyleChangesEmissionImpact.png
-paper_pipeline/analyze_benchmark_failures.py
+!paper/pass6/*.md
+!paper/pass6/**/*.md
+!Analysis/rerun_prep/*.md
+!Analysis/rerun_prep/**/*.md
+!Analysis/rerun_smoke/*.md
+docs/TODO_EXECUTION_PLAN.md
 
 *.pdf
 !Scoring Logic and Documentation/method/Budget_Penalties.pdf
 !Scoring Logic and Documentation/method/Calculator_Examples.pdf
 !Scoring Logic and Documentation/method/Evaluation_Metric_Derivations.pdf
 !Scoring Logic and Documentation/method/Reference_Ranges_for_Value_Functions.pdf
+
 
 
 

@@ -54,7 +54,7 @@ def duplication_rate(path, decision_type):
     """Return (rate_pct, n_duplicated, n_scored) for one run x decision type.
 
     A row counts as scored only if neither energy_cost nor environmental is the
-    failure sentinel (1928 in int/float/string form). Non-numeric garbage is
+    failure sentinel (1928 in int/float/string form). Non-numeric or unparseable values are
     excluded as well: is_sentinel is False for NaN, and np.isclose(NaN, x) is
     False, so a NaN would silently count as non-duplicated.
     """
