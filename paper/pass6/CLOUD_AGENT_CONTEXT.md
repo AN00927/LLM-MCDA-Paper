@@ -9,8 +9,8 @@ the author's local agent memory, which a cloned repo does not have.
 
 ## Standing rules (author's, all binding)
 
-- **Never commit or push unless the author says so in the conversation**, and then only to the
-  `cloud-work` branch (see the last section). Otherwise leave changes in the working tree and list
+- **Never commit or push unless the author says so in the conversation**, and then only to
+  `main` (author, 2026-09-28; `cloud-work` was merged into `main` by PR #19). Otherwise leave changes in the working tree and list
   the files. Read-only git is fine.
 - **No paid API call without the author's explicit go-ahead in the conversation**, including smoke
   tests. Show the cost estimate first. Tests mock HTTP.
@@ -41,9 +41,10 @@ the author's local agent memory, which a cloned repo does not have.
 - Models (`model_config.py`, author's file, do not edit without approval): gpt-oss-20b, Qwen3.5 9B,
   DeepSeek V4 Flash 0731, Gemini 3.8 Flash, each with `:floor` and a provider pin
   `{"only": [...], "allow_fallbacks": False, "require_parameters": True}`: gptoss `darkbloom/fp8`,
-  qwen `venice/fp8`, deepseek `baseten/fp8`, gemini `google-ai-studio/flex`. No streaming. Gemini
-  reasoning effort `low`. `MODEL_KEY` comes from the environment variable.
-- Benchmark A_E uses k=1; the rerun RAG ablation is the evidence. No k=3 or listwise extra arms.
+  qwen `venice/fp8`, deepseek `relace/fp4`, gemini `google-ai-studio/flex`. No streaming. Gemini
+  reasoning effort `minimal` (both set 2026-09-28). `MODEL_KEY` comes from the environment variable.
+- Benchmark A_E uses k=1, fixed (author, 2026-09-27). No k=3 arm. A listwise A_D arm was added
+  (2026-09-27; `run_listwise_direct_ranking.py`).
 - Prompt ablation: uniform 5 runs per cell for every model.
 - RAG ablation: a failed or unscored scenario counts as wrong for Top-1 (denominator = all
   scenarios). Nearest-neighbour baseline fallback stays `tie`.
@@ -102,8 +103,8 @@ Next: `NEXT_SESSION_HANDOFF.md` sections 3-5:
 2. Collect.
 3. S4, S5 and S6, including the design-change text in its section 5.2.
 
-Still open for the author: the title, the Gemini effort choice, and pushing the DeepSeek
-`relace/fp4` pin.
+Still open for the author: the title. The Gemini effort (`minimal`) and the DeepSeek pin
+(`relace/fp4`) were set in `model_config.py` on 2026-09-28.
 
 ## State on 2026-09-27
 
@@ -169,6 +170,11 @@ Open for the author:
   (B11), reason for the alpha values (B10), Stroudsburg/Quakertown utility (both PPL for now).
 
 ## Git in the cloud phase, and the wrap-up when EVERYTHING is done
+
+**Superseded in part (2026-09-28):** the author merged `cloud-work` into `main` with PR #19,
+a normal merge, and asked to work on `main` from now on. The manuscript and working docs are
+therefore in `main`'s history and in the PR #19 ref. Steps 4-5 below no longer apply as
+written. Before the repo is made public, the author decides how to remove that history.
 
 The cloud phase runs on the temporary branch `cloud-work`, branched from `main` at 7a39cb3. On
 that branch `.gitignore` was loosened and the manuscript, the working docs and the Duquesne PDF are

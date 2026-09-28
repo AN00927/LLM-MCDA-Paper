@@ -63,7 +63,7 @@ MODEL_SPECS = {
         "output_folder": "Output Files DeepSeek V4 Flash 0731",
         "reasoning_effort": "none",
         "provider": {
-            "only": ["baseten/fp8"],
+            "only": ["relace/fp4"],
             "allow_fallbacks": False,
             "require_parameters": True,
         },
@@ -72,7 +72,7 @@ MODEL_SPECS = {
         "label": "Input Price: $0.375/M, Output Price: $1.875/M",
         "openrouter_id": "google/gemini-3.8-flash:floor",
         "output_folder": "Output Files Gemini 3.8 Flash",
-        "reasoning_effort": "low",
+        "reasoning_effort": "minimal",
         "provider": {
             "only": ["google-ai-studio/flex"],
             "allow_fallbacks": False,

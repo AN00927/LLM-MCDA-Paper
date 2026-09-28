@@ -13,9 +13,9 @@ Read in this order:
 5. `paper/pass6/PASS6_HANDOFF.md` sections 5-6, when you reach the paper work.
 
 Rules:
-- **Branch:** work on `cloud-work`. Commit and push only there, and never open a PR from it.
-  The author let the last two sessions commit and push; confirm that permission in the new
-  conversation.
+- **Branch:** work on **`main`** (author, 2026-09-28: `cloud-work` was merged into `main` by
+  PR #19). The author let the last two sessions commit and push; confirm that permission in
+  the new conversation.
 - **Paid calls:** none without the author's explicit go-ahead in the conversation. The author
   approved the design in the runbook but has **not** said "collect". They will top up the
   OpenRouter credit when they choose; the balance was $2.93 on 2026-09-27, and the collection
@@ -33,10 +33,8 @@ Rules:
 2. `chroma_rag_db/` is git-ignored, so build it first: `.venv/bin/python build_rag_index.py`.
 3. Baseline check: run `MODEL_KEY=<k> .venv/bin/python -m pytest -q tests` for each of `gptoss`,
    `qwen`, `deepseek` and `gemini`. Expect **429 passed** under every key.
-4. `git pull origin cloud-work`, and check that `model_config.py` pins DeepSeek to
-   `relace/fp4`. At the end of this session the branch copy still said `baseten/fp8`; the
-   author had changed it locally. If it is still `baseten/fp8`, ask the author before
-   collecting.
+4. `git pull origin main`. `model_config.py` pins DeepSeek to `relace/fp4` and sets Gemini's
+   effort to `minimal` (both 2026-09-28).
 
 ## 2. State at the end of the second session
 
@@ -107,10 +105,7 @@ cloud session".
 ## 3. Before collecting (blocking)
 
 1. The author says go and has topped up. The balance must be at least 2x the step's estimate.
-2. `model_config.py` on the branch has DeepSeek on `relace/fp4` (section 1, step 4).
-3. The author's Gemini effort choice (`low` or `minimal`) is in `model_config.py`. Main L737
-   says "minimal", so the text must match the config after the rerun (section 5).
-4. The output folders are empty (runbook section 0.1).
+2. The output folders are empty (runbook section 0.1).
 
 ## 4. Collection
 
@@ -200,7 +195,7 @@ Line numbers are as of commit f07ddd5. Re-find each span before editing.
     supp:1376, 1441 and 1443, still say "Gemini 3.5 Flash". The author asked only for L737, so
     **ask before changing these**, and recommend changing all of them.
   - README:21, 122, 184 and 258 say the same.
-  - Main L737 "minimal for Gemini" must match the config's effort.
+  - Main L737 "minimal for Gemini" matches the config (`minimal`); keep it.
 
 ### 5.3 Claims, Discussion, verification
 
@@ -216,7 +211,6 @@ Line numbers are as of commit f07ddd5. Re-find each span before editing.
 ## 6. Still open for the author
 
 - **Before collecting:** the go-ahead and the credit top-up.
-- **Before collecting:** the pushed DeepSeek pin and the Gemini effort choice.
 - **Title:** candidates are in A5 of `PASS6_PROPOSAL.md`.
 - **Flag, not fixed:** main ~699 says the base internal gain prevents zero load at zero ΔT.
   That holds only in cooling mode.

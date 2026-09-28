@@ -33,8 +33,8 @@ with the 2026-09-27 smoke measurements (`Analysis/rerun_smoke/SMOKE_REPORT.md`),
 | Optional arm: A_E k = 3 on the test set | **Cut** (k = 1 is fixed). |
 | Added arm: listwise A_D | **Added**. One call per scenario asking the model to rank the three alternatives. It uses A_D's anchors and scenario context plus the 35/30/20/15 weights. 5 runs. Script: `run_listwise_direct_ranking.py`. |
 | Nearest-neighbour fallback (D6) | **`tie`**, the script default and the original rule. The copy-only baseline on the test set now defaults to **k = 1**, matching A_E. |
-| DeepSeek provider | The author switched it to **`relace/fp4`** in their `model_config.py`. A 15-call smoke at 4 workers had 0 failures and 0 retries. **Confirm the pushed `model_config.py` carries this pin before collecting**; the copy on `cloud-work` at the end of the second session still had `baseten/fp8`. |
-| Gemini effort | `low` is in the config. `minimal` is accepted but thinks just as much and costs the same (smoke of 9 identical calls). The author decides; main L737 must match the config (it says "minimal" today). |
+| DeepSeek provider | **`relace/fp4`**, set in `model_config.py` on `main` on 2026-09-28. A 15-call smoke at 4 workers had 0 failures and 0 retries (BaseTen had 429s on 12 of 27). |
+| Gemini effort | **`minimal`**, set in `model_config.py` on 2026-09-28 (author decision). It matches main L737. It is accepted and costs the same as `low` (smoke of 9 identical calls), so the estimates stand. |
 | Qwen CoT cap | The prompt ablation raises `max_tokens` for `cot_scaffold` from each pinned endpoint's own limit, capped at 32,768 (`resolve_cot_max_tokens`). Nothing to decide. |
 
 ## 0.1 What must be empty before collecting
