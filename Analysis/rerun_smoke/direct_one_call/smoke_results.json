@@ -1,0 +1,190 @@
+[
+  {
+    "model_key": "gptoss",
+    "requested_model": "openai/gpt-oss-20b:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "low"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T22:48:14.506946+00:00",
+    "scenario_id": null,
+    "alternative": "72",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "openai/gpt-oss-20b",
+    "provider": "Darkbloom",
+    "finish_reason": "stop",
+    "tokens_input": 720,
+    "tokens_output": 121,
+    "reasoning_tokens": 75,
+    "cost_usd": 2.385e-05,
+    "latency_ms": 3403.878688812256,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "openai/gpt-oss-20b:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "low"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "darkbloom/fp8"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.5,
+      "environmental": 0.5,
+      "comfort": 0.8,
+      "practicality": 0.9
+    },
+    "response": "{\"energy_cost\": 0.5, \"environmental\": 0.5, \"comfort\": 0.8, \"practicality\": 0.9}"
+  },
+  {
+    "model_key": "qwen",
+    "requested_model": "qwen/qwen3.5-9b:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T22:48:18.405638+00:00",
+    "scenario_id": null,
+    "alternative": "72",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "qwen/qwen3.5-9b",
+    "provider": "Venice",
+    "finish_reason": "stop",
+    "tokens_input": 702,
+    "tokens_output": 41,
+    "reasoning_tokens": 0,
+    "cost_usd": 7.635e-05,
+    "latency_ms": 1100.1858711242676,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "qwen/qwen3.5-9b:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "venice/fp8"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.65,
+      "environmental": 0.65,
+      "comfort": 0.75,
+      "practicality": 0.85
+    },
+    "response": "{\"energy_cost\": 0.65, \"environmental\": 0.65, \"comfort\": 0.75, \"practicality\": 0.85}"
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T22:48:19.966368+00:00",
+    "scenario_id": null,
+    "alternative": "72",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "BaseTen",
+    "finish_reason": "stop",
+    "tokens_input": 654,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 9.464e-05,
+    "latency_ms": 805.0980567932129,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "baseten/fp8"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.75,
+      "practicality": 0.7
+    },
+    "response": "{\"energy_cost\": 0.55, \"environmental\": 0.55, \"comfort\": 0.75, \"practicality\": 0.7}"
+  },
+  {
+    "model_key": "gemini",
+    "requested_model": "google/gemini-3.8-flash:floor",
+    "reasoning_sent": {
+      "enabled": true,
+      "effort": "low"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T22:48:21.253721+00:00",
+    "scenario_id": null,
+    "alternative": "72",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "google/gemini-3.8-flash",
+    "provider": "Google AI Studio",
+    "finish_reason": "stop",
+    "tokens_input": 684,
+    "tokens_output": 317,
+    "reasoning_tokens": 278,
+    "cost_usd": 0.000850875,
+    "latency_ms": 2356.2662601470947,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "google/gemini-3.8-flash:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "enabled": true,
+        "effort": "low"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "google-ai-studio/flex"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.3,
+      "environmental": 0.3,
+      "comfort": 0.95,
+      "practicality": 0.7
+    },
+    "response": "{\"energy_cost\": 0.30, \"environmental\": 0.30, \"comfort\": 0.95, \"practicality\": 0.70}"
+  }
+]

@@ -1,18 +1,23 @@
 """Prompt-sensitivity ablation for A_D (direct scoring) and A_E (example-guided).
 
 Tests whether A_D's and A_E's poor rank recovery is an artifact of the specific
-prompt they ship with, rather than a property of direct LLM scoring. Four
-variants, applied to both architectures:
+prompt they ship with, rather than a property of direct LLM scoring. Variants:
 
-  control      -- the shipped prompt, unmodified. Gate: must reproduce the
-                  main-text tau within run-to-run SD, otherwise the harness
-                  itself is wrong and no other arm can be trusted.
+  control      -- the shipped prompt, unmodified. NOT collected by default
+                  (author decision 2026-09-27): its messages are byte-identical
+                  to the main suite's (checked at startup by
+                  _assert_control_is_main_suite), so the significance script
+                  reads main-suite runs 1..N as the control cell instead of
+                  paying for the same calls twice. Pass --variants control to
+                  collect it anyway (smoke tests, harness checks).
   no_anchors   -- per-criterion good/moderate/poor calibration anchors stripped
                   from the system prompt, leaving criterion names and the scale.
+                  A_D only (A_E ships without anchors).
   cot_scaffold -- an explicit reasoning scaffold before the JSON answer.
-  scale_0_10   -- response scale changed 0-1 -> 0-10, rescaled post hoc by /10.
-                  The sharpest probe of the central-tendency finding: if the
-                  clustering is a scale artifact it should move here.
+
+The 0-10 response-scale variant was cut on 2026-09-27 (author decision).
+Every cell runs PROMPT_ABLATION_RUNS = 3 times by default, fixed in advance,
+with no top-up runs.
 
 This script NEVER edits the architecture files. The shipped A_D system prompt is
 hardcoded inline in `score_alternative()` and A_E's in
@@ -74,12 +79,15 @@ from sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,
+    MAX_OUTPUT_TOKENS,
     SENTINEL_FLOAT,
     RawCallLog,
     RunAbort,
     apply_mavt_ranking,
     build_openrouter_payload,
     call_log_fields,
+    extract_json_object,
+    is_numeric_score,
     openrouter_chat,
     read_table_clean,
     response_meta,
@@ -203,20 +211,6 @@ Write your reasoning first, then on the final line return ONLY the JSON object.
 """
 
 
-def _rescale_prompt_0_10(prompt: str) -> str:
-    """Rewrite a 0-1 system prompt to ask for 0-10. Applied to the shipped text
-    so the variant differs from control in the scale and nothing else."""
-    out = prompt.replace(
-        "using the inclusive 0-1 scale (0.0 <= score <= 1.0)",
-        "using the inclusive 0-10 scale (0.0 <= score <= 10.0)",
-    )
-    out = out.replace(
-        'where each X is between 0.0 and 1.0.',
-        'where each X is between 0.0 and 10.0.',
-    )
-    return out
-
-
 VARIANT_SPECS = OrderedDict([
     ("control", {
         "label": "Control (shipped prompt)",
@@ -240,14 +234,16 @@ VARIANT_SPECS = OrderedDict([
         "system": {"AD": AD_SYSTEM_PROMPT + COT_SCAFFOLD,
                    "AE": AE_SYSTEM_PROMPT + COT_SCAFFOLD},
     }),
-    ("scale_0_10", {
-        "label": "Response scale 0-10 (rescaled post hoc)",
-        "scale_max": 10.0,
-        "cot": False,
-        "system": {"AD": _rescale_prompt_0_10(AD_SYSTEM_PROMPT),
-                   "AE": _rescale_prompt_0_10(AE_SYSTEM_PROMPT)},
-    }),
 ])
+
+# Variants collected when --variants is not given: control comes from the main
+# suite (see module docstring).
+DEFAULT_VARIANTS = [v for v in VARIANT_SPECS if v != "control"]
+
+# Runs per cell, fixed in advance (author decision 2026-09-27). Deliberately not
+# N_RUNS: the main suite keeps 5 runs, and runs 1..PROMPT_ABLATION_RUNS of it are
+# the control cell.
+PROMPT_ABLATION_RUNS = 3
 
 NO_ANCHORS_AE_NOTE = (
     "A_E's shipped system prompt contains no per-criterion calibration anchors "
@@ -259,6 +255,148 @@ ARCHITECTURES = OrderedDict([
     ("AD", {"label": "Direct LLM scoring", "rag": False}),
     ("AE", {"label": "Example-guided (RAG) scoring", "rag": True}),
 ])
+
+
+# ---------------------------------------------------------------------------
+# cot_scaffold max_tokens: raised per model from the pinned endpoint's own
+# limit (2026-09-27 author decision). Every other arm, and both architectures'
+# non-CoT cells, keep sentinel_utils.MAX_OUTPUT_TOKENS (8192) unchanged.
+# ---------------------------------------------------------------------------
+
+# Hard ceiling regardless of what an endpoint reports.
+COT_MAX_TOKENS_CAP = 32768
+
+# Populated once per run by resolve_cot_max_tokens(), before any cot_scaffold
+# cell is collected: {model_key: max_tokens to send for that model's CoT arm}.
+COT_MAX_TOKENS: Dict[str, int] = {}
+
+OPENROUTER_ENDPOINTS_URL = "https://openrouter.ai/api/v1/models/{author}/{slug}/endpoints"
+
+
+def _pinned_provider_tag(model_key: str) -> str:
+    """The single provider *MODEL_SPECS[model_key]["provider"]["only"]* pins
+    (e.g. "darkbloom/fp8"): the string an /endpoints entry must match."""
+    only = (MODEL_SPECS[model_key].get("provider") or {}).get("only") or []
+    if len(only) != 1:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup: MODEL_SPECS['{model_key}']['provider']['only'] "
+            f"must pin exactly one provider to know which /endpoints entry to read; got {only!r}."
+        )
+    return only[0]
+
+
+def _endpoint_matches_pin(endpoint: Dict, tag: str) -> bool:
+    """True if an OpenRouter /endpoints entry is the pinned provider.
+
+    Matched on the entry's own `tag` field first (the documented identity for
+    an endpoint); if that field is absent or blank, falls back to
+    `<provider_name>/<quantization>` lower-cased, which is the same string
+    shape the pin itself uses (e.g. "darkbloom/fp8").
+    """
+    tag = tag.strip().lower()
+    ep_tag = str(endpoint.get("tag") or "").strip().lower()
+    if ep_tag:
+        return ep_tag == tag
+    provider_name = str(endpoint.get("provider_name") or "").strip().lower()
+    quantization = str(endpoint.get("quantization") or "").strip().lower()
+    return f"{provider_name}/{quantization}" == tag
+
+
+def _fetch_endpoint_max_completion_tokens(model_key: str) -> int:
+    """GET the pinned endpoint's max_completion_tokens for *model_key* from
+    OpenRouter's free, keyless `/api/v1/models/<author>/<slug>/endpoints`.
+
+    Raises RuntimeError with a clear ASCII message on any failure -- network
+    error, non-200 status, unparseable body, no endpoint matching the pinned
+    provider tag, or a null max_completion_tokens -- rather than silently
+    falling back to a default cap.
+    """
+    model_id = MODEL_SPECS[model_key]["openrouter_id"]
+    base_id = model_id.split(":", 1)[0]  # strip ":floor" (or any other suffix)
+    if "/" not in base_id:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"cannot split '{base_id}' into author/slug for the OpenRouter /endpoints URL."
+        )
+    author, slug = base_id.split("/", 1)
+    url = OPENROUTER_ENDPOINTS_URL.format(author=author, slug=slug)
+    tag = _pinned_provider_tag(model_key)
+    how_to_fix = ("Pass --cot-max-tokens N to override (still capped at "
+                  f"{COT_MAX_TOKENS_CAP}), or fix the cause before collecting cot_scaffold cells.")
+
+    try:
+        resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} raised {type(exc).__name__}: {exc}. {how_to_fix}"
+        ) from exc
+
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} returned HTTP {resp.status_code}. {how_to_fix}"
+        )
+
+    try:
+        body = resp.json()
+    except ValueError as exc:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} returned a body that is not valid JSON. {how_to_fix}"
+        ) from exc
+
+    endpoints = ((body or {}).get("data") or {}).get("endpoints")
+    if not isinstance(endpoints, list) or not endpoints:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"GET {url} returned no endpoints. {how_to_fix}"
+        )
+
+    matches = [ep for ep in endpoints if isinstance(ep, dict) and _endpoint_matches_pin(ep, tag)]
+    if not matches:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"no entry in GET {url} matches the pinned provider '{tag}'. {how_to_fix}"
+        )
+
+    max_completion_tokens = matches[0].get("max_completion_tokens")
+    if max_completion_tokens is None:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"the pinned endpoint '{tag}' reports max_completion_tokens = null. {how_to_fix}"
+        )
+    try:
+        return int(max_completion_tokens)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens lookup FAILED for model '{model_key}' ({model_id}): "
+            f"max_completion_tokens={max_completion_tokens!r} is not an integer. {how_to_fix}"
+        ) from exc
+
+
+def resolve_cot_max_tokens(model_keys: List[str], override: Optional[int] = None) -> Dict[str, int]:
+    """Populate and return COT_MAX_TOKENS for *model_keys*: the max_tokens to
+    send on every cot_scaffold call for that model, min(COT_MAX_TOKENS_CAP,
+    the pinned endpoint's max_completion_tokens). Run once per model at the
+    start of the prompt-ablation run, before any cot_scaffold cell is
+    collected; every other arm keeps sentinel_utils.MAX_OUTPUT_TOKENS.
+
+    With *override* given (the --cot-max-tokens CLI flag), every model gets
+    min(COT_MAX_TOKENS_CAP, override) and the network lookup is skipped
+    entirely -- the author's escape hatch when the free GET is unavailable.
+    Otherwise each model_key's cap is fetched fresh (not cached across calls),
+    so a rerun in the same process reflects the endpoint's current state; a
+    failed lookup raises and aborts before any cot_scaffold cell runs.
+    """
+    for model_key in model_keys:
+        if override is not None:
+            cap = min(COT_MAX_TOKENS_CAP, int(override))
+        else:
+            cap = min(COT_MAX_TOKENS_CAP, _fetch_endpoint_max_completion_tokens(model_key))
+        COT_MAX_TOKENS[model_key] = cap
+        logger.info("cot_scaffold max_tokens for %s: %s", model_key, cap)
+    return dict(COT_MAX_TOKENS)
 
 
 def _assert_control_matches_shipped() -> None:
@@ -298,6 +436,132 @@ def _assert_control_matches_shipped() -> None:
         )
 
 
+class _CapturedMessages(BaseException):
+    """Raised by a stubbed query function to stop an architecture right after it
+    has built its messages. A BaseException, so the architectures' own
+    `except Exception` handlers cannot swallow it."""
+
+    def __init__(self, messages):
+        super().__init__("captured")
+        self.messages = messages
+
+
+def _capture_stub(*args, **kwargs):
+    messages = args[0] if args else kwargs.get("messages")
+    raise _CapturedMessages(messages)
+
+
+def _load_direct_module():
+    import importlib.util
+    path = PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py"
+    spec = importlib.util.spec_from_file_location("direct_llm_scoring_for_check", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def main_suite_messages(architecture: str, scenario: Dict, alternative: str) -> List[Dict]:
+    """The exact messages the installed main-suite architecture would send for
+    one (scenario, alternative), captured by stubbing its query function. No
+    API call is made."""
+    if ARCHITECTURES[architecture]["rag"]:
+        module, fn = _load_ae_module(), "score_alternative_with_rag"
+    else:
+        module, fn = _load_direct_module(), "score_alternative"
+    original = module.query_openrouter
+    module.query_openrouter = _capture_stub
+    try:
+        getattr(module, fn)(scenario, alternative)
+    except _CapturedMessages as captured:
+        return captured.messages
+    finally:
+        module.query_openrouter = original
+    raise RuntimeError(f"{architecture}: the architecture returned without calling its query "
+                       f"function (for A_E, retrieval found no exemplar).")
+
+
+def _assert_control_is_main_suite(architectures: List[str]) -> None:
+    """Fail loudly unless this script's control messages equal the installed
+    architectures' byte for byte, on the first test scenario of each decision
+    type and every alternative. That equality is what lets the significance
+    script use main-suite runs as the control cell (author decision
+    2026-09-27); the other variants then differ from the main suite only in
+    their system prompt."""
+    scenarios = load_scenarios(None, 13)
+    firsts = {}
+    for sc in scenarios:
+        firsts.setdefault(sc.get("decision_type"), sc)
+    problems = []
+    for arch in architectures:
+        for dtype, sc in firsts.items():
+            for i in (1, 2, 3):
+                alt = str(sc.get(f"alternative_{i}"))
+                ours = build_messages(arch, VARIANT_SPECS["control"], sc, alt)
+                theirs = main_suite_messages(arch, sc, alt)
+                if ours != theirs:
+                    problems.append(f"{arch} {dtype} scenario {sc['scenario_id']} alternative {alt!r}")
+    if problems:
+        raise RuntimeError(
+            "Control messages differ from the installed main suite's, so main-suite runs "
+            "cannot stand in for the control cell:\n  - " + "\n  - ".join(problems))
+
+
+MAIN_SUITE_FILE_STEM = {"AD": "Direct_LLM_Scoring", "AE": "Example-Guided_LLM_Scoring"}
+
+
+def main_suite_run_path(model_key: str, architecture: str, run_idx: int) -> Path:
+    """Per-run workbook of the main suite (k = 1, untagged A_E files only)."""
+    return (PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"]
+            / f"{MAIN_SUITE_FILE_STEM[architecture]}_results_run_{run_idx:02d}.xlsx")
+
+
+def main_suite_control_rows(model_key: str, architecture: str, runs: int,
+                            reference: Dict[int, Dict],
+                            scenario_ids: Optional[List[int]] = None) -> pd.DataFrame:
+    """The control cell rebuilt from main-suite runs 1..runs, scored with this
+    script's own scenario_metrics, so control and variant rows are computed by
+    the same code. The main suite parses replies with the same rule as this
+    script (sentinel_utils.extract_json_object and is_numeric_score). Columns match run_cell's rows for everything the summary and the
+    significance tests read. A missing run file raises: a partial control
+    would bias every comparison against it."""
+    rows = []
+    for run_idx in range(1, runs + 1):
+        path = main_suite_run_path(model_key, architecture, run_idx)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Main-suite run {run_idx} for {model_key}/{architecture} not found at {path}. "
+                f"The prompt-ablation control comes from main-suite runs 1..{runs}; collect them first.")
+        df = read_table_clean(path, keep_str_cols=["alternative"])
+        for sid, g in df.groupby("scenario_id", sort=True):
+            sid = int(sid)
+            if scenario_ids is not None and sid not in scenario_ids:
+                continue
+            scored = [{"alternative": str(r["alternative"]), **{c: float(r[c]) for c in CRITERIA}}
+                      for _, r in g.iterrows()]
+            result = {"scored": scored, "ranking": apply_mavt_ranking(scored)}
+            metrics = scenario_metrics(result, reference.get(sid))
+            valid = [a for a in scored if not any(a[c] == SENTINEL_FLOAT for c in CRITERIA)]
+            rows.append({
+                "variant": "control",
+                "variant_label": VARIANT_SPECS["control"]["label"] + " [main-suite run]",
+                "architecture": architecture, "model": model_key,
+                "model_id": str(g["model_id"].iloc[0]) if "model_id" in g else "",
+                "run": run_idx,
+                "collected_utc": str(g["collected_utc"].iloc[0]) if "collected_utc" in g else "",
+                "scenario_id": sid,
+                "decision_type": str(g["decision_type"].iloc[0]),
+                "alt_scores_json": json.dumps([{**a, "rank": r} for a, r in
+                                               zip(scored, result["ranking"]["ranks"])]),
+                "kendall_tau": metrics["kendall_tau"], "top1": metrics["top1"],
+                "top2": metrics["top2"], "failed": metrics["failed"],
+                "pred_top1": metrics["pred_top1"],
+                "total_tokens": np.nan,
+                "mean_criterion_sd": float(np.mean([np.std([a[c] for c in CRITERIA]) for a in valid]))
+                                     if valid and not metrics["failed"] else np.nan,
+            })
+    return pd.DataFrame(rows)
+
+
 # ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
@@ -322,11 +586,13 @@ def _call_diagnostics(call: Dict, model_id: str) -> Dict:
     }
 
 
-def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tuple[Optional[str], Dict]:
+def query_openrouter(messages: List[Dict], model_id: str, model_key: str,
+                     max_tokens: Optional[int] = None) -> Tuple[Optional[str], Dict]:
     """POST to OpenRouter through the architectures' shared client,
     sentinel_utils.openrouter_chat: same payload builder (max_tokens
-    MAX_OUTPUT_TOKENS, the MODEL_SPECS provider pin for model_id), same retry
-    policy from model_config, same failure rules.
+    MAX_OUTPUT_TOKENS unless *max_tokens* overrides it -- the cot_scaffold
+    arm's raised cap -- and the MODEL_SPECS provider pin for model_id), same
+    retry policy from model_config, same failure rules.
 
     Returns (content, diagnostics). content is None when the call failed
     (retries exhausted, or a 400/404/422 on its one retry). A truncated reply
@@ -342,7 +608,8 @@ def query_openrouter(messages: List[Dict], model_id: str, model_key: str) -> Tup
         "X-Title": OPENROUTER_APP_TITLE,
     }
     payload = build_openrouter_payload(model_id, messages, TEMPERATURE,
-                                       get_reasoning_payload(model_key))
+                                       get_reasoning_payload(model_key),
+                                       max_tokens=max_tokens)
     # logger=None: 8 workers x ~80k calls would flood the console with one line
     # per call; every attempt is in the raw jsonl instead.
     call = openrouter_chat(
@@ -373,29 +640,8 @@ def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[st
     """
     if not response_text:
         return None, "failed_empty_response"
-    text = response_text.strip()
-    if text.startswith("```"):
-        parts = text.split("```")
-        if len(parts) >= 2:
-            text = parts[1]
-            if text.lower().startswith("json"):
-                text = text[4:]
-            text = text.strip()
-
-    parsed = None
-    try:
-        parsed = json.loads(text)
-    except (json.JSONDecodeError, ValueError):
-        # Fall back to the last {...} span, which is where the scaffolded arms
-        # put the answer.
-        for match in reversed(list(re.finditer(r"\{[^{}]*\}", text, re.DOTALL))):
-            try:
-                candidate = json.loads(match.group(0))
-            except (json.JSONDecodeError, ValueError):
-                continue
-            if isinstance(candidate, dict) and any(c in candidate for c in CRITERIA):
-                parsed = candidate
-                break
+    # The same extraction rule as the installed A_D and A_E (sentinel_utils).
+    parsed = extract_json_object(response_text, CRITERIA)
     if not isinstance(parsed, dict):
         return None, "failed_malformed_json"
 
@@ -404,7 +650,7 @@ def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[st
         if criterion not in parsed:
             return None, f"failed_missing_score:{criterion}"
         raw = parsed[criterion]
-        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        if not is_numeric_score(raw):
             return None, "failed_invalid_score_type"
         value = float(raw)
         if not (0.0 <= value <= scale_max):
@@ -418,8 +664,10 @@ def parse_scores(response_text: str, scale_max: float) -> Tuple[Optional[Dict[st
 # ---------------------------------------------------------------------------
 
 def build_user_prompt(scenario: Dict, alternative: str) -> str:
-    """Mirrors Direct_LLM_Scoring.build_user_prompt. Homeowner-facing fields
-    only -- the true engineering values are never placed in an A_D/A_E prompt."""
+    """Byte-identical to Direct_LLM_Scoring.build_user_prompt (checked at
+    startup by _assert_control_is_main_suite). A_D only: A_E's user prompt is
+    built by the installed A_E's own build_user_prompt_with_rag. Homeowner-facing
+    fields only -- the true engineering values are never placed in a prompt."""
     decision_type = scenario.get("decision_type", "N/A")
     all_alts = [scenario.get("alternative_1", ""), scenario.get("alternative_2", ""),
                 scenario.get("alternative_3", "")]
@@ -452,7 +700,7 @@ def build_user_prompt(scenario: Dict, alternative: str) -> str:
         prompt += f"- Housing Type: {scenario.get('housing_type', 'N/A')}\n"
         prompt += f"- Utility Budget: ${scenario.get('utility_budget', 'N/A')}/month\n"
 
-    prompt += "\nProvide scores for all 4 criteria.\n"
+    prompt += "\nProvide scores (0-1) for all 4 criteria.\n"
     prompt += "Consider how this specific alternative performs given the scenario context.\n"
     return prompt
 
@@ -508,8 +756,9 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
                    retrieval_errors: Optional[List] = None,
                    distances_out: Optional[List] = None) -> List[Dict]:
     system_prompt = variant["system"][architecture]
-    user_prompt = build_user_prompt(scenario, alternative)
-    if ARCHITECTURES[architecture]["rag"]:
+    if not ARCHITECTURES[architecture]["rag"]:
+        user_prompt = build_user_prompt(scenario, alternative)
+    else:
         ae = _load_ae_module()
         # Chroma queries and the SentenceTransformer encode are serialised; only
         # the OpenRouter call below runs concurrently. Retrieval is local and
@@ -523,8 +772,10 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
         if distances_out is not None:
             distances_out.extend(r.get("distance") for r in retrieved)
         rag_context = ae.format_rag_context(retrieved)
-        if rag_context:
-            user_prompt = user_prompt + "\n" + rag_context
+        # The installed A_E's own builder, so the user prompt is the main
+        # suite's byte for byte. With no exemplar, score_scenario fails the
+        # call before any API request.
+        user_prompt = ae.build_user_prompt_with_rag(scenario, alternative, rag_context)
     return [{"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}]
 
@@ -532,6 +783,23 @@ def build_messages(architecture: str, variant: Dict, scenario: Dict, alternative
 # ---------------------------------------------------------------------------
 # Scenario scoring
 # ---------------------------------------------------------------------------
+
+def _max_tokens_for(variant: Dict, model_key: str) -> int:
+    """The max_tokens cap for one (variant, model) cell: the raised
+    cot_scaffold cap resolved by resolve_cot_max_tokens() for a CoT variant,
+    else sentinel_utils.MAX_OUTPUT_TOKENS unchanged. Never falls back
+    silently: a CoT variant with no resolved cap is a bug (main() always
+    resolves it before the cell loop), so it raises rather than sending 8192."""
+    if not variant["cot"]:
+        return MAX_OUTPUT_TOKENS
+    cap = COT_MAX_TOKENS.get(model_key)
+    if cap is None:
+        raise RuntimeError(
+            f"cot_scaffold max_tokens not resolved for model '{model_key}'. "
+            f"Call resolve_cot_max_tokens([...]) before collecting any cot_scaffold cell."
+        )
+    return cap
+
 
 def score_scenario(scenario: Dict, architecture: str, variant: Dict,
                    model_id: str, model_key: str) -> Dict:
@@ -548,6 +816,7 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
     failure_types = []
 
     is_rag = ARCHITECTURES[architecture]["rag"]
+    max_tokens = _max_tokens_for(variant, model_key)
     for alternative in alternatives:
         if _ABORT.is_set():
             raise RunAbort("aborted: another worker hit a fatal OpenRouter error")
@@ -585,6 +854,11 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
                     latency_ms=call_diag.get("latency_ms", 0),
                     error=call_diag.get("error", "") or (error or ""),
                     failure_type=call_diag.get("failure_type"),
+                    # The per-arm cap actually sent (8192, or the raised
+                    # cot_scaffold cap): recorded even when no call was made
+                    # (the RAG-retrieval-failure branch), since it is fixed by
+                    # (variant, model) and known regardless.
+                    max_tokens=max_tokens,
                     **call_log_fields(call_diag),
                     api_success=response is not None,
                     parse_error=error,
@@ -604,7 +878,8 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
 
         diag["api_calls"] += 1
         try:
-            response, call_diag = query_openrouter(messages, model_id, model_key)
+            response, call_diag = query_openrouter(messages, model_id, model_key,
+                                                    max_tokens=max_tokens)
         except RunAbort as abort:
             # Archive the failing call (e.g. the 402) before the process stops.
             fatal = _call_diagnostics(getattr(abort, "diagnostics", {}) or {}, model_id)
@@ -707,15 +982,26 @@ def load_reference() -> Dict[int, Dict]:
 
 
 def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
-    """Kendall tau / Top-1 against the reference ranking. A scenario with any
-    sentinel score is reported as failed and contributes to no mean.
+    """Kendall tau / Top-1 / Top-2 against the reference ranking.
+
+    Accuracy rule (author decision, 2026-09-27; same rule the RAG ablation
+    already uses -- see run_rag_ablation_experiments.scenario_metrics): a
+    scenario that failed or is unscored -- no reference ranking at all, any
+    alternative scored the sentinel, or no alternative overlaps the reference
+    -- counts as WRONG for Top-1 and Top-2 (0.0, never NaN), and stays in the
+    denominator: callers average top1/top2 over every scenario in the cell,
+    not only the scored ones. Kendall tau is not an accuracy metric and is
+    unchanged: NaN whenever it is undefined (fewer than two overlapping
+    alternatives, or tied ranks on either side), averaged over scored
+    scenarios only because pandas' mean() skips NaN.
 
     Tau is computed on ranks, not raw scores: `result["ranking"]` already
     applies apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY tie-break
     (B60), and the reference side reuses the ground truth's own tie-broken
     "rank" column, so neither side scores tau_b on tied values.
     """
-    out = {"kendall_tau": np.nan, "top1": np.nan, "failed": True}
+    out = {"kendall_tau": np.nan, "top1": 0.0, "top2": 0.0,
+           "failed": True, "pred_top1": ""}
     if ref is None:
         return out
     scored = result["scored"]
@@ -723,22 +1009,29 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
         return out
 
     common = [a["alternative"] for a in scored if a["alternative"] in ref["mavt_by_alt"]]
-    if len(common) < 2:
+    if not common:
         return out
 
     pred_rank_by_alt = {a["alternative"]: r for a, r in
                         zip(scored, result["ranking"]["ranks"])}
+    ref_rank_by_alt = ref["rank_by_alt"]
     pred_ranks = [pred_rank_by_alt[a] for a in common]
-    ref_ranks = [ref["rank_by_alt"][a] for a in common]
-    if len(set(pred_ranks)) < 2 or len(set(ref_ranks)) < 2:
+    ref_ranks = [ref_rank_by_alt[a] for a in common]
+    if len(common) < 2 or len(set(pred_ranks)) < 2 or len(set(ref_ranks)) < 2:
         tau = np.nan
     else:
         tau = float(kendalltau(pred_ranks, ref_ranks).correlation)
 
     pred_top1 = min(common, key=lambda a: pred_rank_by_alt[a])
-    ref_top1 = min(common, key=lambda a: ref["rank_by_alt"][a])
-    return {"kendall_tau": tau, "top1": 1.0 if pred_top1 == ref_top1 else 0.0,
-            "failed": False}
+    ref_top1 = min(common, key=lambda a: ref_rank_by_alt[a])
+    pred_top2 = {a for a in common if pred_rank_by_alt[a] <= 2}
+    return {
+        "kendall_tau": tau,
+        "top1": 1.0 if pred_top1 == ref_top1 else 0.0,
+        "top2": 1.0 if ref_top1 in pred_top2 else 0.0,
+        "failed": False,
+        "pred_top1": pred_top1,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -747,8 +1040,10 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
 
 def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture: str,
                    model_key: str, run_idx: int, error: str, collected_utc: str) -> Dict:
-    """A scenario that raised rather than returning scores. Marked failed so it is
-    excluded from every mean, with the error preserved for diagnosis."""
+    """A scenario that raised rather than returning scores. Marked failed so it
+    is excluded from the kendall_tau mean (NaN, skipped by pandas' mean()) and
+    counted WRONG in top1/top2 (0.0, not NaN -- the failure-as-wrong rule),
+    with the error preserved for diagnosis."""
     return {
         "variant": variant_id, "variant_label": variant["label"],
         "architecture": architecture, "model": model_key,
@@ -756,7 +1051,7 @@ def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture:
         "collected_utc": collected_utc,
         "scenario_id": scenario["scenario_id"],
         "decision_type": scenario.get("decision_type", ""),
-        "kendall_tau": np.nan, "top1": np.nan, "failed": True, "pred_top1": "",
+        "kendall_tau": np.nan, "top1": 0.0, "top2": 0.0, "failed": True, "pred_top1": "",
         "api_calls": 0, "successful_calls": 0, "failed_calls": 0,
         "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
         "latency_ms": 0.0, "failure_types": f"harness_exception: {error[:200]}",
@@ -794,6 +1089,7 @@ def run_cell(scenarios: List[Dict], reference: Dict[int, Dict], architecture: st
             ]),
             "kendall_tau": metrics["kendall_tau"],
             "top1": metrics["top1"],
+            "top2": metrics["top2"],
             "failed": metrics["failed"],
             "pred_top1": result["ranking"]["ranked_alternatives"][0]
                          if result["ranking"]["ranked_alternatives"] else "",
@@ -911,7 +1207,17 @@ def parse_sample_size(value: str) -> Optional[int]:
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
     """Per-run means first, then mean +/- SD across runs, so the reported SD is
-    the run-to-run SD the control gate is checked against."""
+    the run-to-run SD the control gate is checked against.
+
+    Accuracy rule (author decision, 2026-09-27, mirroring the RAG ablation): a
+    failed or unscored scenario counts as WRONG for top1_accuracy and
+    top2_accuracy, so their denominator is every scenario in the cell
+    (`g`/`len(g)`), not just the scored ones (`ok`/`len(ok)`). This falls out
+    of scenario_metrics/_failed_record already writing 0.0 (never NaN) for a
+    failed scenario's top1/top2, so `g["top1"].mean()` divides by n_scenarios
+    automatically. kendall_tau is not an accuracy metric and keeps averaging
+    over the scored subset only (its NaN values are skipped by mean()).
+    """
     rows = []
     per_run = []
     for (variant, arch, model, run), g in df.groupby(
@@ -920,8 +1226,10 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
         per_run.append({
             "variant": variant, "architecture": arch, "model": model, "run": run,
             "n_scenarios": len(g), "n_scored": len(ok),
+            "n_failed_scenarios": int(g["failed"].astype(bool).sum()),
             "kendall_tau": ok["kendall_tau"].mean(),
-            "top1_accuracy": ok["top1"].mean(),
+            "top1_accuracy": g["top1"].mean(),
+            "top2_accuracy": g["top2"].mean(),
             "mean_criterion_sd": ok["mean_criterion_sd"].mean(),
             "total_tokens": g["total_tokens"].sum(),
         })
@@ -938,6 +1246,9 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
             "kendall_tau_sd": g["kendall_tau"].std(),
             "top1_accuracy": g["top1_accuracy"].mean(),
             "top1_accuracy_sd": g["top1_accuracy"].std(),
+            "top2_accuracy": g["top2_accuracy"].mean(),
+            "top2_accuracy_sd": g["top2_accuracy"].std(),
+            "n_failed_scenarios": g["n_failed_scenarios"].mean(),
             "mean_criterion_sd": g["mean_criterion_sd"].mean(),
             "success_rate": g["n_scored"].sum() / max(g["n_scenarios"].sum(), 1),
             "tokens_per_run": g["total_tokens"].mean(),
@@ -970,10 +1281,12 @@ def main():
                         help="Test scenarios to evaluate (default 'all' = 195), "
                              "stratified by decision type when subsetting.")
     parser.add_argument("--seed", type=int, default=13)
-    parser.add_argument("--runs", type=int, default=N_RUNS,
-                        help=f"Runs per cell (default N_RUNS={N_RUNS}).")
-    parser.add_argument("--variants", nargs="+", default=list(VARIANT_SPECS.keys()),
-                        choices=list(VARIANT_SPECS.keys()))
+    parser.add_argument("--runs", type=int, default=PROMPT_ABLATION_RUNS,
+                        help=f"Runs per cell (default {PROMPT_ABLATION_RUNS}, fixed in advance).")
+    parser.add_argument("--variants", nargs="+", default=DEFAULT_VARIANTS,
+                        choices=list(VARIANT_SPECS.keys()),
+                        help="Default: every variant except control, which the significance "
+                             "script takes from main-suite runs 1..--runs.")
     parser.add_argument("--architectures", nargs="+", default=list(ARCHITECTURES.keys()),
                         choices=list(ARCHITECTURES.keys()))
     parser.add_argument("--models", nargs="+",
@@ -985,6 +1298,11 @@ def main():
                              "it, at the cost of no longer matching the paper.")
     parser.add_argument("--workers", type=int, default=8,
                         help="Concurrent scenario threads. 1 runs serially.")
+    parser.add_argument("--cot-max-tokens", type=int, default=None,
+                        help="Override the cot_scaffold max_tokens cap for every model "
+                             f"requested (still capped at {COT_MAX_TOKENS_CAP}), skipping the "
+                             "OpenRouter /endpoints GET lookup entirely. Use only when that "
+                             "free lookup is unavailable.")
     parser.add_argument("--output-dir",
                         default=str(PROJECT_ROOT / "Analysis" / "Prompt_Ablation"))
     parser.add_argument("--output",
@@ -997,7 +1315,15 @@ def main():
         raise RuntimeError("OPENROUTER_API_KEY not found in .env")
 
     _assert_control_matches_shipped()
-    logger.info("Shipped-prompt drift check passed.")
+    _assert_control_is_main_suite(args.architectures)
+    logger.info("Shipped-prompt drift check passed; control messages equal the main suite's.")
+
+    if "cot_scaffold" in args.variants:
+        # Resolved once per model, before any cot_scaffold cell is collected
+        # (every other variant keeps sentinel_utils.MAX_OUTPUT_TOKENS and needs
+        # no lookup). A failed lookup raises here and aborts the whole run
+        # rather than silently falling back to the 8192 default.
+        resolve_cot_max_tokens(args.models, override=args.cot_max_tokens)
 
     sample_size = parse_sample_size(args.sample_size)
     scenarios = load_scenarios(sample_size, args.seed)
@@ -1066,6 +1392,20 @@ def main():
         return
 
     df = pd.concat(all_parts, ignore_index=True)
+    if "control" not in args.variants:
+        # The control cell is the main suite's runs 1..--runs. It is collected
+        # last (author decision: main suite after every ablation), so it is
+        # often absent here; the significance script adds it when it exists.
+        for arch in args.architectures:
+            for model_key in args.models:
+                try:
+                    control = main_suite_control_rows(
+                        model_key, arch, args.runs, reference,
+                        scenario_ids={s["scenario_id"] for s in scenarios})
+                except FileNotFoundError as exc:
+                    logger.info("Control for %s/%s not in the summary yet: %s", arch, model_key, exc)
+                    continue
+                df = pd.concat([df, control], ignore_index=True)
     summary, per_run_df = summarize(df)
 
     with pd.ExcelWriter(out_dir / "prompt_ablation_summary.xlsx") as xl:
@@ -1075,6 +1415,7 @@ def main():
 
     cols = ["variant", "architecture", "model", "n_runs", "kendall_tau",
             "kendall_tau_sd", "top1_accuracy", "top1_accuracy_sd",
+            "top2_accuracy", "top2_accuracy_sd", "n_failed_scenarios",
             "mean_criterion_sd", "success_rate"]
     print("\n=== PROMPT ABLATION ===")
     print(summary[cols].to_string(index=False,

@@ -725,9 +725,8 @@ Important test groups:
 
 ### `tests/audit_scenarios.py`
 
-Audits scenario/GT/RAG relationships and coverage.
-
-Entry point: `tests/audit_scenarios.py:105`.
+Deleted 2026-09-27 (author's decision): it flagged every scenario as an orphan
+(pre-existing key mismatch), giving no useful signal.
 
 ### `PROVENANCE_AUDIT_PROMPT.md`
 
@@ -808,12 +807,6 @@ Run focused tests:
 
 ```powershell
 python -m pytest tests/test_sentinel_aggregation_matching.py
-```
-
-Run scenario audit script:
-
-```powershell
-python "tests/audit_scenarios.py"
 ```
 
 ## 16. Change and refactor impact matrix

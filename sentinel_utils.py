@@ -10,6 +10,8 @@ Non-numeric strings (e.g. "N/A", "error") coerce to NaN, which the callers
 should treat as a failure-safe missing value rather than a valid score.
 """
 
+import threading
+
 SENTINEL_VALUE = 1928
 SENTINEL_FLOAT = 1928.0
 CRITERIA = ["energy_cost", "environmental", "comfort", "practicality"]
@@ -454,12 +456,19 @@ def provider_prefs_for_model(model_id: str) -> dict:
     return copy.deepcopy(DEFAULT_PROVIDER_PREFS)
 
 
-def build_openrouter_payload(model: str, messages, temperature, reasoning=None) -> dict:
+def build_openrouter_payload(model: str, messages, temperature, reasoning=None,
+                             max_tokens=None) -> dict:
     """Chat-completions payload shared by the three architectures: model,
     messages, temperature, reasoning (if any), max_tokens and provider routing.
     Usage accounting is not requested: OpenRouter now returns the full usage
     block (cost, reasoning tokens) on every response and documents
-    `usage: {include: true}` as deprecated with no effect."""
+    `usage: {include: true}` as deprecated with no effect.
+
+    *max_tokens* defaults to None, which sends MAX_OUTPUT_TOKENS (8192) exactly
+    as before -- every architecture and the RAG/hybrid ablation scripts call
+    this with two positional args and get that unchanged behaviour. Passing an
+    explicit value overrides it; the prompt ablation's cot_scaffold arm is the
+    only caller that does, with its per-model raised cap."""
     payload = {
         "model": model,
         "messages": messages,
@@ -467,7 +476,7 @@ def build_openrouter_payload(model: str, messages, temperature, reasoning=None) 
     }
     if reasoning is not None:
         payload["reasoning"] = reasoning
-    payload["max_tokens"] = MAX_OUTPUT_TOKENS
+    payload["max_tokens"] = MAX_OUTPUT_TOKENS if max_tokens is None else max_tokens
     payload["provider"] = provider_prefs_for_model(model)
     return payload
 
@@ -498,8 +507,15 @@ def _body_problem(data):
 
 _TRUNCATION_NATIVE_REASONS = {"length", "max_tokens", "max_output_tokens"}
 
-# Calls in a row without a usable completion, across the whole process.
+# Calls in a row without a usable completion, across the whole process. Read
+# and written from every ThreadPoolExecutor worker in the prompt/RAG/hybrid
+# ablations, so every increment, reset and threshold check goes through
+# _consecutive_api_failures_lock (below) rather than the bare
+# read-modify-write `+= 1`, which is not atomic under the GIL across
+# bytecode boundaries and can under-count or double-trip the breaker with
+# several workers failing at once.
 _consecutive_api_failures = 0
+_consecutive_api_failures_lock = threading.Lock()
 
 
 def openrouter_chat(payload: dict, headers: dict, *, endpoint: str, max_retries: int,
@@ -551,11 +567,17 @@ def openrouter_chat(payload: dict, headers: dict, *, endpoint: str, max_retries:
 
     def _count_failure_and_maybe_abort():
         global _consecutive_api_failures
-        _consecutive_api_failures += 1
-        if MAX_CONSECUTIVE_API_FAILURES > 0 and _consecutive_api_failures >= MAX_CONSECUTIVE_API_FAILURES:
+        # The increment and the threshold check happen under the same lock
+        # acquisition so two workers failing at once can't both read the
+        # pre-increment value: each sees its own post-increment count, and
+        # exactly one call trips the breaker at the configured threshold.
+        with _consecutive_api_failures_lock:
+            _consecutive_api_failures += 1
+            count = _consecutive_api_failures
+        if MAX_CONSECUTIVE_API_FAILURES > 0 and count >= MAX_CONSECUTIVE_API_FAILURES:
             last = out["attempt_errors"][-1] if out["attempt_errors"] else {"detail": out["failure_type"]}
             raise OpenRouterFatalError(
-                f"ABORT: {_consecutive_api_failures} consecutive OpenRouter calls ended without a "
+                f"ABORT: {count} consecutive OpenRouter calls ended without a "
                 f"usable completion (last: {out['failure_type']}, {last.get('detail')}). Check the "
                 f"model id, reasoning effort, provider routing and max_tokens before resuming.",
                 out,
@@ -613,7 +635,8 @@ def openrouter_chat(payload: dict, headers: dict, *, endpoint: str, max_retries:
                         _count_failure_and_maybe_abort()
                         return out
                     out["ok"] = True
-                    _consecutive_api_failures = 0
+                    with _consecutive_api_failures_lock:
+                        _consecutive_api_failures = 0
                     return out
                 # A 200 that carries an error or no choices is retried like a
                 # transient error; its id/provider are kept for the log.
@@ -763,6 +786,48 @@ def gpm_to_flow_rate_label(gpm) -> str:
     if val <= 3.0:
         return "standard"
     return "high_flow"
+
+
+def extract_json_object(text, keys):
+    """The JSON object in a model reply, or None. Shared by A_D, A_E and the
+    prompt ablation so every scoring arm parses replies by one rule (author
+    decision 2026-09-27).
+
+    A ```json fence is unwrapped. The whole reply is parsed first; if that fails,
+    the last flat {...} span that holds any of *keys* is used, so a reply with
+    prose around the object (or a reasoning scaffold before it) still parses.
+    """
+    import json
+    import re
+    if not text:
+        return None
+    body = str(text).strip()
+    if body.startswith("```"):
+        parts = body.split("```")
+        if len(parts) >= 2:
+            body = parts[1]
+            if body.lower().startswith("json"):
+                body = body[4:]
+            body = body.strip()
+    try:
+        parsed = json.loads(body)
+        if isinstance(parsed, dict):
+            return parsed
+    except (json.JSONDecodeError, ValueError):
+        pass
+    for match in reversed(list(re.finditer(r"\{[^{}]*\}", body, re.DOTALL))):
+        try:
+            candidate = json.loads(match.group(0))
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(candidate, dict) and any(k in candidate for k in keys):
+            return candidate
+    return None
+
+
+def is_numeric_score(value) -> bool:
+    """A real number, not a bool (bool is an int subclass in Python)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 def apply_mavt_ranking(alternatives_scores):

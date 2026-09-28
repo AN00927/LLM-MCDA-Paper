@@ -22,7 +22,8 @@ records the author date of the last git commit that touched the artifact (one
 read-only `git log`), still only an upper bound.
 
 Covered: each model's main runs (the three architectures), the A_D position-bias
-arm (`position_bias/`) and the A_H order arms (`hybrid_order_reversal/`).
+arm (`position_bias/`), the A_H order arms (`hybrid_order_reversal/`) and the
+listwise A_D arm (`listwise_direct/`).
 
 Outputs
 -------
@@ -164,6 +165,11 @@ def artifact_specs(folder):
             (f"AH_order_{arm}", ho, f"AH_extraction_order_{arm}_run_*.xlsx", "results_xlsx"),
             (f"AH_order_{arm}", ho, f"AH_extraction_order_{arm}_run_*_raw.jsonl", "raw_jsonl"),
         ]
+    lw = folder / "listwise_direct"
+    specs += [
+        ("AD_listwise", lw, "AD_listwise_run_*.xlsx", "results_xlsx"),
+        ("AD_listwise", lw, "AD_listwise_run_*_raw.jsonl", "raw_jsonl"),
+    ]
     return specs
 
 

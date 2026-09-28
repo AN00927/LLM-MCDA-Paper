@@ -1,0 +1,677 @@
+[
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:28.716691+00:00",
+    "scenario_id": null,
+    "alternative": "72",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 653,
+    "tokens_output": 43,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.7473e-05,
+    "latency_ms": 981.0922145843506,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.75,
+      "practicality": 0.7
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:28.717494+00:00",
+    "scenario_id": null,
+    "alternative": "76",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 653,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.5553e-05,
+    "latency_ms": 2001.9876956939697,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.75,
+      "practicality": 0.7
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:28.718413+00:00",
+    "scenario_id": null,
+    "alternative": "80",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 653,
+    "tokens_output": 43,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.7473e-05,
+    "latency_ms": 1173.180103302002,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.45,
+      "environmental": 0.4,
+      "comfort": 0.7,
+      "practicality": 0.65
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:28.719152+00:00",
+    "scenario_id": null,
+    "alternative": "68",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 652,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.5532e-05,
+    "latency_ms": 929.9709796905518,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.5,
+      "comfort": 0.7,
+      "practicality": 0.6
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:29.650655+00:00",
+    "scenario_id": null,
+    "alternative": "71",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 652,
+    "tokens_output": 43,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.4892e-05,
+    "latency_ms": 1640.7508850097656,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.7,
+      "practicality": 0.8
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:29.699261+00:00",
+    "scenario_id": null,
+    "alternative": "74",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 652,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.5532e-05,
+    "latency_ms": 2289.461612701416,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.75,
+      "practicality": 0.7
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:29.893395+00:00",
+    "scenario_id": null,
+    "alternative": "77",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 653,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.2993e-05,
+    "latency_ms": 2656.3515663146973,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.72,
+      "environmental": 0.7,
+      "comfort": 0.55,
+      "practicality": 0.75
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:30.721043+00:00",
+    "scenario_id": null,
+    "alternative": "80",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 653,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.2993e-05,
+    "latency_ms": 1962.4295234680176,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.45,
+      "environmental": 0.45,
+      "comfort": 0.55,
+      "practicality": 0.55
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:31.292992+00:00",
+    "scenario_id": null,
+    "alternative": "83",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 653,
+    "tokens_output": 43,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.4913e-05,
+    "latency_ms": 828.7696838378906,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.75,
+      "practicality": 0.7
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:31.990254+00:00",
+    "scenario_id": null,
+    "alternative": "65",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 654,
+    "tokens_output": 43,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.4934e-05,
+    "latency_ms": 926.8786907196045,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.85,
+      "practicality": 0.75
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:32.123380+00:00",
+    "scenario_id": null,
+    "alternative": "68",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 654,
+    "tokens_output": 43,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.4934e-05,
+    "latency_ms": 786.9818210601807,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.55,
+      "environmental": 0.55,
+      "comfort": 0.75,
+      "practicality": 0.7
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:32.551246+00:00",
+    "scenario_id": null,
+    "alternative": "71",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 654,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.3014e-05,
+    "latency_ms": 2134.967803955078,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.35,
+      "environmental": 0.4,
+      "comfort": 0.85,
+      "practicality": 0.75
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:32.685061+00:00",
+    "scenario_id": null,
+    "alternative": "74",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 651,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.2951e-05,
+    "latency_ms": 2016.9384479522705,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.78,
+      "environmental": 0.74,
+      "comfort": 0.55,
+      "practicality": 0.8
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:32.912630+00:00",
+    "scenario_id": null,
+    "alternative": "77",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 651,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.2951e-05,
+    "latency_ms": 1776.3843536376953,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.62,
+      "environmental": 0.58,
+      "comfort": 0.72,
+      "practicality": 0.68
+    }
+  },
+  {
+    "model_key": "deepseek",
+    "requested_model": "deepseek/deepseek-v4-flash-0731:floor",
+    "reasoning_sent": {
+      "effort": "none"
+    },
+    "temperature_sent": 0.3,
+    "collected_utc": "2026-09-27T23:13:32.918649+00:00",
+    "scenario_id": null,
+    "alternative": "80",
+    "success": true,
+    "error": null,
+    "failure_types": [],
+    "response_model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "Relace",
+    "finish_reason": "stop",
+    "tokens_input": 651,
+    "tokens_output": 37,
+    "reasoning_tokens": 0,
+    "cost_usd": 2.2951e-05,
+    "latency_ms": 1632.2870254516602,
+    "retries": 0,
+    "attempt_errors": [],
+    "request_params": {
+      "model": "deepseek/deepseek-v4-flash-0731:floor",
+      "temperature": 0.3,
+      "reasoning": {
+        "effort": "none"
+      },
+      "max_tokens": 8192,
+      "provider": {
+        "only": [
+          "relace/fp4"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      }
+    },
+    "scores": {
+      "energy_cost": 0.65,
+      "environmental": 0.6,
+      "comfort": 0.75,
+      "practicality": 0.8
+    }
+  }
+]

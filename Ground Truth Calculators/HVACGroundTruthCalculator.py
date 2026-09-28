@@ -19,25 +19,90 @@ from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_sc
 class HVACGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023).
     # Marginal, not average, is what we want here because it tracks what actually gets shifted at the edge.
-    # Peak is 7am-11pm (16h) and off-peak is 11pm-7am (8h) per PJM.
+    # Peak is 7am-11pm (16h) and off-peak is 11pm-7am (8h) per PJM, which defines the peak for
+    # non-holiday weekdays; every scenario is a non-holiday weekday, so the split applies as coded.
     EMISSIONS_FACTOR_PEAK = 1.041     # PJM peak (1041 lbs/MWh)
     EMISSIONS_FACTOR_OFFPEAK = 0.976  # PJM off-peak (976 lbs/MWh)
     EMISSIONS_PEAK_HOURS_PER_DAY = 16
     EMISSIONS_OFFPEAK_HOURS_PER_DAY = 8
 
     # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Annual (2025)
-    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024 rising to
-    # ~19-21 c/kWh through 2025 -- 0.19 is a defensible flat-rate proxy).
+    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024). 0.19 is the bundled default-service
+    # rate (supply + delivery + riders) the paper derives from PA PUC (2025), not an EIA figure.
     ELECTRICITY_RATE_PA = 0.19
 
     # Residential infiltration rate (air changes/hour) for the air-change load method.
     # Source: ACCA Manual J (2016) -- 0.35 ACH is the standard
-    # modern/average-construction default (also the ASHRAE 62.1-1989 whole-house baseline).
+    # modern/average-construction default (also the ASHRAE Standard 62-1989 minimum of 0.35 ACH in living areas).
     AIR_CHANGES_PER_HOUR = 0.35
+
+    # Internal gains, sensible only (the load balance is sensible). Occupants: 220 Btu/h per
+    # person, the single-zone sensible gain in Building America House Simulation Protocols
+    # (Hendron & Engebrecht 2010) Table 44, citing ASHRAE (2009); the 164 Btu/h latent part is
+    # left out. Equipment and base gains: IECC 2018 Table R405.5.2(1) standard reference design,
+    # "Internal gains IGain, in units of Btu/day per dwelling unit, shall equal:
+    # 17,900 + 23.8 x CFA + 4,104 x Nbr", divided by 24 h. The occupant term above stands in
+    # for the 4,104 x Nbr bedroom term (scenarios carry household size, not bedrooms).
+    OCCUPANT_SENSIBLE_GAIN_BTUH = 220
+    EQUIPMENT_GAIN_BTUH_PER_SQFT = 23.8 / 24     # 0.99 Btu/h per sqft
+    BASE_INTERNAL_GAIN_BTUH = 17900 / 24         # 745.8 Btu/h
+
+    # Solar gain through glazing: q = A_glass x SHGC x IAC x I_avg (Btu/h).
+    # A_glass: IECC 2018 Table R405.5.2(1) standard reference design, "15 percent of the
+    #   conditioned floor area", "equally distributed to four cardinal compass orientations
+    #   (N, E, S & W)". For attached dwelling units the same table scales the area by
+    #   F = above-grade thermal boundary wall area / (that area + common wall area), "or 0.56,
+    #   whichever is greater". Scenarios carry no wall geometry, so F follows the exposure
+    #   the envelope multipliers already assume: Townhouse/Rowhouse (end unit, one of four
+    #   walls shared) F = 0.75; Apartment/Condo (mid unit, two of four walls shared, 0.5)
+    #   F = 0.56, the table's floor.
+    # SHGC 0.40: same table, "the SHGC shall be equal to 0.40" for climate zones without an
+    #   SHGC requirement (PA zones 4A and 5A). IAC: same table, "Interior shade fraction:
+    #   0.92-(0.21 x SHGC for the standard reference design)" = 0.836.
+    # I_avg: 24-h mean incident irradiance averaged over the four cardinal vertical faces,
+    #   Harrisburg Intl AP TMY3 (climate.onebuilding.org), isotropic sky, ground reflectance
+    #   0.2, over the TMY3 hours whose dry-bulb falls in the scenario outdoor range of each
+    #   mode (heat 5-62 F, AC 68-102 F). The 24-h mean matches the cost model, which bills
+    #   each 8 h period three times a day (calculate_monthly_cost). Script:
+    #   paper/pass6/verify/value_review/solar_irradiance.py.
+    GLAZING_FRACTION_OF_FLOOR = 0.15
+    GLAZING_ATTACHED_FACTOR = {"Townhouse": 0.75, "Rowhouse": 0.75,
+                               "Apartment": 0.56, "Condo": 0.56}
+    SOLAR_SHGC = 0.40
+    SOLAR_INTERIOR_SHADE = 0.92 - 0.21 * SOLAR_SHGC
+    SOLAR_IRRADIANCE_W_M2 = {'heat': 74.03, 'cool': 105.54}
+    W_M2_PER_BTUH_FT2 = 3.15459
+
+    # Heat-pump heating efficiency paired with rated SEER, as (SEER, HSPF) anchors. HSPF is
+    # seasonal Btu of heat delivered per Wh of electricity (seasonal COP = HSPF / 3.412), so
+    # heating kWh = Btu / (HSPF x 1000), the same form as cooling kWh = Btu / (EER x 1000).
+    # SEER <= 14: Building America HSP (Hendron & Engebrecht 2010) Table 32 split heat pump
+    #   defaults (6.5/6.0, 8/6.6, 10/7.1, 14/8.0) and the Table 4 benchmark (13 SEER/7.7 HSPF).
+    #   Table 32: "Default efficiencies for equipment not listed
+    #   in the table may either be interpolated or estimated by referring to the original references."
+    # SEER > 14: NREL ResStock/BEopt ASHP options "ASHP, SEER 18, 9.3 HSPF" and
+    #   "ASHP, SEER 22, 10 HSPF" (resstock v3.2.0 resources/options_lookup.tsv).
+    # Piecewise-linear between anchors; linear along the end segments outside 6.5-22.
+    # HSPF is a seasonal rating, so it does not vary with the scenario's outdoor temperature.
+    HSPF_BY_SEER = ((6.5, 6.0), (8.0, 6.6), (10.0, 7.1), (13.0, 7.7), (14.0, 8.0),
+                    (18.0, 9.3), (22.0, 10.0))
+
+    # Operating mode = the system the household asked about ('heat' or 'cool'), read from the
+    # question with a strict matcher (hvac_mode_from_question) unless the scenario carries an
+    # explicit hvac_mode. No outdoor-temperature season test is used anywhere. The mode sets
+    # the Comfort optimum, the load direction, Practicality and the "Off" free-float.
+    HVAC_MODES = ('heat', 'cool')
+    _HEAT_WORDS = re.compile(r"\bheat(?:ing)?\b(?!\s*waves?\b)", re.IGNORECASE)
+    _COOL_WORDS = re.compile(r"\bAC\b|\bA/C\b|\b(?i:air[- ]condition(?:ing|er))\b")
+
+    # Thermostat optima by mode: Building America HSP, "Thermostat set points based on the
+    # optimum seasonal temperature for human comfort as defined in ASHRAE Standard 55-2004 ...
+    # Set point for cooling: 76F ... Set point for heating: 71F". Each optimum is the
+    # midpoint of its comfort range (AC mode: SUMMER_*, heat mode: WINTER_*).
     SUMMER_COMFORT_RANGE = (73, 79)
     SUMMER_OPTIMAL = 76
-    WINTER_COMFORT_RANGE = (68, 75)
-    WINTER_OPTIMAL = 70
+    WINTER_COMFORT_RANGE = (68, 74)
+    WINTER_OPTIMAL = 71
 
     # Linear VF for energy cost - equal marginal utility across range
     # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
@@ -52,14 +117,18 @@ class HVACGroundTruthCalculator:
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
-    def calculate_cooling_load(self, outdoor_temp: float, indoor_temp: float,
-                               square_footage: int, r_value: int, household_size: int = 3,
-                               ceiling_height: float = 8.0,
-                               housing_type: str = "Single-family") -> float:
-      
+    def calculate_net_heat_gain(self, outdoor_temp: float, indoor_temp: float,
+                                square_footage: int, r_value: int, household_size: int = 3,
+                                ceiling_height: float = 8.0,
+                                housing_type: str = "Single-family",
+                                include_solar: bool = True, mode: str = 'cool') -> float:
+        """Sensible heat balance of the house held at indoor_temp, in BTU/hr: conduction +
+        infiltration + internal gains (+ solar when include_solar, at the mode's seasonal
+        irradiance). Positive means the house gains heat and needs cooling; negative means it
+        loses heat and needs heating."""
         delta_t = outdoor_temp - indoor_temp
 
-        # Adjust by housing type. Typical multipliers from ACCA Manual J:
+        # Adjust by housing type. Our multipliers, set by exposure (not a Manual J table):
         # - Single-family (2-story typical): 1.7 (includes roof, walls, floor exposures)
         # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
         # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
@@ -77,13 +146,22 @@ class HVACGroundTruthCalculator:
 
         conductive_load = u_factor * envelope_area * delta_t
 
-        # Formula: occupants (400 BTU/hr each) + lighting & equipment (1.0 BTU/hr/sqft) + baseline (800)
-        # Example: for 3-person, 1500 sqft home: (3 × 400) + (1500 × 1.0) + 800 = 3,500 BTU/hr 
-        # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1
-        internal_gains = (household_size * 400) + (square_footage * 1.0) + 800
+        # Formula: occupants (220 BTU/hr sensible each) + equipment (23.8/24 BTU/hr/sqft) + base (17,900/24)
+        # Example: for 3-person, 1500 sqft home: (3 x 220) + (1500 x 0.992) + 745.8 = 2,893 BTU/hr
+        # Occupant gain per Building America HSP Table 44 (sensible); equipment and base per IECC R405
+        internal_gains = ((household_size * self.OCCUPANT_SENSIBLE_GAIN_BTUH)
+                          + (square_footage * self.EQUIPMENT_GAIN_BTUH_PER_SQFT)
+                          + self.BASE_INTERNAL_GAIN_BTUH)
 
-        window_area = square_footage * 0.15
-        solar_gains = window_area * 20
+        # Solar gain per the constants above. Solar counts in both modes (author decision,
+        # 2026-09-27), at the mode's seasonal irradiance.
+        if mode not in self.HVAC_MODES:
+            raise ValueError(f"HVAC mode must be 'heat' or 'cool', got {mode!r}")
+        window_area = (square_footage * self.GLAZING_FRACTION_OF_FLOOR
+                       * self.GLAZING_ATTACHED_FACTOR.get(housing_type, 1.0))
+        solar_gains = (window_area * self.SOLAR_SHGC * self.SOLAR_INTERIOR_SHADE
+                       * self.SOLAR_IRRADIANCE_W_M2[mode] / self.W_M2_PER_BTUH_FT2
+                       if include_solar else 0.0)
 
         # Infiltration sensible load via the air-change method (ACCA Manual J (2016)):
         #   cfm = volume_ft3 * ACH / 60;  Q_sensible = 1.08 * cfm * deltaT
@@ -92,51 +170,57 @@ class HVACGroundTruthCalculator:
         infiltration_cfm = (square_footage * ceiling_height * self.AIR_CHANGES_PER_HOUR) / 60.0
         infiltration_load = 1.08 * infiltration_cfm * delta_t
 
-        total_load = conductive_load + internal_gains + solar_gains + infiltration_load
-        return max(0, total_load)
+        return conductive_load + internal_gains + solar_gains + infiltration_load
+
+    def calculate_cooling_load(self, outdoor_temp: float, indoor_temp: float,
+                               square_footage: int, r_value: int, household_size: int = 3,
+                               ceiling_height: float = 8.0,
+                               housing_type: str = "Single-family") -> float:
+        # Cooling load = the positive part of the net heat gain, solar included.
+        return max(0, self.calculate_net_heat_gain(
+            outdoor_temp, indoor_temp, square_footage, r_value, household_size,
+            ceiling_height, housing_type, include_solar=True, mode='cool'))
 
     def calculate_heating_load(self, outdoor_temp: float, indoor_temp: float,
                                square_footage: int, r_value: int, household_size: int = 3,
                                ceiling_height: float = 8.0,
                                housing_type: str = "Single-family") -> float:
-        delta_t = indoor_temp - outdoor_temp
+        # Heating load = the negative part of the net heat gain: conductive and infiltration
+        # loss minus the internal gains and the heating-season solar gain.
+        return max(0, -self.calculate_net_heat_gain(
+            outdoor_temp, indoor_temp, square_footage, r_value, household_size,
+            ceiling_height, housing_type, include_solar=True, mode='heat'))
 
-        housing_multipliers = {
-            "Single-family": 1.7,
-            "Apartment": 1.2,
-            "Condo": 1.2,
-            "Townhouse": 1.5,
-            "Rowhouse": 1.5,
-        }
-        envelope_multiplier = housing_multipliers.get(housing_type, 1.7)
-        envelope_area = square_footage * envelope_multiplier
-
-        u_factor = 1.0 / r_value
-
-        conductive_loss = u_factor * envelope_area * delta_t
-
-        # Same formula as cooling load: occupants + lighting/equipment + baseline
-        # Source: ASHRAE Handbook of Fundamentals, Chapter 18, Table 1
-        internal_gains = (household_size * 400) + (square_footage * 1.0) + 800
-
-        # Infiltration sensible loss via the air-change method (ACCA Manual J (2016); ASHRAE Handbook of Fundamentals (2017) Ch.16):
-        #   cfm = volume_ft3 * ACH / 60;  Q_sensible = 1.08 * cfm * deltaT
-        infiltration_cfm = (square_footage * ceiling_height * self.AIR_CHANGES_PER_HOUR) / 60.0
-        infiltration_loss = 1.08 * infiltration_cfm * delta_t
-
-        total_load = conductive_loss + infiltration_loss - internal_gains
-        return max(0, total_load)
+    def heating_hspf(self, seer: float) -> float:
+        """HSPF paired with a rated SEER, piecewise-linear over HSPF_BY_SEER (linear along
+        the end segments outside the anchor range)."""
+        pts = self.HSPF_BY_SEER
+        s = float(seer)
+        if s <= pts[0][0]:
+            (x0, y0), (x1, y1) = pts[0], pts[1]
+        elif s >= pts[-1][0]:
+            (x0, y0), (x1, y1) = pts[-2], pts[-1]
+        else:
+            i = next(k for k in range(1, len(pts)) if s <= pts[k][0])
+            (x0, y0), (x1, y1) = pts[i - 1], pts[i]
+        return y0 + (s - x0) * (y1 - y0) / (x1 - x0)
 
     def calculate_energy_consumption(self, load_btu_hr: float, seer: int,
-                                     occupancy_context: str, hours: float = 8) -> float:
-        # Energy reflects the unit's rated SEER only. Age/maintenance efficiency
+                                     occupancy_context: str, hours: float = 8,
+                                     mode: str = 'cool') -> float:
+        # Energy reflects the unit's rated efficiency only. Age/maintenance efficiency
         # degradation is NOT applied here -- it is modeled as a reliability factor in
         # calculate_practicality_score (item 3d). Keeping it out of the energy path means
         # the energy score reflects the setpoint choice, not the system's condition.
-        # EER = -0.02 * SEER^2 + 1.12 * SEER  (Source: AHRI Standard 210/240)
-        eer_estimated = (-0.02 * seer ** 2) + (1.12 * seer)
+        # Cooling: EER = -0.02 * SEER^2 + 1.12 * SEER  (Source: Building America House Simulation
+        # Protocols, Hendron & Engebrecht 2010, Eq. 3, citing Wassmer 2003).
+        # Heating: the HSPF paired with the SEER (heating_hspf), a seasonal Btu/Wh rating.
+        if mode == 'heat':
+            efficiency_btu_per_wh = self.heating_hspf(seer)
+        else:
+            efficiency_btu_per_wh = (-0.02 * seer ** 2) + (1.12 * seer)
 
-        kw = (load_btu_hr / eer_estimated) / 1000
+        kw = (load_btu_hr / efficiency_btu_per_wh) / 1000
         occupancy_context = self.normalize_occupancy_context(occupancy_context)
 
         if occupancy_context == "occupied_all_day":
@@ -155,18 +239,43 @@ class HVACGroundTruthCalculator:
         total_kwh = kw * hours * runtime_multiplier
         return total_kwh
 
+    def hvac_mode_from_question(self, question) -> str:
+        """'heat' or 'cool' from the question wording ("what heat temperature ..." /
+        "what AC temperature ..."). Returns None when the question names neither system or
+        both, so the caller emits the sentinel instead of guessing."""
+        text = "" if question is None else str(question)
+        heat = bool(self._HEAT_WORDS.search(text))
+        cool = bool(self._COOL_WORDS.search(text))
+        if heat == cool:
+            return None
+        return 'heat' if heat else 'cool'
+
+    def resolve_hvac_mode(self, scenario: Dict) -> str:
+        """Explicit scenario['hvac_mode'] ('heat'/'cool') wins; otherwise the question
+        matcher. Any other explicit value, or an unmatched question, returns None."""
+        explicit = scenario.get('hvac_mode')
+        if explicit is not None and not (isinstance(explicit, float) and pd.isna(explicit)) \
+                and str(explicit).strip() != '':
+            value = str(explicit).strip().lower()
+            return value if value in self.HVAC_MODES else None
+        return self.hvac_mode_from_question(scenario.get('question'))
+
     def calculate_comfort_score(self, indoor_temp: float, outdoor_temp: float,
-                                household_size: int) -> float:
+                                household_size: int, mode: str = None) -> float:
+        # outdoor_temp is not used (the mode, not the weather, sets the optimum); it is kept
+        # for signature compatibility. mode must be 'heat' or 'cool'.
         # Tent comfort function around PMV-neutral indoor setpoints for mechanical HVAC.
-        # Optimal indoor 76F in cooling (outdoor > 75F) and 70F in heating: 76F is the
-        # midpoint of the ASHRAE 55-2020 summer comfort band (73-79F, 0.5 clo); 70F sits
-        # within the winter band (68-74F, 1.0 clo), ~1F below its 71F midpoint -- both for
-        # sedentary occupants. Score = 10 - |indoor - optimal|, clipped to [0,10]; the
-        # -1.0/F slope mirrors the rising PPD per F outside neutral in Fanger's PMV/PPD
-        # model. The adaptive method (de Dear & Brager (2002)) applies only to naturally
-        # conditioned spaces and is not used here.
-        # Sources: ASHRAE 55-2020 (Sec 5.3.1 graphic zone); Fanger (1970); van Hoof (2008).
-        optimal = 76 if outdoor_temp > 75 else 70
+        # Optimal indoor 76F in AC mode and 71F in heat mode: the Building
+        # America HSP set points (optimum seasonal temperature per ASHRAE 55-2004), and the
+        # midpoints of the summer (73-79F, 0.5 clo) and winter (68-74F, 1.0 clo) comfort
+        # bands -- both for sedentary occupants. Score = 10 - |indoor - optimal|, clipped to
+        # [0,10]; the -1.0/F slope mirrors the rising PPD per F outside neutral in Fanger's
+        # PMV/PPD model. The adaptive method (de Dear & Brager (2002)) applies only to
+        # naturally conditioned spaces and is not used here.
+        # Sources: Hendron & Engebrecht (2010); ASHRAE 55-2020 (Sec 5.3.1 graphic zone); Fanger (1970); van Hoof (2008).
+        if mode not in self.HVAC_MODES:
+            raise ValueError(f"HVAC mode must be 'heat' or 'cool', got {mode!r}")
+        optimal = self.SUMMER_OPTIMAL if mode == 'cool' else self.WINTER_OPTIMAL
         comfort_score = 10 - abs(indoor_temp - optimal)
 
         if household_size > 3:
@@ -176,30 +285,32 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(1.0, comfort_score / 10.0))
 
     def _efficiency_degradation(self, hvac_age: int, maintenance_level: str = 'moderate') -> float:
-        """Fraction of HVAC efficiency lost to age + maintenance: front-loaded, capped
-        at 30%. Base annual loss 0.5/1.0/1.5%/yr for good/moderate/poor upkeep; the first
-        10 years degrade at 1.5x base, later years at 0.5x. Raises on a missing age rather
-        than defaulting to 0 (which would falsely score the system as pristine)."""
+        """Fraction of HVAC efficiency lost to age + maintenance, from Building America HSP
+        (Hendron & Engebrecht 2010) Eq. 20, "EFF = (Base EFF) x (1-M)^age ... Age of equipment
+        in years, up to a maximum of 20 years": degradation = 1 - (1 - M)^min(age, 20).
+        M = 0.01 (annual professional maintenance) and 0.03 (seldom or never maintained) are
+        HSP Table 32's maintenance factors ('good' and 'poor'); 'moderate' = 0.02 is our
+        midpoint, and every scenario uses 'moderate'. Raises on a missing age rather than
+        defaulting to 0 (which would falsely score the system as pristine)."""
         if hvac_age is None:
             raise ValueError("hvac_age is required to compute efficiency degradation")
-        rates = {'good': 0.005, 'moderate': 0.010, 'poor': 0.015}
-        base_rate = rates.get(maintenance_level, 0.010)
-        if hvac_age <= 10:
-            total_degradation = hvac_age * (base_rate * 1.5)
-        else:
-            total_degradation = 10 * (base_rate * 1.5) + (hvac_age - 10) * (base_rate * 0.5)
-        return min(total_degradation, 0.30)
+        factors = {'good': 0.01, 'moderate': 0.02, 'poor': 0.03}
+        m = factors.get(maintenance_level, 0.02)
+        return 1.0 - (1.0 - m) ** min(max(hvac_age, 0), 20)
 
     def calculate_practicality_score(self, outdoor_temp: float, indoor_temp: float,
-                                     hvac_age: int, maintenance_level: str = 'moderate') -> float:
-        # Mode is decided by outdoor vs the chosen indoor setpoint (cool when hotter
-        # outside than the setpoint, else heat) -- the physically correct test, replacing
-        # the earlier fixed 75F split. Extremity penalties grow as the setpoint moves past
+                                     hvac_age: int, maintenance_level: str = 'moderate',
+                                     mode: str = None) -> float:
+        # mode ('heat' or 'cool') is the scenario's operating mode, the same one that sets
+        # the load and the Comfort optimum. Extremity penalties grow as the setpoint moves past
         # adoption-comfort bounds: in cooling, setpoints >= 82F (too warm to tolerate) or
         # <= 71F (overcooling) are penalized; in heating, <= 63F (too cold) or >= 76F
         # (overheating). Slopes are asymmetric because the too-cold directions draw the
-        # sharper real-world adoption penalties.
-        if outdoor_temp > indoor_temp:  # Cooling mode
+        # sharper real-world adoption penalties. The thresholds, slopes and the delta-T
+        # factors below are our values.
+        if mode not in self.HVAC_MODES:
+            raise ValueError(f"HVAC mode must be 'heat' or 'cool', got {mode!r}")
+        if mode == 'cool':  # Cooling mode
             if indoor_temp >= 82:
                 extremity_penalty = (indoor_temp - 82) * 1.5
             elif indoor_temp <= 71:
@@ -234,7 +345,7 @@ class HVACGroundTruthCalculator:
         # Component 3: system condition (item 3d). Age/maintenance efficiency degradation
         # is a reliability concern -- an older or poorly maintained unit is a less
         # practical choice to rely on -- so it scales the score down by the degraded
-        # fraction (0-30%) instead of inflating energy use.
+        # fraction (0-33% at 'moderate') instead of inflating energy use.
         degradation = self._efficiency_degradation(hvac_age, maintenance_level)
         base_score *= (1 - degradation)
 
@@ -255,14 +366,12 @@ class HVACGroundTruthCalculator:
             # Linear decline as budget limit approached (Heath & Soll 1996)
             return 1.0 - 2.5 * (utilization - 0.80)
 
-        elif utilization < 1.5:
-            # Exponential loss aversion under budget violation (Prelec & Loewenstein 1998; Heutel 2017)
+        else:
+            # Exponential loss aversion under budget violation (Prelec & Loewenstein 1998; Heutel 2017).
+            # Continuous for every u >= 1.0: the former drop to 0 at u = 1.5 is removed, so an
+            # over-budget option keeps a small, still-decreasing credit instead of a cliff.
             import math
             return 0.5 * math.exp(-3.0 * (utilization - 1.0))
-
-        else:
-            # Infeasible option eliminated (Gathergood 2012)
-            return 0.0
 
     def emissions_factor_for_occupancy(self, occupancy_context: str) -> float:
         """PJM marginal CO2 factor (lbs/kWh) implied by an HVAC occupancy context.
@@ -308,7 +417,7 @@ class HVACGroundTruthCalculator:
         must be folded to 'occupied_all_day' / 'occupied_sleep' / 'unoccupied_<H>'.
         """
         if occupancy_value is None or pd.isna(occupancy_value):
-            return "occupied_all_day"
+            return None
 
         value = str(occupancy_value).strip().lower()
 
@@ -325,37 +434,41 @@ class HVACGroundTruthCalculator:
                 return f"unoccupied_{hours_away}"
             return "unoccupied_8"
 
-        return "occupied_all_day"
+        # Unrecognized token: no silent default; calculate_scenario_scores emits the sentinel.
+        return None
 
     def apply_value_function(self, raw_value: float, vf_spec: str, value_type: str) -> float:
         reference_ranges = {
             'energy_cost': {
                 # 5th-95th percentile of the actual scenario-set HVAC cost distribution
-                # (8h window at $0.19/kWh), computed over the ACTIVE-conditioning
-                # alternatives only. Zero-load alternatives (a setpoint at/near the
-                # outdoor temp, and the bare "Off" option) collapse to $0 and are
-                # excluded from the percentile so the normalization floor is not
-                # degenerate; an Off/zero-load alternative still scores at the top of the
-                # [0,10] cost scale via the (x_max - x) normalization. p5 over the
-                # nonzero active set = $0.38, p95 = $3.29. Endpoints remain consistent
+                # (8h window at $0.19/kWh; per-alternative cost rounded to cents, the
+                # raw_cost column), pooled over the 105 test + RAG scenarios and computed
+                # over the ACTIVE-conditioning alternatives only. Zero-load alternatives
+                # (the bare "Off" option, or a setpoint where the heat balance is exactly
+                # zero, or a setpoint the mode caps at zero load) collapse to $0 and are
+                # excluded from the percentile so the normalization floor is not degenerate;
+                # an Off/zero-load alternative still scores at the top of the [0,10] cost
+                # scale via the (x_max - x) normalization. p5 over the nonzero active set
+                # (301 of 315) = $0.400, p95 = $2.810. Endpoints remain consistent
                 # with residential HVAC studies (efficient: Huyen & Cetin (2019),
                 # Energies 12(1):188; degraded: Alves et al. (2016), EB 130:408).
-                'min': 0.38,
-                'max': 3.29,
+                'min': 0.40,
+                'max': 2.81,
                 'decreasing': True
             },
             'environmental': {
                 # Derived from the same active-set 5th-95th percentile cost envelope as
-                # energy_cost ($0.38-$3.29 at $0.19/kWh flat = 2.011-17.326 kWh), applied
+                # energy_cost ($0.400-$2.810 at $0.19/kWh flat = 2.105-14.789 kWh), applied
                 # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak) to
-                # keep cost and emissions physically consistent:
-                #   min = 2.011 kWh x 0.976 lbs/kWh = 1.96 lbs CO2  (best case: fully off-peak)
-                #   max = 17.326 kWh x 1.041 lbs/kWh = 18.04 lbs CO2 (worst case: fully peak)
+                # keep cost and emissions physically consistent (these are not percentiles
+                # of the emissions distribution):
+                #   min = 2.105 kWh x 0.976 lbs/kWh = 2.05 lbs CO2  (best case: fully off-peak)
+                #   max = 14.789 kWh x 1.041 lbs/kWh = 15.40 lbs CO2 (worst case: fully peak)
                 # Source: PJM 2022 Emissions Report (April 2023).
                 # For HVAC, alternatives within one scenario share the same emission
                 # factor because they are evaluated at the same moment and differ by load.
-                'min': 1.96,
-                'max': 18.04,
+                'min': 2.05,
+                'max': 15.40,
                 'decreasing': True
             },
             'comfort': {
@@ -427,28 +540,54 @@ class HVACGroundTruthCalculator:
 
         return max(0.0, min(1.0, u_x))
 
-    def _free_float_temp(self, outdoor_temp: float, cooling_season: bool) -> float:
+    def _free_float_temp(self, outdoor_temp: float, ac_mode: bool) -> float:
         # Indoor air a bare "Off" system drifts to when no explicit target is given. With
-        # the system off, solar + internal gains drive indoor ABOVE outdoor in cooling
-        # season (a closed, occupied house runs ~5F over outdoor on a daily mean), while in
-        # heating season internal gains hold indoor ~10F above outdoor (HDD-65 balance-point
-        # floor). Sources: de Dear & Brager (2002) / ASHRAE 55-2020 (free-running adaptive
+        # the system off, solar + internal gains drive indoor ABOVE outdoor in AC
+        # mode (a closed, occupied house runs ~5F over outdoor on a daily mean), while in
+        # heat mode internal gains hold indoor ~10F above outdoor (HDD-65 balance-point
+        # floor). The +5F/+10F offsets are our modeling assumption, not tabulated by these
+        # sources: de Dear & Brager (2002) / ASHRAE 55-2020 (free-running adaptive
         # model: indoor >= outdoor under heat); ACCA Manual J (2016) (solar + internal gains
         # are additive); ASHRAE Handbook of Fundamentals (2017) (balance-point /
         # internal-gain offset). Replaces an earlier unsourced +/-5F placeholder whose
         # cooling-season sign was physically backwards.
-        return outdoor_temp + 5 if cooling_season else outdoor_temp + 10
+        return outdoor_temp + 5 if ac_mode else outdoor_temp + 10
+
+    def _inputs_valid(self, scenario: Dict) -> bool:
+        """False when an input the load needs is non-physical (sqft, R-value, SEER or
+        household size <= 0, non-finite outdoor temperature) or the occupancy token is
+        unrecognized, so the scenario surfaces as the sentinel instead of a silent score."""
+        import math
+        try:
+            positives = [float(scenario[k]) for k in
+                         ('square_footage', 'r_value', 'seer', 'household_size')]
+            outdoor = float(scenario['outdoor_temp'])
+        except (KeyError, TypeError, ValueError):
+            return False
+        if not all(math.isfinite(v) and v > 0 for v in positives) or not math.isfinite(outdoor):
+            return False
+        occupancy = scenario.get('occupancy_context', 'occupied_all_day')
+        return self.normalize_occupancy_context(occupancy) is not None
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:
-        # Drift direction for bare "Off" alternatives that give no explicit target:
-        # warmer than the neutral comfort point -> an off system drifts warm (cooling
-        # season); otherwise it drifts cold (heating season). Neutral point is the
-        # midpoint of the heating/cooling comfort optima (derived, not a magic 75).
-        cooling_season = scenario['outdoor_temp'] > (self.SUMMER_OPTIMAL + self.WINTER_OPTIMAL) / 2.0
+        # Operating mode from the question (or an explicit hvac_mode). It sets the "Off"
+        # drift, the Comfort optimum, the load direction and Practicality. Solar gain enters the
+        # heat balance in both modes.
+        # No mode -> every alternative is the sentinel; the mode is never guessed.
+        mode = self.resolve_hvac_mode(scenario)
+        if mode is None:
+            print(f"   Could not determine heat/AC mode from the question; emitting sentinel {SENTINEL_VALUE}")
+        elif not self._inputs_valid(scenario):
+            print(f"   Invalid physical input or occupancy_context; emitting sentinel {SENTINEL_VALUE}")
+            mode = None
+        ac_mode = (mode == 'cool')
 
         raw_results = {}
 
         for alt in scenario['alternatives']:
+            if mode is None:
+                raw_results[alt] = None
+                continue
             if isinstance(alt, str):
                 import re
 
@@ -463,9 +602,9 @@ class HVACGroundTruthCalculator:
                         if to_match:
                             effective_temp = float(to_match.group(1))
                         else:
-                            effective_temp = self._free_float_temp(scenario['outdoor_temp'], cooling_season)
+                            effective_temp = self._free_float_temp(scenario['outdoor_temp'], ac_mode)
                     else:
-                        effective_temp = self._free_float_temp(scenario['outdoor_temp'], cooling_season)
+                        effective_temp = self._free_float_temp(scenario['outdoor_temp'], ac_mode)
                 else:
                     # Not an "off" alternative - extract first number found
                     numbers = re.findall(r'\d+', alt)
@@ -478,30 +617,26 @@ class HVACGroundTruthCalculator:
             else:
                 effective_temp = float(alt)
 
-            # Cooling vs heating decided per-alternative from the actual setpoint: cool
-            # when it is hotter outside than the chosen indoor temp, otherwise heat.
-            is_cooling = scenario['outdoor_temp'] > effective_temp
-
-            if is_cooling:
-                load = self.calculate_cooling_load(
-                    scenario['outdoor_temp'],
-                    effective_temp,
-                    scenario['square_footage'],
-                    scenario['r_value'],
-                    scenario['household_size'],
-                    scenario.get('ceiling_height', 8.0),
-                    scenario.get('housing_type', 'Single-family')
-                )
+            # Load from the setpoint against the house's free-float balance (conduction +
+            # infiltration + internal + solar gains), capped by the mode: heat mode
+            # supplies heat only when the balance calls for heat, AC mode removes heat only when
+            # it calls for cooling, otherwise the load is 0. Never cooling in heat mode or
+            # heating in AC mode.
+            net_gain = self.calculate_net_heat_gain(
+                scenario['outdoor_temp'],
+                effective_temp,
+                scenario['square_footage'],
+                scenario['r_value'],
+                scenario['household_size'],
+                scenario.get('ceiling_height', 8.0),
+                scenario.get('housing_type', 'Single-family'),
+                include_solar=True,
+                mode=mode,
+            )
+            if mode == 'cool':
+                load = max(0.0, net_gain)
             else:
-                load = self.calculate_heating_load(
-                    scenario['outdoor_temp'],
-                    effective_temp,
-                    scenario['square_footage'],
-                    scenario['r_value'],
-                    scenario['household_size'],
-                    scenario.get('ceiling_height', 8.0),
-                    scenario.get('housing_type', 'Single-family')
-                )
+                load = max(0.0, -net_gain)
 
             kwh = self.calculate_energy_consumption(
                 load,
@@ -509,6 +644,7 @@ class HVACGroundTruthCalculator:
                 occupancy_context=self.normalize_occupancy_context(
                     scenario.get('occupancy_context', 'occupied_all_day')
                 ),
+                mode=mode,
             )
 
             energy_cost = kwh * scenario.get('electricity_rate', self.ELECTRICITY_RATE_PA)
@@ -528,7 +664,8 @@ class HVACGroundTruthCalculator:
             comfort = self.calculate_comfort_score(
                 effective_temp,
                 scenario['outdoor_temp'],
-                scenario['household_size']
+                scenario['household_size'],
+                mode=mode,
             )
 
             practicality = self.calculate_practicality_score(
@@ -536,6 +673,7 @@ class HVACGroundTruthCalculator:
                 effective_temp,
                 scenario['hvac_age'],
                 scenario.get('maintenance_level', 'moderate'),
+                mode=mode,
             )
             raw_results[alt] = {
                 'kwh': kwh,

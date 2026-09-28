@@ -1,0 +1,1325 @@
+\documentclass[final,3p,times]{elsarticle}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{textcomp}
+\usepackage{multirow}
+\usepackage{threeparttable}
+\usepackage{siunitx}
+\usepackage[table]{xcolor}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{caption}
+\pdfstringdefDisableCommands{%
+  \def\corref#1{}%
+  \def\cnotenum#1{}%
+  \def\tnoteref#1{}%
+}
+\usepackage{pgfplots}
+\usepgfplotslibrary{colormaps,groupplots,statistics}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,positioning,fit,backgrounds,calc}
+\setlength{\marginparwidth}{2cm}
+\usepackage{todonotes}
+\usepackage{alltt}
+\graphicspath{{./}{Images/}}
+\setlength{\textfloatsep}{10pt plus 2pt minus 4pt}   % Distance between top/bottom float and text
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}       % Distance between two floats
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}     % Distance between inline float and text
+\renewcommand{\floatpagefraction}{0.7}
+\renewcommand{\textfraction}{0.15}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.65}
+
+\newcommand{\plotCriterionMAEByModel}{%
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=2 by 2, horizontal sep=1.9cm, vertical sep=1.6cm},
+    width=0.46\textwidth, height=4.3cm,
+    xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
+    xticklabel style={font=\small},
+    enlarge x limits=0.25,
+    grid=major, grid style={gray!30}, ymajorgrids=true,
+    extra y ticks={0.25,0.5,0.75},
+    extra y tick style={grid=major, grid style={gray!50}},
+    extra y tick labels={},
+    legend style={font=\scriptsize, at={(1.118,1.42)}, anchor=south, legend columns=4, draw=none, fill=none},
+    legend cell align={left},
+    every axis plot/.append style={thick, mark size=2pt},
+]
+\nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
+    title={\small (a) Energy Cost}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2477) (2,0.1769) (3,0.0698)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2407) (2,0.1748) (3,0.0683)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2581) (2,0.1725) (3,0.0783)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2554) (2,0.1975) (3,0.1115)};
+\legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
+    title={\small (b) Environmental}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2484) (2,0.1655) (3,0.0921)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2652) (2,0.1644) (3,0.0812)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2924) (2,0.1665) (3,0.0978)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2739) (2,0.1947) (3,0.1498)};
+\nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
+    title={\small (c) Comfort}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.1683) (2,0.1400) (3,0.0108)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.1979) (2,0.1745) (3,0.0089)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.1831) (2,0.1536) (3,0.0127)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.1947) (2,0.1931) (3,0.009)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
+    title={\small (d) Practicality}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2116) (2,0.1511) (3,0.0197)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2224) (2,0.1531) (3,0.0208)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2307) (2,0.1830) (3,0.0213)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2159) (2,0.1889) (3,0.0168)};
+\end{groupplot}
+\end{tikzpicture}%
+}
+
+\newcommand{\plotDecisionTypeByModel}{%
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=3 by 4, vertical sep=1.2cm},
+    width=0.31\textwidth, height=3.6cm,
+    xtick={1,2,3}, xticklabels={$\mathcal{A}_{\text{D}}$,$\mathcal{A}_{\text{E}}$,$\mathcal{A}_{\text{H}}$},
+    xticklabel style={font=\small},
+    enlarge x limits=0.25,
+    grid=major, grid style={gray!30}, ymajorgrids=true,
+    extra y ticks={0.25,0.5,0.75},
+    extra y tick style={grid=major, grid style={gray!50}},
+    extra y tick labels={},
+    legend style={font=\scriptsize, at={(0.5,1.35)}, anchor=south, legend columns=4, draw=none, fill=none},
+    legend cell align={left},
+    every axis plot/.append style={thick, mark size=2pt},
+]
+\nextgroupplot[ylabel={Kendall's $\tau$}, ymin=-0.2, ymax=0.99,
+    title={\small (a) HVAC}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,-0.0324) (2,-0.1162) (3,0.9772)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,-0.1021) (2,0.0419) (3,0.9197)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.1352) (2,0.2647) (3,0.9428)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,-0.0027) (2,0.1600) (3,0.8813)};
+\nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.99,
+    title={\small (b) Appliance}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,-0.0215) (2,0.3441) (3,0.9590)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.0293) (2,0.4174) (3,0.9754)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,-0.1467) (2,-0.0482) (3,0.9672)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,-0.0309) (2,0.2308) (3,0.9056)};
+\legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
+\nextgroupplot[ylabel={}, ymin=-0.2, ymax=0.99,
+    title={\small (c) Shower}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.6333) (2,0.7667) (3,0.8222)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.5576) (2,0.4956) (3,0.7867)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.1333) (2,0.6289) (3,0.7867)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.0689) (2,0.2400) (3,0.8511)};
+\nextgroupplot[ylabel={Top-1 (\%)}, ymin=0, ymax=110,
+    title={\small (d) HVAC}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,25.4) (2,15.3) (3,96.6)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,19.8) (2,32.9) (3,92.0)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,39.7) (2,46.9) (3,94.0)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,32.7) (2,41.1) (3,87.4)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=110,
+    title={\small (e) Appliance}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,24.9) (2,56.3) (3,96.9)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,31.7) (2,70.2) (3,98.5)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,26.8) (2,30.5) (3,98.8)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,23.1) (2,52.0) (3,92.9)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=110,
+    title={\small (f) Shower}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,61.0) (2,79.3) (3,85.0)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,61.9) (2,59.7) (3,81.0)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,33.0) (2,66.3) (3,82.3)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,34.3) (2,47.0) (3,89.0)};
+\nextgroupplot[ylabel={MAE}, ymin=0, ymax=0.3,
+    title={\small (g) HVAC}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2412) (2,0.2030) (3,0.0296)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2146) (2,0.1552) (3,0.0447)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2077) (2,0.1665) (3,0.0511)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2163) (2,0.1736) (3,0.0566)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
+    title={\small (h) Appliance}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.2721) (2,0.1594) (3,0.0665)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2717) (2,0.2067) (3,0.0404)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2887) (2,0.2136) (3,0.0515)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2828) (2,0.2242) (3,0.1176)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.3,
+    title={\small (i) Shower}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.1357) (2,0.1057) (3,0.0484)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2075) (2,0.1401) (3,0.0497)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2285) (2,0.1236) (3,0.0528)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2046) (2,0.1835) (3,0.0397)};
+\nextgroupplot[ylabel={RMSE}, ymin=0, ymax=0.4,
+    title={\small (j) HVAC}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.3073) (2,0.2757) (3,0.0571)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2798) (2,0.2176) (3,0.0904)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2606) (2,0.2379) (3,0.0996)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2694) (2,0.2292) (3,0.1195)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.4,
+    title={\small (k) Appliance}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.3596) (2,0.2389) (3,0.1325)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.3509) (2,0.2807) (3,0.0855)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.3569) (2,0.2926) (3,0.1010)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.3457) (2,0.3039) (3,0.2348)};
+\nextgroupplot[ylabel={}, ymin=0, ymax=0.4,
+    title={\small (l) Shower}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1,0.1822) (2,0.1529) (3,0.1004)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1,0.2668) (2,0.2030) (3,0.0974)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1,0.2961) (2,0.1781) (3,0.1031)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1,0.2615) (2,0.2434) (3,0.0938)};
+\end{groupplot}
+\end{tikzpicture}%
+}
+
+\newcommand{\plotRagAblation}{%
+\begin{tikzpicture}
+\begin{axis}[
+    width=\textwidth, height=6.5cm,
+    ylabel={Kendall's $\tau$},
+    symbolic x coords={No hidden params,Shipped $k{=}1$,Alt embedding,Retrieval $k=1$,Retrieval $k=5$,Random exemplars,No scores},
+    xtick=data,
+    xticklabel style={rotate=30, anchor=east, font=\small, align=center},
+    enlarge x limits=0.35,
+    bar width=7pt,
+    ybar,
+    ymin=-0.05, ymax=0.55,
+    legend style={font=\small, at={(0.5,1.05)}, anchor=south, legend columns=4},
+    legend cell align={left},
+    grid=major,
+    grid style={gray!30},
+    ymajorgrids=true,
+]
+\addplot[fill=colorDeepSeek] coordinates {
+    (No hidden params,0.391)
+    (Shipped $k{=}1$,0.489)
+    (Alt embedding,0.346)
+    (Retrieval $k=1$,0.182)
+    (Retrieval $k=5$,0.342)
+    (Random exemplars,0.063)
+    (No scores,0.073)
+};
+\addplot[fill=colorGemini] coordinates {
+    (No hidden params,0.437)
+    (Shipped $k{=}1$,0.387)
+    (Alt embedding,0.517)
+    (Retrieval $k=1$,0.377)
+    (Retrieval $k=5$,0.431)
+    (Random exemplars,0.177)
+    (No scores,0.204)
+};
+\addplot[fill=colorGPTOSS] coordinates {
+    (No hidden params,0.175)
+    (Shipped $k{=}1$,0.187)
+    (Alt embedding,0.227)
+    (Retrieval $k=1$,0.237)
+    (Retrieval $k=5$,0.112)
+    (Random exemplars,0.022)
+    (No scores,0.061)
+};
+\addplot[fill=colorQwen] coordinates {
+    (No hidden params,0.273)
+    (Shipped $k{=}1$,0.154)
+    (Alt embedding,0.165)
+    (Retrieval $k=1$,0.306)
+    (Retrieval $k=5$,0.234)
+    (Random exemplars,0.276)
+    (No scores,0.071)
+};
+\addplot[dashed, gray!60, sharp plot, update limits=false] coordinates {
+    (No hidden params,0) (No scores,0)
+};
+\legend{DeepSeek,Gemini,GPT-OSS,Qwen}
+\end{axis}
+\end{tikzpicture}%
+}
+
+\newcommand{\plotAlphaSweep}{%
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={group size=3 by 1, horizontal sep=1.6cm},
+    width=0.34\textwidth, height=5cm,
+    xlabel={$\alpha$},
+    xtick={1.0,1.2,1.5,2.0},
+    xticklabel style={font=\small},
+    enlarge x limits=0.2,
+    grid=major, grid style={gray!30}, ymajorgrids=true,
+    legend style={font=\scriptsize, at={(0.5,1.25)}, anchor=south, legend columns=4, draw=none, fill=none},
+    legend cell align={left},
+    every axis plot/.append style={thick, mark size=2pt},
+]
+\nextgroupplot[ylabel={Kendall's $\tau$}, ymin=-0.05, ymax=1.0,
+    title={\small (a) $\mathcal{A}_{\text{D}}$}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1.0,0.1754) (1.2,0.1795) (1.5,0.1795) (2.0,0.1802)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1.0,0.1268) (1.2,0.1433) (1.5,0.1419) (2.0,0.1509)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1.0,0.0455) (1.2,0.0441) (1.5,0.0427) (2.0,0.0448)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1.0,0.0093) (1.2,0.0107) (1.5,0.0079) (2.0,0.0127)};
+\nextgroupplot[ylabel={}, ymin=-0.05, ymax=1.0,
+    title={\small (b) $\mathcal{A}_{\text{E}}$}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1.0,0.3037) (1.2,0.3133) (1.5,0.3133) (2.0,0.3099)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1.0,0.3169) (1.2,0.3101) (1.5,0.3087) (2.0,0.3039)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1.0,0.2704) (1.2,0.2745) (1.5,0.2745) (2.0,0.2780)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1.0,0.1911) (1.2,0.2075) (1.5,0.2102) (2.0,0.2164)};
+\legend{Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, Qwen 3.5 9B}
+\nextgroupplot[ylabel={}, ymin=-0.05, ymax=1.0,
+    title={\small (c) $\mathcal{A}_{\text{H}}$}, title style={font=\small}]
+\addplot[mark=*, colorGemini]   coordinates {(1.0,0.9131) (1.2,0.9268) (1.5,0.9268) (2.0,0.9165)};
+\addplot[mark=square*, colorDeepSeek] coordinates {(1.0,0.8884) (1.2,0.9008) (1.5,0.9008) (2.0,0.8919)};
+\addplot[mark=triangle*, colorGPTOSS] coordinates {(1.0,0.8912) (1.2,0.8982) (1.5,0.8998) (2.0,0.8958)};
+\addplot[mark=diamond*, colorQwen] coordinates {(1.0,0.8595) (1.2,0.8780) (1.5,0.8780) (2.0,0.8733)};
+\end{groupplot}
+\end{tikzpicture}%
+}
+
+% --- End inline figure definitions ---
+\definecolor{colorPure}{RGB}{180,180,180}
+\definecolor{colorRAG}{RGB}{100,149,200}
+\definecolor{colorLLMParameterizedReferenceScoring}{RGB}{31,73,125}
+\definecolor{colorGemini}{HTML}{E69F00}
+\definecolor{colorDeepSeek}{HTML}{56B4E9}
+\definecolor{colorGPTOSS}{HTML}{009E73}
+\definecolor{colorQwen}{HTML}{D55E00}
+\journal{Environmental Modelling \& Software}
+\begin{document}
+\begin{frontmatter}
+\title{Benchmarking LLM Integration Strategies for MCDA-Assisted Household Energy Decision Support}
+\author{Ahaan Nigam\corref{cor1}}
+\cortext[cor1]{Corresponding author.}
+\ead{ishaannigam27@gmail.com}
+\affiliation{organization={Downingtown East High School},
+            city={Exton},
+            state={Pennsylvania},
+            country={USA}}
+\author{River Huang}
+\affiliation{organization={Paul Scherrer Institut},
+            city={Villigen},
+            state={Aargau},
+            country={Switzerland}}
+\begin{abstract}
+Everyday decisions like adjusting a thermostat or scheduling an appliance can lower household carbon footprints, but evaluating trade-offs across cost, emissions, comfort, and convenience requires multi-criteria expertise most residents lack. Households fall back on fixed habits or rules of thumb that forgo potential savings. Large language models (LLMs) make interaction easy, yet unassisted models struggle with physical calculations and numerical scoring. We benchmark three general strategies for integrating an LLM into multi-criteria decision support: direct scoring, example-guided scoring, and hybrid reference scoring, tested across 195 household energy scenarios. Extracting scenario parameters for a deterministic reference calculator reproduces the ground-truth ranking more reliably than having the LLM score alternatives directly, which performs little better than chance. The approach extends to other domains with an existing deterministic calculator, pairing it with LLM parameter extraction instead of having the model compute the result.\end{abstract}
+\begin{keyword}
+Large language models \sep Multi-criteria decision analysis  \sep Household energy \sep Retrieval-Augmented Generation 
+\end{keyword}
+\end{frontmatter}
+
+\section{Introduction}
+\label{sec1}
+The average U.S.\ household emits roughly 8{,}744 pounds of CO\textsubscript{2}e and consumes about 10{,}791 kWh of electricity each year \cite{epa_household2024,eia_faq_electricity2024}. Globally, residential energy consumption has grown at roughly 1\% per year since 2000, a trend driven by increasing household sizes and comfort demands in emerging economies \cite{GONZALEZTORRES2022112428}. However, a considerable portion of this usage is adjustable, creating opportunities to reduce both household spending and environmental impact \cite{dietz2009,ohler2020}.
+
+Using Multi-Criteria Decision Analysis (MCDA) \cite{huang2011}, households can identify those opportunities without specialized training. Within a correctly specified value model, it produces a ranking consistent with the decision-maker's stated preferences across all criteria simultaneously. However, constructing that model (defining alternatives, criteria, weights, value functions, and normalization rules) requires expertise and time that routine household decisions cannot absorb.
+
+Large language models carry broad knowledge about residential energy use and product characteristics, and prior work has begun using them to automate the construction or scoring step in an MCDA workflow \cite{svoboda2024,icaart26}. We identify three ways a researcher can place an LLM inside that workflow: scoring alternatives directly (direct scoring), scoring them with retrieved worked examples as guidance (example-guided scoring), or extracting engineering parameters for a deterministic reference calculator to score (hybrid reference scoring). These strategies carry different engineering costs beyond their expected ranking accuracy: direct scoring needs no supporting infrastructure, example-guided scoring requires a maintained retrieval index of worked examples, and hybrid reference scoring requires a maintained deterministic calculator, so the right choice depends on how much accuracy that infrastructure buys. No prior study has compared these strategies against a deterministic reference calibrated to established engineering standards for household energy decisions.
+
+We pose three research questions.
+\begin{itemize}
+\item \textbf{RQ1}: What architectures are available for integrating an LLM into an MCDA workflow?
+\item \textbf{RQ2}: Which of those architectures most accurately reproduces a deterministic Multi-Attribute Value Theory (MAVT) reference model's ranking for household energy decisions?
+\item \textbf{RQ3}: How consistently does that ranking hold across LLMs of varying capability and provider?
+\end{itemize}
+We answer these by benchmarking all three architectures against a physics-based MAVT ground truth across 195 household energy scenarios spanning three decision types (HVAC setpoints, appliance scheduling, and shower duration), using identical MAVT weighting and model access across multiple LLMs, so that the integration strategy is the variable under test.
+
+\section{Literature Review}
+\label{sec:lit-review}
+This section reviews prior work on household energy decision-making and adoption barriers, LLM numeric reliability, and LLM integration with MCDA methods.
+
+\subsection{Household Energy Decision-Making and Adoption Barriers}
+
+Globally, residential buildings account for 18\% of CO\textsubscript{2} emissions \cite{GONZALEZTORRES2022112428}; in the United States, the residential sector consumed 19.2 quadrillion BTU (5,627 TWh) of delivered energy in 2025 and accounted for roughly 20\% of national energy-related CO\textsubscript{2} emissions \cite{eia2022}. Dietz et al.\ (2009) estimated that household behavioral changes could reduce U.S.\ emissions by 123 MtC (approximately 451 MtCO\textsubscript{2}e) annually \cite{dietz2009}. At the time, this would account for roughly 8.3\% of U.S.\ energy-related CO\textsubscript{2} emissions. Scaling to the U.S.'s 4{,}904 MMmt of 2025 energy-related emissions \cite{eia_co2_2025} suggests a current savings potential of 407 MtCO\textsubscript{2}e. HVAC systems alone account for roughly a third of global residential energy consumption \cite{GONZALEZTORRES2022112428}.
+
+\citet{attari2010} found that consumers undervalue energy use and savings by a factor of 2.8 on average, systematically underestimating high-energy activities while overestimating low-energy ones; the ``usual setting'' for most activities rests on incorrect or arbitrary assumptions, whether this is a temperature setpoint, an appliance run time, or shower time. Even a streamlined MCDA calculator \cite{huang2011,huangburgherr2024} still requires framing alternatives, criteria, and weights, keeping the tool out of routine household use.
+
+In households, space heating accounts for 43\% of residential energy use, followed by appliances (13\%), water heating (12\%), and air conditioning (8\%) \cite{eia_recs2020}. These four categories are tested in this study as three decision types: HVAC, appliance scheduling, and water heating via shower duration. Behavioral plasticity, how likely people are to implement each action given financial and social incentives, is captured in \citet{dietz2009}'s Reasonably Achievable Emission Reduction (RAER) metric and determines which reductions are practically attainable.
+
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=1\textwidth]{LifestyleChangesEmissionImpact.png}
+\caption{Emission-reduction potential of household lifestyle changes}
+\label{fig:lifestyle_emissions_impact}
+\end{figure}
+
+Heuristic routines resolve everyday decisions quickly but grow unreliable as time pressure and information load rise \cite{bobadilla2018}, pushing households toward satisficing: selecting the first acceptable option rather than evaluating trade-offs. Status quo bias keeps households locked into habitual schedules, even when shifting usage windows saves money \cite{gill2022}. Decision assistance tools impose a workflow tax on users: introducing a decision-making tool decreases the likelihood of long-term adoption. Natural-language interfaces can reduce this cognitive tax. In building performance, natural-language platforms like EPlus-LLM extract building parameters to cut modeling time by 95\% \cite{jiang2024eplus}, and context-aware recommendation engines that explain the financial and environmental trade-offs behind a suggestion increase user acceptance by 20\% \cite{zharova2024}.
+
+\subsection{LLM Numeric Reliability and MCDA Integration}
+
+For arithmetic, LLMs often provide incorrect answers unless self-checked against multiple generated solution paths \cite{imani2023mathprompter}. Scoring closely competing alternatives is therefore unreliable without external grounding. There are a few methods to resolve this: few-shot prompting places examples similar to the target problem in the prompt, and Retrieval-Augmented Generation (RAG) injects external facts into an LLM's context to reduce hallucination in open-domain question answering (QA) \cite{lewis2020}. An MCDA scoring task is closer to Case-Based Reasoning, which treats problem-solving as retrieving similar prior cases and reusing their recorded solutions \cite{aamodtplaza1994}. \citet{minorkaucher2024} found that retrieved example explanations used as in-context demonstrations improve LLM-generated outputs over zero-shot prompting.
+
+\citet{zheng2023judging} formalized the broader LLM-as-judge paradigm, in which a model's own generated scores substitute for human ratings. \citet{wang2024fairescalers} show that LLMs exhibit positional bias when scoring, such as ranking the first response higher because of its placement. \citet{li2026scoringbias} document systematic scoring-bias distortions in LLM-as-a-judge pipelines that persist even in advanced models.
+
+An MCDA problem specifies a finite set of alternatives evaluated against multiple criteria, each carrying a weight that reflects its relative importance to the decision-maker. The formalization originates in classical decision theory \cite{keeneyraiffa1976,dyer1979}. The classical toolkit spans several method families beyond MAVT: the Analytic Hierarchy Process (AHP) derives weights from pairwise comparisons, the Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS) ranks alternatives by distance from an ideal and an anti-ideal point, and outranking methods such as ELECTRE and PROMETHEE compare alternatives pairwise without collapsing them into a single index \cite{huang2011}. 
+
+MAVT aggregates single-attribute value functions into a unified score using criterion weights. However, the used importance weights often fail to reflect effective trade-offs unless the scores are scaled by realized attribute ranges within a choice set \cite{vonnitzsch1993}. Some inaccuracy is integrated into 'fuzzy' methods, such as fuzzy AHP and fuzzy TOPSIS represent decision-maker judgments as fuzzy numbers rather than crisp weights \cite{zadeh1965}, but a human still supplies the judgment. Recent studies use LLMs to automate preference elicitation, alternative generation, or direct scoring \cite{svoboda2024,icaart26}.
+
+Table ~\ref{tab:llm-mcda-prior-work} shows previously tested MCDA-LLM integrations.
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{0.15\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.40\textwidth}p{0.13\textwidth}@{}}
+\toprule
+\textbf{Study} & \textbf{MCDA method} & \textbf{LLM's role} & \textbf{Ground truth?} \\
+\midrule
+\cite{svoboda2024} & AHP & GPT-4 agents act as virtual experts generating pairwise comparisons & No \\
+\cite{icaart26} & COMET & LLaMA 3.1 8B substitutes for the human expert who scores characteristic objects & No \\
+\cite{cheng2026wildfire} & AHP & Four LLM-assisted scoring strategies (direct, debate, full-document, retrieval-guided) & Yes\tnote{a} \\
+\cite{vahidnia2025walmas} & Weight elicitation & Multi-agent LLMs substitute for an expert panel assigning criterion weights & No\tnote{b} \\
+\cite{anhao2025probid} & Fuzzy PROBID & LLM semantic-similarity judgments generate fuzzy membership scores & No \\
+\cite{huangburgherr2024} & Multi-method DSS & None --- conventional expert-elicited inputs & N/A \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item[a] Expert-elicited consensus ranking.
+\item[b] A human-expert satisfaction survey.
+\end{tablenotes}
+\end{threeparttable}
+\caption{Prior LLM--MCDA integration studies}
+\label{tab:llm-mcda-prior-work}
+\end{table}
+
+\newpage In Table~\ref{tab:llm-mcda-prior-work}, four of the five LLM-integrated studies report no true ground truth, and the one exception, \citet{cheng2026wildfire}, validates against an expert-elicited consensus ranking rather than a physics-based calculation. None compares competing LLM-integration strategies against one another under a shared, calculation-grounded standard.
+
+\section{Methodology}
+\label{sec2}
+
+Table~\ref{tab:item1} lists the notation used throughout this paper.
+
+
+\begin{table*}[htpb]
+\centering
+\begin{threeparttable}
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{} l p{0.85\textwidth} @{}}
+\toprule
+Symbol & Definition \\
+\midrule
+$\tau$ & Kendall's rank correlation coefficient \\
+$w_i$ & weight of criterion $i$ ($i=1\ldots4$), summing to 1 \\
+$v_i(x)$ & value function score for criterion $i$ at raw value $x$, range $[0,1]$ \\
+$\alpha$ & shape parameter for logarithmic value functions \\
+$s_j$ & MAVT weighted sum score for alternative $j$ \\
+$\text{MAE}$ & Mean Absolute Error on MAVT score (0--1 scale) \\
+$\text{RMSE}$ & Root Mean Squared Error on MAVT score (0--1 scale) \\
+$n$ & number of test scenarios evaluated \\
+$k$ & number of retrieved scenarios per query in RAG ($k=1$) \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
+\caption{Notation used throughout this paper}
+\label{tab:item1}
+\end{table*}
+
+\subsection{MAVT Framework \& Weighting Design}
+\label{sec:mavt-design}
+MAVT compares alternatives on different criteria based on the range of values that occurs for each criterion \cite{keeneyraiffa1976,dyer1979}. We hold the weights constant across all decision types, all architectures, and the reference calculator. The MAVT additive form (Eq.~\ref{eq:mavt_sum}) requires preferential independence among criteria \cite{dyer1979,keeneyraiffa1976}.
+
+\begin{equation}
+\label{eq:mavt_sum}
+s_j = \sum_{i=1}^{4} w_i \cdot v_i(x_{ij})
+\end{equation}
+
+We weight criteria as follows: Environmental Impact (35\%), Energy Cost (30\%), Comfort (20\%), and Practicality (15\%) (Table~\ref{tab:item3}). Results are also reported for equal weights and for objective weight vectors derived by entropy and by MEREC (Method based on the Removal Effects of Criteria) \cite{merec2021} in ~\ref{app:weights}.
+
+\begin{table*}[htbp]
+\centering
+\begin{threeparttable}
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lllll}
+\toprule
+Criterion & Weight (\%) & Value Function & $\alpha$ & Direction \\
+\midrule
+Environmental Impact & 35 & Linear (Eq.~\ref{eq:linear_vf}) & \textemdash & Lower raw = better \\
+Energy Cost & 30 & Linear (Eq.~\ref{eq:linear_vf}) & \textemdash & Lower raw = better \\
+Comfort & 20 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.5 & Higher raw = better \\
+Practicality & 15 & Logarithmic (Eq.~\ref{eq:log_vf}) & 1.2 & Higher raw = better \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
+\caption{MAVT criterion specification}
+\label{tab:item3}
+\end{table*}
+
+The Environmental Impact weight of 0.35 reflects the share of national CO\textsubscript{2} emissions attributable to the residential sector \cite{dietz2009} and Value--belief--norm theory's finding that environmental orientation is the most consistent normative driver across pro-environmental household behaviours \cite{stern1999}. Entropy-based normalization of the scenario distributions independently gives high weight to this criterion \cite{roszkowska2026} (\ref{app:weights}). Energy Cost is weighted at 0.30 for two reasons. Cost is the strongest predictor of whether a household adopts an energy measure at all, across both stated and revealed preference studies \cite{newell2014,harrispoll2024}, so a criterion set that underweights it would rank alternatives a household would decline. It is also the criterion households estimate worst: \citet{attari2010} found that people underestimate the energy use of high-draw activities by roughly a factor of three and misjudge the relative cost of one behaviour against another, so cost is where an external calculation adds most to what a household already knows. We place it below Environmental Impact because adoption pressure and normative importance are different things, and the criterion set encodes the second.
+
+In our dataset the energy cost and environmental impact criteria are not statistically independent: Spearman's $\rho$ between them across the 195 test scenarios is 0.92. Preferential independence describes preference structure, regardless of how correlated the attribute values are in a given alternative set \cite{keeneyraiffa1976,dyer1979}. The correlation does raise a redundancy, or double-counting, concern, which arises if the two criteria are operationally the same quantity under different names, causing their combined 65\% weight to be applied twice to a single underlying attribute \cite{keeneyraiffa1976}. The extent to which this occurs differs by decision type. Because ranking is performed within a scenario, the relevant quantity is the within-scenario association between the two criteria across the three alternatives.
+
+For the Appliance decision type the two criteria separate. The price period is set by the utility's time-of-use window (for PECO, 2--6\,p.m.\ on weekdays \cite{peco2021}) while the emissions period is set by the PJM system-wide peak of 7\,a.m.--11\,p.m., so a cycle run at 8\,a.m.\ is off-peak for cost and on-peak for emissions. The magnitudes differ as much as the windows. For HVAC and Shower they do not separate meaningfully. In both, the parameters that distinguish the emissions or water quantity from the cost quantity (the occupancy-resolved emissions factor for HVAC, the flow rate and heater setpoint for Shower) are scenario-level and therefore identical across the three alternatives. Within any one scenario the environmental quantity is then a fixed scalar multiple of the cost quantity. For HVAC and Shower types the four-criterion specification therefore operates as a three-criterion one, with an effective weight of 0.65 on a single cost/emissions dimension. This is not universal; the two would diverge on a grid whose marginal emissions intensity varies independently of retail price, which the PJM footprint studied here does not (Section~\ref{sec:calculator-simplifications}).
+
+Comfort is weighted at 0.20, reflecting its role as the second driver of HVAC behavior \cite{aqilah2022} via ASHRAE\,55 setpoints \cite{ashrae55_2020}. For appliances, it follows demand-response acceptance research on tolerance for scheduling delay \cite{paetz2012,waseem2020}, and for showers it peaks near the REU2016 average duration and penalizes heater setpoints below CDC Legionella thresholds \cite{reu2016,harrispoll2024,cdc2026}. Practicality, weighted at 0.15, captures the feasibility and sustainability of an alternative, which is seperate from likelihood of a one time choice. Low adoption is a longer term effect of friction. A 20-minute shower in a four-person household with a 50-gallon tank illustrates this: at 2.5\,GPM the four showers together draw about 155 gallons of hot water against the roughly 40 gallons the tank can usefully supply, so the household runs out. The comfort criterion wouldn't account for this, which is why a separate practicality component is necessary.
+
+\begin{equation}
+\label{eq:norm_x}
+\tilde{x} =
+\begin{cases}
+\dfrac{x - x_{\min}}{x_{\max} - x_{\min}} & \text{for increasing criteria}\\[4mm]
+\dfrac{x_{\max} - x}{x_{\max} - x_{\min}} & \text{for decreasing criteria}
+\end{cases}
+\end{equation}
+
+Energy cost and environmental impact enter as raw physical quantities (dollars, and lbs\,CO\textsubscript{2} or gallons of water); comfort and practicality are emitted by the calculators already on a 0--1 utility scale, so for those two $x$ is that score rather than a physical measurement. Each criterion's raw quantity is first converted to a direction-adjusted normalized value $\tilde{x}$, so that higher values are always better:
+
+\begin{equation}
+\label{eq:linear_vf}
+v_i(\tilde{x}) = \tilde{x}
+\end{equation}
+
+The environmental and energy cost functions use the linear value function (Eq.~\ref{eq:linear_vf}): equal absolute changes in these quantities represent equal improvements \cite{dyer1979,keeneyraiffa1976}.
+
+\begin{equation}
+\label{eq:log_vf}
+v_i(\tilde{x}) = \frac{\ln\!\left(1 + \alpha \cdot \tilde{x}\right)}{\ln(1 + \alpha)}
+\end{equation}
+
+The comfort and practicality criteria use the logarithmic value function (Eq.~\ref{eq:log_vf}) because both exhibit diminishing marginal returns: initial improvements from an uncomfortable or impractical baseline yield disproportionately large perceived gains, while incremental improvements near the optimum matter progressively less. We set $\alpha = 1.5$ for comfort and $\alpha = 1.2$ for practicality a priori to introduce mild concavity, adjusting them only to avoid values leaving the 0--1 range. The values are not elicited or fitted. Section~\ref{sec:res-sensitivity} reports the architecture ordering across the $\alpha$ sweep, which does not change.
+
+
+\FloatBarrier
+\subsection{Decision Types and Scenario Dataset}
+\label{sec:dataset}
+We selected three decision types for their high behavioral plasticity and RAER: HVAC (adjusting thermostat setpoints), Appliance (time-of-use [TOU] scheduling), and Shower (duration). HVAC was prioritized because space heating and cooling account for approximately a third of global residential energy consumption and grows as household incomes rise \cite{GONZALEZTORRES2022112428}. The scenario dataset has two pools. The test set contains 195 scenarios (70 HVAC, 65 Appliance, and 60 Shower); each scenario presents three alternatives that each architecture scores independently and by the reference calculator. The RAG scenarios (detailed in Supplementary Material S1) contain an additional 90 scenarios (35 HVAC, 35 Appliance, and 20 Shower) that populate the retrieval index used by the $\mathcal{A}_{\text{E}}$ architecture \cite{lewis2020}. Each decision type's scenario set crosses the categorical parameters (insulation tier, housing type, appliance type, flow-rate band) with representative numeric draws (outdoor temperature, square footage, household size, utility budget), with coverage of every categorical cross-cell. The 90 RAG scenarios follow the same parameter distribution without excess scenarios in any combination and are kept fully disjoint from the test set. Supplementary Material S1 lists every field each decision type carries, its observed range, and whether the architectures see it or estimate it.
+
+
+\begin{figure}[htpb]
+	\centering
+	\includegraphics[width=0.5\textwidth]{FULLFlowMCDA.png}
+\caption{Overview of the MCDA scoring pipeline}
+\label{fig:full-flow-mcda}
+\end{figure}
+
+The test dataset omits each scenario's exact engineering parameters (R-value, SEER, GPM, kWh/cycle, occupancy flags) behind homeowner-accessible labels/information \cite{doehesscore2021}. $\mathcal{A}_{\text{E}}$'s retrieved RAG exemplars still expose their own engineering values as worked examples (Table~\ref{tab:parameter_comparison}; Section~\ref{sec:architectures}).
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{0.88}
+\setlength{\tabcolsep}{3pt}
+\begin{minipage}[t]{0.31\textwidth}\vspace{0pt}
+\centering
+\textbf{HVAC}\\[0.3em]
+\begin{tabular}{@{} l c c @{}}
+\toprule
+\textbf{Parameter} & \textbf{LLMs} & \textbf{Calc.} \\
+\midrule
+Location            & \checkmark & ---        \\
+Outdoor Temp        & \checkmark & \checkmark \\
+Home Size (sq ft)   & \checkmark & \checkmark \\
+Insulation Tier$^{a}$   & \checkmark & ---        \\
+R-Value             & ---        & \checkmark \\
+Household Size      & \checkmark & \checkmark \\
+Housing Type        & \checkmark & \checkmark \\
+House Age$^{b}$     & \checkmark & \checkmark \\
+Utility Budget      & \checkmark & \checkmark \\
+SEER Rating         & ---        & \checkmark \\
+Occupancy Context$^{c}$   & \checkmark & \checkmark \\
+Indoor Temp (alt.)  & ---        & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.31\textwidth}\vspace{0pt}
+\centering
+\renewcommand{\arraystretch}{1.04}
+\textbf{Appliance}\\[0.3em]
+\begin{tabular}{@{} l c c @{}}
+\toprule
+\textbf{Parameter} & \textbf{LLMs} & \textbf{Calc.} \\
+\midrule
+Appliance Type          & T          & \checkmark \\
+Baseline Runtime        & T          & \checkmark \\
+Appliance Age Tier      & \checkmark & ---        \\
+kWh per Cycle           & ---        & \checkmark \\
+TOU Period / Utility Rate & ---      & \checkmark \\
+Monthly Cycles          & ---        & \checkmark \\
+Household Size          & \checkmark & \checkmark \\
+Housing Type            & \checkmark & \checkmark \\
+Location                & \checkmark & \checkmark \\
+Utility Budget          & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.31\textwidth}\vspace{0pt}
+\centering
+\renewcommand{\arraystretch}{0.955}
+\textbf{Shower}\\[0.3em]
+\begin{tabular}{@{} l c c @{}}
+\toprule
+\textbf{Parameter} & \textbf{LLMs} & \textbf{Calc.} \\
+\midrule
+Location                 & \checkmark & \checkmark  \\
+Outdoor Temp             & \checkmark & \checkmark  \\
+Inlet Water Temp         & ---        & \checkmark  \\
+Heater Setpoint          & ---        & \checkmark  \\
+Flow Rate Tier           & \checkmark & ---         \\
+GPM                      & ---        & \checkmark  \\
+Duration (min)           & A          & \checkmark  \\
+Household Size           & \checkmark & \checkmark  \\
+Tank Size                & ---        & \checkmark  \\
+Utility Budget           & \checkmark & \checkmark  \\
+Housing Type             & \checkmark & \checkmark  \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\vspace{1em}
+\par{\footnotesize $^{a}$Tier labels (Poor/Medium/Good) map to R-value ranges; see \S\ref{sec:gt-calculators}.
+$^{b}$LLMs receive a building-age range label (e.g., ``20+ Years''); the calculator uses exact HVAC age.
+$^{c}$Question context provides occupancy information.
+T = free-text input; A = inferred from alternative.}
+\caption{Parameters visible to the LLM architectures versus the reference calculator, by decision type}
+\label{tab:parameter_comparison}
+\end{table}
+
+\FloatBarrier
+
+The parameter ranges that define the insulation tiers and SEER ratings are itemized in Supplementary Material S1. The appliance age shown to the LLM architectures is a band label that a function derives from the scenario's raw integer age. The band is never passed to the calculator, which uses the raw age. Band enumerations and their correlations with energy draw are in Supplementary Material S1. Housing type (apartment, condo, townhouse, rowhouse, single-family) determines the envelope multiplier in the HVAC load equation and the noise propagation factor in the appliance comfort model; these mappings are detailed in the reference derivations of Supplementary Material S1. For the Flow Rate parameter, the scenario's numeric GPM is shown to the LLM architectures only as a qualitative band (\texttt{low\_flow}, \texttt{standard}, \texttt{high\_flow}); the band ranges, Energy Policy Act references, and mapping are given in Supplementary Material S1.
+
+\FloatBarrier
+\subsubsection{Reference Calculators}
+\label{sec:gt-calculators}
+
+The reference ranges in Table~\ref{table:reference_ranges} are computed as the 5th--95th percentiles of the reference cost distributions over the scenario dataset rather than extreme theoretical limits. The HVAC environmental bounds are derived from the corresponding energy percentile envelope through the PJM marginal emission factors, as detailed below, while the Appliance environmental bounds are percentiles of the realized per-cycle emissions distribution; the comfort and practicality bounds are constructed score bounds (0.0--1.0 and 0.05--1.0). The practicality floor is 0.05 rather than 0.0: no household alternative is impossible to execute, only inadvisable. Percentile bounds truncate scores for outlier scenarios.
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\centering
+\small
+\caption{Reference ranges (5th--95th percentiles)}
+\label{table:reference_ranges}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Criterion} & \textbf{HVAC} & \textbf{Appliance} & \textbf{Shower} \\
+\midrule
+Energy Cost & 0.38--3.29 & 0.025--0.71 & 0.14--1.14 \\
+Environmental Impact & 1.96--18.04 & 0.288--3.643 & 6.0--45.0 \\
+Comfort & 0.0--1.0 & 0.0--1.0 & 0.0--1.0 \\
+Practicality & 0.05--1.0 & 0.05--1.0 & 0.05--1.0 \\
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+Table~\ref{table:reference_ranges} gives the endpoint each criterion's value function maps to 0 and to 1, per decision type. Energy cost is in dollars per decision period, environmental impact in lbs CO\textsubscript{2} for HVAC and Appliance and in gallons for Shower, and comfort and practicality on the calculators' own normalized scales. The paragraphs below give the derivation for each.
+
+We obtained the endpoints above by running every dataset scenario through its decision type's calculator, test and retrieval scenarios alike, pooling the raw quantity across all three alternatives of every scenario of that type, and taking the 5th and 95th percentiles of the pooled distribution. For HVAC, we drop alternatives carrying zero conditioning load from the pool. We then hold the endpoints as constants inside each calculator's value function rather than recomputed at run time.
+
+For HVAC, cost percentiles reflect active-conditioning alternatives. A setpoint near outdoor temperature produces zero decision-period load and collapses to \$0, which makes the lower bound go to zero. Cost normalization uses a bundled Pennsylvania retail rate of \$0.19/kWh. EIA reports a lower state average of about \$0.177/kWh \cite{eia_faq_electricity2024}, but that figure is an average revenue per kWh over all residential customers in the state, including those on legacy supply contracts. The rate used here is instead the all-in amount a household on default service pays at the margin: generation supply plus transmission, distribution, and the customer-assistance and energy-efficiency riders that appear as separate line items on the bill, priced against the default-service rates of the six Pennsylvania utilities modelled here \cite{paupc2025}. Excluding zero-load points, the realized 8-hour cost distribution at this rate spans \$0.38--\$3.29. An Off option receives top cost score via decreasing-value normalization.
+
+Using this kWh distribution with PJM marginal emissions factors (0.976 off-peak, 1.041 peak lbs CO\textsubscript{2}/kWh) yields HVAC environmental bounds of 1.96--18.04 lbs CO\textsubscript{2} \cite{pjm2022emissions}.
+
+
+For appliances, the realized per-cycle cost distribution (kWh/cycle multiplied by the resolved time-of-use rate across the six PA utilities) spans \$0.025--\$0.71, and the realized per-cycle emissions distribution (kWh/cycle through the PJM marginal factor at run time) spans 0.288--3.643 lbs CO\textsubscript{2}. The underlying per-cycle energy endpoints remain consistent with the ENERGY STAR certified-products distribution (efficient HE washers near 0.25\,kWh) and include the older non-certified electric resistance dryers \cite{energystar_products,neep2015}.
+
+For showers, the realized per-shower cost distribution spans \$0.14--\$1.14. Shower energy follows the mixing-fraction physics targeting a fixed 105\,\textdegree{}F delivery temperature, so it depends only on the rise from the mains inlet (seasonal inlet temperatures from NREL hot-water modeling \cite{burch2007}) to that target and is independent of heater setpoint for setpoints at or above the 105\,\textdegree{}F delivery target, which all dataset setpoints (105--140\,\textdegree{}F) satisfy. Shower environmental impact is defined as water volume (gallons); the realized distribution of flow rate multiplied by duration spans 6.0--45.0 gallons at the 5th--95th percentile, with flow-rate and duration benchmarks from EPA WaterSense Appendix~B \cite{epawatersense}, REU2016 \cite{reu2016}, and The Harris Poll \cite{harrispoll2024}. Water volume is the dominant environmental footprint of showering.
+
+Each reference calculator takes a scenario with three alternatives and returns four scores per alternative plus the raw physical quantities for environmental impact and energy cost before value-function transformation. Energy cost is in dollars per 8-hour decision period (HVAC), per cycle (Appliance), or per shower (Shower); monthly estimates are computed only for the budget penalty; Environmental Impact is in lbs\,CO\textsubscript{2} for HVAC and Appliance decisions and in gallons of water for Shower decisions.
+
+For HVAC and Appliance decisions, environmental impact uses PJM marginal emissions factors:
+\begin{equation}
+\begin{gathered}
+  \mathrm{CO_2} = E_{\mathrm{kWh}} \cdot \varepsilon(t), \\[4pt]
+  \varepsilon(t) = \begin{cases}
+    1.041 \text{ lbs/kWh} & \text{peak (7am--11pm)} \\
+    0.976 \text{ lbs/kWh} & \text{off-peak}
+  \end{cases}
+\end{gathered}
+  \label{eq:emissions}
+\end{equation}
+\noindent where $E_{\mathrm{kWh}}$ is the decision-period energy use and $\varepsilon(t)$ is the PJM marginal emissions factor at run time $t$ \cite{pjm2022emissions}. Marginal factors are used rather than averages because shifting a residential load displaces or adds the generator at the margin.
+All three calculators apply an identical four-tier budget penalty $P(u)$ multiplicatively to the energy-cost value-function output, where $u = C_{\mathrm{monthly}} / B$ is monthly cost utilization relative to the household's stated budget $B$:
+\begin{equation}
+  P(u) = \begin{cases}
+    1.0                          & u < 0.80                   \\[4pt]
+    1 - 2.5\,(u - 0.80)         & 0.80 \le u < 1.0           \\[4pt]
+    0.5\,e^{-3(u - 1.0)}        & 1.0 \phantom{0}\le u < 1.5 \\[4pt]
+    0                            & u \ge 1.5
+  \end{cases}
+  \label{eq:budget_penalty}
+\end{equation}
+\noindent where $P(u)$ is a unitless multiplicative penalty on the (post value-function) energy-cost score, $u$ is monthly budget utilization, $C_{\mathrm{monthly}}$ is estimated monthly energy/water-related cost for the decision type, and $B$ is the household-stated monthly budget for utilities.
+\noindent The curve's shape (a no-penalty zone, a decline approaching the limit, loss-averse acceleration past it, and infeasibility beyond 150\%) follows the cited behavioral-economics literature in direction only; the values 0.80, 2.5 and 1.5 and the exponential form are design choices \cite{thaler1999,heath1996,prelec1998,gathergood2012}. For HVAC decisions, $C_{\mathrm{monthly}} = 90\,C_{\mathrm{8h}}$, where $C_{\mathrm{8h}}$ is the energy cost for one 8-hour conditioning period. The Appliance and Shower monthly-cost conversions follow the same pattern (full equations in Supplementary Material S1).
+
+Thermal load is a four-component ASHRAE-style balance \cite{accamanualj} (conductive, internal-gain, solar, and infiltration, with housing-type envelope multipliers and an always-on standby baseline), divided by an effective EER derived from SEER (both rating quantities as defined in \cite{ahri2008}), then scaled by an occupancy multiplier (1.0 fully occupied, 0.75 overnight, and $1 - h_{\mathrm{away}}/48$ for $h_{\mathrm{away}}$ hours of daytime absence) to give decision-period energy use over the 8-hour window:
+\begin{equation}
+\begin{aligned}
+  Q_{\mathrm{cond}} &= \tfrac{1}{R}\,m_h A_f\,\Delta T, &
+  Q_{\mathrm{inf}}  &= 1.08\,\tfrac{A_f h_c\,\mathrm{ACH}}{60}\,\Delta T, \\[2pt]
+  Q_{\mathrm{int}}  &= 400\,n + A_f + 800, &
+  Q_{\mathrm{sol}}  &= 20\,(0.15\,A_f),
+\end{aligned}
+  \label{eq:hvac_load}
+\end{equation}
+\begin{equation}
+  Q = \max\!\left(0,\;
+  \begin{cases}
+    Q_{\mathrm{cond}} + Q_{\mathrm{inf}} + Q_{\mathrm{int}} + Q_{\mathrm{sol}} & \text{cooling} \\[3pt]
+    Q_{\mathrm{cond}} + Q_{\mathrm{inf}} - Q_{\mathrm{int}}                    & \text{heating}
+  \end{cases}\right)
+  \label{eq:hvac_load_total}
+\end{equation}
+\begin{equation}
+  E_{\mathrm{kWh}} = \frac{Q}{1000\,\mathrm{EER}}\,H\,r(o),
+  \qquad
+  \mathrm{EER} = 1.12\,S - 0.02\,S^{2}
+  \label{eq:hvac_energy}
+\end{equation}
+\noindent where $R$ is the envelope R-value, $A_f$ the conditioned floor area (ft\textsuperscript{2}), $m_h$ the housing-type envelope multiplier (1.2 apartment and condo, 1.5 townhouse and rowhouse, 1.7 single-family), $\Delta T$ the indoor--outdoor temperature difference, $h_c$ the ceiling height, $\mathrm{ACH}=0.35$ the infiltration air-change rate, $n$ the household size, $H=8$ the decision-period length in hours, $S$ the rated SEER, and $r(o)$ the occupancy multiplier. Solar gain enters only in cooling season, and internal gain reverses sign in heating season because occupant and equipment heat offsets the load the system must supply. The 800\,BTU/hr standby term keeps a zero-$\Delta T$ setpoint from producing exactly zero load. Environmental impact applies an occupancy-resolved PJM marginal emissions factor to that energy use, using the peak/off-peak split of Eq.~\ref{eq:emissions}. Age- and maintenance-driven efficiency degradation is not applied to this energy path; it appears instead as a reliability factor on the practicality score.
+
+Comfort uses a tent function anchored to ASHRAE\,55 PMV-optimal setpoints \cite{ashrae55_2020} ($76\,^\circ$F in cooling mode, $70\,^\circ$F in heating mode), with an additional penalty term for household sizes $n > 3$:
+\begin{equation}
+  C_{\mathrm{comfort}} = \tfrac{1}{10}\max\!\Bigl(0,\; 10 - \lvert T_{\mathrm{in}} - T^{*}\rvert - \tfrac{(n-3)\,0.3\,\lvert T_{\mathrm{in}} - T^{*}\rvert}{3}\Bigr)
+  \label{eq:hvac_comfort}
+\end{equation}
+\noindent where $C_{\mathrm{comfort}}$ is a 0--1 comfort score, $T_{\mathrm{in}}$ is the indoor setpoint, and $T^{*}$ is the context-dependent optimal setpoint used as the peak of the tent function.
+
+Practicality utility follows a piecewise value function of setpoint extremity, indoor--outdoor $\Delta T$, and equipment age. The extremity slopes steepen in the least-tolerable directions:
+\begin{equation}
+  \delta(T_{\mathrm{in}}) =
+  \begin{cases}
+    1.0\,(71 - T_{\mathrm{in}}) & \text{cooling, } T_{\mathrm{in}} < 71 \\[3pt]
+    1.5\,(T_{\mathrm{in}} - 82) & \text{cooling, } T_{\mathrm{in}} > 82 \\[3pt]
+    1.8\,(63 - T_{\mathrm{in}}) & \text{heating, } T_{\mathrm{in}} < 63 \\[3pt]
+    0.8\,(T_{\mathrm{in}} - 76) & \text{heating, } T_{\mathrm{in}} > 76 \\[3pt]
+    0                             & \text{otherwise}
+  \end{cases}
+  \label{eq:hvac_practicality}
+\end{equation}
+\noindent where $\delta(T_{\mathrm{in}})$ is the extremity penalty (score points per \textdegree{}F beyond adoption-comfort bounds); the pre-feasibility score is $\mathrm{clip}_{[0.5,\,10]}(10-\delta(T_{\mathrm{in}}))$, multiplied by an outdoor--indoor $\Delta T$ feasibility factor and by $(1-D)$, where
+\begin{equation}
+  D = \min\!\Bigl(0.30,\; \delta_{\mathrm{maint}}\bigl[\,1.5\min(a,10) + 0.5\max(a-10,0)\,\bigr]\Bigr)
+  \label{eq:hvac_degradation}
+\end{equation}
+\noindent is the fraction of efficiency lost to age and maintenance (capped at 30\%), $a$ is HVAC age in years, and $\delta_{\mathrm{maint}}$ is the base annual loss rate.
+
+An ``Off'' alternative (no active conditioning) is scored with zero decision-period energy, cost, and emissions; its comfort and practicality are instead evaluated against the free-float indoor temperature the building drifts to with the system off. These are outdoor $+5$\,\textdegree{}F in cooling season and $+10$\,\textdegree{}F in heating season, a modeling assumption reflecting solar and internal gains that hold a closed, occupied house above outdoor air temperature, not a value tabulated by \cite{ashrae55_2020,accamanualj}.
+
+Energy cost per cycle is kWh/cycle multiplied by the location- and time-specific TOU rate, resolved to one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) \cite{peco2021,ppl2025,firstenergy2025,firstenergy2026,duquesne2026} by mapping household location to a serving utility and then that utility's peak/off-peak window. The PJM emissions window (7am--11pm) applies to environmental impact regardless of the utility's billing window, because emissions follow the regional grid. The calculator does not model weekend, holiday, or seasonal peak-window shifts, using weekday summer TOU rates year-round.
+
+Comfort utility is parameterized by delay, appliance type, housing type, household size, and run-time hour (late-night runs, 22:00--07:00, incur a noise penalty); practicality utility by delay, run-time hour, and household coordination difficulty. Delay is the minimum circular distance from the baseline time $t_0$ on a 24-hour clock:
+\begin{equation}
+  d(t,t_0)=\min\!\bigl((h(t)-h(t_0))\bmod 24,\; (h(t_0)-h(t))\bmod 24\bigr),
+  \label{eq:appliance_delay_circular}
+\end{equation}
+\noindent where $d(t,t_0)$ is delay in hours between run time $t$ and baseline time $t_0$ and $h(\cdot)$ maps a time to hour-of-day. The base comfort component is a piecewise decay from 10 at zero delay, with appliance-specific tolerance ceilings of 12\,hr (dishwashers), 8\,hr (washers), and 6\,hr (dryers). Demand-response acceptance research \cite{paetz2012,waseem2020} establishes that such ceilings exist, not where they fall:
+\begin{equation}
+  C_{\mathrm{base}}(d)=
+  \begin{cases}
+    10                                  & d=0 \\[3pt]
+    10-\frac{2}{3}\,d                   & 0<d\le 3 \\[3pt]
+    8-\frac{1}{2}\,(d-3)                & 3<d\le 7 \\[3pt]
+    6-\frac{2}{5}\,(d-7)                & 7<d\le 12 \\[3pt]
+    2                                   & d>12
+  \end{cases}
+  \label{eq:appliance_base_comfort}
+\end{equation}
+
+The late-night noise penalty scales with housing type: apartment and condo units receive the largest multiplier ($\kappa=1.5$) because shared walls transmit vibrations directly, townhouse and rowhouse an intermediate ($\kappa=1.2$), and isolated single-family homes the smallest ($\kappa=0.8$), and it is joined by a household-size penalty; \citet{waseem2020} supports the direction of that effect, not its magnitude. The penalty fires when the appliance's rated sound level exceeds 45\,dBA, which penalizes washers and dryers (74 and 65\,dBA) and leaves a dishwasher, rated at 45\,dBA, exactly at the threshold and therefore unpenalized. Timing complexity adds a practicality penalty at run-time hours whose low-price zones sit at the brink of the day, perceived as too early or too late to act on \cite{paetz2012}.
+\begin{equation}
+  N(t,\mathrm{type},\mathrm{housing})=
+  \begin{cases}
+    0 & \text{if } h(t)\in[7,22) \text{ or } \mathrm{dBA}(\mathrm{type})\le \theta \\[3pt]
+    2\cdot \kappa(\mathrm{housing}) & \text{otherwise}
+  \end{cases}
+  \label{eq:appliance_noise_penalty}
+\end{equation}
+\noindent where $N(t,\mathrm{type},\mathrm{housing})$ is the noise-disruption penalty in comfort-score points, $\mathrm{dBA}(\mathrm{type})$ is the appliance noise level, and $\theta = 45$\,dBA is the threshold. The household-size penalty scales with delay relative to the appliance-specific maximum acceptable delay $d_{\max}(\mathrm{type})$:
+\begin{equation}
+  S(d,n,\mathrm{type})=\sigma(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
+  \label{eq:appliance_size_penalty}
+\end{equation}
+\noindent where $\sigma(n)$ steps from 0.0 for fewer than 3 occupants, to 0.8 for 3--4, to 1.5 for 5 or more. Final comfort is $C_{\mathrm{comfort}}=\mathrm{clip}_{[0,10]}(C_{\mathrm{base}}-N-S)/10$, the division giving the 0--1 MAVT-scale value.
+
+For budget utilization in \eqref{eq:budget_penalty}, the appliance calculator converts per-cycle cost to a monthly estimate using appliance-specific cycles-per-month estimates, from 215, 300, and 283 cycles/year for dishwashers, washers, and dryers respectively \cite{energystar_dishwasher_criteria2023,energystar_clotheswasher,doe_dryer_tp_2011}.
+
+Practicality mirrors the delay schedule with additional penalties for late-night timing complexity and household coordination difficulty. The base practicality component is:
+\begin{equation}
+  P_{\mathrm{base}}(d)=
+  \begin{cases}
+    10                                  & d=0 \\[3pt]
+    10-d                                & 0<d\le 2 \\[3pt]
+    8-\frac{3}{4}\,(d-2)                & 2<d\le 4 \\[3pt]
+    6.5-\frac{1}{2}\,(d-4)              & 4<d\le 8 \\[3pt]
+    4.5-\frac{3}{8}\,(d-8)              & 8<d\le 12 \\[3pt]
+    1.5                                 & d>12
+  \end{cases}
+  \label{eq:appliance_base_practicality}
+\end{equation}
+\noindent Timing complexity applies an additive penalty by run-time hour:
+\begin{equation}
+  T(t)=
+  \begin{cases}
+    2 & 0\le h(t)<6 \\[3pt]
+    1 & 22\le h(t)<24 \\[3pt]
+    0 & \text{otherwise}
+  \end{cases}
+  \label{eq:appliance_timing_penalty}
+\end{equation}
+\noindent and household coordination difficulty uses the same delay scaling form as in comfort:
+\begin{equation}
+  K(d,n,\mathrm{type})=\kappa_n(n)\cdot \min\!\left(\frac{d}{d_{\max}(\mathrm{type})},\,1\right),
+  \label{eq:appliance_coordination_penalty}
+\end{equation}
+\noindent where $\kappa_n(n)$ is an occupants-based factor increasing with occupants. Final practicality is $C_{\mathrm{prac}}=\mathrm{clip}_{[1.5,10]}(P_{\mathrm{base}}-T-K)/10$, the division giving the 0--1 MAVT-scale value, with a daytime floor applied for $h(t)\in[7,22)$ and $d\le d_{\max}(\mathrm{type})$.
+
+Mains inlet temperature is derived from outdoor temperature between 45\,\textdegree{}F (winter) and 65\,\textdegree{}F (summer), setting the fraction of flow requiring heating to reach a $105\,^\circ$F delivery target \cite{zhang2023}; shower energy and environmental impact (water volume) follow from that mixing fraction, flow rate, and duration, and energy cost applies a flat electricity rate to that energy:
+\begin{equation}
+  f = \min\!\left(1,\;\max\!\left(0,\;\frac{T_{\mathrm{d}} - T_{\mathrm{in}}}{T_{\mathrm{tank}} - T_{\mathrm{in}}}\right)\right),
+  \qquad
+  E_{\mathrm{kWh}} = \frac{f\,G\,\rho\,(T_{\mathrm{tank}} - T_{\mathrm{in}})\,t}{3412\,\eta}
+  \label{eq:shower_energy}
+\end{equation}
+\noindent where $f$ is the hot-water mixing fraction, $T_{\mathrm{d}} = 105\,^\circ$F the delivery target, $T_{\mathrm{in}}$ the mains inlet temperature, $T_{\mathrm{tank}}$ the water-heater setpoint, $G$ the flow rate in GPM, $\rho = 8.33$\,lbs/gallon, $t$ the duration in minutes, 3412 the BTU-per-kWh conversion, and $\eta = 0.92$ the electric water-heater efficiency. Because $f$ and the temperature rise $T_{\mathrm{tank}} - T_{\mathrm{in}}$ move inversely, their product reduces to $T_{\mathrm{d}} - T_{\mathrm{in}}$, which is why shower energy depends on the inlet temperature but not on the heater setpoint for any setpoint at or above the delivery target.
+
+Comfort depends on duration, heater setpoint, household contention, and outdoor temperature, with a fixed penalty outside the 120--140\,\textdegree{}F heater band for mixing margin and Legionella amplification risk below it and standby loss or scald risk above it \cite{cdc2026}. The comfort-optimal duration follows the REU2016 7.8-minute average above 77\,\textdegree{}F and reaches about 10.3 minutes at the winter cap (10\% per 10.8\,\textdegree{}F drop). We chose that elasticity ourselves. REU2016 shows showers lengthening as outdoor temperature falls but reports no coefficient \cite{reu2016}, and the 10.3-minute cap extrapolates from a southern-Spain sample to a Pennsylvania one; warm-weather scoring is unchanged:
+\begin{equation}
+  C_{\mathrm{comfort}}(\tau,T_{\mathrm{heater}},n)
+  = \mathrm{clip}_{[0,10]}\!\Bigl(C_{\mathrm{base}}(\tau)
+  -\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})
+  -\Delta_{\mathrm{cont}}(\tau,n)\Bigr)/10.
+  \label{eq:shower_comfort_full}
+\end{equation}
+\noindent where $\tau$ is shower duration (min), $n$ is occupants, $C_{\mathrm{base}}(\tau)$ is the base comfort curve, $\Delta_{\mathrm{temp}}(T_{\mathrm{heater}})$ is a penalty, $\Delta_{\mathrm{cont}}(\tau,n)$ is a household-contention penalty, and the final division gives the 0--1 MAVT-scale value.
+
+Practicality, on the other hand, depends on duration and tank-capacity feasibility, where the hot water required is the per-shower draw multiplied by the number of occupants, so household size enters practicality through the capacity test rather than as a separate term:
+\begin{equation}
+  H_{\mathrm{need}} = n\,\tau\,\dot V\,f_{\mathrm{hot}}, \qquad
+  H_{\mathrm{avail}} = 0.8\,S.
+  \label{eq:shower_capacity_need_avail}
+\end{equation}
+\noindent where $H_{\mathrm{need}}$ is total hot-water volume required for the household's showers over the relevant period, $H_{\mathrm{avail}}$ is available hot-water draw volume, and $S$ is nominal tank capacity (all in gallons); a fixed penalty is applied when $H_{\mathrm{need}}>H_{\mathrm{avail}}$.
+
+For budget utilization in the budget penalty equation, shower monthly cost is estimated from per-shower cost using an average showers-per-person-per-day rate of 0.9 \cite{reu2016}. The anchor points that set the band boundaries are sourced from the 7.8-minute REU2016 average, the 15-minute Harris Poll threshold, the CDC Legionella range, and the ASHRAE\,55 comfort band \cite{reu2016,harrispoll2024,cdc2026,ashrae55_2020}.
+
+The penalty magnitudes and slopes between those boundaries are design choices for which the literature fixes a direction but not a size. Storage-tank studies report usable capacity ratios of 70--85\% of nominal volume across inlet configurations \cite{abdidin2024}, and the DOE first-hour rating procedure ends a draw once outlet temperature falls 15\,\textdegree{}F below its maximum \cite{shen2021}, which places the 0.80 usable-tank fraction inside a measured range without pinning it there. The same holds for the discrete capacity-exhaustion penalty \cite{marini2017}, the steepening of the duration curve past 15 minutes \cite{wilkes2005}, and the 0.5 per-minute contention penalty at four or more occupants \cite{rouleau2019}: each has a supported sign and an unsupported magnitude.
+
+The shower practicality curve measures likelihood of adoption, so it is not centered on the 7.8-minute comfort optimum. Beyond the 15-minute Harris Poll threshold the curve declines conservatively: 33\% of adults self-report showers longer than 15\,min \cite{harrispoll2024}, while the metered REU2016 data implies a much lower true rate \cite{reu2016}.
+
+\subsection{Architecture Design and Robustness Testing}
+
+The three conditions are direct scoring ($\mathcal{A}_{\text{D}}$), example-guided scoring ($\mathcal{A}_{\text{E}}$), and hybrid reference scoring ($\mathcal{A}_{\text{H}}$). Across all three we hold constant the criterion weights, the scenario set, the temperature, and the underlying model within each run.
+
+\label{sec:architectures}
+All three architectures call the same model per test via OpenRouter at temperature 0.3, with model held constant within each run. The study evaluates four models: GPT-OSS-20B (reasoning, low effort), Qwen 3.5 9B (non-reasoning), DeepSeek V4 Flash (hybrid reasoning), and Gemini 3.5 Flash (reasoning, minimal effort), each set to its lowest available reasoning tier (OpenRouter model identifiers and routing variant in Supplementary Material S1). We fixed alternative order in the prompt to scenario-sheet order across all shipped runs; Section~\ref{sec:alternative-order} reports the test of whether that choice matters. Ties in the MAVT aggregate were broken deterministically by the priority order environmental, energy cost, comfort, practicality (full tie-rate breakdown by model and architecture in Supplementary Material S1).
+
+The $\mathcal{A}_{\text{D}}$ architecture (Figure~\ref{fig:pipeline}) issues one API call per alternative (three calls per scenario) using a system prompt that combines role-prompting, structured-output constraints \cite{icaart26}, and bias-mitigation language from the NIST AI bias framework \cite{nistsp1270}. Beyond the scenario description, the prompt supplies no external context. 
+The system prompt establishes the analyst role and, for each of the three decision types, gives each of the four criteria a short anchor phrase describing what a good and a poor score look like on that criterion. It closes with an output-format instruction and a reminder to distinguish between criteria (full prompt text in Supplementary Material S1).
+The user prompt provides the scenario context and instructs the model to score one alternative at a time. 
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=1\textwidth]{ArchitectureFlowcharts.png}
+  \caption{Processing pipeline for each architecture}
+\label{fig:pipeline}
+\end{figure}
+
+The anchors are qualitative. For HVAC and Shower, each criterion is described by a good/moderate/poor triple stated in terms of the physical situation. The Appliance anchors reference the off-peak and peak rate periods and the overnight minimum of the grid-emissions profile, coarser domain information than the HVAC and Shower anchors carry. $\mathcal{A}_{\text{D}}$'s prompts essentially  leave Pennsylvania-specific quantities to the model: given the location, it must supply the PECO time-of-use tiers and the PJM marginal emissions factors from its own knowledge.
+
+The $\mathcal{A}_{\text{E}}$ architecture retrieves the single most similar scenario ($k=1$) from a ChromaDB vector store before scoring, using the sentence-transformers/all-MiniLM-L6-v2 embedding model. The retrieval count $k=1$ was selected from the development-set ablation in Section~\ref{sec:rag-ablation-methods}. The retrieval index is built once from the 90 RAG-only scenarios described in Section~\ref{sec:dataset}; test scenarios are used only as query vectors \cite{lewis2020}. Like $\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$ uses three API calls per scenario, one per alternative. The retrieved exemplar is rendered as a full worked example: its household-reported parameters, its engineering parameters (R-value, SEER, GPM, kWh/cycle, tank size, heater setpoint, etc.), and each of its alternatives with the four reference criterion scores plus the MAVT aggregate and rank. The model is instructed to use the exemplar as reference but to score the target scenario independently.
+
+The system prompt keeps $\mathcal{A}_{\text{D}}$'s analyst role, output format, and criteria-distinction instruction, but heavily simplifies the anchors: lower cost, lower emissions, higher comfort, easier implementation. The retrieved exemplar supplies scoring guidance in the anchors' place (full prompt text in Supplementary Material S1). The user prompt presents the target scenario, the alternative to score, and the retrieved exemplar.
+
+
+The $\mathcal{A}_{\text{H}}$ architecture issues a single API call per scenario for structured parameter extraction. Known household-reported scenario fields (outdoor temperature, square footage, insulation tier, household size, housing type, utility budget, and location) are passed directly to the calculator without LLM involvement, and the three alternatives are taken verbatim from the scenario sheet. The LLM is asked only to estimate the withheld engineering parameters. For HVAC, this is the wall R-value, SEER rating, HVAC age, and occupancy rating, with the occupancy context available from the question text. For Appliance, the kWh/cycle and current baseline time, which is also inferrable from the question text. For Shower, the numeric GPM, tank size, and water-heater setpoint.
+
+We check extracted parameters against physical bounds for each quantity (bounds in Supplementary Material S1). An out-of-range or non-numeric value counts as a failed extraction; we merge validated parameters with the known fields and pass them to the decision type's reference calculator.
+
+The extraction prompt uses decomposed prompting: it does not instruct the LLM to score alternatives, only to extract the withheld engineering parameters, with an instruction to estimate rather than omit any mandatory field. $\mathcal{A}_{\text{H}}$ invokes the same calculators that generated the reference scores. Section~\ref{sec:res-baselines} separates how much of its accuracy that access alone supplies, Section~\ref{sec:interpretation} explains why extraction error largely fails to reach the ranking, and Section~\ref{sec:limitations} states what grading an architecture against its own calculator does and does not establish.
+
+Three ablation suites test the design choices behind the architectures, each varying one dimension at a time. The first rewrites the scoring prompt, the second changes what the retrieval step puts in front of the model, and the third replaces the parameters the LLM extracted with fixed ones. Each is described in turn below, and a fourth check on alternative ordering follows them.
+
+The first two suites share a statistical procedure. Each compares several configurations of one architecture on one model, and we test within a model rather than across models. Where a suite has more than two configurations we first ask whether the configurations differ from each other at all, using a Friedman test on the per-scenario metric. A suite that fails that test is not examined further and its configurations are reported as indistinguishable. Only where the Friedman test finds a difference do we compare configurations against each other with Wilcoxon signed-rank tests. We Holm-correct both stages, the omnibus tests as one family and the pairwise tests as another, so that the number of comparisons cannot manufacture a result. Each surviving pair carries Cliff's $\delta$ as an effect size, and percentile bootstrap 95\% confidence intervals are computed for every configuration whether or not its omnibus reached significance. The third suite compares two conditions and nothing else, so there is no omnibus stage and its single comparison is tested directly (Section~\ref{sec:hybrid-ablation-methods}). Full test-family bookkeeping is in Supplementary Material S2.
+
+All three suites cover the same four models. The RAG suite is single-run for every model, including Gemini; in the prompt ablation Gemini's cells use three runs against the five or ten the other three models use. Run count buys precision on each scenario's point estimate rather than power in the reported test: significance is tested across the 195 scenarios, and each scenario's metric is the mean over that cell's runs, so $n$ is 195 in every test whatever the run count. Gemini also varies least between runs. Its run-to-run standard deviation on the main benchmark is the lowest of the four models in all three architectures ($0.0116$ on Kendall's $\tau$, against $0.0273$--$0.0307$ for the other three), so three Gemini runs carry a smaller standard error than any other model's five, and the other three models would need 16 to 21 runs to match it. We measured that variance on the main benchmark runs, not inside the ablation cells.
+
+\subsubsection{Prompt ablation}
+\label{sec:prompt-ablation-methods}
+The prompt ablation tests whether the reported ordering reflects the design of $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ or the particular prompts used to implement them. This suite runs on the same 195 test scenarios. There are three abalations: removing the anchors that define the endpoints of the scoring scale (unanchored variant), inserting a chain-of-thought scaffold that instructs the model to reason before emitting its scores (reasoning-scaffold variant), and rescaling the response range from 0--1 to 0--10 with scores divided by ten before scoring (rescaled-response variant). $\mathcal{A}_{\text{E}}$ ships without anchors, so the unanchored variant applies to $\mathcal{A}_{\text{D}}$ alone. This is why the results matrix has 28 architecture--model--variant cells, not 32. IT is not run on $\mathcal{A}_{\text{H}}$ because none of the three manipulations has a counterpart in its extraction prompt. Cells run five times per model, or three for Gemini. The $\mathcal{A}_{\text{D}}$ control and unanchored cells were extended to ten runs for DeepSeek, GPT-OSS and Qwen because the five-run $\mathcal{A}_{\text{D}}$/Qwen unanchored comparison fell close to $\alpha = 0.05$ (Section~\ref{sec:prompt-ablation}).
+
+Point estimates use the per-scenario aggregation defined in Section~\ref{sec:eval-metrics}: each run produces one Kendall's $\tau$ and one Top-1 value per scenario; these are averaged across runs to give one value per variant, architecture, model and scenario, and significance is tested across the 195 scenarios within each architecture--model stratum.
+
+\subsubsection{RAG ablation}
+\label{sec:rag-ablation-methods}
+The RAG ablation runs on the complete 90-scenario RAG dataset under a leave-one-out protocol: each scenario serves as the query with itself excluded from retrieval. Seven configurations are compared against the $k=3$ control of the time: retrieval $k$ at 1 and at 5, an embedding swap replacing all-MiniLM-L6-v2 with the smaller paraphrase-MiniLM-L3-v2, exemplars with the hidden engineering parameters removed, exemplar descriptions with the reference scores and ranks removed, random dataset draws in place of similarity-ranked exemplars, and an offline \texttt{nearest-neighbor} configuration that assigns the retrieved scenario's scores directly with no LLM call.
+
+Two of the seven configurations are controls: random exemplars for retrieval quality, and \texttt{nearest-neighbor} for whether unmodified exemplar copying carries ranking signal on its own.
+
+\subsubsection{Non-LLM baselines and parameter provenance}
+\label{sec:hybrid-ablation-methods}
+This suite runs two non-LLM conditions on the 195 test scenarios, both scored by the same calculators $\mathcal{A}_{\text{H}}$ uses: the dataset-median condition asks whether the LLM's parameter extraction beats a constant guess at that calculator, and the fixed-default baseline asks the blunter question of whether a household needs an LLM at all.
+
+The dataset-median condition substitutes one fixed value per hidden parameter for the LLM's extraction, the dataset median for numeric parameters and the dataset mode for categorical ones, reused for every scenario with no per-scenario inference. It withholds the same parameters listed for $\mathcal{A}_{\text{H}}$ in Section~\ref{sec:architectures}, matched against $\mathcal{A}_{\text{H}}$'s own extracted values for the same scenarios; a scenario whose extraction failed is excluded from that comparison under the sentinel convention (Section~\ref{sec:eval-metrics}).
+
+The fixed-default baseline ranks the same three alternatives as every other system and calls the same physics calculators the reference model uses, but substitutes one fixed engineering value for each withheld parameter and performs no per-scenario inference of any kind: R-value 15, SEER 13 and HVAC age 13 years; a per-appliance-type kWh/cycle (0.55 washer, 2.10 dryer, 1.00 dishwasher) and a 7\,p.m.\ run time for Appliance; 2.5\,GPM, a 50-gallon tank and a 120\textdegree{}F heater setpoint for Shower.
+
+\FloatBarrier
+\subsubsection{Alternative ordering}
+\label{sec:alternative-order}
+
+Language models weight response options by position as well as by content \cite{wang2024fairescalers,zheng2023judging}, so a fixed alternative order could introduce bias. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ score one alternative per API call. Each call names the alternative under evaluation, states the scenario context, and lists the remaining two alternatives on a single line for context. For $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, each call is scored independently and carries no record of how the other alternatives were scored, so reversing the alternative order changes only the order of the two alternatives named on that context line. $\mathcal{A}_{\text{H}}$ works differently, and is treated separately below.
+
+In every condition, reversing the order means reversing the three alternative values as they appear in the scenario record, so that the value listed first becomes the value listed last. For $\mathcal{A}_{\text{D}}$ this surfaces only in the context line described above. We rescored all 195 test scenarios in reversed order for each of the four models and compared each reversed run against that model's five shipped runs on top-1 correctness (per-model shift and significance in Section~\ref{sec:res-order}). Because the ranking tie-break resolves exact ties by input order, reversal can flip a fully tied choice set on its own, which biases the comparison toward detecting an effect and makes the observed null conservative.
+
+$\mathcal{A}_{\text{H}}$'s extraction call passes the whole scenario record, including all three alternatives, so reversal changes the order in which the model reads them. Any effect would be indirect, acting through the estimated physical parameters that feed the calculator, which produces the ranking. We therefore re-ran $\mathcal{A}_{\text{H}}$'s extraction over all 195 test scenarios in reversed order, five runs per model. In every condition we passed the extracted parameters to the calculator with the alternatives restored to canonical order, so the ranking tie-break cannot manufacture a difference between conditions. Each model then has 13 runs of the same architecture on the same scenarios: the eight shipped-order runs and the five reversed ones. Five of the eight shipped-order runs are the original benchmark runs, collected 2026-07-29; the other three are a same-day contemporaneous control, re-sent in shipped order on 2026-08-03 alongside the five reversed runs, so that a shift between the shipped and reversed conditions cannot be confused with the provider or session changing between the two collection dates. If the ordering does nothing, which five of those 13 carry the reversed label is arbitrary, and the observed gap between the two groups should be unremarkable among the gaps produced by every other way of splitting them. We therefore compute that gap for all $\binom{13}{5} = 1287$ possible five-run labellings and read off how many reach or exceed the real one. Enumerating every labelling makes the test exact rather than sampled, and it also fixes the smallest $p$ the test can return at $1/1287 = 0.0008$, which is the floor two models reach in Section~\ref{sec:res-order}.
+
+\FloatBarrier
+\subsection{Evaluation Metrics}
+\label{sec:eval-metrics}
+Accuracy is evaluated on scoring and ranking. Score error uses Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE) between architecture scores and reference scores on the 0--1 MAVT scale, computed separately for each criterion then aggregated across criteria. Ranking accuracy uses Kendall's $\tau$ between the architecture's induced ranking of the three alternatives and Top-1 accuracy (whether the architecture's best-ranked alternative matches the reference ranking). Each per-scenario $\tau$ is averaged across the 195 scenarios by arithmetic mean. With $n=3$ alternatives, per-scenario $\tau$ can take only discrete values ($-1, -\frac{1}{3}, \frac{1}{3}, 1$) before averaging. A uniformly random ranking gives Top-1 accuracy of $1/3$ and expected Kendall's $\tau$ of $0$. Where we call a difference significant, we mean that a difference that size across the 195 scenarios would rarely arise if the two conditions ranked equally well, after correcting for the number of comparisons in that family. It says nothing about whether the difference is large enough to matter, which is what the accompanying effect sizes and confidence intervals are for. Efficiency is evaluated using total tokens (input plus output) and cost, both summed across the 195-scenario test set. Scenarios that fail are not included in calculation. We separately compute a run-to-run standard deviation, treating runs rather than scenarios as the unit of analysis.
+
+An alternative failure-handling rule, imputation, is reported in Supplementary Material S2: scenarios that fail receive the 0.5 scale midpoint for the affected criterion scores before that run's metrics are computed.
+
+The paired Wilcoxon comparisons treat the scenario as the unit, computing each of the 195 scenarios' metrics from the mean over the runs in which that scenario was scored successfully, which is five for most scenarios and fewer where a run failed. The paired bootstrap confidence intervals resample scenarios while carrying all successful runs of a drawn scenario together. The paired Wilcoxon tests on the main architecture comparison are Holm-corrected across a single 56-test family; the 24 comparisons on the three reported primary metrics ($\tau$, MAE, and Top-1) remain significant at the 0.05 level (full test-family enumeration in Supplementary Material S2). Models are not pooled
+
+
+Failure is recorded per scenario via a reserved sentinel value (1928). Accuracy metrics are conditioned on success: scenarios containing any sentinel are excluded from MAE/RMSE and ranking computations and counted separately in the failure rate. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ issue one call per alternative and mark the whole scenario failed if any alternative fails; $\mathcal{A}_{\text{H}}$ issues a single extraction call per scenario, so one failure fails the scenario. Because failure rates differ across models and architectures, the success-conditioned metrics are not strictly comparable across cells; the per-run imputed robustness check in Supplementary Material S2 reports the size of the correction. 
+
+
+\FloatBarrier
+\subsection{Weight and Curvature Sensitivity}
+\label{sec:sensitivity-methods}
+
+Three data-derived weight vectors test whether the architecture ordering depends on the a priori design weights (\ref{app:weights}; full matrix in Supplementary Material S2). The entropy set and the MEREC set are each derived per decision type and applied to that same decision type. A third vector applies the MEREC HVAC vector, rather than each decision type's own vector, across all three decision types, as a stress test: MEREC assigns Comfort its largest weight anywhere in the dataset under this vector ($0.663$, against the design's $0.200$), the sharpest departure from the design vector the data produce, so this condition tests the ordering under a weighting no designer would choose from first principles. We recompute both the reference ranking and each architecture's ranking under every vector tested, because changing the weights moves the target as well as the estimate.
+
+
+A second check varies the shape of the value functions rather than their weights. We sweep the logarithmic shape parameter $\alpha$ over $\{1.0,\,1.2,\,1.5,\,2.0\}$ at the baseline weights and recompute the reference scores at each value.
+
+
+\FloatBarrier
+\section{Results}
+\label{sec3}
+\label{sec:results}
+We report overall ranking accuracy first, then break performance down by criterion, decision type, and robustness check.
+
+\FloatBarrier
+\subsection{Overall Ranking Accuracy}
+\label{sec:res-ranking}
+
+Figure~\ref{fig:grouped_bars} shows the same ordering for every model: $\mathcal{A}_{\text{H}}$ reaches $\tau=0.880$--0.923 and 89.7--93.1\% Top-1 accuracy, $\mathcal{A}_{\text{E}}$ reaches $\tau=0.208$--0.310 and 46.6--53.5\%, and $\mathcal{A}_{\text{D}}$ remains near chance ($\tau=0.010$--0.176; 30.0--36.7\%). Qwen ranks lowest in all three architectures, and the model gap is narrowest under $\mathcal{A}_{\text{H}}$.
+
+Within each model, all 24 adjacent-architecture comparisons on $\tau$, MAE, and Top-1 survive Holm correction. Scenario-level paired bootstrap intervals also exclude zero for all architecture differences.
+
+Mean score error exceeds 0.2 for $\mathcal{A}_{\text{D}}$ in every model and is 4.5--7.2\% for $\mathcal{A}_{\text{H}}$ (Figure~\ref{fig:grouped_bars}). $\mathcal{A}_{\text{D}}$'s within-scenario score range is 1.25--2.00 times the reference range across models.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\textwidth]{OverallPerformanceByModel.pdf}
+\caption{Overall performance by model}
+\label{fig:grouped_bars}
+\end{figure}
+\FloatBarrier
+\subsection{Baseline Comparison}
+\label{sec:res-baselines}
+\label{sec:res-paramprov}
+Table~\ref{tab:incremental-contribution} extends the comparison beyond the three LLM architectures to a Fixed-Default non-LLM baseline, evaluated on the same 195-scenario test set. The three LLM architectures' metrics are the unweighted mean of each decision type's per-run mean, giving HVAC, Appliance, and Shower equal weight despite their 70/65/60 scenario counts; \texttt{FixedDefault} instead uses the scenario-weighted pooled average. Both differ from the per-scenario aggregation behind Figure~\ref{fig:grouped_bars}, so the same model and architecture can show slightly different values across the two. The fixed-default baseline and the dataset-median condition are both described in Section~\ref{sec:hybrid-ablation-methods}; neither performs any per-scenario inference.
+\begin{table*}[htbp]
+\centering
+\begin{threeparttable}
+  \footnotesize
+  \centering
+  \begin{tabular}{lcccc}
+    \toprule
+    System & Top-1 & $\Delta$ vs FixedDef & Kendall $\tau$ & $\Delta$ vs FixedDef \\
+    \midrule
+    \texttt{FixedDefault} & 0.703 & $0.000$ & 0.614 & $0.000$ \\
+    $\mathcal{A}_{\text{D}}$ (best $\tau$: Gemini)\tnote{a} & 0.371 & $-0.332$ & 0.193 & $-0.421$ \\
+    $\mathcal{A}_{\text{D}}$ (worst: Qwen)   & 0.300 & $-0.402$ & 0.012 & $-0.602$ \\
+    \addlinespace
+    $\mathcal{A}_{\text{E}}$ (best $\tau$: Gemini)\tnote{a} & 0.503 & $-0.200$ & 0.332 & $-0.282$ \\
+    $\mathcal{A}_{\text{E}}$ (worst: Qwen)    & 0.467 & $-0.235$ & 0.210 & $-0.403$ \\
+    \addlinespace
+    $\mathcal{A}_{\text{H}}$ (best: Gemini) & 0.928 & $+0.226$ & 0.919 & $+0.306$ \\
+    $\mathcal{A}_{\text{H}}$ (worst: Qwen)  & 0.898 & $+0.195$ & 0.879 & $+0.266$ \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}
+  \footnotesize
+  \item[a] Best by Kendall's $\tau$, the metric this row reports; DeepSeek leads on Top-1 instead (0.378 vs.\ Gemini's 0.371 under $\mathcal{A}_{\text{D}}$, 0.542 vs.\ 0.503 under $\mathcal{A}_{\text{E}}$).
+  \end{tablenotes}
+\end{threeparttable}
+\caption{Incremental contribution over Fixed-Default baseline. Best and worst model shown for each LLM architecture.}
+\label{tab:incremental-contribution}
+\end{table*}
+\FloatBarrier
+
+The fixed-default baseline achieves $\tau = 0.933$ on HVAC and $\tau = 0.800$ on Shower, but collapses on Appliance ($\tau = 0.097$), yielding a per-type average of $\tau = 0.610$ and the pooled $\tau = 0.614$ shown in Table~\ref{tab:incremental-contribution}.
+
+Error cancellation could let $\mathcal{A}_{\text{H}}$ rank well from calculator access alone. With no per-scenario inference, the median-parameter condition reaches $\tau = 0.641$ and Top-1 of 76.9\%, well above chance but far below the $\mathcal{A}_{\text{H}}$ results. LLM extraction lifts this to $\tau = 0.880$--$0.923$ and Top-1 of 89.7--93.1\%, a gain of 0.24--0.28 in $\tau$ attributable to extraction rather than to the calculator. Paired Wilcoxon signed-rank tests, Holm-corrected across the twelve model--metric tests, confirm that extraction significantly beats the dataset-median condition on all three metrics for all four models ($p_{\text{Holm}} < 10^{-3}$ throughout, Cliff's $\delta$ from $-0.14$ to $-0.24$ on Kendall's $\tau$ and Top-1 and from 0.35 to 0.49 on MAE; full statistics in Supplementary Material S2). 
+The fixed default succeeds where one criterion happens to decide the scenario, so we also measured how often a single criterion is enough. For each scenario we pick the alternative that scores highest on one criterion, ignore the other three, and check whether it is the reference winner. No criterion works across all three decision types. Comfort alone picks the winner in 85.7\% of HVAC and 92.3\% of Appliance scenarios but only 18.3\% of Shower scenarios, below the 33.3\% a coin-flip among three alternatives would give; energy cost inverts that, at 10.0\% for HVAC and 75.0\% for Shower. Environmental impact tracks energy cost (10.0\%, 46.2\%, 75.0\% for HVAC, Appliance, Shower) and practicality is informative on Appliance alone (27.1\%, 90.8\%, 20.0\%). The same statistic computed on the full 285-scenario dataset preserves every ordering and moves no cell by more than 8.8 points, so the bound does not depend on the Test/RAG split.
+
+\FloatBarrier
+\subsection{Criterion Error}
+\label{sec:res-error}
+Figure~\ref{fig:mae_criterion} breaks MAE down by criterion and model (full numerical values in Supplementary Material S2). $\mathcal{A}_{\text{H}}$ achieves near-zero error on Comfort and Practicality across all four models. Error concentrates on Energy Cost and Environmental Impact for all three architectures. $\mathcal{A}_{\text{H}}$'s weakest model outperforms the best models of $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ on these criteria. Model rankings on these two criteria differ by decision type. Gemini has the lowest error under $\mathcal{A}_{\text{H}}$ on HVAC (0.045 cost, 0.044 environmental) and Qwen the highest overall (0.112 cost, 0.150 environmental), driven by Appliance, where Qwen's $\mathcal{A}_{\text{H}}$ environmental MAE of 0.294 is still better than all four $\mathcal{A}_{\text{D}}$ models on the same criterion and decision type. Under $\mathcal{A}_{\text{D}}$ the spread across models is narrow (cost 0.241 to 0.258, environmental 0.248 to 0.292).
+
+\begin{figure*}[htbp]
+	\centering
+	\plotCriterionMAEByModel
+	\caption{MAE by criterion and model}
+\label{fig:mae_criterion}
+\end{figure*}
+
+The share of scored alternatives for which an architecture returned the identical value on the energy-cost and environmental criteria (Supplementary Material S2) sits against the reference's own share, computed on the full 285-scenario corpus, of 51.1\% on HVAC, 15.4\% on Shower and 8.0\% on Appliance. The reference separates the two criteria far more often on Appliance than on the other two decision types, and an architecture that has learned the distinction should show the same fall in duplication there. Under $\mathcal{A}_{\text{E}}$ every model does, by differing amounts. Under $\mathcal{A}_{\text{D}}$ only Gemini does; GPT-OSS and Qwen return the same energy-cost and environmental score on almost every Appliance alternative, so for those two models the two criteria are effectively one.
+
+
+
+\FloatBarrier
+\subsection{Extraction Accuracy and Error Propagation}
+\label{sec:res-extraction}
+
+\begin{table*}[htbp]
+\centering
+\begin{threeparttable}
+\footnotesize
+\centering
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcccccccc}
+\toprule
+ & & \multicolumn{4}{c}{MAE} & \multicolumn{4}{c}{$P(\text{top-1 change} \mid \text{error})$} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-10}
+Type & Parameter & GPT-OSS & Qwen & DeepSeek & Gemini & GPT-OSS & Qwen & DeepSeek & Gemini \\
+\midrule
+HVAC & R-value & 3.594 & 3.699 & 2.312 & 1.766 & 0.015 & 0.086 & 0.015 & 0.000 \\
+HVAC & SEER & 2.135 & 1.585 & 1.602 & 1.313 & 0.049 & 0.033 & 0.032 & 0.075 \\
+HVAC & HVAC age (yr) & 8.5 & 6.1 & 8.5 & 7.6 & 0.000 & 0.000 & 0.000 & 0.000 \\
+Appliance & kWh/cycle & 0.425 & 0.975 & 0.341 & 0.541 & 0.016 & 0.066 & 0.016 & 0.031 \\
+Shower & GPM & 0.256 & 0.271 & 0.368 & 0.367 & \textbf{0.174} & \textbf{0.167} & \textbf{0.185} & \textbf{0.233} \\
+Shower & Tank size (gal) & 8.1 & 8.9 & 6.9 & 6.7 & 0.000 & 0.026 & 0.025 & 0.000 \\
+Shower & Heater setpoint (\textdegree{}F) & 4.7 & 4.6 & 8.3 & 4.6 & 0.042 & 0.050 & 0.062 & 0.050 \\
+\bottomrule
+\end{tabular}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
+\caption{Per-parameter extraction accuracy and the probability that an extraction error changes the top-ranked alternative, for the seven numeric hidden parameters.}
+\label{tab:extraction_accuracy}
+\end{table*}
+
+How well a parameter is estimated and how much that estimate matters are separate questions. Table~\ref{tab:extraction_accuracy} reports both for the seven numeric hidden parameters: error, and alongside it the chance that getting it wrong changes the recommendation. For that second column we re-ran the calculator on every scenario whose extraction of a given parameter was wrong, substituting that one value and holding every other parameter at its true value, and recorded how often the top-ranked alternative changed. The column therefore reports the cost of an error, not how often one occurs: a parameter the models rarely get right can still sit at zero if the ranking does not depend on it. The three categorical hidden parameters (appliance type, baseline run time, HVAC occupancy context) are extracted correctly or not, so match accuracy rather than the table's two columns is the relevant statistic; those accuracies are reported in prose below.
+Absolute extraction error varies by parameter. HVAC equipment age is mis-estimated around 6.1--8.5 years on average and shower tank size to within 6.7--8.9 gallons, both large fractions of the plausible range.  Appliance baseline run time is recovered exactly by all four models, and appliance type by three of the four, with Gemini missing 4 of 65 cases (93.8\%). HVAC occupancy context has the lowest categorical match accuracy of the three parameters at 75.4\% for GPT-OSS, 78.6\% for Qwen, 80.0\% for Gemini and 81.4\% for DeepSeek, since it must be inferred from the phrasing of the question rather than read off a field.
+That error rarely propagates to the decision. For most parameters, the conditional probability that an extraction error flips the top-ranked alternative sits below 0.09, and for HVAC equipment age it is zero across all four models. Shower GPM is the consistent exception, carrying the highest flip probability for every model (0.167--0.233), roughly 1.5 to three times the next-largest parameter.
+
+
+\FloatBarrier
+\subsection{Performance by Decision Type}
+\label{sec:res-bytype}
+$\mathcal{A}_{\text{H}}$ outperforms the other architectures on all three decision types for every model (Table~\ref{tab:item7}; per-type breakdowns in Figure~\ref{app:decision_type_full_figures}). Shower is its weakest type, still far above the other architectures.
+
+\begin{table*}[htpb]
+\centering
+\begin{threeparttable}
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{2}{c}{$\mathcal{A}_{\text{D}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{E}}$} & \multicolumn{2}{c}{$\mathcal{A}_{\text{H}}$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Decision Type & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) & $\tau$ & Top-1 (\%) \\
+\midrule
+HVAC & & & & & & \\
+\quad Best & 0.135 (O) & 39.7 (O) & 0.265 (O) & 46.9 (O) & \textbf{0.977 (G)} & \textbf{96.6 (G)} \\
+\quad Worst & $-0.102$ (D) & 19.8 (D) & $-0.116$ (G) & 15.3 (G) & \textbf{0.881 (Q)} & \textbf{87.4 (Q)} \\
+Appliance & & & & & & \\
+\quad Best & 0.029 (D) & 31.7 (D) & 0.417 (D) & 70.2 (D) & \textbf{0.975 (D)} & \textbf{98.5 (D)} \\
+\quad Worst & $-0.147$ (O) & 26.8 (O) & $-0.048$ (O) & 30.5 (O) & \textbf{0.906 (Q)} & \textbf{92.9 (Q)} \\
+Shower & & & & & & \\
+\quad Best & 0.633 (G) & 61.0 (G) & 0.767 (G) & 79.3 (G) & \textbf{0.851 (Q)} & \textbf{89.0 (Q)} \\
+\quad Worst & 0.069 (Q) & 34.3 (Q) & 0.240 (Q) & 47.0 (Q) & \textbf{0.787 (O, tied with D)} & \textbf{82.3 (O)} \\
+\bottomrule
+\end{tabular}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
+\caption{Ranking accuracy by decision type, with the best- and worst-performing model in each architecture--metric cell}
+\label{tab:item7}
+\end{table*}
+
+Table~\ref{tab:item7} gives ranking accuracy by decision type, as a five-run per-run-then-average, showing the best and worst model in each cell: G for Gemini, D for DeepSeek, O for GPT-OSS and Q for Qwen. The full per-model breakdown by decision type is in \ref{app:per_model_results}.
+
+$\mathcal{A}_{\text{E}}$ shows wide model-level variance on HVAC ($\tau$ from $-0.116$ to $0.265$ across models) and performs strongest on Shower across all models ($\tau$ from $0.240$ to $0.767$). The $\mathcal{A}_{\text{H}}$--$\mathcal{A}_{\text{E}}$ margin is widest on HVAC, the highest-dimensional task, and narrowest on Shower, the lowest-dimensional.
+
+$\mathcal{A}_{\text{D}}$ is near-random or below on HVAC and Appliance for all models. Shower diverges: the two strongest models show moderate positive correlation (Gemini $\tau = 0.633$, DeepSeek $\tau = 0.558$) while the two weakest remain near-random (GPT-OSS $\tau = 0.133$, Qwen $\tau = 0.069$).
+\FloatBarrier
+\subsection{Sensitivity Analysis}
+\label{sec:res-sensitivity}
+
+We recomputed both the reference and architecture rankings under equal, entropy and MEREC-derived weight vectors per decision type (\ref{app:weights}; full matrix in Supplementary Material S2). $\mathcal{A}_{\text{H}}$'s advantage over $\mathcal{A}_{\text{E}}$ is unconditional: it holds in all 20 model-weight-vector cells, by a margin of at least $0.304$ Kendall's $\tau$.
+
+The $\mathcal{A}_{\text{E}}$ advantage over $\mathcal{A}_{\text{D}}$ is more fragile. It remains ahead of $\mathcal{A}_{\text{D}}$ in equal and entropy vectors in all four models, but MEREC weights reduce its lead and negate it completely in one cell. $\mathcal{A}_{\text{D}}$ overtakes $\mathcal{A}_{\text{E}}$ on Kendall's $\tau$ for Gemini under the MEREC HVAC vector ($0.676$ vs.\ $0.600$). Every such case is a MEREC vector, which loads onto Comfort (0.663 for HVAC against the design's 0.200), the one criterion $\mathcal{A}_{\text{D}}$ estimates about as well as $\mathcal{A}_{\text{E}}$ does (Supplementary Material S2).
+
+A second check varies the value-function curvature rather than the weights: recomputing the reference scores with the logarithmic shape parameter $\alpha$ swept over $\{1.0,\,1.2,\,1.5,\,2.0\}$ at the baseline weight vector leaves the architecture scores untouched. The ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ is invariant across all four $\alpha$ values for every model (Figure~\ref{fig:alpha_sweep}). Because $\mathcal{A}_{\text{H}}$'s criterion scores come from the reference calculators themselves, reweighting affects both at the same time, thus mostly negating comparision.
+
+\begin{figure*}[htbp]
+	\centering
+	\plotAlphaSweep
+	\caption{Kendall's $\tau$ across the value-function curvature sweep}
+\label{fig:alpha_sweep}
+\end{figure*}
+
+
+\FloatBarrier
+\subsection{RAG Ablation}
+\label{sec:rag-ablation}
+The offline copy-only control, which assigns the retrieved scenario's scores directly with no LLM call, gives $\tau = 0.001$ (95\% CI: $[-0.172,\, 0.175]$), indistinguishable from random ranking (design in Section~\ref{sec:rag-ablation-methods}; full values in Supplementary Material S2).  Figure~\ref{fig:rag_ablation} shows that removing scores drops $\tau$ substantially for every model, while removing hidden engineering parameters moves $\tau$ far less and in both directions.
+Retrieval configuration matters for two of the four models. On Kendall's $\tau$, only DeepSeek and Gemini differ across configurations once the 16-test Friedman family is corrected for. For GPT-OSS and Qwen the seven configurations are indistinguishable, so how the exemplars are chosen makes no measurable difference to how those two models rank.
+
+\begin{figure*}[htbp]
+	\centering
+	\plotRagAblation
+	\caption{RAG ablation results}
+\label{fig:rag_ablation}
+\end{figure*}
+
+Where a difference does appear, it is small, and it concerns how many exemplars are retrieved. Among DeepSeek's best-performing configurations, drawing one exemplar instead of three costs ranking accuracy ($p_{\text{Holm}} = 0.003$), though Cliff's $\delta$ of $0.247$ places the size of that effect in the small range. Gemini differs across its configurations taken together but not between any particular pair of its best ones, each such pair sitting at $p_{\text{Holm}} \geq 0.35$.
+
+Score accuracy behaves differently from ranking. Removing the reference scores from the exemplars, or drawing exemplars at random, raises MAE by roughly half for DeepSeek, GPT-OSS, and Qwen, including the two of those three whose rankings did not move; for Gemini it roughly doubles (full MAE figures in Supplementary Material S2). A degraded exemplar set therefore costs calibration before it costs ranking.
+
+For deployment, the cheaper setting holds up for three models. The confidence interval on the $k{=}1$ minus $k{=}3$ difference in Kendall's $\tau$ contains zero for Gemini ($[-0.163,\,0.142]$), GPT-OSS ($[-0.128,\,0.228]$) and Qwen ($[-0.047,\,0.326]$), so retrieving one exemplar rather than three costs those models nothing we can measure while shortening every prompt. DeepSeek is the exception, losing $0.32$ in $\tau$ with an interval ($[-0.471,\,-0.160]$) that stays below zero.
+
+\FloatBarrier
+\subsection{Prompt Sensitivity}
+\label{sec:prompt-ablation}
+
+Within each model, every $\mathcal{A}_{\text{E}}$ configuration remains above every $\mathcal{A}_{\text{D}}$ configuration on Kendall's $\tau$ (full results in Supplementary Material S2): no perturbation reverses the architecture ordering for a fixed model, though a weaker model running the stronger architecture can still trail a stronger model running the weaker one ($\mathcal{A}_{\text{E}}$ with Qwen falls to $\tau = 0.102$ under the rescaled-response variant, below $\mathcal{A}_{\text{D}}$ with DeepSeek at $\tau = 0.167$).
+Where a comparison does reach significance under $\mathcal{A}_{\text{E}}$, the shipped prompt is always the winner: no perturbation improved on it (protocol in Section~\ref{sec:prompt-ablation-methods}; full statistics in Supplementary Material S2). Under $\mathcal{A}_{\text{D}}$ two comparisons reach significance, both for Qwen, and both favour the perturbation over the shipped prompt. Every value involved lies between $\tau = -0.052$ and $\tau = 0.092$, so what separates there is one near-random ranking from another. As in the RAG ablation (Section~\ref{sec:rag-ablation}), ranking is more stable under perturbation than calibration: the Friedman omnibus on Kendall's $\tau$ is not significant for any $\mathcal{A}_{\text{E}}$ model, while the Top-1 omnibus is significant for DeepSeek. The reasoning scaffold carries that difference, dropping DeepSeek's Top-1 from 55.2\% to 36.7\%; the rescaled-response variant moves it to 47.8\%. The reasoning-scaffold variant records the lowest success rate in the matrix (0.961 for $\mathcal{A}_{\text{E}}$/GPT-OSS against 1.000 for the rescaled-response variant), so part of its effect is output extraction reliability due to the long amounts of reasoning text. We applied each perturbation alone, so these results do not speak to interactions between them.
+
+\FloatBarrier
+\subsection{Efficiency and Cost}
+\label{sec:res-efficiency}
+\begin{table*}[htbp]
+\centering
+\begin{threeparttable}
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l cc cc cc cc}
+\toprule
+ & \multicolumn{2}{c}{Gemini} & \multicolumn{2}{c}{DeepSeek} & \multicolumn{2}{c}{GPT-OSS} & \multicolumn{2}{c}{Qwen} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Architecture & Cost & Tokens & Cost & Tokens & Cost & Tokens & Cost & Tokens \\
+\midrule
+$\mathcal{A}_{\text{D}}$ & \$0.802 & 414.2k & \$0.087 & 667.7k & \$0.023 & 493.1k & \$0.043 & 423.6k \\
+$\mathcal{A}_{\text{E}}$ & \$1.024 & 428.7k & \$0.036 & 384.4k & \$0.023 & 482.5k & \$0.042 & 407.6k \\
+$\mathcal{A}_{\text{H}}$ & \$0.280 & 113.3k & \$0.011 & 110.2k & \$0.006 & 122.7k & \$0.012 & 112.4k \\
+\bottomrule
+\end{tabular}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.0}
+\end{threeparttable}
+\caption{Cost per run (USD) and total tokens per run (thousands, input+output)}
+\label{tab:item8}
+\end{table*}
+
+Table~\ref{tab:item8} reports API cost and token usage at OpenRouter pricing averaged over 5 runs as of August 1, 2026. $\mathcal{A}_{\text{H}}$ makes one API call per scenario versus three for $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$, putting per-run cost from \$0.006 (GPT-OSS $\mathcal{A}_{\text{H}}$) to \$1.024 (Gemini $\mathcal{A}_{\text{E}}$), with $\mathcal{A}_{\text{D}}$ costing 2.9--7.9$\times$ more and $\mathcal{A}_{\text{E}}$ 3.3--3.8$\times$ more than $\mathcal{A}_{\text{H}}$ on the same model.
+
+\FloatBarrier
+\subsection{Failure Analysis}
+\label{sec:res-failures}
+
+
+\begin{table*}[htbp]
+\centering
+\begin{threeparttable}
+\small\centering
+\begin{tabular}{lccccc}
+\toprule
+Architecture & Gemini & DeepSeek & GPT-OSS & Qwen & Total \\
+\midrule
+$\mathcal{A}_{\text{D}}$ & 0 & 7 & 0 & 2 & 9 \\
+$\mathcal{A}_{\text{E}}$ & 10 & 0 & 0 & 0 & 10 \\
+$\mathcal{A}_{\text{H}}$ & 0 & 1 & 117 & 2 & 120 \\
+\bottomrule
+\end{tabular}
+\caption{Failure counts per architecture and model (summed across 5 runs). Counts are unique scenario-run failures (one per scenario per run).}
+\label{tab:failure_arch_model}
+\end{threeparttable}
+\end{table*}
+
+Weighting each architecture's conditional Kendall's $\tau$ by its success rate gives a failure-inclusive figure: $\mathcal{A}_{\text{H}}$ falls from 0.899 to 0.872, while $\mathcal{A}_{\text{E}}$ (0.274 to 0.274) and $\mathcal{A}_{\text{D}}$ (0.093 to 0.092) are essentially unchanged, consistent with their lower failure counts (Table~\ref{tab:failure_arch_model}). The one case where this matters is GPT-OSS on $\mathcal{A}_{\text{H}}$, whose 88.0\% success rate lowers its success-weighted $\tau$ from 0.897 to 0.789 and its Top-1 from 91.7\% to 84.7\%. The $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ ordering holds for all four models on the success-weighted metric, with the narrowest margin being GPT-OSS at 0.789 against 0.272 for $\mathcal{A}_{\text{E}}$. A per-run imputed protocol gives the same ordering and the same single material movement (Supplementary Material S2). 
+
+GPT-OSS incurred the most extraction failures, concentrated in HVAC scenarios (as shown in Supplementary Material S1). DeepSeek, Gemini, and Qwen each recorded 0--2 extraction failures on $\mathcal{A}_{\text{H}}$ across five runs. $\mathcal{A}_{\text{D}}$ and $\mathcal{A}_{\text{E}}$ fail most often on unparseable output; every $\mathcal{A}_{\text{H}}$ failure is an extracted parameter outside its physical validation bounds (Supplementary Material S1).
+
+GPT-OSS's failures land on different scenarios from run to run: only one scenario failed in all five runs. A scenario that failed in one run can therefore be recovered from another, and doing so leaves the reported figures where they are ($\tau$ 0.897, Top-1 91.7\%), so nothing in the results depends on that choice.
+
+\FloatBarrier
+\subsection{Alternative Ordering}
+\label{sec:res-order}
+
+Reversing the alternative order changed $\mathcal{A}_{\text{D}}$'s top-1 accuracy by less than a net 9 of 195 scenarios for every model (design in Section~\ref{sec:alternative-order}): DeepSeek's reversed condition was less accurate by 8.2 scenarios on a net basis, and the other three models moved by 1.4 to 3.4 scenarios in the reversed condition's favour. None of these shifts reaches significance. The model closest to significance is DeepSeek, and its McNemar test returns a median $p = 0.477$ across the five shipped-run comparisons. Under
+ the permutation test of Section~\ref{sec:alternative-order}, two of four models separated at the parameter level at the exact permutation floor of the test ($1/1287$) while no model separated on the top-1 alternative, and against the reference ranking the reversed and control conditions differ by less than Kendall's $0.004$ Kendall's $\tau$ with the sign of that difference inconsistent across models, so the deterministic calculator's error cancelation absorbs the perturbation before it reaches the ranking.
+ 
+
+
+\FloatBarrier
+\section{Discussion}
+\label{sec:discussion}
+
+\FloatBarrier
+\subsection{Interpretation of Results}
+\label{sec:interpretation}
+$\mathcal{A}_{\text{H}}$ was the strongest architecture overall, and the only one whose within-scenario score spread matched the reference calculator's (0.142--0.152 across models, against 0.145). That match corroborates Li et al.~\cite{li2026scoringbias}, who found scoring biases in LLM-as-judge pipelines; $\mathcal{A}_{\text{H}}$ sidesteps these biases by removing the LLM from the scoring role entirely. The MAE reduction relative to $\mathcal{A}_{\text{E}}$ is large: in absolute terms, $\mathcal{A}_{\text{H}}$'s residual error is roughly \$0.20 per scenario for energy cost, and about 1.4 lbs CO$_2$ (HVAC/Appliance) or 3 gallons of water (Shower). $\mathcal{A}_{\text{E}}$ comes out to roughly \$0.45 per scenario and about 2.3 lbs CO$_2$ or 5 gallons of water. The capability of the model used is also the least effectual under $\mathcal{A}_{\text{H}}$ (Section~\ref{sec:res-ranking}).
+
+One of the reasons behind this performance is that extraction error rarely reaches the ranking, because of decision structure rather than extraction accuracy. If $\mathcal{A}_{\text{H}}$ extracts a house's insulation as R-14 when the true value is R-16, the underestimate raises the projected heating loss, and with it the cost and emissions estimate, for all three setpoint alternatives under comparison; the alternative that was cheapest at the true R-16 is still cheapest at the estimated R-14, because the error moves every alternative in the same direction rather than reordering them. The only times where this would change anything is if there was a alternative very close to winning from comfort and/or and practicality.
+
+The cancellation depends on the alternatives sharing a jointly-uncertain state, which is the case for environmental impact and energy cost on certain decision types. This reduces in effect for a parameter that scales the outcome directly and is recovered from a coarse proxy. This can be seen with the shower GPM is that parameter (Section~\ref{sec:res-extraction}): GPM multiplies against each alternative's own duration rather than scaling all three by a common amount, so a GPM error shifts the three duration alternatives by different absolute amounts and breaks the cancellation. In other cases, such as financial decision making, a different multiplier would also have a similar effect, possibly leading to worse results.
+
+GPT-OSS and Qwen fail often. GPT-OSS accounts for nearly all $\mathcal{A}_{\text{H}}$ extraction failures, concentrated in HVAC scenarios (Section~\ref{sec:res-extraction}); under $\mathcal{A}_{\text{D}}$, GPT-OSS and Qwen alone return identical energy-cost and environmental scores for 93.7\% and 95.6\% of Appliance alternatives, against the reference's own 8.0\% (Supplementary Material S2). Neither model separates two criteria even though it is instructed to do so. While this can actually lead to some benefits in a collinear framework, it also shows a lack of distinctive reasoning. Interestingly, Qwen's $\mathcal{A}_{\text{E}}$ ranking accuracy is higher under random exemplar retrieval than under similarity-ranked retrieval, the reverse of every other model (Section~\ref{sec:rag-ablation}), possibly because closely matched exemplars invite it to mimic their scores outright rather than reason about the scenario at hand. Both models are also the weak on  $\mathcal{A}_{\text{D}}$ Shower, where Gemini and DeepSeek show moderate positive correlation and GPT-OSS and Qwen remain near-random (Section~\ref{sec:res-bytype}). These failures share no commonality, yet the same two weaker models are effected. While the $\mathcal{A}_{\text{H}}$ architecture removes the need for powerful models, $\mathcal{A}_{\text{E}}$ and $\mathcal{A}_{\text{D}}$ implementations do benefit heavily from at least a base level of intelligence.  Gemini varies least between runs in all three architectures and leads on $\mathcal{A}_{\text{H}}$ ($\tau = 0.923$) and on $\mathcal{A}_{\text{D}}$ Shower ($\tau = 0.633$), though it is also the only model that failed extractions under $\mathcal{A}_{\text{E}}$ and the only one whose $\mathcal{A}_{\text{D}}$ overtakes $\mathcal{A}_{\text{E}}$ under any weight vector (Section~\ref{sec:res-sensitivity}) — stability across runs and strength on the ranking task do not guarantee stability across architectures. GPT-OSS carries 117 of the 120 $\mathcal{A}_{\text{H}}$ extraction failures, all of them parameters outside the physical bounds, so its weakness under $\mathcal{A}_{\text{H}}$ is a failure to stay within a valid range rather than a failure to estimate close to the true value. Qwen ranks last in every architecture, the one model for which no scoring approach tested here reaches strong performance.
+
+The architecture that ranks best is also the cheapest to run. $\mathcal{A}_{\text{H}}$ issues one API call per scenario against three for the other two, and on the same model costs 2.9 to 7.9 times less per run than $\mathcal{A}_{\text{D}}$ and 3.3 to 3.8 times less than $\mathcal{A}_{\text{E}}$ (Section~\ref{sec:res-efficiency}). In this rare case, accuracy comes with less cost. 
+
+$\mathcal{A}_{\text{E}}$ buys a level shift rather than a scaling: seeing a handful of scored examples tells a model what the reference scale's absolute range looks like, but not how to correctly compute a new scenario's own numbers, so it recalibrates its baseline without becoming any better at discriminating between the alternatives in front of it. So every model improves by roughly the same amount: $\tau$ runs 0.208 to 0.310 across the four models, against 0.010 to 0.176 under $\mathcal{A}_{\text{D}}$. Even at its best this remains far below $\mathcal{A}_{\text{H}}$'s 0.880--0.923 range, so exemplar anchoring narrows the gap left by direct-scoring numeracy without closing it. The RAG ablation shows that the scores in the exemplars matters, and further specified household information does not (Section~\ref{sec:rag-ablation}, Figure~\ref{fig:rag_ablation}). Exemplars also help reduce scoring variance: DeepSeek moves from 0.289 under $\mathcal{A}_{\text{D}}$ to 0.163 under $\mathcal{A}_{\text{E}}$, and Qwen from 0.181 to 0.173. Additionally, selecting similar examples is important and it causes most of the RAG contribution. That pattern reverses only for Qwen, whose Kendall's $\tau$ under random exemplar selection (0.276) exceeds its score under the curated $k=3$ exemplars (0.154; Supplementary Material S2). This may be because the smaller size of the model does not have the capacity to reason about how the scores matter, and instead may use them as a reference for syntax. If this is true, then the higher $\tau$ under random exemplar is not significant.
+
+$\mathcal{A}_{\text{D}}$ fails in a way the LLM-as-judge literature does not predict. It sits near chance on HVAC and Appliance for all four models and separates on Shower only for the two strongest (Gemini $\tau = 0.633$, DeepSeek $0.558$, against GPT-OSS $0.133$ and Qwen $0.069$; Section~\ref{sec:res-bytype}), consistent with Shower's single dominant duration trade-off being easier for a capable model to reason about directly than HVAC's or Appliance's multi-parameter interactions (elaborated in Section~\ref{sec:comparison}). The few $\mathcal{A}_{\text{D}}$ comparisons that reach significance in the prompt-perturbation ablation reflect this same noise floor rather than any perturbation improving on the control (Supplementary Material S2): scores clustered near chance carry little true signal, so run-to-run noise alone is enough to push a handful of the many pairwise comparisons past the significance threshold.
+
+Entropy weights support the assumed 35/30/20/15 weighting scheme; MEREC derived weights instead emphasize the criteria that distinguish the alternatives at hand. Under those vectors, $\mathcal{A}_{\text{E}}$ loses most of its margin over $\mathcal{A}_{\text{D}}$ and trails it in one of 20 model--weight-vector cells (Section~\ref{sec:res-sensitivity}; full matrix in Supplementary Material S2). Entrophy derived vectors increase the weight on Energy Cost and Environmental Impact and thus preserve the design ordering. $\mathcal{A}_{\text{E}}$'s advantage over $\mathcal{A}_{\text{D}}$ therefore depends on emphasizing cost and emissions, the criteria that direct scoring estimates poorly. Both criteria require converting a physical quantity into a dollar or emissions figure through several multiplicative steps, an implicit calculation that direct and exemplar-anchored scoring alike must perform in a single forward pass, unlike the more categorical judgments comfort and practicality call for. $\mathcal{A}_{\text{H}}$ remains ahead of $\mathcal{A}_{\text{E}}$ under every tested vector and model.
+
+Reversing the order in which the alternatives are listed changed what two of four models extracted: Qwen's and Gemini's parameter estimates separated by 0.054 and 0.047 respectively ($p \le 0.0008$, Holm-adjusted $p \le 0.006$), both at the test's permutation floor of $1/1287$, while DeepSeek and GPT-OSS showed no detectable separation (Section~\ref{sec:res-order}). No model's top-1 choice moved detectably ($p \ge 0.24$). The perturbation reached the LLM's parameter estimates but not the calculator's ranking output. As a whole, this can be treated as a null result.
+
+One of the most important tests, the fixed-default baseline, performs well only where its default happens to match the domain (Section~\ref{sec:res-baselines}). It collapses on Appliance ($\tau = 0.097$): Practicality alone recovers the reference winner in 90.8\% of Appliance scenarios, and a fixed 7\,p.m.\ run time cannot track a household's actual schedule, which Practicality measures. $\mathcal{A}_{\text{H}}$ clears the bar this sets overall and on Appliance and Shower, while $\mathcal{A}_{\text{E}}$ falls below the fixed default on Kendall's $\tau$ overall for all four models, and on two of the three decision types. Interestingly, HVAC is the exception. There the fixed default reaches $\tau = 0.933$, above two of the four models, because an R-15, SEER-13 default sits near the optimum for the Pennsylvania housing stock these scenarios draw on. However, in such cases, the finding says more about how closely the fixed default happens to track this dataset's Pennsylvania housing stock than about whether HVAC decisions are inherently easier to default on; a fixed default tuned to a different climate zone or building-code era would not be expected to clear the same bar, so the result should not be read as evidence that LLM effort is generally wasted on this decision type.
+
+That comparison also bounds how far $\mathcal{A}_{\text{H}}$ travels. Both it and the fixed default are scored against reference curves that encode a normative account of a reasonable household rather than any particular one's trade-offs (Section~\ref{sec:limitations}). Building a calculator per household is not feasible, so $\mathcal{A}_{\text{H}}$ as built is not readily distributable: it is distributable to households the reference curves happen to describe. Extending it in the direction of $\mathcal{A}_{\text{E}}$, retrieving exemplars scored for a household's  preferences, could be used in a further hybrid format with the current $\mathcal{A}_{\text{H}}$.
+
+\FloatBarrier
+\subsection{Comparison with Prior Work}
+\label{sec:comparison}
+
+$\mathcal{A}_{\text{D}}$ qualifies prior claims that internal consistency implies correct output: \citet{svoboda2024} showed GPT-4 can construct an AHP model within consistency-ratio thresholds and \citet{icaart26} found structured output improves ranking consistency in COMET-based MCDA, yet in our case $\mathcal{A}_{\text{D}}$, across multiple runs, had low-variance scores while still being far from correct (Section~\ref{sec:res-ranking}). This miscalibration generalizes the scoring biases documented by Wang et al.~\cite{wang2024fairescalers} and Li et al.~\cite{li2026scoringbias} from judge contexts to multi-criteria decision scoring. Where that literature predicts compressed scores, $\mathcal{A}_{\text{D}}$'s within-scenario range runs 1.25--2.00 times the actual scored range (Section~\ref{sec:res-ranking}). As thus, it is important to note that a model asked to score alternatives on a bounded scale can spread its scores as it can compress them, so trying to calibrate against scores that are "too average" can provide a reversed negative effect.
+
+$\mathcal{A}_{\text{E}}$ extends Case-Based Reasoning \cite{aamodtplaza1994,minorkaucher2024} to MCDA scoring, but its gain over $\mathcal{A}_{\text{D}}$ plateaus because exemplar scores anchor the output scale without correcting the model's scenario-specific arithmetic (Section~\ref{sec:res-ranking}). $\mathcal{A}_{\text{H}}$ sidesteps the numeracy problem \cite{imani2023mathprompter}, rather than improving LLM arithmetic through chain-of-thought prompting \cite{wei2022cot} or tool augmentation, with a single extraction call and an existing calculator. 
+
+ \citet{vonnitzsch1993} showed that importance weights elicited without reference to the attribute ranges on offer differ systematically from swing weights elicited with them; the 35/30/20/15 vector used here is of the first kind  (Section~\ref{sec:res-sensitivity}). \citet{vahidnia2025walmas} takes the opposite approach and asks an LLM to assign the weights themselves. Both point at a decomposition this paper leaves untested: an LLM could supply the weights, the withheld parameters, or the scores, and we vary only the last two. As shown by fixed-default, LLM scoring for certain decision types may be redundant (Section~\ref{sec:res-baselines}).
+\FloatBarrier
+\subsection{Limitations of the Study}
+\label{sec:limitations}
+
+$\mathcal{A}_{\text{H}}$ is graded against the same calculators it uses. It shares the reference model's deterministic calculator but withholds several inputs, estimating them from homeowner-accessible text; the physical validation bounds (R-value, SEER, GPM ranges) derive from ASHRAE and ENERGY STAR literature rather than from pilot LLM outputs. A misspecified formula would inflate $\mathcal{A}_{\text{H}}$ while potentially hurting the other two architectures. An independent audit with a separately built calculator would help solve this (Section~\ref{sec:futurework}). It is also bounded by what the calculator models at all: if a criterion the calculator cannot represent becomes important, such as indoor humidity for an HVAC decision, which ASHRAE~55's temperature-only comfort model does not capture, $\mathcal{A}_{\text{H}}$ falls back on the same weaknesses as the other two architectures.
+
+\label{sec:calculator-simplifications}
+There are calculator formulas true relationship is unpublished or cannot be evaluated on the scenario data: mains water temperature interpolated linearly from outdoor temperature \cite{burch2007}, monthly appliance cycle rates, a fixed shower tank-availability factor of 0.8, and a run-time-fraction approximation for HVAC occupancy. These affect all architectures equally, but the absolute MAE and RMSE values reflect the combined error of LLM extraction and calculator imputation. Results are also specific to Pennsylvania's grid and utility rate structure: the PJM marginal emissions factors and Pennsylvania time-of-use rate tiers used throughout this study do not generalize to high-renewables grids, where lower and more variable emissions intensities would compress environmental score distributions, and absolute MAE values for the environmental and energy-cost criteria would shift. Additionally, all shower scenarios assume electric resistance water heating.
+
+The scenario dataset was generated by crossing categorical parameters with representative numeric draws, which ensures parameter-space coverage but does not reflect real-world joint distributions: older houses tend to have worse insulation and lower SEER ratings together, and the synthetic dataset decouples that. Accuracy in real-world use may therefore be lower.
+
+Each scenario presents three specific alternatives a household might compare; real decisions involve a continuous, unstructured space. With $n=3$, $\mathcal{A}_{\text{H}}$'s correlated scenario-level errors cancel more often than they would in a larger choice set. Per-scenario Kendall's $\tau$ can take only the four values $-1$, $-1/3$, $+1/3$ and $+1$, so every per-scenario $\tau$ reported in this paper is a mean over a four-level variable, and the reported $\tau$ of 0.899 is an upper bound on $\mathcal{A}_{\text{H}}$'s ranking accuracy for larger choice sets. Generalizing to nearby alternatives rests on a monotonicity assumption that holds for cost and energy but not always for comfort. Additionally, we assume a single decision-maker with fixed weights. 
+
+ None of the three architectures produces a calibrated confidence estimate alongside its ranked recommendation, so a correct ranking and an inverted one reach the household in the same form (Section~\ref{sec:futurework}).
+
+Each criterion's 0--1 scoring curve is calibrated against published standards and population-level data rather than elicited from any household, so the reference ranking encodes a normative account of a reasonable household rather than a particular one's trade-offs. A homeowner who weighs comfort above its 20\% weight, tolerates a colder shower than ASHRAE~55 predicts, or works a shift that rules out a daytime wash would need an adjusted calculator. Section~\ref{sec:interpretation} and Section~\ref{sec:conclusion} take up what that means for distribution. The nominal weights (35\% environmental, 30\% energy cost, 20\% comfort, 15\% practicality) act as fixed importance weights rather than range-sensitive swing weights. 
+
+
+
+\FloatBarrier
+\subsection{Future Work}
+\label{sec:futurework}
+The most immediate follow-up is an external review of $\mathcal{A}_{\text{H}}$'s extraction schema and validation bounds. This can be done with a household-decision expert score a sample of scenarios blind to the calculator's output, validating the reference ranking against human judgment.
+
+Cross-grid replication under different emissions--cost correlation structures (e.g., ERCOT's real-time pricing or a high-nuclear European grid where marginal emissions approach zero during surplus) would address the PJM specificity noted in Section~\ref{sec:limitations}. A domain-transfer test would apply $\mathcal{A}_{\text{H}}$ to a mature calculator outside energy (e.g., actuarial life-expectancy or portfolio Sharpe-ratio estimation). This less consistent decision making would help identify where $\mathcal{A}_{\text{H}}$'s advantage degrades. 
+
+Longer-term extensions include multi-turn preference elicitation from multiple household members and a randomized controlled trial comparing LLM-MCDA recommendations against unaided decisions in deployed households.
+
+\FloatBarrier
+\section{Conclusion}
+\label{sec:conclusion}
+We benchmarked three strategies for integrating an LLM into an MCDA workflow against a deterministic MAVT reference across 195 household energy scenarios. The ordering $\mathcal{A}_{\text{H}} > \mathcal{A}_{\text{E}} > \mathcal{A}_{\text{D}}$ holds for every model tested, and the metrics measure fidelity to the specified reference model rather than real-world decision accuracy.
+
+A language model belongs in a pipeline that already has, or could have, a deterministic way to check its answer. Asking a model to read a situation and produce a judgment in one step requires it both to understand the situation and to compute the outcome, and the judgment inherits whatever scoring biases and arithmetic weaknesses the model carries into that second task. Asking the model only to translate an unstructured description into the inputs a validated calculator can score removes that second task. The model doing the translating no longer has to be the strongest one available: which of the four models supplied that translation step barely moved the result, while the choice of model moved the result by a wide margin whenever a model scored the alternatives itself. Interestingly, though averaged consistent outputs is often thought of as a way to guard against hallucinations, run-to-run agreement was not a signal of which architecture to trust. There was high self-consistency, while nearly all answers were wrong.
+
+Using an LLM as an interpreter when a deterministic calculator is created, and in some cases calculator may already be enough on its own. A non-LLM fixed default, which substitutes a single constant for every withheld parameter and performs no per-scenario inference, outranks $\mathcal{A}_{\text{E}}$ on overall Kendall's $\tau$ for all four models at zero LLM cost. On HVAC it reaches $\tau = 0.933$ and on Shower it reaches $0.800$, both close to the $\mathcal{A}_{\text{H}}$ scores. Only on Appliance does it collapse ($\tau = 0.097$), because a static 7\,p.m.\ run time cannot track a household's actual schedule. An LLM is essentially thus only worth adding when having an "average input" has an extremely large effect on the scores, as LLMs themselves do not always correctly interpret situations from their context. 
+
+One constraint applies to all of this. Each of our criterion's scoring curve is calibrated against published standards and population-level data, so the reference encodes a normative account of a reasonable household rather than any particular one's trade-offs. Building and validating a calculator per household is not feasible, which makes $\mathcal{A}_{\text{H}}$ as built distributable only to households those curves already describe. Retrieving exemplars scored under a household's own revealed preferences, in the style of $\mathcal{A}_{\text{E}}$, is the more plausible route to something a household could adopt unchanged, and the retrieval results here suggest what such a system would and would not inherit. In other cases, it may be much more useful to pursue a more dynamic LLM pipeline where the user debates preferences with the LLM on each use.
+
+Our  contribution is an evaluation framework and an open reference implementation for LLM-fronted MCDA in residential energy. It supplies three deterministic MAVT calculators, a 285-scenario dataset split into 195 test and 90 retrieval cases, and a harness that reports Kendall's $\tau$, Top-1, MAE and RMSE per model and per decision type. 
+
+\clearpage
+
+\paragraph*{Declaration of competing interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\paragraph*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+\paragraph*{CRediT authorship contribution statement}
+\textbf{Ahaan Nigam:} Conceptualization, Methodology, Software, Validation, Formal analysis, Investigation, Data Curation, Writing --- Original Draft, Writing --- Review \& Editing, Visualization. \textbf{River Huang:} Validation, Conceptualization, Methodology, Supervision, Writing --- Review \& Editing.
+
+\paragraph*{Software and data availability}
+Name of software/dataset: LLM-MCDA-Paper (benchmark code, reference calculators, and scenario/RAG data). Access: \url{https://github.com/AN00927/LLM-MCDA-Paper}.
+Developer and contact: Ahaan Nigam (\href{mailto:ishaannigam27@gmail.com}{ishaannigam27@gmail.com}). 
+Year first available: 2026. 
+Program language: Python. 
+
+\paragraph*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+During the preparation of this work, the authors used Anthropic's Claude (via the Claude Code CLI) and OpenAI's ChatGPT to assist with drafting, copy-editing manuscript text, graphical refinement, and conceptualizing/refining the graphical abstract illustrations. No text, data, numbers, or figures were accepted without manual verification. The authors reviewed and edited all content and take full responsibility for the content of the published article.
+
+\paragraph*{Supplementary material}
+Supplementary material associated with this article is available online. Part S1 (Extended Methods) contains the full parameter-comparison tables, prompt texts, time-of-use rate structures, failure-mode analysis, and worked examples referenced from the main text; Part S2 (Extended Results and Robustness) contains the sensitivity, RAG-ablation, variance, significance, imputation, aggregation, and numerical results tables and figures.
+
+\bibliographystyle{apalike}
+\bibliography{cas-refs}
+\newpage
+\appendix
+\cleardoublepage
+\renewcommand{\thetable}{A.\arabic{table}}
+\renewcommand{\theHtable}{A.\arabic{table}}
+\setcounter{table}{0}
+\renewcommand{\thefigure}{A.\arabic{figure}}
+\renewcommand{\theHfigure}{A.\arabic{figure}}
+\setcounter{figure}{0}
+\FloatBarrier
+\section{Weight Robustness: Entropy and MEREC}
+\label{app:weights}
+
+Table~\ref{tab:weight_comparison} compares the a priori subjective weights with entropy and MEREC weights computed on the full reference dataset (195 test + 90 RAG scenarios, 285 total).
+
+\begin{table}[htpb]
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\caption{Weight comparison: a priori (subjective), entropy, and MEREC weights, all computed over the full 285-scenario dataset. The a priori vector $(0.30,\,0.35,\,0.20,\,0.15)$ is the design choice defended in Section~\ref{sec:mavt-design}.}
+\label{tab:weight_comparison}
+\begin{tabular}{@{}l rrrr@{}}
+\toprule
+\textbf{Method} & Ene & Env & Com & Pra \\
+\midrule
+A priori (design)         & 0.300 & 0.350 & 0.200 & 0.150 \\
+Entropy (overall)         & 0.269 & 0.371 & 0.161 & 0.199 \\
+Entropy (HVAC)            & 0.336 & 0.320 & 0.269 & 0.074 \\
+Entropy (Appliance)       & 0.193 & 0.465 & 0.124 & 0.218 \\
+Entropy (Shower)          & 0.335 & 0.316 & 0.122 & 0.227 \\
+\midrule
+MEREC (overall)           & 0.194 & 0.131 & 0.404 & 0.271 \\
+MEREC (HVAC)              & 0.138 & 0.128 & 0.663 & 0.071 \\
+MEREC (Appliance)         & 0.208 & 0.044 & 0.292 & 0.456 \\
+MEREC (Shower)            & 0.251 & 0.245 & 0.203 & 0.300 \\
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+Entropy weights assign 0.371 to Environmental Impact (a priori: 0.350), 0.161 to Comfort (a priori: 0.200), and 0.199 to Practicality (a priori: 0.150). MEREC weights diverge for HVAC and Appliance and remain close to the design vector for Shower. For HVAC, Comfort rises from 0.200 to 0.663 while Environmental Impact falls from 0.350 to 0.128. For Appliance, Environmental Impact falls to 0.044 and Practicality rises to 0.456.
+
+\FloatBarrier
+\newpage
+\section{Per-Decision-Type Results by Model}
+\label{app:per_model_results}
+Figure~\ref{app:decision_type_full_figures} breaks $\tau$, Top-1 accuracy, MAE, and RMSE down by decision type and model. Full numeric results, per-run standard deviations, and imputed robustness results appear in Supplementary Material S2.
+\begin{figure*}[htbp]
+	\centering
+	\plotDecisionTypeByModel
+	\caption{Per-decision-type results by model (5-run mean over completed scenarios within each 195-scenario test set). Each column shows one decision type (HVAC, Appliance, Shower); each pair of rows shows one metric. \textbf{(a--c)} Kendall's $\tau$. \textbf{(d--f)} Top-1 accuracy (\%). \textbf{(g--i)} MAE. \textbf{(j--l)} RMSE. Architecture ($\mathcal{A}_{\text{D}}$, $\mathcal{A}_{\text{E}}$, $\mathcal{A}_{\text{H}}$) appears on the $x$-axis of every panel.}
+	\label{app:decision_type_full_figures}
+\end{figure*}
+
+\FloatBarrier
+
+\end{document}
+

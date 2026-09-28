@@ -73,11 +73,15 @@ from sentinel_utils import read_table_clean, CRITERIA  # noqa: E402
 SHIPPED_FOLDERS = {"gptoss": "Output Files GPT-OSS 20B", "qwen": "Output Files Qwen3.5 9B",
                    "deepseek": "Output Files DeepSeek V4 Flash",
                    "gemini": "Output Files Gemini 3.5 Flash"}
+# GPT-OSS and Qwen keep their folder names, so their shipped outputs were moved to
+# archive/2026-09_pre_rerun/<folder> (Phase I); look there when the folder is empty.
+_A_H_GLOB = "LLM-Parameterized_Reference_Scoring_results_run_*.xlsx"
 for _mk, _shipped in SHIPPED_FOLDERS.items():
-    if (not list((PROJECT_ROOT / MODEL_SPECS[_mk]["output_folder"]).glob(
-            "LLM-Parameterized_Reference_Scoring_results_run_*.xlsx"))
-            and (PROJECT_ROOT / _shipped).exists()):
-        MODEL_SPECS[_mk]["output_folder"] = _shipped
+    if not list((PROJECT_ROOT / MODEL_SPECS[_mk]["output_folder"]).glob(_A_H_GLOB)):
+        for _cand in (_shipped, f"archive/2026-09_pre_rerun/{_shipped}"):
+            if list((PROJECT_ROOT / _cand).glob(_A_H_GLOB)):
+                MODEL_SPECS[_mk]["output_folder"] = _cand
+                break
 
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
 DTYPES = ["HVAC", "Appliance", "Shower"]
