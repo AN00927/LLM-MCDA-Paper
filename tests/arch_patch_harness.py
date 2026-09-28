@@ -219,8 +219,20 @@ def historical_ah_responses():
     return out
 
 
+# Pre-rerun collections only: GPT-OSS and Qwen were archived on 2026-09-27 (their
+# folder names are reused by the rerun); the old DeepSeek and Gemini 3.5 folders are
+# never written to again.
+HISTORICAL_OUTPUT_DIRS = [
+    REPO / "archive" / "2026-09_pre_rerun" / "Output Files GPT-OSS 20B",
+    REPO / "archive" / "2026-09_pre_rerun" / "Output Files Qwen3.5 9B",
+    REPO / "Output Files DeepSeek V4 Flash",
+    REPO / "Output Files Gemini 3.5 Flash",
+]
+
+
 def iter_raw_jsonl():
-    for p in sorted(REPO.glob("Output Files*/**/*_raw.jsonl")):
+    paths = [p for d in HISTORICAL_OUTPUT_DIRS for p in d.glob("**/*_raw.jsonl")]
+    for p in sorted(paths):
         with open(p, encoding="utf-8") as f:
             for line in f:
                 if line.strip():

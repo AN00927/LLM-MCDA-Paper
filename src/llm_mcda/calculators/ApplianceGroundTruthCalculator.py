@@ -18,37 +18,59 @@ class ApplianceGroundTruthCalculator:
     # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
     # Emissions Report (April 2023). Marginal rates reflect emissions of the last
     # generator dispatched
-    # Peak window: 7am-11pm. Weekday/holiday distinction not modeled.
+    # Peak window: 7am-11pm on non-holiday weekdays (PJM's definition); every scenario is
+    # treated as a non-holiday weekday, so the window applies as coded.
     EMISSIONS_FACTOR_PEAK = 1.041      # lbs CO2/kWh; PJM peak (1041 lbs/MWh)
     EMISSIONS_FACTOR_OFFPEAK = 0.976   # lbs CO2/kWh; PJM off-peak (976 lbs/MWh)
     EMISSIONS_PEAK_HOURS = (7, 23)     # 7am-11pm system-wide PJM
 
-    # Utility-to-city mapping with TOU rate windows and rates ($/kWh); per-utility sources
-    # cited inline below. MODELING SCOPE: scenarios carry no day-of-week or date, so ALL
-    # days are treated as weekdays and the single (summer) weekday peak window applies to
-    # every scenario -- weekend off-peak pricing and seasonal summer/winter peak-window
-    # shifts are NOT modeled (see methodology placeholder note).
-    # FirstEnergy (WestPenn/Penelec/MetEd) TOU rate = PTC x multiplier; values below use
-    # Jun-2025 PTCs (FirstEnergy Corp. (2025)) x fixed multipliers (FirstEnergy Corp. (2026))
-    # and must be recomputed at each PTC reset (Jun 1 / Dec 1).
+    # Utility TOU rate windows and rates ($/kWh), all for ONE common rate period:
+    # December 1, 2025 - May 31, 2026 (FirstEnergy's rider says "through May 30, 2026").
+    # Scenarios carry no date, so this one period (and its winter windows) applies to every
+    # scenario. Every utility is on the same basis, the full price to compare (generation +
+    # transmission): PECO TOU pricing option incl. transmission; PPL TOU generation + TSC
+    # (its PTC sheet); FirstEnergy PTCDefault (which includes the NITS transmission charge)
+    # x TOU multiplier; Duquesne residential PTC. No distribution charges are included.
+    # All scenarios are treated as non-holiday weekdays: the weekday windows below apply as coded.
+    # Windows are [start, end) in clock hours; a window with start > end wraps past midnight.
+    # FirstEnergy (WestPenn/Penelec/MetEd) TOU rate = PTCDefault x multiplier: Dec-2025
+    # residential PTCDefault (FE PA tariff Supplement No. 28, Sixth Revised Page 203) x TOU
+    # multipliers (FE PA tariff Supplement No. 20, PA PUC doc 1875621, First Revised Page 221).
+    # Recompute at each PTC reset (Jun 1 / Dec 1).
     UTILITY_RATES = {
-        "PECO":      {"peak_hours": (14, 18), "peak_rate": 0.320,  "offpeak_rate": 0.076},   # Rate R-TOU, 2-6pm wkdy (PECO Energy Company (2026))
-        # PPL Rate RTS: summer peak 2-6pm modeled; winter peak 4-8pm NOT modeled (no
-        # season/date field) -- summer window used year-round (PPL Electric Utilities (2025)).
-        "PPL":       {"peak_hours": (14, 18), "peak_rate": 0.160,  "offpeak_rate": 0.070},
-        "WestPenn":  {"peak_hours": (14, 21), "peak_rate": 0.172,  "offpeak_rate": 0.088},   # PTC 0.10317 x 1.6649/0.8542
-        "Penelec":   {"peak_hours": (14, 21), "peak_rate": 0.185,  "offpeak_rate": 0.093},   # PTC 0.11003 x 1.6792/0.8482
-        "MetEd":     {"peak_hours": (14, 21), "peak_rate": 0.203,  "offpeak_rate": 0.100},   # PTC 0.11903 x 1.7060/0.8397
-        # Duquesne Rate RS flat default (Duquesne Light Company (2026)); optional non-default
-        # TOU (peak 3-9pm, PUC-approved 2025-04-10, Duquesne Light Company TOU (2026)) exists but is not used.
-        "Duquesne":  {"peak_hours": (14, 21), "peak_rate": 0.1375, "offpeak_rate": 0.1375},
+        # PECO TOU Pricing Option, Rate R, Dec 1 2025 - May 31 2026, including the 0.787 c
+        # transmission charge (PECO Price to Compare sheet, updated 5/15/2026).
+        # Peak 2-6pm Mon-Fri; super off-peak midnight-6am every day.
+        "PECO":      {"peak_hours": (14, 18), "super_offpeak_hours": (0, 6),
+                      "peak_rate": 0.32747, "offpeak_rate": 0.08382, "super_offpeak_rate": 0.06061},
+        # PPL GSC-1 TOU Program for Rate Schedules RS and RTS (PPL tariff Supplement No. 402,
+        # Twenty-Third Revised Page 19Z.5B, effective Dec 1 2025): winter on-peak 4-8pm Mon-Fri,
+        # GSC 10.643/8.644 c. Rates below are PPL's TOU "Price to Compare" (GSC + 3.343 c
+        # transmission service charge; PPL PTC sheet, Dec 1 2025 - May 31 2026).
+        "PPL":       {"peak_hours": (16, 20),
+                      "peak_rate": 0.13986, "offpeak_rate": 0.11987},
+        "WestPenn":  {"peak_hours": (14, 21), "super_offpeak_hours": (23, 6),
+                      "peak_rate": 0.10947 * 1.6649, "offpeak_rate": 0.10947 * 0.8542,
+                      "super_offpeak_rate": 0.10947 * 0.6298},
+        "Penelec":   {"peak_hours": (14, 21), "super_offpeak_hours": (23, 6),
+                      "peak_rate": 0.11747 * 1.6792, "offpeak_rate": 0.11747 * 0.8482,
+                      "super_offpeak_rate": 0.11747 * 0.6510},
+        "MetEd":     {"peak_hours": (14, 21), "super_offpeak_hours": (23, 6),
+                      "peak_rate": 0.12965 * 1.7060, "offpeak_rate": 0.12965 * 0.8397,
+                      "super_offpeak_rate": 0.12965 * 0.6215},
+        # Duquesne Rate RS flat default: Dec 1 2025 residential PTC 13.75 c/kWh (PA PUC press
+        # release, 11/24/2025). No peak window; the optional non-default TOU (peak 3-9pm,
+        # PUC-approved 2025-04-10, Duquesne Light Company TOU (2026)) is not used.
+        "Duquesne":  {"peak_hours": None, "flat_rate": 0.1375},
     }
 
     # City-to-utility mapping (PA only; city name as it appears in scenario Location field).
-    # Coverage verified against PA PUC service-territory maps and FirstEnergy/PPL/PECO
-    # public service-area documentation. Cities not in outline-provided mapping
-    # (Harrisburg, Williamsport, McKeesport, Chester, Easton, Johnstown) researched
-    # against utility service-territory pages and PA PUC sources.
+    # Checked against the tariff territory lists: FE PA Electric Pa. P.U.C. No. 1,
+    # "Description of Territory" (pp. 6-20) and PPL Electric Pa. P.U.C. No. 201, "Territory
+    # Covered by this Tariff" (pp. 4-4B). Stroudsburg is listed by both (PPL: "Stroudsburg
+    # (part)"), and Quakertown borough runs its own municipal electric system (outside
+    # every modeled utility); both are left on PPL. Chambersburg borough also has a
+    # municipal system; it is mapped to its host utility West Penn, which lists the borough.
     CITY_TO_UTILITY = {
         "Philadelphia": "PECO", "Norristown": "PECO", "Pottstown": "PECO",
         "Phoenixville": "PECO", "West Chester": "PECO", "Exton": "PECO",
@@ -56,18 +78,26 @@ class ApplianceGroundTruthCalculator:
         "Media": "PECO", "Coatesville": "PECO", "Newtown": "PECO",
         "Doylestown": "PECO", "Chester": "PECO", "Levittown": "PECO",
         "Allentown": "PPL", "Bethlehem": "PPL", "Hazleton": "PPL",
-        "Reading": "PPL", "Scranton": "PPL", "Wilkes-Barre": "PPL",
-        "Stroudsburg": "PPL", "Lebanon": "PPL", "Lancaster": "PPL",
-        "State College": "PPL", "Harrisburg": "PPL", "Williamsport": "PPL",
+        "Reading": "MetEd", "Scranton": "PPL", "Wilkes-Barre": "PPL",
+        "Stroudsburg": "PPL", "Lebanon": "MetEd", "Lancaster": "PPL",
+        "State College": "WestPenn", "Harrisburg": "PPL", "Williamsport": "PPL",
         "Quakertown": "PPL",
         "Greensburg": "WestPenn", "Monroeville": "WestPenn",
-        "Indiana": "WestPenn", "Uniontown": "WestPenn", "Butler": "WestPenn",
+        "Indiana": "Penelec", "Uniontown": "WestPenn", "Butler": "WestPenn",
         "DuBois": "Penelec", "Oil City": "Penelec", "Meadville": "Penelec",
         "Erie": "Penelec", "Altoona": "Penelec", "Johnstown": "Penelec",
-        "York": "MetEd", "Chambersburg": "MetEd", "Gettysburg": "MetEd",
-        "Carlisle": "MetEd", "Easton": "MetEd",
+        "York": "MetEd", "Chambersburg": "WestPenn", "Gettysburg": "MetEd",
+        "Carlisle": "PPL", "Easton": "MetEd",
         "Pittsburgh": "Duquesne", "McKeesport": "Duquesne",
     }
+
+    # apply_value_function reference ranges for the two physical criteria: 5th-95th
+    # percentiles of the output raw_cost (4 dp) / raw_emissions (3 dp) values over all 300
+    # alternatives of the 100 master scenarios (65 test + 35 RAG pooled), numpy linear
+    # interpolation, np.round to 3 dp (the convention that reproduces the previous
+    # 0.025/0.71 and 0.288/3.643). Recompute whenever rates, windows or the city mapping change.
+    ENERGY_COST_BOUNDS = (0.028, 0.774)      # $/cycle; p5 0.0276, p95 0.7741 (was 0.025/0.71)
+    ENVIRONMENTAL_BOUNDS = (0.288, 3.643)    # lbs CO2/cycle; p5 0.2884, p95 3.643 (unchanged)
 
     NOISE_LIMIT_EVENING = 45     # dBA threshold after 10pm (EPA/WHO indoor night limit is 35 dBA;
                                   # 45 dBA chosen so dishwashers (~45 dBA, Bellingham Electric (2026))
@@ -86,6 +116,17 @@ class ApplianceGroundTruthCalculator:
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
+    APPLIANCE_TYPES = ('dishwasher', 'washer', 'washing_machine', 'dryer')
+
+    def _canonical_appliance(self, appliance) -> str:
+        """Lower-case, trimmed, spaces/hyphens as underscores. Anything outside
+        APPLIANCE_TYPES raises, so the caller emits the sentinel instead of scoring
+        an unknown appliance with default delay, cycle and noise values."""
+        value = str(appliance).strip().lower().replace(' ', '_').replace('-', '_')
+        if value not in self.APPLIANCE_TYPES:
+            raise ValueError(f"Unknown appliance type: {appliance!r}")
+        return value
+
     def _max_acceptable_delay(self, appliance_type: str) -> float:
         delays = {
             'dishwasher': 12.0,
@@ -114,16 +155,31 @@ class ApplianceGroundTruthCalculator:
             raise ValueError(f"Unmapped city for utility lookup: {city!r}")
         return self.CITY_TO_UTILITY[city]
 
+    @staticmethod
+    def _in_window(hour: int, window: Tuple[int, int]) -> bool:
+        """True if hour is in [start, end); start > end wraps past midnight (e.g. 23-6)."""
+        start, end = window
+        if start <= end:
+            return start <= hour < end
+        return hour >= start or hour < end
+
     def determine_rate_period(self, run_time_hour: int, location: str = None) -> str:
-        """Determine rate period using the utility's TOU window for `location`."""
+        """Determine rate period using the utility's TOU windows for `location`.
+
+        Returns "peak", "super_offpeak", "offpeak", or "flat" (no TOU window).
+        """
         if location is None:
-            peak_start, peak_end = (14, 18)
+            rates = {"peak_hours": (14, 18)}
         else:
             utility = self._utility_for_location(location)
-            peak_start, peak_end = self.UTILITY_RATES[utility]["peak_hours"]
+            rates = self.UTILITY_RATES[utility]
 
-        if peak_start <= run_time_hour < peak_end:
+        if rates["peak_hours"] is None:
+            return "flat"
+        if self._in_window(run_time_hour, rates["peak_hours"]):
             return "peak"
+        if rates.get("super_offpeak_hours") and self._in_window(run_time_hour, rates["super_offpeak_hours"]):
+            return "super_offpeak"
         return "offpeak"
 
     def determine_emissions_period(self, run_time_hour: int) -> str:
@@ -138,7 +194,7 @@ class ApplianceGroundTruthCalculator:
         utility = self._utility_for_location(location)
         rates = self.UTILITY_RATES[utility]
         period = self.determine_rate_period(run_time_hour, location)
-        rate = rates["peak_rate"] if period == "peak" else rates["offpeak_rate"]
+        rate = rates[period + "_rate"]
         cost = kwh_cycle * rate
         return cost
 
@@ -267,6 +323,8 @@ class ApplianceGroundTruthCalculator:
 
         hour = int(time_match.group(1))
         am_pm = time_match.group(2).lower()
+        if not 1 <= hour <= 12:
+            raise ValueError(f"Invalid 12-hour run time in alternative: {alt!r}")
 
         if am_pm == "pm" and hour != 12:
             run_time_hour = hour + 12
@@ -275,8 +333,8 @@ class ApplianceGroundTruthCalculator:
         else:
             run_time_hour = hour
 
-        baseline_str = scenario.get('baseline_time', '7pm')
-        baseline_hour = self._parse_time_to_hour(baseline_str)
+        # No default baseline: a missing or unparseable one raises -> sentinel.
+        baseline_hour = self._parse_time_to_hour(scenario['baseline_time'])
 
         # Calculate delay from baseline as circular clock distance.
         # This treats near wrap-around differences as short delays (e.g., 2 hours),
@@ -289,13 +347,24 @@ class ApplianceGroundTruthCalculator:
     def _parse_time_to_hour(self, time_str: str) -> int:
         import re
 
-        match =re.search(r'(\d{1,2})(?::\d{2})?\s*(am|pm)', time_str, re.IGNORECASE)
+        # Accepts "7pm", "7:00 PM", "7 p.m." and 24-hour "19:00". Anything else raises so
+        # the caller emits the sentinel; a baseline is never guessed.
+        text = str(time_str).strip()
+        match_24h = re.fullmatch(r'(\d{1,2}):(\d{2})', text)
+        if match_24h:
+            hour_24 = int(match_24h.group(1))
+            if 0 <= hour_24 <= 23 and int(match_24h.group(2)) <= 59:
+                return hour_24
+            raise ValueError(f"Invalid 24-hour baseline time: {time_str!r}")
+
+        match = re.search(r'(\d{1,2})(?::\d{2})?\s*([ap])\.?\s*m\b\.?', text, re.IGNORECASE)
         if not match:
-            print(f"  : Could not parse baseline time '{time_str}', defaulting to 7pm")
-            return 19
+            raise ValueError(f"Could not parse baseline time: {time_str!r}")
 
         hour = int(match.group(1))
-        am_pm = match.group(2).lower()
+        am_pm = match.group(2).lower() + "m"
+        if not 1 <= hour <= 12:
+            raise ValueError(f"Invalid 12-hour baseline time: {time_str!r}")
 
         if am_pm == "pm" and hour != 12:
             return hour + 12
@@ -309,24 +378,24 @@ class ApplianceGroundTruthCalculator:
             'energy_cost': {
                 # 5th-95th percentile of the actual scenario-set per-cycle cost
                 # distribution (kWh/cycle x the resolved TOU rate across the 6 PA
-                # utilities): p5 = $0.025, p95 = $0.71. Dataset-percentile bounds
-                # concentrate score sensitivity in the range households actually
+                # utilities; test + RAG pooled): see ENERGY_COST_BOUNDS. Dataset-percentile
+                # bounds concentrate score sensitivity in the range households actually
                 # encounter. Underlying kWh/cycle endpoints remain consistent with the
                 # ENERGY STAR certified-products distribution (efficient HE washer
                 # ~0.25 kWh) through older non-certified resistance dryers.
-                'min': 0.025,
-                'max': 0.71,
+                'min': self.ENERGY_COST_BOUNDS[0],
+                'max': self.ENERGY_COST_BOUNDS[1],
                 'decreasing': True
             },
             'environmental': {
                 # 5th-95th percentile of the actual scenario-set per-cycle emissions
-                # distribution (kWh/cycle x PJM marginal factor at run time): p5 = 0.288,
-                # p95 = 3.643 lbs CO2. Source: PJM 2022 CO2/SO2/NOx Emissions Report
-                # (April 2023). Marginal (not average) factors are the correct measure
+                # distribution (kWh/cycle x PJM marginal factor at run time; test + RAG
+                # pooled): see ENVIRONMENTAL_BOUNDS. Source: PJM 2022 CO2/SO2/NOx Emissions
+                # Report (April 2023). Marginal (not average) factors are the correct measure
                 # for behavioral time-shifting decisions because they reflect the
                 # generator actually displaced or added at the margin.
-                'min': 0.288,
-                'max': 3.643,
+                'min': self.ENVIRONMENTAL_BOUNDS[0],
+                'max': self.ENVIRONMENTAL_BOUNDS[1],
                 'decreasing': True
             },
             'comfort': {
@@ -411,14 +480,12 @@ class ApplianceGroundTruthCalculator:
             # Linear decline as budget limit approached (Heath & Soll 1996)
             return 1.0 - 2.5 * (utilization - 0.80)
 
-        elif utilization < 1.5:
-            # Exponential loss aversion under budget violation (Prelec & Loewenstein 1998; Heutel 2017)
+        else:
+            # Exponential loss aversion under budget violation (Prelec & Loewenstein 1998; Heutel 2017).
+            # Continuous for every u >= 1.0: the former drop to 0 at u = 1.5 is removed, so an
+            # over-budget option keeps a small, still-decreasing credit instead of a cliff.
             import math
             return 0.5 * math.exp(-3.0 * (utilization - 1.0))
-
-        else:
-            # Infeasible option eliminated (Gathergood 2012)
-            return 0.0
 
     def calculate_monthly_cost(self, per_cycle_cost: float, cycles_per_month: int = 30) -> float:
         return per_cycle_cost * cycles_per_month
@@ -435,9 +502,13 @@ class ApplianceGroundTruthCalculator:
             print(f"\nProcessing alternative: {alt}")
 
             try:
+                appliance = self._canonical_appliance(scenario['appliance'])
+                utility_budget = float(scenario['utility_budget'])
+                if not utility_budget > 0:
+                    raise ValueError(f"utility_budget must be positive: {utility_budget!r}")
                 run_time_hour, delay_hours = self.parse_alternative(alt, scenario)
                 # kwh_per_cycle already reflects the appliance's age: within each
-                # appliance type the dataset's per-cycle energy is strongly
+                # appliance type the dataset's per-cycle energy is moderately
                 # correlated with appliance_age (older units assigned higher
                 # kWh), so age's efficiency effect flows through here directly.
                 energy_cost = self.calculate_energy_cost(
@@ -448,11 +519,11 @@ class ApplianceGroundTruthCalculator:
                 )
                 comfort = self.calculate_comfort_score(
                     delay_hours, run_time_hour, scenario['housing_type'],
-                    scenario['household_size'], scenario['appliance']
+                    scenario['household_size'], appliance
                 )
                 practicality = self.calculate_practicality_score(
                     delay_hours, run_time_hour, scenario['housing_type'],
-                    scenario['household_size'], scenario['appliance']
+                    scenario['household_size'], appliance
                 )
             except Exception as e:
                 print(f"  scoring failed for {alt}: {e}; emitting sentinel {SENTINEL_VALUE}")
@@ -463,7 +534,9 @@ class ApplianceGroundTruthCalculator:
                 'energy_cost_dollars': energy_cost,
                 'emissions_lbs': emissions,
                 'comfort_raw': comfort,
-                'practicality_raw': practicality
+                'practicality_raw': practicality,
+                'appliance': appliance,
+                'utility_budget': utility_budget,
             }
 
         final_scores = {}
@@ -486,19 +559,18 @@ class ApplianceGroundTruthCalculator:
                 'energy_cost'
             )
 
-            if 'utility_budget' in scenario and scenario['utility_budget'] > 0:
-                monthly_cost = self.calculate_monthly_cost(
-                    raw['energy_cost_dollars'],
-                    cycles_per_month=self._cycles_per_month(scenario['appliance'])
-                )
+            monthly_cost = self.calculate_monthly_cost(
+                raw['energy_cost_dollars'],
+                cycles_per_month=self._cycles_per_month(raw['appliance'])
+            )
 
-                budget_penalty = self.calculate_budget_penalty(
-                    monthly_cost,
-                    scenario['utility_budget']
-                )
+            budget_penalty = self.calculate_budget_penalty(
+                monthly_cost,
+                raw['utility_budget']
+            )
 
-                energy_vf_penalized = energy_vf * budget_penalty
-                energy_vf = energy_vf_penalized
+            energy_vf_penalized = energy_vf * budget_penalty
+            energy_vf = energy_vf_penalized
 
             env_vf = self.apply_value_function(
                 raw['emissions_lbs'],

@@ -1,15 +1,16 @@
 # LLM-MCDA: AI-Assisted Multi-Criteria Decision Analysis for Household Energy Optimization
 
-**Author:** Ahaan Nigam
+**Authors:** Ahaan Nigam; River Huang (Paul Scherrer Institut, Switzerland)
 **Institution:** Downingtown East High School
-**Collaborator:** River Huang, Paul Scherrer Institut (PSI), Switzerland
 **Target Journal:** Environmental Modelling & Software
 
 ---
 
 ## Research Question
 
-Which LLM-assisted architecture most accurately reproduces a deterministic reference ranking for rapid household energy decisions, and how consistently does that ordering hold across models of varying capability and cost?
+**Proposition:** An LLM can occupy three positions in an MCDA workflow: it can score the alternatives, score them with retrieved worked examples, or supply the inputs of a deterministic calculator.
+
+**Research question:** How accurately does each position reproduce a deterministic reference ranking?
 
 ---
 
@@ -141,12 +142,12 @@ Across models, the LLM-parameterized reference scoring architecture's tau spans 
 | Appliance | -0.147 (GPT-OSS) to 0.029 (DeepSeek) | -0.048 (GPT-OSS) to 0.417 (DeepSeek) | 0.906 (Qwen) to 0.975 (DeepSeek) |
 | Shower | 0.069 (Qwen) to 0.633 (Gemini) | 0.240 (Qwen) to 0.767 (Gemini) | 0.787 (GPT-OSS, tied with DeepSeek) to 0.851 (Qwen) |
 
-HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-parameterized reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where LLM-parameterized reference scoring is weakest, because a flow-rate (GPM) error multiplies each alternative's own duration and so does not cancel across alternatives.
+HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-parameterized reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where LLM-parameterized reference scoring is weakest, because a flow-rate (GPM) error rescales every duration's cost and water use by the same factor, which changes how they trade off against comfort, and many shower scenarios sit close to that trade-off's break-even point.
 
 ### Key Findings
 
 - **Calculator access alone is not enough.** Running the same reference calculator on dataset-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the LLM-parameterized reference scoring architecture's 0.880--0.923. LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
-- **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM), which multiplies against each alternative's own duration rather than scaling all three by a common amount -- it carries the highest top-1 flip probability of any extracted parameter for every model.
+- **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM). A GPM error scales every duration's cost and water use by one factor without reordering them, but it changes their weight against comfort, which GPM does not affect; shower winners often lead narrowly, so GPM carries the highest top-1 flip probability of any extracted parameter for every model (0.23-0.27 per run).
 - **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a scenario-weighted tau of 0.614, which outranks direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it. It collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. Separately, the RAG ablation's copy-only configuration (assigning the retrieved scenario's scores directly, no LLM call, leave-one-out on the 90-scenario RAG set) reaches tau = 0.001, indistinguishable from a random ranking.
 - **In the RAG ablation, exemplar scores matter more than exemplar content.** Removing the reference scores from retrieved exemplars degrades ranking far more than removing their hidden engineering parameters (R-value, SEER, GPM, etc.) -- scored exemplars anchor the LLM's output scale, they don't teach it new physics.
 - **Reversing alternative order in the prompt changed what two of four models extracted, but never changed which alternative any model ranked first** -- a null result at the ranking layer that only means something because the same perturbation is detectably present one layer up, at the LLM's parameter estimates.
@@ -324,9 +325,9 @@ The reference calculators receive exact engineering values; architectures receiv
 
 | Parameter | LLM Label | Calculator Value | Source |
 | --- | --- | --- | --- |
-| **HVAC - Insulation** | Poor / Medium / Good | R-11 / R-13 / R-19 | CEC JA4.3; ENERGY STAR |
+| **HVAC - Insulation** | Poor / Medium / Good | scenario R-value (tiers R-8-12 / R-13-18 / R-19-24) | CEC JA4.3; ENERGY STAR |
 | **Shower - Flow Rate** | low_flow / standard / high_flow | actual GPM from scenario | EPA WaterSense |
-| **Appliance - Age** | banded age label | true age in years -> kWh/cycle | ENERGY STAR certified datasets |
+| **Appliance - Age** | banded age label | scenario kWh/cycle (the calculator does not read age) | ENERGY STAR and DOE test procedures (cycles/year) |
 
 The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. Bands are computed by single-source helpers in `sentinel_utils.py` so the test-sheet label and the RAG-index embedding string stay byte-identical.
 
@@ -342,12 +343,12 @@ s_j = sum(w_i * v_i(x_ij))   for i in {energy_cost, environmental, comfort, prac
 
 All four criterion scores are on a 0--1 scale before weighting. Energy cost and environmental impact use a linear value function; comfort and practicality use a logarithmic one (shape parameter alpha = 1.5 and 1.2 respectively) to capture diminishing marginal returns near an already-acceptable outcome.
 
-### Reference Ranges (5th-95th percentile of scenario distributions)
+### Reference Ranges (5th-95th percentiles over the 285 test + RAG scenarios; HVAC environmental bounds convert the HVAC cost percentiles)
 
 | Criterion | HVAC | Appliance | Shower |
 | --- | --- | --- | --- |
-| Energy Cost ($) | $0.38 - $3.29 | $0.025 - $0.71 | $0.14 - $1.14 |
-| Environmental Impact | 1.96 - 18.04 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
+| Energy Cost ($) | $0.40 - $2.81 | $0.028 - $0.774 | $0.13 - $1.07 |
+| Environmental Impact | 2.05 - 15.40 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
 | Comfort | 0.0 - 1.0 | 0.0 - 1.0 | 0.0 - 1.0 |
 | Practicality | 0.05 - 1.0 | 0.05 - 1.0 | 0.05 - 1.0 |
 
@@ -355,16 +356,15 @@ Shower environmental impact is water volume (gallons), not CO2 -- chosen because
 
 ### Budget Penalty
 
-A four-tier multiplicative budget penalty applies to the post-value-function energy-cost score, where `u = monthly_cost / budget`:
+A three-tier multiplicative budget penalty applies to the post-value-function energy-cost score, where `u = monthly_cost / budget`:
 
 | Utilization u | Penalty |
 | --- | --- |
 | u < 0.80 | 1.0 (no penalty) |
 | 0.80 <= u < 1.00 | Linear decay: 1 - 2.5(u - 0.80) |
-| 1.00 <= u < 1.50 | Exponential: 0.5 * e^{-3(u - 1.0)} |
-| u >= 1.50 | 0 (eliminated) |
+| u >= 1.00 | Exponential: 0.5 * e^{-3(u - 1.0)} (continuous, never 0) |
 
-Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-control (Heath & Soll 1996); exponential loss aversion (Prelec & Loewenstein 1998); infeasibility elimination (Gathergood 2012).
+Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-control (Heath & Soll 1996); exponential loss aversion (Prelec & Loewenstein 1998).
 
 ---
 
@@ -389,9 +389,9 @@ Thermal load uses a four-component ASHRAE-style balance (conductive + infiltrati
 E_kWh = (Q_load / (EER_eff * 1000)) * 8 hr * m_occ
 ```
 
-EER comes from rated SEER via the AHRI 210/240 quadratic (`EER = -0.02*SEER^2 + 1.12*SEER`), applied identically whether the scenario is in heating or cooling mode -- the calculator has no separate heating-fuel-type field. Occupancy modifier `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 - 0.5*(h_away/24)`). Age/maintenance degradation enters only the practicality score (as a reliability factor), not the energy path.
+In cooling mode, EER comes from rated SEER via the Building America House Simulation Protocols conversion (Hendron & Engebrecht 2010, Eq. 3, citing Wassmer 2003: `EER = -0.02*SEER^2 + 1.12*SEER`). In heating mode the calculator models an electric air-source heat pump and divides the load by the HSPF paired with the SEER (HSP Tables 4 and 32 up to SEER 14; NREL ResStock options at SEER 18 and 22) in place of EER. Occupancy modifier `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 - 0.5*(h_away/24)`). Age/maintenance degradation enters only the practicality score (as a reliability factor), not the energy path.
 
-Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 F cooling, 70 F heating).
+Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 F cooling, 71 F heating).
 
 ### Appliance Calculator
 
@@ -401,7 +401,7 @@ Comfort decays piecewise from delay and appliance type, with appliance-specific 
 
 ### Shower Calculator
 
-Mains inlet temperature is interpolated from outdoor temperature (45 F winter to 65 F summer, NREL seasonal model). Hot-water mixing fraction targets a fixed 105 F delivery temperature:
+Mains inlet temperature is interpolated from outdoor temperature (48.5 F winter to 68.2 F summer, a linear fit to the NREL (Burch & Christensen) mains model on PA TMY3 weather). Hot-water mixing fraction targets a fixed 105 F delivery temperature:
 
 ```
 f_hot = (T_target - T_inlet) / (T_heater - T_inlet),   T_target = 105 F
@@ -413,7 +413,7 @@ Shower energy:
 E_kWh = (GPM * f_hot * 8.33 * (T_heater - T_inlet) * duration_min) / (3412 * eta)
 ```
 
-where eta = 0.92 (electric water-heater efficiency). Because `f_hot` and the temperature rise move inversely, energy depends on inlet temperature but not on heater setpoint, for any setpoint at or above the delivery target. Environmental impact = GPM * duration (gallons of water used). Comfort peaks near the REU2016 average duration with penalties for temperature adequacy (CDC Legionella/scald thresholds) and household contention. Practicality penalizes alternatives that exhaust available tank capacity, using a fixed 0.8 tank-availability factor.
+where eta = 0.92 (electric water-heater efficiency; the federal minimum in 10 CFR 430.32(d) is 0.9307 - 0.0002 x V_r = 0.9207 for a 50-gal tank). Because `f_hot` and the temperature rise move inversely, energy depends on inlet temperature but not on heater setpoint, for any setpoint at or above the delivery target. Environmental impact = GPM * duration (gallons of water used). Comfort peaks near the REU2016 average duration with penalties for temperature adequacy (CDC Legionella/scald thresholds) and household contention. Practicality penalizes alternatives that exhaust available tank capacity, using a fixed 0.8 tank-availability factor.
 
 ---
 
@@ -439,7 +439,7 @@ where eta = 0.92 (electric water-heater efficiency). Because `f_hot` and the tem
 The reported sensitivity check reweights both the reference ranking and the architecture rankings under the baseline, equal, and the entropy- and MEREC-derived vectors (see [Objective Weight Validation Scripts](#objective-weight-validation-scripts) below), applied pooled and per decision type, per model (never pooled across models -- see the no-pooling convention in `CLAUDE.md`).
 
 - **The LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional**: it holds in all 20 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
-- **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.663 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
+- **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.656 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
 
 Per the project's no-pooling-across-models convention, sensitivity results are reported and should be read per model, not as a four-model mean.
 

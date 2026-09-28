@@ -69,7 +69,10 @@ from sentinel_utils import (
     add_call_usage,
     build_openrouter_payload,
     call_log_fields,
+    CRITERIA,
+    extract_json_object,
     has_sentinel_scores,
+    is_numeric_score,
     init_usage_totals,
     log_run_event,
     merge_usage_totals,
@@ -400,13 +403,9 @@ def _validate_scores(response, diagnostics: Dict, alternative: str) -> Tuple[Dic
     diagnostics["success"] = False
 
     try:
-        text = response.strip()
-        if text.startswith("```"):
-            text = text.split("```", 2)[1]
-            if text.lower().startswith("json"):
-                text = text[4:]
-            text = text.strip()
-        scores = json.loads(text)
+        scores = extract_json_object(response, CRITERIA)
+        if scores is None:
+            raise ValueError("no JSON object with the criterion keys in the reply")
 
         diagnostics["success"] = True
         validation_failed = False
@@ -423,7 +422,7 @@ def _validate_scores(response, diagnostics: Dict, alternative: str) -> Tuple[Dic
 
             raw_score = scores[criterion]
 
-            if isinstance(raw_score, (int, float)):
+            if is_numeric_score(raw_score):
                 raw_value = float(raw_score)
                 if 0.0 <= raw_value <= 1.0:
                     validated_scores[criterion] = raw_value
