@@ -146,20 +146,20 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, obj
     # Rounding in the table makes the entropy rows sum to 0.999-1.001, so each
     # vector is renormalized before use.
     merec_tab = {
-        "HVAC": {"energy_cost": 0.138, "environmental": 0.128,
-                 "comfort": 0.663, "practicality": 0.071},
-        "Appliance": {"energy_cost": 0.208, "environmental": 0.044,
-                      "comfort": 0.292, "practicality": 0.456},
-        "Shower": {"energy_cost": 0.251, "environmental": 0.245,
-                   "comfort": 0.203, "practicality": 0.300},
+        "HVAC": {"energy_cost": 0.158, "environmental": 0.135,
+                 "comfort": 0.656, "practicality": 0.051},
+        "Appliance": {"energy_cost": 0.194, "environmental": 0.043,
+                      "comfort": 0.298, "practicality": 0.466},
+        "Shower": {"energy_cost": 0.250, "environmental": 0.246,
+                   "comfort": 0.203, "practicality": 0.302},
     }
     entropy_tab = {
-        "HVAC": {"energy_cost": 0.336, "environmental": 0.320,
-                 "comfort": 0.269, "practicality": 0.074},
-        "Appliance": {"energy_cost": 0.193, "environmental": 0.465,
-                      "comfort": 0.124, "practicality": 0.218},
-        "Shower": {"energy_cost": 0.335, "environmental": 0.316,
-                   "comfort": 0.122, "practicality": 0.227},
+        "HVAC": {"energy_cost": 0.337, "environmental": 0.315,
+                 "comfort": 0.278, "practicality": 0.070},
+        "Appliance": {"energy_cost": 0.190, "environmental": 0.467,
+                      "comfort": 0.124, "practicality": 0.219},
+        "Shower": {"energy_cost": 0.333, "environmental": 0.318,
+                   "comfort": 0.123, "practicality": 0.226},
     }
     for dt in DECISION_TYPES:
         arm = {d: dict(baseline) for d in DECISION_TYPES}

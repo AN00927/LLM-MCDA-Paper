@@ -52,34 +52,24 @@ warnings.filterwarnings("default")
 HVAC_DEFAULT_R_VALUE = 15
 HVAC_DEFAULT_SEER = 13
 HVAC_DEFAULT_HVAC_AGE = 13
-HVAC_DEFAULT_SQFT_BY_HOUSING_TYPE = {
-    "Single-family": 2000, "Townhouse": 1800, "Rowhouse": 1800,
-    "Apartment": 916, "Condo": 1100,
-}
-HVAC_DEFAULT_SQFT_FALLBACK = 2000
-HVAC_DEFAULT_HOUSEHOLD_SIZE = 2.54
-HVAC_DEFAULT_OUTDOOR_TEMP = 51.8
-HVAC_DEFAULT_UTILITY_BUDGET = 430
 HVAC_DEFAULT_OCCUPANCY_CONTEXT = "occupied_all_day"
 
+# Dryer 2.27 kWh/cycle = the DOE test load (8.45 lb, 10 CFR 430 Subpart B Appendix D1 sec. 2.7.1) over the
+# 2015 federal minimum CEF for a standard vented electric dryer (3.73 lb/kWh, 10 CFR 430.32(h)).
 APPLIANCE_DEFAULT_KWH_PER_CYCLE = {
-    "Washer": 0.55, "Dryer": 2.10, "Dishwasher": 1.00,
-    "washing_machine": 0.55, "dryer": 2.10, "dishwasher": 1.00,
+    "Washer": 0.55, "Dryer": 2.27, "Dishwasher": 1.00,
+    "washing_machine": 0.55, "dryer": 2.27, "dishwasher": 1.00,
 }
 APPLIANCE_DEFAULT_KWH_FALLBACK = 1.00
 APPLIANCE_DEFAULT_BASELINE_TIME = "7pm"
 APPLIANCE_DEFAULT_AGE_YEARS = 11
-APPLIANCE_DEFAULT_HOUSEHOLD_SIZE = 2.54
-APPLIANCE_DEFAULT_UTILITY_BUDGET = 430
-APPLIANCE_DEFAULT_HOUSING_TYPE = "Single-family"
 
 SHOWER_DEFAULT_GPM = 2.5
-SHOWER_DEFAULT_TANK_SIZE = 50
+# 40 gal: within the RECS 2020 Pennsylvania median water-heater size band (31-49 gal) and
+# the master-sheet mode.
+SHOWER_DEFAULT_TANK_SIZE = 40
 SHOWER_DEFAULT_WATER_HEATER_TEMP = 120
 SHOWER_DEFAULT_OUTDOOR_TEMP = 51.8
-SHOWER_DEFAULT_HOUSEHOLD_SIZE = 2.54
-SHOWER_DEFAULT_HOUSING_TYPE = "Single-family"
-SHOWER_DEFAULT_UTILITY_BUDGET = 430
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -348,7 +338,7 @@ def run_fixed_default_baseline(test_df):
         results.append(run_calculator_on_scenarios("Shower", scenarios["Shower"], ShowerGroundTruthCalculator, id_offset=offset))
     return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
 
-def run_nearest_neighbor_baseline(test_df, k=3, fallback="tie"):
+def run_nearest_neighbor_baseline(test_df, k=1, fallback="tie"):
     groups_by_type = load_source_groups()
     from run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
     import tempfile, shutil
@@ -470,7 +460,7 @@ def run_uniform_baseline(test_df):
         all_rows.append(ranked)
     return pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
 
-def run_all_baselines(test_df, baselines=None, k=3, nn_fallback="tie"):
+def run_all_baselines(test_df, baselines=None, k=1, nn_fallback="tie"):
     if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
     results = {}
     if 'random' in baselines:
@@ -487,7 +477,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
     parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
                         choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
-    parser.add_argument('--k', type=int, default=3, help='k for Nearest-Neighbor baseline')
+    # k = 1 matches the benchmark A_E, which retrieves one exemplar (author decision
+    # 2026-09-27: k = 1 stays fixed), so the copy-only baseline shows what A_E's LLM
+    # adds over copying the exemplar it retrieves. The RAG ablation's own copy-only
+    # control keeps k = 3 there.
+    parser.add_argument('--k', type=int, default=1, help='k for Nearest-Neighbor baseline (default 1, A_E\'s k)')
     parser.add_argument('--nn-fallback', choices=list(NN_FALLBACKS), default='tie',
                         help='Nearest-Neighbor rule for an alternative no exemplar shares: tie (mean over all '
                              'retrieved alternatives, the original rule), nearest (exemplar alternatives nearest '
