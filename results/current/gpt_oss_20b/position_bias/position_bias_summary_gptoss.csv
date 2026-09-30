@@ -1,0 +1,17 @@
+architecture,arm,arm_run,scope,metric,reversed,shipped_mean,shipped_sd,shipped_min,shipped_max,delta,delta_in_sd,within_shipped_range,n_shipped_runs,model
+Direct_LLM_Scoring,reversed,1,Overall,kendall_tau,0.0085,0.0325,0.0256,-0.0017,0.0667,-0.024,-0.94,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Overall,top1_accuracy,0.3333,0.3405,0.0219,0.3231,0.3692,-0.0072,-0.33,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Overall,top2_accuracy,0.641,0.6656,0.0315,0.6205,0.7077,-0.0246,-0.78,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Overall,spearman_rho,0.0179,0.038,0.0259,0.0026,0.0718,-0.0201,-0.78,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,HVAC,kendall_tau,-0.0476,0.0914,0.0749,0.0095,0.181,-0.139,-1.86,False,5,gptoss
+Direct_LLM_Scoring,reversed,1,HVAC,top1_accuracy,0.3286,0.3457,0.0421,0.2857,0.4,-0.0171,-0.41,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,HVAC,top2_accuracy,0.6429,0.7171,0.0341,0.6714,0.7571,-0.0742,-2.18,False,5,gptoss
+Direct_LLM_Scoring,reversed,1,HVAC,spearman_rho,-0.0286,0.1114,0.0849,0.0214,0.2,-0.14,-1.65,False,5,gptoss
+Direct_LLM_Scoring,reversed,1,Appliance,kendall_tau,-0.0769,-0.1139,0.0236,-0.1385,-0.0872,0.037,1.56,False,5,gptoss
+Direct_LLM_Scoring,reversed,1,Appliance,top1_accuracy,0.3538,0.3385,0.0243,0.3077,0.3692,0.0153,0.63,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Appliance,top2_accuracy,0.6,0.6093,0.0416,0.5385,0.6462,-0.0093,-0.22,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Appliance,spearman_rho,-0.0769,-0.1216,0.0227,-0.1462,-0.1,0.0447,1.97,False,5,gptoss
+Direct_LLM_Scoring,reversed,1,Shower,kendall_tau,0.1667,0.1222,0.1202,0.0,0.3,0.0445,0.37,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Shower,top1_accuracy,0.3167,0.3367,0.0519,0.2667,0.3833,-0.02,-0.38,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Shower,top2_accuracy,0.6833,0.6667,0.0936,0.6,0.8167,0.0166,0.18,True,5,gptoss
+Direct_LLM_Scoring,reversed,1,Shower,spearman_rho,0.175,0.125,0.1291,0.0,0.3167,0.05,0.39,True,5,gptoss

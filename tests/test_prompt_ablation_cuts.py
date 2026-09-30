@@ -13,6 +13,7 @@ No network, no paid calls.
 """
 import importlib.util
 import json
+import math
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -86,7 +87,7 @@ def test_main_suite_control_rows_scored_like_a_cell(tmp_path, monkeypatch):
     ok = out[out["scenario_id"] == 1]
     assert (ok["top1"] == 1.0).all() and np.allclose(ok["kendall_tau"], 1.0)
     bad = out[out["scenario_id"] == 2]
-    assert bad["failed"].all() and (bad["top1"] == 0.0).all() and bad["kendall_tau"].isna().all()
+    assert bad["failed"].all() and (bad["top1"] == 0.0).all() and (bad["kendall_tau"] == 0.0).all()
     assert (out["variant"] == "control").all()
 
 
@@ -157,13 +158,56 @@ HY = _load(EXP / "run_hybrid_ablation_experiments.py", "cuts_hybrid")
 
 def test_order_arm_default_collects_reversed_only(monkeypatch):
     assert HY.DEFAULT_ORDER_ARMS == ("reversed",)
-    assert HY.ORDER_ARM_DEFAULT_RUNS["reversed"] == 5
+    # Six reversed runs against the five main-suite A_H runs (author decision
+    # 2026-09-29): unequal groups, so the permutation floor is 1/462.
+    assert HY.ORDER_ARM_DEFAULT_RUNS["reversed"] == 6
     monkeypatch.setattr(sys, "argv", ["x", "--collect-only", "--models", "qwen"])
     calls = []
     monkeypatch.setattr(HY, "collect_order_arm",
                         lambda mk, run, arm: calls.append((mk, run, arm)))
     HY.main()
-    assert calls == [("qwen", r, "reversed") for r in range(1, 6)]
+    assert calls == [("qwen", r, "reversed") for r in range(1, 7)]
+
+
+def test_order_arm_run6_only_with_run_start(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["x", "--collect-only", "--models", "qwen",
+                                      "--order-run-start", "6"])
+    calls = []
+    monkeypatch.setattr(HY, "collect_order_arm",
+                        lambda mk, run, arm: calls.append((mk, run, arm)))
+    HY.main()
+    assert calls == [("qwen", 6, "reversed")]
+
+
+def test_permutation_floor_accounts_for_complement_symmetry():
+    assert HY.permutation_floor_p(5, 5) == pytest.approx(2 / 252)
+    assert HY.permutation_floor_p(6, 5) == pytest.approx(1 / 462)
+    assert np.isnan(HY.permutation_floor_p(0, 5))
+
+
+def _perm_tags(n_ship, n_rev, effect):
+    base = {s: s % 3 for s in range(60)}
+    alt = {s: (s + 1) % 3 for s in range(60)}
+    tags = {f"s{i}": dict(base) for i in range(n_ship)}
+    tags.update({f"r{i}": dict(alt if effect else base) for i in range(n_rev)})
+    return tags, [f"r{i}" for i in range(n_rev)], [f"s{i}" for i in range(n_ship)]
+
+
+def test_exchangeability_test_reaches_its_floor():
+    # Maximal effect: the observed labeling is the most extreme one, so p is
+    # exactly the design's floor (5 v 5: 2/252; 6 v 5: 1/462).
+    for n_rev, floor in ((5, 2 / 252), (6, 1 / 462)):
+        tags, rev, ship = _perm_tags(5, n_rev, effect=True)
+        sep, p, n = HY._exchangeability_test(tags, rev, ship)
+        assert n == math.comb(5 + n_rev, n_rev)
+        assert p == pytest.approx(floor)
+        assert p == pytest.approx(HY.permutation_floor_p(n_rev, 5))
+
+
+def test_exchangeability_test_null_is_one():
+    tags, rev, ship = _perm_tags(5, 6, effect=False)
+    _, p, _ = HY._exchangeability_test(tags, rev, ship)
+    assert p == pytest.approx(1.0)
 
 
 def test_order_arm_control_still_collectable_on_request(monkeypatch):

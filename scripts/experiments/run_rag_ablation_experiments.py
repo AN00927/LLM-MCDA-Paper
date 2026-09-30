@@ -1057,8 +1057,41 @@ def scenario_metrics(predictions: List[Dict], scenario: Dict) -> Dict:
     }
 
 
+# Failure rule (S4, author decisions 2026-09-29), the same one the main suite
+# applies (evaluate_architecture_metrics.FAILED_SCENARIO_*): a failed scenario
+# stays in every denominator; Top-1/Top-2 wrong (already so in scenario_metrics),
+# tau and rho 0 (chance), and the MAVT-score MAE/RMSE at the chance-level error
+# of a uniform-random score on the 0-1 scale, E|U - t| = (t^2 + (1-t)^2)/2 and
+# E(U - t)^2 = (t^3 + (1-t)^3)/3, from the scenario's reference MAVT scores t.
+FAILED_SCENARIO_TAU = 0.0
+FAILED_SCENARIO_RHO = 0.0
+
+
+def apply_failure_rule(scen: pd.DataFrame, rows_df: pd.DataFrame) -> pd.DataFrame:
+    """Fill the failed scenarios of the one-row-per-scenario frame `scen` under
+    the failure rule, using the per-alternative reference MAVT scores in
+    `rows_df`. Rows written before the rule (NaN tau/MAE) are fixed here, so
+    --recompute-significance-only applies it to already-collected data."""
+    if "scenario_failed" not in scen or not scen["scenario_failed"].astype(bool).any():
+        return scen
+    keys = ["model_key", "ablation_id", "ablation_label", "decision_type", "source_scenario_id"]
+    t = pd.to_numeric(rows_df["gt_mavt_score"], errors="coerce")
+    chance = (rows_df.assign(_abs=(t ** 2 + (1 - t) ** 2) / 2,
+                             _sq=(t ** 3 + (1 - t) ** 3) / 3)
+              .groupby(keys, dropna=False)[["_abs", "_sq"]].mean())
+    scen = scen.copy()
+    failed = scen["scenario_failed"].astype(bool)
+    idx = pd.MultiIndex.from_frame(scen.loc[failed, keys])
+    scen.loc[failed, "kendall_tau"] = FAILED_SCENARIO_TAU
+    scen.loc[failed, "spearman_rho"] = FAILED_SCENARIO_RHO
+    scen.loc[failed, "score_mae"] = chance["_abs"].reindex(idx).values
+    scen.loc[failed, "score_rmse"] = np.sqrt(chance["_sq"].reindex(idx).values)
+    return scen
+
+
 def scenario_level_df(rows_df: pd.DataFrame) -> pd.DataFrame:
-    return rows_df.drop_duplicates(["model_key", "ablation_id", "ablation_label", "decision_type", "source_scenario_id"]).copy()
+    scen = rows_df.drop_duplicates(["model_key", "ablation_id", "ablation_label", "decision_type", "source_scenario_id"]).copy()
+    return apply_failure_rule(scen, rows_df)
 
 
 def summarize_rows(rows: List[Dict]) -> pd.DataFrame:
@@ -1076,8 +1109,8 @@ def summarize_rows(rows: List[Dict]) -> pd.DataFrame:
             "ablation_id": ablation_id,
             "ablation_label": ablation_label,
             "n_scenarios": int(group["source_scenario_id"].nunique()),
-            # Scenarios counted WRONG in top1/top2_accuracy (denominator is
-            # n_scenarios); tau and MAE average only the scored ones.
+            # Failed scenarios stay in every denominator (failure rule, S4):
+            # wrong for Top-1/Top-2, chance level for tau, rho and MAE.
             "n_failed_scenarios": (int(group["scenario_failed"].astype(bool).sum())
                                    if "scenario_failed" in group else np.nan),
         }
@@ -1158,6 +1191,39 @@ def cliff_delta(x, y):
     else:
         interpretation = "large"
     return delta, interpretation
+
+
+def matched_pairs_rank_biserial(x, y):
+    """Matched-pairs rank-biserial correlation, the effect size that belongs to
+    the Wilcoxon signed-rank test (S3): (sum of positive ranks - sum of
+    negative ranks) / total rank sum, over the non-zero paired differences,
+    ranked by |d| with midranks. In [-1, 1]; positive means x > y. Returns
+    (r, n_nonzero); r is 0.0 when every difference is zero.
+
+    Cliff's delta (cliff_delta above) compares every x with every y, ignoring
+    the pairing, so next to a paired test it can read "negligible" for a large
+    paired effect. It is kept as a descriptive column only."""
+    from scipy.stats import rankdata
+    d = np.asarray(x, dtype=float) - np.asarray(y, dtype=float)
+    d = d[np.isfinite(d) & (d != 0)]
+    if len(d) == 0:
+        return 0.0, 0
+    r = rankdata(np.abs(d))
+    return float((r[d > 0].sum() - r[d < 0].sum()) / r.sum()), int(len(d))
+
+
+def rank_biserial_interpretation(r):
+    """Magnitude label for a rank-biserial correlation (|r| < 0.1 negligible,
+    < 0.3 small, < 0.5 medium, else large), the correlation thresholds the
+    main-suite significance script uses."""
+    a = abs(r)
+    if a < 0.1:
+        return "negligible"
+    if a < 0.3:
+        return "small"
+    if a < 0.5:
+        return "medium"
+    return "large"
 
 
 def friedman_test_per_metric(scenario_df: pd.DataFrame, metric_cols: List[str],
@@ -1327,12 +1393,16 @@ def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
                 stat, p_val = wilcoxon(vi, vj, alternative='two-sided')
             except ValueError:
                 continue
-            delta, delta_interp = cliff_delta(vi, vj)
+            delta, delta_interp = cliff_delta(vi, vj)   # unpaired, descriptive only
+            rb, n_nonzero = matched_pairs_rank_biserial(vi, vj)
             pairs.append({
                 'config_i': ci,
                 'config_j': cj,
                 'statistic': float(stat),
                 'p_value': float(p_val),
+                'rank_biserial': rb,
+                'rank_biserial_interpretation': rank_biserial_interpretation(rb),
+                'n_nonzero': n_nonzero,
                 'cliff_delta': delta,
                 'cliff_delta_interpretation': delta_interp,
                 'n_pairs': n_pairs,
@@ -1341,7 +1411,8 @@ def posthoc_wilcoxon_holm(scenario_df: pd.DataFrame, metric: str,
     if not pairs:
         return pd.DataFrame(columns=[
             'config_i', 'config_j', 'statistic', 'p_value', 'p_holm',
-            'significant_holm', 'cliff_delta', 'cliff_delta_interpretation', 'n_pairs',
+            'significant_holm', 'rank_biserial', 'rank_biserial_interpretation',
+            'n_nonzero', 'cliff_delta', 'cliff_delta_interpretation', 'n_pairs',
         ])
 
     pairs_df = pd.DataFrame(pairs).sort_values('p_value').reset_index(drop=True)

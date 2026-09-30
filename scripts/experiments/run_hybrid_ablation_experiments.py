@@ -65,8 +65,13 @@ were collected days earlier and recorded no timestamps, so a reversed-vs-shipped
 gap could be an ordering effect or provider-side drift. The 2026-09 rerun
 collects every arm and the main suite in one timestamped window, so the control
 arm is no longer collected by default (author decision 2026-09-27): the
-reference group is the main suite's five A_H runs, and the test has C(10,5) =
-252 relabelings (floor p = 0.004). `--order-arms control` still collects it.
+reference group is the main suite's five A_H runs. The reversed arm has SIX runs
+(author decision 2026-09-29): with 5 against 5, every relabeling and its
+complement give the same statistic, so the floor was 2/252 = 0.0079 and Holm
+over the 4 models x 2 statistics could never reach 0.05 (8 x 0.0079 = 0.063).
+With 6 reversed against 5 the test has C(11,5) = 462 relabelings, no
+complement symmetry, floor p = 1/462 = 0.0022 and a Holm floor of 8/462 =
+0.017. `--order-arms control` still collects the control arm.
 
 The headline test is an exact label-permutation test over the runs rather than
 per-pair McNemar. A_H's shipped runs disagree on top-1 for only about 5-15 of 195
@@ -83,9 +88,11 @@ set the paper reports:
 
     python "Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py" --collect-only
 
-With no flags that collects the paper's design: the reversed arm, runs 1-5
-(DEFAULT_ORDER_ARMS, ORDER_ARM_DEFAULT_RUNS), i.e. 195 x 5 x 4 = 3,900 calls.
-Run one model per process to parallelise.
+With no flags that collects the paper's design: the reversed arm, runs 1-6
+(DEFAULT_ORDER_ARMS, ORDER_ARM_DEFAULT_RUNS), i.e. 195 x 6 x 4 = 4,680 calls.
+Run one model per process to parallelise. To add run 6 to an arm whose runs 1-5
+exist, pass --order-run-start 6: re-running a completed index retries its
+failed scenarios and rewrites a run that has already been analysed.
 
 Raw prompts and raw model responses are written to a per-model jsonl alongside
 the tidy workbook, so any statistic here can be recomputed later without paying
@@ -95,12 +102,13 @@ Passing --models with a subset OVERWRITES the analysis workbooks with only those
 models. The omitted models are not merged back in, so a partial run silently
 drops them from the shipped results. Narrow the set only when collecting.
 
-Sentinel handling: a scenario whose extraction failed carries the 1928 sentinel
-and is excluded from that arm's metrics rather than being silently replaced by a
-neutral default. Per-arm scenario counts are reported so any exclusion is visible.
+Failure rule (S4, 2026-09-29, the same as the main suite's): a scenario whose
+extraction or scoring failed stays in the denominator at chance-level values --
+Top-1 wrong, Kendall tau 0, MAE the expected error of a uniform-random score
+(see failed_scenario_values). Per-arm scored counts are reported alongside.
 
 Aggregation: a multi-run arm is summarised the way the main text summarises A_H:
-each run's metric over the scenarios that run scored, then the mean over runs.
+each run's metric over all 195 scenarios, then the mean over runs.
 """
 
 import argparse
@@ -110,6 +118,7 @@ import importlib.util
 import io
 import itertools
 import json
+import math
 import sys
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -160,14 +169,16 @@ ORDER_ARMS = ("reversed", "control")
 # control arm is cut; see the module docstring).
 DEFAULT_ORDER_ARMS = ("reversed",)
 
-# Runs per order arm. The paper's design since 2026-09-27: each model's ten runs
-# are the five main-benchmark A_H runs and five reversed runs, so the
-# permutation test has C(10,5) = 252 labelings. The control total applies only
+# Runs per order arm. The paper's design since 2026-09-29: each model's eleven
+# runs are the five main-benchmark A_H runs and six reversed runs, so the
+# permutation test has C(11,5) = 462 labelings and floor p = 1/462 (unequal
+# groups, so no labeling shares its statistic with its complement; see
+# permutation_floor_p). The control total applies only
 # when --order-arms control is passed. A single reversed run could only be placed
 # against the shipped runs' spread, never given a spread of its own; five let
 # the reversed arm carry its own run-to-run variance. With no --order-runs,
 # each arm is collected up to its own total here.
-ORDER_ARM_DEFAULT_RUNS = {"reversed": 5, "control": 3}
+ORDER_ARM_DEFAULT_RUNS = {"reversed": 6, "control": 3}
 
 # Hidden engineering parameters the LLM is asked to estimate, by decision type.
 # Must stay in lockstep with the extraction prompt in
@@ -848,6 +859,27 @@ def scenario_metrics(arm_scored: List[Dict], ref_scored: List[Dict]) -> Optional
 # Driver
 # ---------------------------------------------------------------------------
 
+# Failure rule (S4, author decisions 2026-09-29), the same as the main suite's
+# (evaluate_architecture_metrics.FAILED_SCENARIO_*): a failed scenario-run stays
+# in every denominator, Top-1 wrong (0), Kendall tau at chance (0), and MAE at
+# the chance-level error of a uniform-random score on the 0-1 scale,
+# E|U - t| = (t^2 + (1 - t)^2) / 2, averaged over the reference's criterion
+# scores t of that scenario.
+FAILED_SCENARIO_TAU = 0.0
+FAILED_SCENARIO_TOP1 = 0.0
+
+
+def failed_scenario_values(ref_scored: Optional[List[Dict]]) -> Dict[str, float]:
+    """Metric values of a failed scenario-run under the failure rule. NaN only
+    when the reference itself could not be scored (no scenario to score)."""
+    if ref_scored is None:
+        return {"kendall_tau": np.nan, "top1": np.nan, "mae": np.nan}
+    t = np.array([float(a[c]) for a in ref_scored for c in CRITERIA], dtype=float)
+    t = t[np.isfinite(t)]
+    mae = float(np.mean((t ** 2 + (1 - t) ** 2) / 2)) if len(t) else np.nan
+    return {"kendall_tau": FAILED_SCENARIO_TAU, "top1": FAILED_SCENARIO_TOP1, "mae": mae}
+
+
 def extracted_params(row: pd.Series, decision_type: str) -> Optional[Dict[str, object]]:
     groups = HIDDEN_PARAMS[decision_type]
     if str(row.get("extraction_failed", "")).strip().lower() in {"true", "1", "yes"}:
@@ -957,18 +989,18 @@ def run(args) -> pd.DataFrame:
                         (arm_id, tag,
                          extracted_params(runs[tag][sid], dtype) if ok else None))
 
+            failed_values = failed_scenario_values(ref_scored)
             for arm_id, source_run, p in arm_entries:
                 if p is None:
                     records.append({"model": model_key, "arm": arm_id,
                                     "source_run": source_run, "decision_type": dtype,
-                                    "scenario_id": sid, "kendall_tau": np.nan,
-                                    "top1": np.nan, "mae": np.nan, "failed": True})
+                                    "scenario_id": sid, **failed_values, "failed": True})
                     continue
                 scored = score_scenario(dtype, build_scenario(dtype, test_row, gt_row, p))
                 m = scenario_metrics(scored, ref_scored)
                 rec = {"model": model_key, "arm": arm_id, "source_run": source_run,
                        "decision_type": dtype, "scenario_id": sid, "failed": m is None}
-                rec.update(m or {"kendall_tau": np.nan, "top1": np.nan, "mae": np.nan})
+                rec.update(m or failed_values)
                 records.append(rec)
         print(f"  matched {matched}/{matched + unmatched} scenarios"
               + (f" ({unmatched} unmatched)" if unmatched else ""))
@@ -1038,10 +1070,9 @@ def _exchangeability_test(per_tag: Dict[str, Dict[int, object]],
     Under the null that alternative order does nothing, a reversed run is just
     another run: which runs carry the 'reversed' label is arbitrary. So relabel
     every way -- C(n, k) assignments for k reversed runs among n total -- and
-    ask how often the observed separation is matched or beaten. The shipped
-    collection is 5 reversed against 8 in the shipped order (5 original plus 3
-    contemporaneous controls), so the primary pooled basis has C(13,5) = 1287
-    relabelings.
+    ask how often the observed separation is matched or beaten. The 2026-09
+    design is 6 reversed runs against the 5 main-suite A_H runs, C(11,5) = 462
+    relabelings (the identity labeling included).
 
     Statistic: mean within-group agreement minus mean between-group agreement.
     Large and positive means runs agree with their own group more than across
@@ -1051,9 +1082,10 @@ def _exchangeability_test(per_tag: Dict[str, Dict[int, object]],
     uses all 195 scenarios rather than the 5-15 discordant ones, so it is not
     power-starved. It handles the dependence between comparisons that share a
     run, instead of presenting one correlated signal as several confirmations.
-    And it needs no distributional assumption. The floor is p = 1/C(n, k),
-    which on the shipped pooled basis is 1/1287 = 0.00078 and bounds how strong
-    a claim this design can support. The count is derived from the data at run
+    And it needs no distributional assumption. The floor is
+    permutation_floor_p(k, n - k): 1/C(n, k) for unequal groups, 2/C(n, k) for
+    equal ones (a labeling and its complement are the same partition). For
+    6 vs 5 that is 1/462 = 0.0022. The count is derived from the data at run
     time and recorded in the `*_n_relabelings` columns, so it stays right if
     the run counts change.
     """
@@ -1081,8 +1113,28 @@ def _exchangeability_test(per_tag: Dict[str, Dict[int, object]],
     null = [v for v in null if not np.isnan(v)]
     if not null or np.isnan(observed):
         return observed, np.nan, len(null)
-    p = sum(1 for v in null if v >= observed) / len(null)
+    # Tolerance: separations that are mathematically equal but summed in a
+    # different order must count as ties, or p is slightly anti-conservative.
+    p = sum(1 for v in null if v >= observed - PERM_TIE_TOL) / len(null)
     return observed, float(p), len(null)
+
+
+# Float tolerance for ties between a relabeling's separation and the observed one.
+PERM_TIE_TOL = 1e-12
+
+
+def permutation_floor_p(n_reversed: int, n_reference: int) -> float:
+    """Smallest p the label-permutation test can return.
+
+    The separation statistic depends only on the partition of the runs into two
+    groups. With equal group sizes a labeling and its complement are the same
+    partition, so every value appears (at least) twice among the C(n, k)
+    labelings and the floor is 2 / C(n, k); with unequal sizes it is
+    1 / C(n, k). 5 vs 5: 2/252 = 0.0079. 6 vs 5: 1/462 = 0.0022."""
+    n = n_reversed + n_reference
+    if n_reversed == 0 or n_reference == 0:
+        return float("nan")
+    return (2 if n_reversed == n_reference else 1) / math.comb(n, n_reversed)
 
 
 def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -1141,16 +1193,19 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
             for tag, by_sid in sources.items():
                 params = by_sid.get(sid)
                 signature[tag][sid] = _param_signature(params)
+                # Failure rule (S4): a failed scenario-run is a Top-1 miss in
+                # the McNemar counts. Choice and parameter agreement are not
+                # accuracy metrics; a failed run has no choice to compare.
                 if params is None:
                     choice[tag][sid] = None
-                    correct[tag][sid] = None
+                    correct[tag][sid] = FAILED_SCENARIO_TOP1
                     continue
                 scored = score_scenario(dtype, build_scenario(
                     dtype, test_row, gt_row, params))
                 if scored is None or any(is_sentinel(a[c])
                                          for a in scored for c in CRITERIA):
                     choice[tag][sid] = None
-                    correct[tag][sid] = None
+                    correct[tag][sid] = FAILED_SCENARIO_TOP1
                     continue
                 ranked = apply_mavt_ranking(scored)["ranked_alternatives"]
                 top1 = ranked[0] if ranked else None
@@ -1217,9 +1272,8 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
         #   control : reversed vs the same-session control. Session held fixed,
         #             so an effect here cannot be provider drift. Only C(8,5) =
         #             56 relabelings, so its floor is p = 0.018.
-        #   shipped : reversed vs the older shipped runs. C(10,5) = 252
-        #             relabelings, but cross-session, so drift and ordering are
-        #             confounded.
+        #   shipped : reversed vs the main-suite runs. C(11,5) = 462
+        #             relabelings with the six-run reversed arm (floor 1/462).
         #   pooled  : reversed vs shipped AND control together. Both are the
         #             shipped alternative order -- session is a nuisance factor,
         #             not the manipulation -- so pooling them is grouping by
@@ -1265,6 +1319,8 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
             "perm_param_separation": param_sep,
             "perm_param_p": param_p,
             "perm_n_relabelings": n_perm,
+            "perm_floor_p": permutation_floor_p(
+                len(rev_tags), len(bases[basis])),
             "n_control_runs": len(ctrl_tags),
             # Drift diagnostic. Same prompt, different session. Read against
             # within_shipped_*: if they match, the shipped and control runs are
@@ -1319,14 +1375,14 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
 
 
 def _run_means(g: pd.DataFrame) -> pd.DataFrame:
-    """One row per source run: that run's metrics over the scenarios it scored.
-    Failed scenario-runs are dropped from their own run and nowhere else."""
+    """One row per source run: that run's metrics over ALL its scenarios, a
+    failed scenario-run entering at the failure rule's values (S4)."""
     rows = []
     for tag, r in g.groupby(g["source_run"].fillna(""), sort=True):
         ok = r[~r["failed"].astype(bool)]
         rows.append({"source_run": tag, "n": len(r), "n_scored": len(ok),
-                     "kendall_tau": ok["kendall_tau"].mean(),
-                     "top1": ok["top1"].mean(), "mae": ok["mae"].mean()})
+                     "kendall_tau": r["kendall_tau"].mean(),
+                     "top1": r["top1"].mean(), "mae": r["mae"].mean()})
     return pd.DataFrame(rows)
 
 
@@ -1364,11 +1420,9 @@ def like_for_like(df: pd.DataFrame) -> pd.DataFrame:
     """Extraction gain over the dataset median on the same scenarios.
 
     For each run of the `extracted` arm, the dataset-median arm is averaged
-    over exactly the scenarios that run scored, and the gain is taken run by
-    run, then averaged over runs. Subtracting the all-scenario median from the
-    per-run A_H mean instead mixes two scenario bases whenever a model has
-    failures (for gptoss the median drops from 0.641 to 0.597 on the scenarios
-    its runs scored)."""
+    over the same scenarios as that run -- all of them, since a failed
+    scenario-run stays in at the failure rule's values (S4) -- and the gain is
+    taken run by run, then averaged over runs."""
     rows = []
     for model, g in df.groupby("model", sort=False):
         ext = g[g["arm"] == "extracted"]
@@ -1380,9 +1434,9 @@ def like_for_like(df: pd.DataFrame) -> pd.DataFrame:
             for tag, r in ext.groupby("source_run", sort=True):
                 r = r if dtype == "Overall" else r[r["decision_type"] == dtype]
                 ok = r[~r["failed"].astype(bool)]
-                sids = ok["scenario_id"].values
+                sids = r["scenario_id"].values
                 per_run.append({
-                    "ext_tau": ok["kendall_tau"].mean(), "ext_top1": ok["top1"].mean(),
+                    "ext_tau": r["kendall_tau"].mean(), "ext_top1": r["top1"].mean(),
                     "dm_tau": dm.loc[sids, "kendall_tau"].mean(),
                     "dm_top1": dm.loc[sids, "top1"].mean(),
                     "n_scored": len(ok)})
@@ -1510,13 +1564,13 @@ def main():
 
         print("\n\n=== Alternative-order arm: exact label-permutation test ===")
         print("Under the null that ordering does nothing, a reversed run is just "
-              "another run. Relabel all C(8,3)=56 ways and ask how often the "
-              "observed within-minus-between separation is matched. Separation "
-              "near zero means the reversed runs are indistinguishable from more "
-              "shipped runs. Floor is p=0.018, so that is the strongest claim "
-              "this design supports.")
+              "another run. Every relabeling of the runs is enumerated "
+              "(perm_n_relabelings) and p is the share whose within-minus-between "
+              "separation matches or beats the observed one. perm_floor_p is the "
+              "smallest p the design can return.")
         show = ["model", "n_reversed_runs", "perm_choice_separation", "perm_choice_p",
-                "perm_param_separation", "perm_param_p", "perm_n_relabelings"]
+                "perm_param_separation", "perm_param_p", "perm_n_relabelings",
+                "perm_floor_p"]
         print(order_summary[show].to_string(index=False,
                                             float_format=lambda v: f"{v:.4f}"))
 
@@ -1552,7 +1606,10 @@ def main():
                   f"group). Separation is mean within-group agreement minus mean "
                   f"between-group agreement; p is the fraction of the "
                   f"{_n_relab} relabelings matching or beating it. Floor p = "
-                  f"{1 / _n_relab:.5f}.", "",
+                  f"{permutation_floor_p(_n_rev, _n_ship + _n_ctrl):.5f}; Holm floor "
+                  f"over the {int(order_summary[['perm_choice_p', 'perm_param_p']].notna().sum().sum())} "
+                  f"tests = "
+                  f"{int(order_summary[['perm_choice_p', 'perm_param_p']].notna().sum().sum()) * permutation_floor_p(_n_rev, _n_ship + _n_ctrl):.4f}.", "",
                   _md(order_summary[show]), "",
                   "Descriptive agreement bands:", "",
                   _md(order_summary[desc])]

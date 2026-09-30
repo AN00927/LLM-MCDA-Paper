@@ -2,10 +2,19 @@
 """
 competitive_baselines.py - task P1.5 of the EMS revision plan.
 
-QUESTION. Does A_E beat a fixed default? The manuscript recommends A_E as the
-practical option for domains where a calculator cannot be built. That
-recommendation only survives if A_E beats the trivial non-LLM baselines a
-practitioner already has.
+QUESTION. Does A_E beat a fixed default, and does it beat copying the ranking
+of the one exemplar it retrieves (the NearestNeighbor copy baseline, k = 1)?
+The manuscript recommends A_E as the practical option for domains where a
+calculator cannot be built. That recommendation only survives if A_E beats the
+trivial non-LLM baselines a practitioner already has.
+
+TESTS (S7). Per model, a paired Wilcoxon signed-rank test on the 195 Test
+scenarios: A_E's per-scenario value (the mean over its runs, failure rule S4
+applied: a failed scenario-run is wrong for Top-1 and at tau 0) against the
+baseline's value on the same scenario, paired by the matched ground-truth
+scenario. Effect size: matched-pairs rank-biserial (positive = A_E higher).
+Holm family: every test in this file, (number of models) x 2 baselines
+(FixedDefault, NearestNeighbor) x 2 metrics (tau, Top-1) = 16 with four models.
 
 WHAT THIS REPORTS, per model and per decision type:
   * A_E on Kendall's tau and Top-1 (per-run mean, then mean across runs -- the
@@ -52,6 +61,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from model_config import CRITERIA, MODEL_SPECS  # noqa: E402
+from sentinel_utils import _is_complete_run_file  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from single_criterion import expected_tau, top1_credit  # noqa: E402
 
@@ -62,6 +72,10 @@ _cm_spec.loader.exec_module(_cm)
 
 PER_RUN_CSV = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
 BASELINE_CSV = PROJECT_ROOT / "Output Files" / "Baselines" / "baseline_metrics.csv"
+BASELINE_DIR = PROJECT_ROOT / "Output Files" / "Baselines"
+BASELINE_FILES = {"FixedDefault": "baseline_fixeddefault.xlsx",
+                  "NearestNeighbor": "baseline_nearestneighbor.xlsx"}
+TEST_METRICS = {"kendall_tau": "tau", "top1": "Top-1"}
 OUT_XLSX = PROJECT_ROOT / "Analysis" / "competitive_baselines.xlsx"
 OUT_MD = PROJECT_ROOT / "Analysis" / "competitive_baselines.md"
 
@@ -95,9 +109,9 @@ def ae_by_type():
 # FixedDefault
 # ---------------------------------------------------------------------------
 
-def fixeddefault_by_type():
+def baseline_by_type(name="FixedDefault", prefix="FD"):
     df = pd.read_csv(BASELINE_CSV)
-    df = df[df["baseline"] == "FixedDefault"]
+    df = df[df["baseline"] == name]
     piv = df.pivot_table(index="decision_type", columns="metric",
                          values="value", aggfunc="first")
     out = []
@@ -106,10 +120,103 @@ def fixeddefault_by_type():
             continue
         out.append({
             "decision_type": "Overall" if dt == "Overall_pooled" else dt,
-            "FD_tau": float(piv.loc[dt, "kendall_tau"]),
-            "FD_top1": float(piv.loc[dt, "top1_accuracy"]),
+            f"{prefix}_tau": float(piv.loc[dt, "kendall_tau"]),
+            f"{prefix}_top1": float(piv.loc[dt, "top1_accuracy"]),
         })
     return pd.DataFrame(out)
+
+
+def fixeddefault_by_type():
+    return baseline_by_type("FixedDefault", "FD")
+
+
+# ---------------------------------------------------------------------------
+# Paired tests: A_E vs each baseline, per model (S7)
+# ---------------------------------------------------------------------------
+
+def _per_scenario(merged):
+    """Per-scenario tau / Top-1 under the failure rule, keyed by the matched
+    ground-truth scenario (decision_type, gt_scenario_id), which is the same
+    for an architecture run and a baseline file."""
+    ps = _cm.per_scenario_ranking_metrics(merged)
+    key = merged.groupby("arch_scenario_id")["gt_scenario_id"].first()
+    ps = ps.join(key, on="arch_scenario_id")
+    ps["key"] = list(zip(ps["decision_type"], ps["gt_scenario_id"].astype(str)))
+    return ps.set_index("key")[list(TEST_METRICS)]
+
+
+def _gt_lookups():
+    config = _cm._build_config(sorted(MODEL_SPECS)[0])
+    gt = _cm.load_ground_truth(config)
+    return _cm.build_gt_lookup(gt), _cm.build_gt_id_lookup(gt)
+
+
+def baseline_per_scenario(name, lookups):
+    df = pd.read_excel(BASELINE_DIR / BASELINE_FILES[name])
+    df = df.rename(columns={f"{c}_score": c for c in CRITERIA})
+    for col in ("question", "location", "alternative"):
+        df[col] = df[col].astype(str).str.strip()
+    arch = _cm.load_architecture(df, name)
+    merged, _ = _cm.match_scenarios(*lookups, arch, name)
+    return _per_scenario(merged)
+
+
+def ae_per_scenario(model_key, lookups):
+    """A_E per scenario: each run scored under the failure rule, then the mean
+    over runs."""
+    folder = PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"]
+    runs = [p for p in sorted(folder.glob(f"{AE}_results_run_*.xlsx"))
+            if _is_complete_run_file(p)]
+    parts = []
+    for p in runs:
+        merged, _ = _cm.match_scenarios(*lookups, _cm.load_architecture(p, AE), AE)
+        parts.append(_per_scenario(merged))
+    if not parts:
+        return None, 0
+    return pd.concat(parts).groupby(level=0).mean(), len(parts)
+
+
+def _load_rag_stats():
+    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
+    spec = spec_from_file_location("competitive_rag_stats", path)
+    mod = module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def paired_tests(models=None):
+    """One paired Wilcoxon per (model, baseline, metric), Holm over all of them."""
+    rag = _load_rag_stats()
+    lookups = _gt_lookups()
+    base = {name: baseline_per_scenario(name, lookups) for name in BASELINE_FILES}
+    rows = []
+    for model_key in (models or list(MODEL_SPECS)):
+        ae, n_runs = ae_per_scenario(model_key, lookups)
+        if ae is None:
+            print(f"  [SKIP] {model_key}: no A_E run files")
+            continue
+        for name, b in base.items():
+            both = ae.join(b, lsuffix="_ae", rsuffix="_base", how="inner")
+            for metric, label in TEST_METRICS.items():
+                x = both[f"{metric}_ae"].values.astype(float)
+                y = both[f"{metric}_base"].values.astype(float)
+                if np.allclose(x, y):
+                    stat, p = 0.0, 1.0
+                else:
+                    stat, p = stats.wilcoxon(x, y, alternative="two-sided")
+                rb, n_nonzero = rag.matched_pairs_rank_biserial(x, y)
+                rows.append({"model": model_key, "baseline": name, "metric": label,
+                             "n_runs_AE": n_runs, "n_pairs": len(both),
+                             "n_nonzero": n_nonzero,
+                             "AE_mean": float(np.mean(x)), "baseline_mean": float(np.mean(y)),
+                             "diff": float(np.mean(x - y)),
+                             "statistic": float(stat), "p_value": float(p),
+                             "rank_biserial": rb})
+    out = pd.DataFrame(rows)
+    if len(out):
+        out["p_holm"], out["significant_holm"] = rag.holm_correct(out["p_value"].values)
+        out["holm_family_size"] = int(out["p_value"].notna().sum())
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +292,7 @@ def main():
 
     ae = ae_by_type()
     fd = fixeddefault_by_type()
+    nn = baseline_by_type("NearestNeighbor", "NN")
     print(f"  A_E cells: {len(ae)}")
     print(f"  FixedDefault rows: {len(fd)}")
 
@@ -192,11 +300,18 @@ def main():
     sc = single_criterion_baseline(ref)
     print(f"  Single-criterion rows: {len(sc)}")
 
-    head = ae.merge(fd, on="decision_type", how="left")
+    head = ae.merge(fd, on="decision_type", how="left").merge(nn, on="decision_type", how="left")
     head["d_tau"] = head["AE_tau"] - head["FD_tau"]
     head["d_top1"] = head["AE_top1"] - head["FD_top1"]
     head["AE_beats_FD_tau"] = head["d_tau"] > 0
     head["AE_beats_FD_top1"] = head["d_top1"] > 0
+    head["d_tau_NN"] = head["AE_tau"] - head["NN_tau"]
+    head["d_top1_NN"] = head["AE_top1"] - head["NN_top1"]
+    head["AE_beats_NN_tau"] = head["d_tau_NN"] > 0
+    head["AE_beats_NN_top1"] = head["d_top1_NN"] > 0
+
+    tests = paired_tests()
+    print(f"  Paired tests: {len(tests)} (Holm across all of them)")
     order = {"Overall": 0, "HVAC": 1, "Appliance": 2, "Shower": 3}
     head = head.sort_values(["model", "decision_type"],
                             key=lambda s: s.map(order) if s.name == "decision_type" else s)
@@ -213,6 +328,7 @@ def main():
         head.to_excel(xw, sheet_name="AE_vs_FixedDefault", index=False)
         sc.to_excel(xw, sheet_name="SingleCriterionArgmax", index=False)
         best.to_excel(xw, sheet_name="BestSingleCriterion", index=False)
+        tests.to_excel(xw, sheet_name="PairedTests_AE_vs_baselines", index=False)
     print(f"  Wrote {OUT_XLSX.relative_to(PROJECT_ROOT)}")
 
     lines = []
@@ -236,7 +352,24 @@ def main():
     lines.append("**A_E beats FixedDefault in %d of %d cells on tau and %d of %d on Top-1.**"
                  % (win_tau, n_cells, win_t1, n_cells))
     lines.append("")
-
+    lines.append("## A_E vs the NearestNeighbor copy baseline (k = 1), per model and decision type\n")
+    lines.append("| Model | Decision type | A_E tau | NN tau | d tau | A_E Top-1 | NN Top-1 | d Top-1 |")
+    lines.append("|---|---|---|---|---|---|---|---|")
+    for _, r in head.iterrows():
+        lines.append("| %s | %s | %.4f | %.4f | %+.4f | %.4f | %.4f | %+.4f |" % (
+            r["model"], r["decision_type"], r["AE_tau"], r["NN_tau"], r["d_tau_NN"],
+            r["AE_top1"], r["NN_top1"], r["d_top1_NN"]))
+    lines.append("")
+    lines.append("## Paired Wilcoxon, A_E vs each baseline (per model; Holm over all %d tests)\n"
+                 % len(tests))
+    lines.append("| Model | Baseline | Metric | A_E | Baseline | diff | n pairs | n non-zero | p | p Holm | rank-biserial |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|")
+    for _, r in tests.iterrows():
+        lines.append("| %s | %s | %s | %.4f | %.4f | %+.4f | %d | %d | %.3g | %.3g | %+.3f |" % (
+            r["model"], r["baseline"], r["metric"], r["AE_mean"], r["baseline_mean"],
+            r["diff"], r["n_pairs"], r["n_nonzero"], r["p_value"], r["p_holm"],
+            r["rank_biserial"]))
+    lines.append("")
     lines.append("## Single-criterion argmax baseline, per decision type\n")
     lines.append("| Decision type | n | Criterion | tau | Top-1 |")
     lines.append("|---|---|---|---|---|")

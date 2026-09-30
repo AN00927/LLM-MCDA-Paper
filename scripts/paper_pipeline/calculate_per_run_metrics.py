@@ -40,6 +40,10 @@ build_gt_id_lookup = _cm.build_gt_id_lookup
 match_scenarios = _cm.match_scenarios
 filter_failed_scenarios = _cm.filter_failed_scenarios
 compute_criterion_metrics = _cm.compute_criterion_metrics
+# Failure rule (S4): every matched scenario is in the denominator; see
+# evaluate_architecture_metrics.FAILED_SCENARIO_* for the per-metric values.
+compute_ranking_metrics_inclusive = _cm.compute_ranking_metrics_inclusive
+compute_criterion_metrics_inclusive = _cm.compute_criterion_metrics_inclusive
 _build_config = _cm._build_config
 
 OUTPUT_DIR = PROJECT_ROOT / "paper" / "per_run_metrics"
@@ -147,10 +151,13 @@ def compute_per_run_metrics_for_model(model_key):
             clean, n_failed, n_total = filter_failed_scenarios(merged)
             if clean.empty:
                 print(f"    [WARN] {arch_name} run {run_num:02d}: all scenarios failed")
-                continue
 
-            criterion_metrics = compute_criterion_metrics(clean)
-            ranking_metrics = compute_ranking_metrics_local(clean)
+            # Failure rule (S4): computed on the unfiltered frame, so a failed
+            # scenario counts as wrong (Top-1/Top-2) and at chance (tau/rho) with
+            # every matched scenario in the denominator. `n_scenarios` stays the
+            # count of SCORED scenarios (n_scored); `n_total` is the denominator.
+            criterion_metrics = compute_criterion_metrics_inclusive(merged)
+            ranking_metrics = compute_ranking_metrics_inclusive(merged)
 
             all_rows.append({
                 "architecture": arch_name,
@@ -171,18 +178,18 @@ def compute_per_run_metrics_for_model(model_key):
                 "environmental_rmse": criterion_metrics.get("environmental_RMSE", float("nan")),
                 "comfort_rmse": criterion_metrics.get("comfort_RMSE", float("nan")),
                 "practicality_rmse": criterion_metrics.get("practicality_RMSE", float("nan")),
-                "n_scenarios": ranking_metrics.get("n_scenarios_evaluated", 0),
-                "n_failed": n_failed,
-                "n_total": n_total,
+                "n_scenarios": ranking_metrics["n_scored"],
+                "n_failed": ranking_metrics["n_failed"],
+                "n_total": ranking_metrics["n_scenarios_evaluated"],
                 "model": model_key,
             })
 
             for dt in DECISION_TYPES:
-                dt_clean = clean[clean["decision_type"] == dt]
-                if dt_clean.empty:
+                dt_merged = merged[merged["decision_type"] == dt]
+                if dt_merged.empty:
                     continue
-                dt_crit = compute_criterion_metrics(dt_clean)
-                dt_rank = compute_ranking_metrics_local(dt_clean)
+                dt_crit = compute_criterion_metrics_inclusive(dt_merged)
+                dt_rank = compute_ranking_metrics_inclusive(dt_merged)
                 all_rows.append({
                     "architecture": arch_name,
                     "run": run_num,
@@ -202,9 +209,9 @@ def compute_per_run_metrics_for_model(model_key):
                     "environmental_rmse": dt_crit.get("environmental_RMSE", float("nan")),
                     "comfort_rmse": dt_crit.get("comfort_RMSE", float("nan")),
                     "practicality_rmse": dt_crit.get("practicality_RMSE", float("nan")),
-                    "n_scenarios": dt_rank.get("n_scenarios_evaluated", 0),
-                    "n_failed": 0,
-                    "n_total": 0,
+                    "n_scenarios": dt_rank["n_scored"],
+                    "n_failed": dt_rank["n_failed"],
+                    "n_total": dt_rank["n_scenarios_evaluated"],
                     "model": model_key,
                 })
 

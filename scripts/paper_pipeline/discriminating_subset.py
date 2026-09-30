@@ -19,7 +19,7 @@ argmax alternative is not the alternative with gt_rank == 1.
 
 METRICS. tau and Top-1 recomputed on S_disc with the paper's estimator: per-run
 mean over the S_disc scenarios that run actually scored, then mean across runs.
-Failed scenarios are already absent from per_scenario_metrics_all.csv, so the
+Failed scenarios are filtered out of per_scenario_metrics_all.csv (failed == True), so the
 denominator is the scored subset of S_disc and is reported per cell.
 
 Inputs:  Analysis/per_scenario_metrics_all.csv  (built by cluster_bootstrap_ci.py)
@@ -144,6 +144,9 @@ def main():
     print(counts.to_string(index=False))
 
     per_scen = pd.read_csv(PER_SCENARIO_CSV)
+    # Scored-only by design: drop the failure-rule rows (failed == True).
+    if "failed" in per_scen.columns:
+        per_scen = per_scen[~per_scen["failed"].astype(bool)]
     sdisc_ids = set(flags.loc[flags["in_S_disc"], "scenario_id"])
     all_ids = set(flags["scenario_id"])
 

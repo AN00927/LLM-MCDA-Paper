@@ -22,8 +22,11 @@ records the author date of the last git commit that touched the artifact (one
 read-only `git log`), still only an upper bound.
 
 Covered: each model's main runs (the three architectures), the A_D position-bias
-arm (`position_bias/`), the A_H order arms (`hybrid_order_reversal/`) and the
-listwise A_D arm (`listwise_direct/`).
+arm (`position_bias/`), the A_H order arms (`hybrid_order_reversal/`), the
+listwise A_D arm (`listwise_direct/`), the prompt-ablation cells
+(`Analysis/Prompt_Ablation/cell_*_<model>_run_NN_raw.jsonl`) and the RAG
+ablation (`Analysis/RAG_Ablation/rag_ablation_results_raw.jsonl`, one log for
+all models, split here by each record's `model` id).
 
 Outputs
 -------
@@ -173,6 +176,64 @@ def artifact_specs(folder):
     return specs
 
 
+PROMPT_ABLATION_DIR = PROJECT_ROOT / "Analysis" / "Prompt_Ablation"
+RAG_ABLATION_LOG = PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "rag_ablation_results_raw.jsonl"
+
+
+def rag_log_windows(path=RAG_ABLATION_LOG):
+    """{openrouter model id: (first, last) collected_utc} over the RAG
+    ablation's shared raw log; {} if it does not exist."""
+    times = {}
+    if not Path(path).exists():
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            t = _parse_iso(rec.get("collected_utc"))
+            if t is not None:
+                times.setdefault(rec.get("model"), []).append(t)
+    return {m: (min(ts), max(ts)) for m, ts in times.items()}
+
+
+def _row(model_key, arch, run, kind, path, start, end, source, commits):
+    rel = path.relative_to(PROJECT_ROOT).as_posix()
+    cdate, csha, csubj = commits.get(rel, ("", "", ""))
+    mtime = path.stat().st_mtime
+    return {
+        "model": model_key, "architecture": arch, "run": run, "artifact": kind,
+        "filename": path.name,
+        "start_utc_iso": start.isoformat(timespec="seconds"),
+        "end_utc_iso": end.isoformat(timespec="seconds"),
+        "time_source": source, "mtime_utc_iso": _iso_utc(mtime),
+        "last_commit_utc_iso": cdate, "last_commit_sha": csha,
+        "last_commit_subject": csubj,
+        "_start": start.timestamp(), "_end": end.timestamp(),
+    }
+
+
+def ablation_rows(commits):
+    """Rows for the two ablations kept outside the model folders. Only
+    recorded timestamps are used: an artifact with none is skipped, never
+    dated by its mtime."""
+    rows = []
+    rag = rag_log_windows()
+    for model_key, spec in MODEL_SPECS.items():
+        for path in sorted(PROMPT_ABLATION_DIR.glob(f"cell_*_{model_key}_run_*_raw.jsonl")):
+            start, end, source = window_from_jsonl(path)
+            if start is not None:
+                rows.append(_row(model_key, "prompt_ablation:" + path.name.split(f"_{model_key}_run_")[0],
+                                 _run_number(path),
+                                 "raw_jsonl", path, start, end, source, commits))
+        if spec["openrouter_id"] in rag:
+            start, end = rag[spec["openrouter_id"]]
+            rows.append(_row(model_key, "rag_ablation", 1, "raw_jsonl", RAG_ABLATION_LOG,
+                             start, end, "raw_jsonl:collected_utc", commits))
+    return rows
+
+
 def last_commit_index():
     """Map repo-relative path -> (author_date_iso, sha, subject) for its last commit.
 
@@ -251,6 +312,8 @@ def main():
                     "_start": start.timestamp(),
                     "_end": end.timestamp(),
                 })
+
+    rows += ablation_rows(commits)
 
     if not rows:
         print("ERROR: no run artifacts found")

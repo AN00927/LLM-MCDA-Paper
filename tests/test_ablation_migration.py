@@ -466,8 +466,16 @@ def test_ra_top1_counts_failed_scenarios_as_wrong(tmp_path):
     assert row["n_scenarios"] == 3 and row["n_failed_scenarios"] == 2
     assert row["top1_accuracy"] == pytest.approx(1 / 3)
     assert row["top2_accuracy"] == pytest.approx(1 / 3)
-    # tau is not an accuracy metric: unchanged rule, averaged over scored rows only
-    assert np.isnan(per.loc[ids[2], "kendall_tau"])
+    # Failure rule (S4, 2026-09-29): a failed scenario stays in at chance level:
+    # tau and rho 0, MAVT-score MAE at E|U - t| over its reference scores.
+    for sid in ids[1:]:
+        assert per.loc[sid, "kendall_tau"] == 0.0
+        assert per.loc[sid, "spearman_rho"] == 0.0
+        t = df[df["source_scenario_id"] == sid]["gt_mavt_score"].astype(float).values
+        assert per.loc[sid, "score_mae"] == pytest.approx(np.mean((t ** 2 + (1 - t) ** 2) / 2))
+        assert per.loc[sid, "score_rmse"] == pytest.approx(
+            np.sqrt(np.mean((t ** 3 + (1 - t) ** 3) / 3)))
+    assert row["kendall_tau"] == pytest.approx(per.loc[ids, "kendall_tau"].sum() / 3)
     by_dt = RA.summarize_by_decision_type(df)
     assert by_dt.iloc[0]["n_failed_scenarios"] == 2
     assert by_dt.iloc[0]["top1_accuracy"] == pytest.approx(1 / 3)

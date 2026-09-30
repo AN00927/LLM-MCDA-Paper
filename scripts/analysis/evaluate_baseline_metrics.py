@@ -83,13 +83,15 @@ def main():
         merged, _ = _cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
         clean, n_failed, n_total = _cm.filter_failed_scenarios(merged)
 
+        # Failure rule (S4), the same as the LLM architectures: metrics are
+        # computed on the unfiltered frame, every matched scenario counted.
         per_type = {}
         for dt in DECISION_TYPES:
-            sub = clean[clean["decision_type"] == dt]
+            sub = merged[merged["decision_type"] == dt]
             if sub.empty:
                 continue
-            r = _cm.compute_ranking_metrics(sub)
-            c = _cm.compute_criterion_metrics(sub)
+            r = _cm.compute_ranking_metrics_inclusive(sub)
+            c = _cm.compute_criterion_metrics_inclusive(sub)
             per_type[dt] = r
             for metric, value in [
                 ("top1_accuracy", r["top1_accuracy"]),
@@ -103,8 +105,8 @@ def main():
                              "metric": metric, "value": value,
                              "n_scenarios": r["n_scenarios_evaluated"]})
 
-        pooled_r = _cm.compute_ranking_metrics(clean)
-        pooled_c = _cm.compute_criterion_metrics(clean)
+        pooled_r = _cm.compute_ranking_metrics_inclusive(merged)
+        pooled_c = _cm.compute_criterion_metrics_inclusive(merged)
         for metric, value in [
             ("top1_accuracy", pooled_r["top1_accuracy"]),
             ("kendall_tau", pooled_r["kendall_tau"]),

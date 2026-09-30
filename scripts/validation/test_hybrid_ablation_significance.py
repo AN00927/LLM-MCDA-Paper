@@ -24,9 +24,9 @@ which are a different experiment with its own analysis in
 
 Pairing basis (the Methods protocol for every paired test in the paper): the
 `extracted` arm holds one row per scenario per shipped run. Before testing, each
-scenario's metric is averaged over the runs in which that scenario succeeded
-(five for most scenarios, fewer where a run failed); a scenario that failed in
-every run has no value and drops out of its model's test. The test then pairs
+scenario's metric is averaged over all the runs; a failed scenario-run enters at
+the failure rule's chance-level values (S4, 2026-09-29: Top-1 wrong, tau 0, MAE
+the uniform-guess error), so no scenario drops out. The test then pairs
 that per-scenario run mean with the scenario's dataset-median value. Feeding
 the multi-run rows straight into `posthoc_wilcoxon_holm` would be wrong: its
 pivot collapses duplicates with `aggfunc='first'`, keeping run 1 and silently
@@ -56,7 +56,9 @@ Significance-testing methodology (one correction layer):
   therefore makes every existing cell's corrected p-value more conservative;
   that is the correction working, not a regression.
 
-  Cliff's delta is descriptive and is not corrected. Bootstrap CIs are computed
+  The effect size is the matched-pairs rank-biserial correlation (the one
+  that belongs to the signed-rank test); Cliff's delta, which ignores the
+  pairing, is kept as a descriptive column. Neither is corrected. Bootstrap CIs are computed
   for every model x arm x metric; they describe an arm's own sampling
   uncertainty rather than a pairwise comparison.
 
@@ -110,8 +112,8 @@ def _load_rag_module():
 
 def per_scenario_run_means(df: pd.DataFrame) -> pd.DataFrame:
     """One row per (model, arm, scenario): each metric averaged over the runs
-    in which that scenario succeeded. Failed scenario-runs are already removed
-    by the caller, so the 1928 sentinel never reaches this mean. A single-run
+    of the arm. Failed scenario-runs carry the failure rule's values (never the
+    1928 sentinel, which the ablation never writes to a metric). A single-run
     arm (default_params) passes through unchanged."""
     keys = ["model", "arm", "scenario_id"]
     out = (df.groupby(keys, sort=False)
@@ -147,7 +149,9 @@ def main():
 
     rag = _load_rag_module()
     df = pd.read_excel(summary_xlsx, sheet_name="per_scenario")
-    df = df[~df["failed"].astype(bool)].copy()
+    # Failure rule (S4): failed scenario-runs are KEPT; the ablation already
+    # wrote their chance-level values. Only a scenario whose reference could
+    # not be scored has NaN metrics, and the pivot drops it.
 
     missing = [a for a in PROVENANCE_ARMS if a not in set(df["arm"])]
     if missing:
@@ -230,8 +234,8 @@ def main():
     print(f"(one test per model x metric, Holm-corrected across all {n_tests})")
     if len(pairwise):
         print(pairwise[["model", "metric", "config_i", "config_j", "statistic",
-                        "p_value", "p_holm", "significant_holm", "cliff_delta",
-                        "cliff_delta_interpretation", "n_pairs"]]
+                        "p_value", "p_holm", "significant_holm", "rank_biserial",
+                        "rank_biserial_interpretation", "n_nonzero", "n_pairs"]]
               .to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 
     n_sig = int(pairwise["significant_holm"].sum()) if len(pairwise) else 0

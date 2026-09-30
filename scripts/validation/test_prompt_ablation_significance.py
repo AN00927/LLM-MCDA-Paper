@@ -90,9 +90,11 @@ OUTPUT_XLSX = CELLS_DIR / "prompt_ablation_significance.xlsx"
 # rather than alone. Both follow the failure-as-wrong accuracy rule (author
 # decision, 2026-09-27, mirroring the RAG ablation): a failed or unscored
 # scenario's top1/top2 is 0.0 (never NaN), so it counts as wrong rather than
-# being dropped from the comparison. kendall_tau is not an accuracy metric and
-# is NaN for a failed scenario, which pandas' mean() skips -- unchanged.
+# being dropped from the comparison. kendall_tau follows the same failure rule
+# (S4, 2026-09-29): a failed scenario is at chance, tau 0 (FAILED_SCENARIO_TAU),
+# and stays in the comparison.
 METRIC_COLS = ["kendall_tau", "top1", "top2"]
+FAILED_SCENARIO_TAU = 0.0
 
 
 def _load_rag_module():
@@ -138,17 +140,18 @@ def add_main_suite_control(df: pd.DataFrame, pa=None) -> pd.DataFrame:
 def load_matrix() -> pd.DataFrame:
     """All per-scenario cell rows, failed scenarios included.
 
-    A failed scenario (`failed` True) carries kendall_tau = NaN, which
-    pandas' mean() skips, so tau still averages only the scored scenarios.
-    Its top1/top2 are 0.0 (never NaN) under the failure-as-wrong rule, so
-    keeping the row in -- rather than dropping it, as this used to -- is
-    what makes the paired tests see a failed scenario as a miss instead of
-    silently shrinking the comparison to the scored subset.
+    A failed scenario (`failed` True) is kept under the failure rule (S4):
+    top1/top2 0.0 (wrong) and kendall_tau FAILED_SCENARIO_TAU = 0 (chance).
+    Cells collected before 2026-09-29 stored NaN for a failed scenario's tau;
+    it is set to the rule's value here, so no failed scenario drops out of a
+    paired test.
     """
     files = sorted(glob.glob(str(CELLS_DIR / "cell_*.xlsx")))
     if not files:
         raise SystemExit(f"No cell files in {CELLS_DIR}")
-    return pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
+    df = pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
+    df.loc[df["failed"].astype(bool), "kendall_tau"] = FAILED_SCENARIO_TAU
+    return df
 
 
 def two_variant_test(stratum: pd.DataFrame, metric_cols, rag) -> list:
@@ -166,6 +169,9 @@ def two_variant_test(stratum: pd.DataFrame, metric_cols, rag) -> list:
                      "statistic": r["statistic"], "p_value": r["p_value"], "df": 1,
                      "n_scenarios": r["n_pairs"], "n_configs": 2,
                      "config_i": r["config_i"], "config_j": r["config_j"],
+                     "rank_biserial": r["rank_biserial"],
+                     "rank_biserial_interpretation": r["rank_biserial_interpretation"],
+                     "n_nonzero": r["n_nonzero"],
                      "cliff_delta": r["cliff_delta"],
                      "cliff_delta_interpretation": r["cliff_delta_interpretation"]})
     return rows
@@ -312,7 +318,7 @@ def main():
     print(f"=== SIGNIFICANT PAIRS (Holm-corrected within each stratum x metric posthoc family): {len(sig)} of {len(posthoc)} ===")
     if len(sig):
         show = sig[["architecture", "model", "metric", "config_i", "config_j",
-                    "p_holm", "cliff_delta", "cliff_delta_interpretation"]]
+                    "p_holm", "rank_biserial", "rank_biserial_interpretation", "n_nonzero"]]
         print(show.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 
     print(f"\nWrote {OUTPUT_XLSX}")
