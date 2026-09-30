@@ -1,3 +1,27 @@
+# ============================================================================
+# COMMIT POLICY — READ BEFORE COMMITTING
+# ----------------------------------------------------------------------------
+# NO Claude tags on any commit under any circumstances.
+# NO AI-assistant attribution of any kind (Claude, Anthropic, Copilot, etc.).
+#
+# Every commit must be attributable to a human team member. Forbidden lines:
+#   Co-Authored-By: Claude ...
+#   Co-Authored-By: <anything>@anthropic.com
+#   Claude-Session: ...
+#   🤖 Generated with Claude Code (or any variation)
+#   Any link to claude.ai/code or claude.ai/chat
+#
+# Enforcement:
+#   .githooks/commit-msg — blocks the commit locally
+#   .githooks/pre-push   — blocks the push if any commit in the push range
+#                          carries a forbidden tag
+#
+# Wire them into your clone once, after cloning:
+#   ./scripts/setup-git-hooks.sh
+#
+# Full policy: see COMMIT_POLICY.md
+# ============================================================================
+
 # Python
 .venv/
 __pycache__/
@@ -153,3 +177,6 @@ docs/TODO_EXECUTION_PLAN.md
 
 
 
+paper/pass6/CLOUD_AGENT_CONTEXT.md
+paper/pass6/CLOUD_AGENT_CONTEXT.md
+paper/pass6/RAG_ABLATION_OLD_VS_NEW.md

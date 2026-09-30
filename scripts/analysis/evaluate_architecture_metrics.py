@@ -162,6 +162,173 @@ def filter_failed_scenarios(merged_df):
     return clean_df, n_failed, n_total
 
 
+# ---------------------------------------------------------------------------
+# Failure rule (S4, author decisions 2026-09-29). One rule for the main suite,
+# every ablation and the baselines: a failed scenario (any sentinel score, or no
+# evaluable ranking) stays in EVERY denominator, at the value a chance-level
+# answer would get.
+#   Top-1, Top-2      counted wrong (0)
+#   Kendall tau, rho  0, the expected value for a uniformly random ordering
+#   MAE               the expected absolute error of a uniform-random score on
+#                     the 0-1 score scale, per criterion score with reference
+#                     value t:  E|U - t| = (t^2 + (1 - t)^2) / 2
+#                     (from the scenario's own ground-truth values, averaged
+#                     over the same alternatives x criteria as MAE itself)
+#   RMSE              the same principle for squared error:
+#                     E(U - t)^2 = (t^3 + (1 - t)^3) / 3
+# Scores and references are on the 0-1 scale (the prompts ask for 0-1; the
+# ground-truth value functions map to [0, 1]). FAILED_SCENARIO_MAE selects the
+# error rule: "chance" (the decision above) or None (failed scenarios left out
+# of MAE/RMSE, the pre-2026-09-29 behaviour, kept only for sensitivity runs).
+# Because the failed values of the ranking metrics are all 0, a mean over all
+# scenarios equals the mean over the scored ones times n_scored / n_total.
+# ---------------------------------------------------------------------------
+FAILED_SCENARIO_TAU = 0.0
+FAILED_SCENARIO_RHO = 0.0
+FAILED_SCENARIO_TOP1 = 0.0
+FAILED_SCENARIO_TOP2 = 0.0
+FAILED_SCENARIO_MAE = "chance"
+
+RANKING_METRIC_COLUMNS = ["kendall_tau", "spearman_rho", "top1", "top2"]
+
+
+def chance_abs_error(t):
+    """E|U - t| for U ~ Uniform(0, 1): the chance-level absolute error."""
+    t = np.asarray(t, dtype=float)
+    return (t ** 2 + (1.0 - t) ** 2) / 2.0
+
+
+def chance_sq_error(t):
+    """E(U - t)^2 for U ~ Uniform(0, 1): the chance-level squared error."""
+    t = np.asarray(t, dtype=float)
+    return (t ** 3 + (1.0 - t) ** 3) / 3.0
+
+
+def _scenario_ranking_values(sc):
+    """tau, rho, top1, top2 for one scored scenario, or None if it has no
+    evaluable ranking. Same arithmetic as compute_ranking_metrics."""
+    if len(sc) < 2:
+        return None
+    gt_r = sc["gt_rank"].astype(float).values
+    ar_r = sc["arch_rank"].astype(float).values
+    if np.isnan(gt_r).any() or np.isnan(ar_r).any():
+        return None
+    if len(set(gt_r)) > 1 and len(set(ar_r)) > 1:
+        tau = stats.kendalltau(gt_r, ar_r)[0]
+        rho = stats.spearmanr(gt_r, ar_r)[0]
+        tau = 0.0 if np.isnan(tau) else float(tau)
+        rho = 0.0 if np.isnan(rho) else float(rho)
+    else:
+        tau = rho = 1.0 if np.array_equal(gt_r, ar_r) else 0.0
+    gt_top1 = sc.loc[sc["gt_rank"].astype(float).idxmin(), "norm_alternative"]
+    ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
+    ar_top2 = set(sc.loc[sc["arch_rank"].astype(float).nsmallest(2).index, "norm_alternative"])
+    return {"kendall_tau": tau, "spearman_rho": rho,
+            "top1": float(gt_top1 == ar_top1), "top2": float(gt_top1 in ar_top2)}
+
+
+def per_scenario_ranking_metrics(merged_df):
+    """One row per matched scenario (failed ones included) under the failure
+    rule above: arch_scenario_id, decision_type, failed, kendall_tau,
+    spearman_rho, top1, top2. The input is the UNFILTERED match_scenarios frame."""
+    clean, _, _ = filter_failed_scenarios(merged_df)
+    clean_sids = set(clean["arch_scenario_id"].unique())
+    failed_values = {"kendall_tau": FAILED_SCENARIO_TAU, "spearman_rho": FAILED_SCENARIO_RHO,
+                     "top1": FAILED_SCENARIO_TOP1, "top2": FAILED_SCENARIO_TOP2}
+    rows = []
+    for sid, sc in merged_df.groupby("arch_scenario_id", sort=False):
+        vals = _scenario_ranking_values(clean[clean["arch_scenario_id"] == sid]) \
+            if sid in clean_sids else None
+        rows.append({"arch_scenario_id": sid,
+                     "decision_type": sc["decision_type"].iloc[0],
+                     "failed": vals is None,
+                     **(vals if vals is not None else failed_values)})
+    return pd.DataFrame(rows, columns=["arch_scenario_id", "decision_type", "failed",
+                                       *RANKING_METRIC_COLUMNS])
+
+
+def compute_ranking_metrics_inclusive(merged_df):
+    """compute_ranking_metrics under the failure rule: every matched scenario
+    is in the denominator. Takes the UNFILTERED match_scenarios frame. Returns
+    the same keys as compute_ranking_metrics (n_scenarios_evaluated = all
+    matched scenarios) plus n_scored and n_failed."""
+    ps = per_scenario_ranking_metrics(merged_df)
+    n = len(ps)
+    n_failed = int(ps["failed"].sum()) if n else 0
+    mean = lambda c: round(float(ps[c].mean()), 4) if n else np.nan  # noqa: E731
+    return {"kendall_tau": mean("kendall_tau"), "spearman_rho": mean("spearman_rho"),
+            "top1_accuracy": mean("top1"), "top2_accuracy": mean("top2"),
+            "n_scenarios_evaluated": n, "n_scored": n - n_failed, "n_failed": n_failed}
+
+
+_MODULE_RULE = "module"
+
+
+def failed_error_rows(merged_df, failed_sids, kind="abs", rule=_MODULE_RULE):
+    """Rows of the failed scenarios with arch_* set to gt + e, where e is the
+    chance-level error of each cell (kind "abs": E|U - t|, used for MAE; kind
+    "sq": sqrt(E(U - t)^2), used for RMSE), so the ordinary MAE / RMSE code
+    charges each failed cell exactly that error. Empty when the rule is None."""
+    if rule == _MODULE_RULE:
+        rule = FAILED_SCENARIO_MAE
+    rows = merged_df[merged_df["arch_scenario_id"].isin(failed_sids)].copy()
+    if rule is None or rows.empty:
+        return rows.iloc[0:0]
+    if rule != "chance":
+        raise ValueError(f"Unknown FAILED_SCENARIO_MAE rule {rule!r}")
+    for c in CRITERIA:
+        gt = rows[f"gt_{c}"].astype(float)
+        err = chance_abs_error(gt) if kind == "abs" else np.sqrt(chance_sq_error(gt))
+        rows[f"arch_{c}"] = gt + err
+    return rows
+
+
+# Kept under the name the first S4 draft used.
+failed_mae_rows = failed_error_rows
+
+
+def failed_scenario_errors(merged_df, failed_sids, rule=_MODULE_RULE):
+    """sid -> {"overall_mae", "overall_rmse"} for failed scenarios, at the
+    chance-level error of each of the scenario's criterion cells (NaN when the
+    rule is None). For callers that build per-scenario rows themselves."""
+    if rule == _MODULE_RULE:
+        rule = FAILED_SCENARIO_MAE
+    out = {}
+    for sid in failed_sids:
+        rows = merged_df[merged_df["arch_scenario_id"] == sid]
+        t = pd.to_numeric(pd.Series(np.concatenate(
+            [rows[f"gt_{c}"].values for c in CRITERIA])), errors="coerce").dropna()
+        if rule is None or t.empty:
+            out[sid] = {"overall_mae": np.nan, "overall_rmse": np.nan}
+        else:
+            out[sid] = {"overall_mae": float(np.mean(chance_abs_error(t))),
+                        "overall_rmse": float(np.sqrt(np.mean(chance_sq_error(t))))}
+    return out
+
+
+def compute_criterion_metrics_inclusive(merged_df, rule=_MODULE_RULE):
+    """compute_criterion_metrics under the failure rule. Takes the UNFILTERED
+    match_scenarios frame; each cell of a failed scenario is charged the
+    chance-level error (MAE: E|U - t|, RMSE: E(U - t)^2)."""
+    clean, _, _ = filter_failed_scenarios(merged_df)
+    failed_sids = set(merged_df["arch_scenario_id"]) - set(clean["arch_scenario_id"])
+
+    def _with(kind):
+        extra = failed_error_rows(merged_df, failed_sids, kind, rule)
+        return compute_criterion_metrics(pd.concat([clean, extra], ignore_index=True)
+                                         if len(extra) else clean)
+
+    out = _with("abs")
+    sq = _with("sq")
+    for k, v in sq.items():
+        if k.endswith("_RMSE"):
+            out[k] = v
+    mae, rmse = out.get("overall_MAE"), out.get("overall_RMSE")
+    out["overall_rmse_mae_ratio"] = (round(rmse / mae, 4)
+                                     if mae not in (0, None) and pd.notna(mae) else np.nan)
+    return out
+
+
 def extract_time_from_alt(alt_str):
     """Extract time pattern from alternative string.
     Handles: '2:00 PM', 'Run dishwasher at 2:00 PM', '4PM', '1AM'."""
@@ -994,15 +1161,18 @@ def evaluate_all(config, include_baselines=False, model_key=None):
         merged_filtered, n_failed, n_total = filter_failed_scenarios(merged.copy())
 
         if n_failed > 0:
-            print(f"  Filtered {n_failed}/{n_total} failed scenarios; "
-                  f"evaluating {n_total - n_failed} successful scenarios")
+            print(f"  {n_failed}/{n_total} failed scenarios: counted in every "
+                  f"denominator (Top-1/Top-2 wrong, tau/rho 0; MAE rule "
+                  f"{FAILED_SCENARIO_MAE!r})")
 
-        for mode, merged_mode in [("filtered", merged_filtered)]:
+        # Failure rule (S4): metrics are computed on the unfiltered frame. The
+        # mode label is kept for the workbook's column layout.
+        for mode, merged_mode in [("filtered", merged.copy())]:
             if len(merged_mode) == 0:
                 continue
 
-            crit = compute_criterion_metrics(merged_mode)
-            rank = compute_ranking_metrics(merged_mode)
+            crit = compute_criterion_metrics_inclusive(merged_mode)
+            rank = compute_ranking_metrics_inclusive(merged_mode)
             n_eval = rank["n_scenarios_evaluated"]
 
             print(f"\n  {mode.upper()} ({n_eval} scenarios):")
@@ -1032,8 +1202,8 @@ def evaluate_all(config, include_baselines=False, model_key=None):
                 if len(dt_data) == 0:
                     continue
 
-                dt_crit = compute_criterion_metrics(dt_data)
-                dt_rank = compute_ranking_metrics(dt_data)
+                dt_crit = compute_criterion_metrics_inclusive(dt_data)
+                dt_rank = compute_ranking_metrics_inclusive(dt_data)
                 n_dt = dt_rank["n_scenarios_evaluated"]
 
                 print(f"\n  {mode.upper()} {dtype} ({n_dt} scenarios, {len(dt_data)} alt rows):")

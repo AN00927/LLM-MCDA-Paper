@@ -88,7 +88,7 @@ def test_sentinel_alternative_counts_wrong_not_nan():
     m = PA.scenario_metrics(result_of(scored), REF)
     assert m["failed"] is True
     assert m["top1"] == 0.0 and m["top2"] == 0.0  # not NaN
-    assert np.isnan(m["kendall_tau"])
+    assert m["kendall_tau"] == 0.0  # failure rule S4: chance level
 
 
 def test_no_reference_counts_wrong_not_nan():
@@ -96,7 +96,7 @@ def test_no_reference_counts_wrong_not_nan():
     m = PA.scenario_metrics(result_of(scored), None)
     assert m["failed"] is True
     assert m["top1"] == 0.0 and m["top2"] == 0.0
-    assert np.isnan(m["kendall_tau"])
+    assert m["kendall_tau"] == 0.0
 
 
 def test_top2_credits_the_second_ranked_alternative():
@@ -115,7 +115,7 @@ def test_failed_record_counts_wrong_too():
                             "boom", "2026-09-27T00:00:00+00:00")
     assert rec["failed"] is True
     assert rec["top1"] == 0.0 and rec["top2"] == 0.0
-    assert np.isnan(rec["kendall_tau"])
+    assert rec["kendall_tau"] == 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -151,8 +151,8 @@ def test_cell_with_failures_scores_lower_top1_than_dropping_them():
     old_rule_scored_only = 2 / 3
     assert row["top1_accuracy"] < old_rule_scored_only
     assert row["top2_accuracy"] == pytest.approx(2 / 4)
-    # tau is unchanged: mean over the 3 SCORED scenarios only
-    assert row["kendall_tau"] == pytest.approx((1.0 + 1.0 - 1.0) / 3)
+    # failure rule S4: the failed scenario is at tau 0 and in the denominator
+    assert row["kendall_tau"] == pytest.approx((1.0 + 1.0 - 1.0 + 0.0) / 4)
     final = summary.iloc[0]
     assert final["n_failed_scenarios"] == pytest.approx(1.0)
     assert final["top1_accuracy"] == pytest.approx(2 / 4)
@@ -167,7 +167,7 @@ def test_all_failed_scenarios_give_zero_accuracy_not_nan():
     row = per_run_df.iloc[0]
     assert row["n_scenarios"] == 3 and row["n_failed_scenarios"] == 3
     assert row["top1_accuracy"] == 0.0 and row["top2_accuracy"] == 0.0
-    assert np.isnan(row["kendall_tau"])  # nothing to average
+    assert row["kendall_tau"] == 0.0  # every scenario at chance
 
 
 def test_no_failures_matches_the_old_scored_only_denominator():
@@ -216,7 +216,7 @@ def test_per_scenario_average_treats_a_failed_run_as_a_miss(tmp_path, monkeypatc
     row = per_scenario.iloc[0]
     assert row["top1"] == pytest.approx(3 / 4)
     assert row["top2"] == pytest.approx(3 / 4)
-    assert row["kendall_tau"] == pytest.approx(1.0)  # averaged over the 3 scored runs only
+    assert row["kendall_tau"] == pytest.approx(3 / 4)  # failed run at tau 0 (S4)
 
 
 def test_metric_cols_includes_top2():

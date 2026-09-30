@@ -147,6 +147,27 @@ def scenario_rows(clean, model, arch, run):
             "overall_mae": overall_mae,
             "top1_accuracy": 1.0 if gt_top1 == ar_top1 else 0.0,
             "top2_accuracy": 1.0 if gt_top1 in ar_top2 else 0.0,
+            "failed": False,
+        })
+    return rows
+
+
+def failed_rows(merged, clean, model, arch, run):
+    """Rows for the scenario-runs filter_failed_scenarios removed, under the
+    failure rule (S4, evaluate_architecture_metrics.FAILED_SCENARIO_*):
+    Top-1/Top-2 wrong, tau/rho 0, MAE at the chance-level error."""
+    failed = sorted(set(merged["arch_scenario_id"]) - set(clean["arch_scenario_id"]))
+    errs = _cm.failed_scenario_errors(merged, failed)
+    rows = []
+    for sid in failed:
+        sc = merged[merged["arch_scenario_id"] == sid]
+        rows.append({
+            "model": model, "architecture": arch, "run": run,
+            "decision_type": sc["decision_type"].iloc[0], "scenario_id": sid,
+            "kendall_tau": _cm.FAILED_SCENARIO_TAU, "spearman_rho": _cm.FAILED_SCENARIO_RHO,
+            "overall_mae": errs[sid]["overall_mae"],
+            "top1_accuracy": _cm.FAILED_SCENARIO_TOP1, "top2_accuracy": _cm.FAILED_SCENARIO_TOP2,
+            "failed": True,
         })
     return rows
 
@@ -177,9 +198,8 @@ def build_per_scenario_table():
                 if merged.empty:
                     continue
                 clean, _, _ = _cm.filter_failed_scenarios(merged)
-                if clean.empty:
-                    continue
                 all_rows.extend(scenario_rows(clean, model_key, arch_name, run))
+                all_rows.extend(failed_rows(merged, clean, model_key, arch_name, run))
             print(f"  [OK] {model_key} / {ARCH_SHORT[arch_name]}: {len(files)} runs")
 
     df = pd.DataFrame(all_rows)

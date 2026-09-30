@@ -110,7 +110,7 @@ def test_parse_ranking_time_labels():
 def test_failed_ranking_is_failed_not_neutral():
     ref = {"mavt_by_alt": {a: 0.5 for a in ALTS}, "rank_by_alt": {"72": 1, "76": 2, "80": 3}}
     m = PA.scenario_metrics(LW.ranking_result(ALTS, None), ref)
-    assert m["failed"] and m["top1"] == 0.0 and m["top2"] == 0.0 and np.isnan(m["kendall_tau"])
+    assert m["failed"] and m["top1"] == 0.0 and m["top2"] == 0.0 and m["kendall_tau"] == 0.0  # S4: chance
     m = PA.scenario_metrics(LW.ranking_result(ALTS, ["72", "76", "80"]), ref)
     assert not m["failed"] and m["top1"] == 1.0 and m["kendall_tau"] == pytest.approx(1.0)
     m = PA.scenario_metrics(LW.ranking_result(ALTS, ["80", "76", "72"]), ref)
@@ -165,7 +165,7 @@ def test_invalid_reply_counts_as_a_miss(tmp_path, monkeypatch):
     poster = H.Poster([H.ok('{"ranking": ["nope"]}')])
     with mock.patch("requests.post", poster):
         df = pd.read_excel(LW.run_one("qwen", 1, scs, _reference_first_is_best(scs), workers=1))
-    assert df["failed"].all() and (df["top1"] == 0.0).all() and df["kendall_tau"].isna().all()
+    assert df["failed"].all() and (df["top1"] == 0.0).all() and (df["kendall_tau"] == 0.0).all()
     assert set(df["failure_type"]) == {LW.ERR_INVALID_RANKING}
 
 

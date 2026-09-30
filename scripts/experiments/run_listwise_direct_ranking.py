@@ -25,8 +25,8 @@ One call per scenario. Metrics use the prompt ablation's scenario_metrics and
 reference, so tau, Top-1 and Top-2 are computed exactly as for every other arm:
   - Failure-as-wrong: a failed or invalid ranking counts as a miss for Top-1
     and Top-2.
-  - Kendall tau is NaN for a failed ranking and averages over scored scenarios
-    only.
+  - Kendall tau is 0 (chance) for a failed ranking, with every scenario in the
+    denominator (failure rule S4, 2026-09-29).
 The comparison arm is pointwise A_D, rebuilt from the main suite's five runs.
 
 API: the architectures' shared client, through the prompt ablation's
@@ -358,7 +358,11 @@ def load_listwise_runs(model_key: str) -> pd.DataFrame:
     paths = [p for p in paths if not p.name.endswith("_raw.jsonl")]
     if not paths:
         return pd.DataFrame()
-    return pd.concat([read_table_clean(p) for p in paths], ignore_index=True)
+    df = pd.concat([read_table_clean(p) for p in paths], ignore_index=True)
+    # Failure rule (S4): runs written before 2026-09-29 stored NaN for a failed
+    # ranking's tau; it is the chance value 0, like every other arm.
+    df.loc[df["failed"].astype(bool), "kendall_tau"] = PA.FAILED_SCENARIO_TAU
+    return df
 
 
 def analyze(models: List[str], pointwise_runs: int = N_RUNS) -> Dict[str, pd.DataFrame]:
@@ -403,7 +407,11 @@ def analyze(models: List[str], pointwise_runs: int = N_RUNS) -> Dict[str, pd.Dat
             r = ph.iloc[0]
             tests.append({"model": model_key, "metric": metric, "config_i": r["config_i"],
                           "config_j": r["config_j"], "statistic": r["statistic"],
-                          "p_value": r["p_value"], "cliff_delta": r["cliff_delta"],
+                          "p_value": r["p_value"],
+                          "rank_biserial": r["rank_biserial"],
+                          "rank_biserial_interpretation": r["rank_biserial_interpretation"],
+                          "n_nonzero": r["n_nonzero"],
+                          "cliff_delta": r["cliff_delta"],
                           "cliff_delta_interpretation": r["cliff_delta_interpretation"],
                           "n_pairs": r["n_pairs"]})
     summary_df, tests_df = pd.DataFrame(summary), pd.DataFrame(tests)

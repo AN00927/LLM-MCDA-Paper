@@ -368,45 +368,31 @@ def _metrics_for(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_ids):
     if merged.empty:
         return None, None
 
-    clean, n_failed, n_total = mod.filter_failed_scenarios(merged)
-    if clean.empty:
-        return None, None
-
-    overall = mod.compute_ranking_metrics_local(clean)
-    overall["n_failed_scenarios"] = n_failed
-    overall["n_total_scenarios"] = n_total
+    # Failure rule (S4): every matched scenario is in the denominator; a failed
+    # one counts as wrong for Top-1/Top-2 and at chance for tau/rho.
+    overall = mod.compute_ranking_metrics_inclusive(merged)
+    overall["n_failed_scenarios"] = overall["n_failed"]
+    overall["n_total_scenarios"] = overall["n_scenarios_evaluated"]
 
     by_type = {}
     for dt in DECISION_TYPES:
-        dt_clean = clean[clean["decision_type"] == dt]
-        if dt_clean.empty:
+        dt_merged = merged[merged["decision_type"] == dt]
+        if dt_merged.empty:
             continue
-        by_type[dt] = mod.compute_ranking_metrics_local(dt_clean)
+        by_type[dt] = mod.compute_ranking_metrics_inclusive(dt_merged)
 
     return overall, by_type
 
 
 def _top1_by_scenario(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_ids):
-    """Per-scenario top-1 correctness, keyed by scenario_id, for paired tests."""
+    """Per-scenario top-1 correctness, keyed by scenario_id, for paired tests.
+    Failure rule (S4): a failed scenario is present and counted wrong (0)."""
     sub = arch_df[arch_df["scenario_id"].isin(sampled_ids)]
     merged, _ = mod.match_scenarios(gt_lookup, gt_id_lookup, sub, arch_name)
     if merged.empty:
         return {}
-    clean, _, _ = mod.filter_failed_scenarios(merged)
-
-    correct = {}
-    for sid in clean["arch_scenario_id"].unique():
-        sc = clean[clean["arch_scenario_id"] == sid]
-        if len(sc) < 2:
-            continue
-        gt_r = sc["gt_rank"].astype(float).values 
-        ar_r = sc["arch_rank"].astype(float).values
-        if np.isnan(gt_r).any() or np.isnan(ar_r).any():
-            continue
-        gt_top1 = sc.loc[sc["gt_rank"].astype(float).idxmin(), "norm_alternative"]
-        ar_top1 = sc.loc[sc["arch_rank"].astype(float).idxmin(), "norm_alternative"]
-        correct[sid] = int(gt_top1 == ar_top1)
-    return correct
+    ps = mod._cm.per_scenario_ranking_metrics(merged)
+    return {sid: int(v) for sid, v in zip(ps["arch_scenario_id"], ps["top1"])}
 
 
 def _decision_type_by_scenario(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_ids):
@@ -419,9 +405,10 @@ def _decision_type_by_scenario(mod, gt_lookup, gt_id_lookup, arch_df, arch_name,
     merged, _ = mod.match_scenarios(gt_lookup, gt_id_lookup, sub, arch_name)
     if merged.empty:
         return {}
-    clean, _, _ = mod.filter_failed_scenarios(merged)
+    # Every matched scenario, failed ones included (failure rule S4), so the
+    # per-type McNemar tests see a failed scenario as a miss.
     return (
-        clean.groupby("arch_scenario_id")["decision_type"].first().to_dict()
+        merged.groupby("arch_scenario_id")["decision_type"].first().to_dict()
     )
 
 
@@ -470,6 +457,25 @@ def _mcnemar_exact(shipped, reversed_):
         return len(common), b, c, 1.0
     p = stats.binomtest(b, b + c, 0.5, alternative="two-sided").pvalue
     return len(common), b, c, p
+
+
+def add_mcnemar_holm(paired):
+    """S5: Holm-Bonferroni across this model's McNemar family -- every
+    reversed-vs-shipped test, overall and per decision type (5 shipped runs x
+    4 scopes = 20 per reversed run). The tests reuse one reversed run and are
+    correlated; Holm is valid under any dependence. Rows without a test
+    (shipped_vs_shipped) keep NaN. Uses the project's single Holm
+    implementation (run_rag_ablation_experiments.holm_correct)."""
+    rag_path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
+    spec = spec_from_file_location("posbias_rag_stats", rag_path)
+    rag = module_from_spec(spec)
+    spec.loader.exec_module(rag)
+    paired = paired.copy()
+    p_holm, sig = rag.holm_correct(paired["mcnemar_exact_p"].values)
+    paired["mcnemar_p_holm"] = p_holm
+    paired["mcnemar_significant_holm"] = sig
+    paired["mcnemar_holm_family_size"] = int(paired["mcnemar_exact_p"].notna().sum())
+    return paired
 
 
 def analyze(model_key):
@@ -677,7 +683,7 @@ def analyze(model_key):
     print(f"\n[OK] Wrote {summary_path.name}")
 
     if paired_rows:
-        paired = pd.DataFrame(paired_rows)
+        paired = add_mcnemar_holm(pd.DataFrame(paired_rows))
         paired_path = out_dir / f"position_bias_paired_top1_{model_key}.xlsx"
         _atomic_write_xlsx(paired, paired_path)
         paired.to_csv(out_dir / f"position_bias_paired_top1_{model_key}.csv", index=False)

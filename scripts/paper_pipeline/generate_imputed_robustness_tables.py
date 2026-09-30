@@ -3,6 +3,12 @@
 
 Computes, for all 4 models x 3 architectures, two comparison columns:
 
+STATUS AFTER THE S4 FIX (2026-09-30): this is a SENSITIVITY analysis. The headline
+(paper/per_run_metrics/per_run_metrics_all.csv) keeps failed scenarios in every
+denominator (Top-1 wrong, tau 0, chance MAE). "Method A" below is therefore the
+SCORED-ONLY (sensitivity) column and is labelled "ScoredOnly_sensitivity" in the
+output workbook; it equals the headline only for runs with no failures.
+
   (a) Method A           per-run-then-average: failed scenarios excluded from their
                          run's metric computation, metrics averaged across 5 runs.
   (c) Imputed (per-run)  per-run imputed variant: for EACH run independently, any scenario
@@ -298,7 +304,8 @@ def main():
     if pipeline_csv.exists():
         pipe = pd.read_csv(pipeline_csv)
         pipe = pipe[pipe["decision_type"] == "Overall"]
-        for r in [x for x in detail_rows if x["variant"] == "MethodA"]:
+        # Scored-only equals the headline only where a run has no failures.
+        for r in [x for x in detail_rows if x["variant"] == "MethodA" and not x.get("n_failed")]:
             prow = pipe[(pipe["model"] == r["model"]) & (pipe["architecture"] == r["architecture"])
                         & (pipe["run"] == r["run"])]
             if len(prow) == 0:
@@ -307,7 +314,7 @@ def main():
                 if pd.notna(r.get(m)) and pd.notna(prow[m].iloc[0]):
                     max_diff_a = max(max_diff_a, abs(r[m] - prow[m].iloc[0]))
                     n_cmp_a += 1
-        print(f"  (a) max |per-run diff| vs paper/per_run_metrics_all.csv: {max_diff_a:.6f} "
+        print(f"  (a) max |per-run diff| vs paper/per_run_metrics_all.csv (failure-free runs only): {max_diff_a:.6f} "
               f"({n_cmp_a} values compared)")
 
     # (a) per-model vs supplementary table Method A
@@ -348,6 +355,7 @@ def main():
     for r in variant_c_long:
         comp_rows.append({"variant": "ImputedPerRun", **r})
     comp_df = pd.DataFrame(comp_rows)
+    _LABEL = {"MethodA": "ScoredOnly_sensitivity"}
 
     # No four-model "pooled" sheet: the project never averages a metric across
     # models (a pool can hide a per-model reversal), and the paper prints only
@@ -363,9 +371,11 @@ def main():
 
     OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as writer:
-        comp_df.to_excel(writer, sheet_name="comparison", index=False)
+        comp_df.assign(variant=comp_df["variant"].replace(_LABEL)).to_excel(
+            writer, sheet_name="comparison", index=False)
         impute_df.to_excel(writer, sheet_name="imputation_counts", index=False)
-        detail_df.to_excel(writer, sheet_name="per_run_detail", index=False)
+        detail_df.assign(variant=detail_df["variant"].replace(_LABEL)).to_excel(
+            writer, sheet_name="per_run_detail", index=False)
     print(f"  Wrote {OUT_XLSX}")
 
     # ---------------- verdict ----------------

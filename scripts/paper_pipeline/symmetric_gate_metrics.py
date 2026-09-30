@@ -78,6 +78,10 @@ def main():
         print(f"ERROR: {IN_CSV} missing. Run cluster_bootstrap_ci.py first.")
         return 1
     df = pd.read_csv(IN_CSV)
+    # Common-support gates are scored-only by design: drop the failure-rule rows
+    # (failed == True) that cluster_bootstrap_ci.py appends for the headline.
+    if "failed" in df.columns:
+        df = df[~df["failed"].astype(bool)]
 
     rows = []
     print("Gate sizes per model (of 195):")

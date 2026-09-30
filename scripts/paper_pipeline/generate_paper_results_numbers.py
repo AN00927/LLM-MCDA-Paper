@@ -8,7 +8,24 @@ import os
 _ap = argparse.ArgumentParser(description="Generate numbers_master.csv from raw data sources.")
 _ap.add_argument("--output", default="paper/numbers_master.csv",
                  help="CSV to write (default paper/numbers_master.csv)")
-OUT = _ap.parse_args().output
+# Averaging basis of the IncrementalContribution table (S6). Every row, the two
+# baselines and the LLM rows alike, uses the same one:
+#   per_type_mean  unweighted mean of the HVAC / Appliance / Shower means
+#                  (baselines: baseline_metrics.csv "Overall_per_type_mean";
+#                  LLM rows: per run, mean of the three per-type values, then
+#                  the mean over runs)
+#   pooled         every scenario weighted equally (baselines: "Overall_pooled";
+#                  LLM rows: the per-run "Overall" value, then the mean over runs)
+# Author decision 2026-09-29: pooled (all 195 scenarios, each counted once) for
+# every row. Before that the baselines used pooled and the LLM rows
+# per_type_mean, so the deltas compared two different averages.
+TABLE7_BASES = ("per_type_mean", "pooled")
+_ap.add_argument("--table7-basis", choices=TABLE7_BASES, default="pooled",
+                 help="Averaging basis of the IncrementalContribution rows (default "
+                      "pooled, the author's choice)")
+_args = _ap.parse_args()
+OUT = _args.output
+TABLE7_BASIS = _args.table7_basis
 rows = []
 
 def add(category, architecture, model_or_pooled, decision_type, metric, value, sd=None,
@@ -230,7 +247,8 @@ if not os.path.exists(_BASELINE_METRICS):
         '  python "Miscellaneous Scripts/evaluate_baseline_metrics.py"'
     )
 _bm = pd.read_csv(_BASELINE_METRICS)
-_bm = _bm[_bm["decision_type"] == "Overall_pooled"]
+_bm = _bm[_bm["decision_type"] == {"per_type_mean": "Overall_per_type_mean",
+                                   "pooled": "Overall_pooled"}[TABLE7_BASIS]]
 
 
 def _baseline_metric(name, metric):
@@ -250,19 +268,23 @@ baseline_data = {
 for name, vals in baseline_data.items():
     for met, val in vals.items():
         delta = val - baseline_data["FixedDefault"][met]
+        # model_or_pooled carries the basis label, not a model pool: the
+        # baselines are model-independent.
         if met == "kendall_tau":
-            add("IncrementalContribution", name, "pooled", "Overall", "kendall_tau", val)
-            add("IncrementalContribution", name, "pooled", "Overall", "tau_delta", delta)
+            add("IncrementalContribution", name, TABLE7_BASIS, "Overall", "kendall_tau", val)
+            add("IncrementalContribution", name, TABLE7_BASIS, "Overall", "tau_delta", delta)
         else:
-            add("IncrementalContribution", name, "pooled", "Overall", "Top-1", val)
-            add("IncrementalContribution", name, "pooled", "Overall", "Top-1_delta", delta)
+            add("IncrementalContribution", name, TABLE7_BASIS, "Overall", "Top-1", val)
+            add("IncrementalContribution", name, TABLE7_BASIS, "Overall", "Top-1_delta", delta)
 
 for arch in LLM_ARCHS:
     model_means = {}
     for model in MODELS:
+        types = (["HVAC", "Appliance", "Shower"] if TABLE7_BASIS == "per_type_mean"
+                 else ["Overall"])
         sub = per_run[(per_run["architecture"] == arch) &
                       (per_run["model"] == model) &
-                      (per_run["decision_type"].isin(["HVAC", "Appliance", "Shower"]))]
+                      (per_run["decision_type"].isin(types))]
         if len(sub) == 0:
             continue
         run_means = sub.groupby("run")[["kendall_tau", "top1_accuracy"]].mean()
@@ -276,8 +298,10 @@ for arch in LLM_ARCHS:
 
     best_tau_model = max(model_means, key=lambda m: model_means[m]["tau"])
     worst_tau_model = min(model_means, key=lambda m: model_means[m]["tau"])
-    best_top1_model = max(model_means, key=lambda m: model_means[m]["top1"])
-    worst_top1_model = min(model_means, key=lambda m: model_means[m]["top1"])
+    # One model per label (F1): the table is standardised on Kendall's tau, so
+    # the Top-1 cell of the "best" row is the tau-best model's Top-1. Choosing
+    # the Top-1 model separately put two models under one label.
+    best_top1_model, worst_top1_model = best_tau_model, worst_tau_model
 
     for label, model, metric_key in [
         ("best", best_tau_model, "tau"),
@@ -359,11 +383,11 @@ def _recovered_per_run(model_key, arch="LLM-Parameterized_Reference_Scoring"):
             arch_df = _prm.load_architecture(rp, arch)
             merged, _ = _prm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch)
         clean, _, _ = _prm.filter_failed_scenarios(merged)
-        clean_by_run[run_num] = (clean, set(merged["arch_scenario_id"].unique()))
+        clean_by_run[run_num] = (clean, set(merged["arch_scenario_id"].unique()), merged)
     out = []
     runs = sorted(clean_by_run)
     for r in runs:
-        clean, all_sids = clean_by_run[r]
+        clean, all_sids, merged_r = clean_by_run[r]
         parts = [clean]
         n_recovered = 0
         for sid in sorted(all_sids - set(clean["arch_scenario_id"].unique())):
@@ -373,9 +397,12 @@ def _recovered_per_run(model_key, arch="LLM-Parameterized_Reference_Scoring"):
                     parts.append(donor[donor["arch_scenario_id"] == sid])
                     n_recovered += 1
                     break
+            else:
+                # Failed in every run: stays in, under the failure rule (S4).
+                parts.append(merged_r[merged_r["arch_scenario_id"] == sid])
         rec = pd.concat(parts, ignore_index=True)
-        rk = _prm.compute_ranking_metrics_local(rec)
-        cr = _prm.compute_criterion_metrics(rec)
+        rk = _prm.compute_ranking_metrics_inclusive(rec)
+        cr = _prm.compute_criterion_metrics_inclusive(rec)
         out.append({"run": r, "kendall_tau": rk["kendall_tau"],
                     "top1_accuracy": rk["top1_accuracy"], "overall_mae": cr["overall_MAE"],
                     "n_scenarios": rk["n_scenarios_evaluated"], "n_recovered": n_recovered})

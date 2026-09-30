@@ -24,9 +24,17 @@ Inputs (each overridable; defaults are where the scripts write):
 The arithmetic is the one Analysis/rerun_prep/pipeline/pipeline_gate.py used to
 reproduce these rows on the shipped data (arm_aggregate, the dataset-median and
 fixed-default like-for-like blocks, per_scenario_rank_metrics), ported here.
-Every metric is per model; nothing is pooled across models. Failed
-scenario-runs (sentinel) never enter a mean: they are dropped from their run, or
-counted at chance (tau 0, Top-1 1/3) in the inclusive rows, as the paper states.
+Every metric is per model; nothing is pooled across models. Failure rule (S4,
+2026-09-29): a failed scenario-run stays in every denominator at chance-level
+values (Top-1 wrong, tau 0, MAE the uniform-guess error). per_run_metrics and
+the hybrid workbook already carry it, so the "inclusive" rows now equal the
+headline rows; their old basis (Top-1 counted at 1/3) is retired.
+
+SCOPE. The record covers A_H, parameter provenance, the dataset-median and
+fixed-default rows and the provenance SIG rows only. Every other number the
+paper prints (A_D / A_E results, the prompt, RAG, position-bias and listwise
+ablations, the NN copy baseline, costs, sensitivity) is NOT in this diff; the
+runbook (step 7, "Where every other number comes from") lists their sources.
 
 The hybrid workbook's per-run A_H arm is `extracted` in the current harness. A
 workbook written by the older harness (the shipped one) has the per-run arm as
@@ -225,11 +233,11 @@ def _per_run_agg(prm, model, decision_type):
         mae=round(float(sub.overall_mae.mean()), 3),
         success=round(float((sub.n_scenarios / sub.n_total).mean()) * 100, 1),
         n_failed_total=int(sub.n_failed.sum()),
-        # inclusive: a failed scenario-run counts at chance, tau 0 and Top-1 1/3
-        tau_inclusive=round(float((sub.kendall_tau * sub.n_scenarios / sub.n_total).mean()), 3),
-        top1_inclusive=round(float(((sub.top1_accuracy * sub.n_scenarios
-                                     + (sub.n_total - sub.n_scenarios) / 3.0)
-                                    / sub.n_total).mean()) * 100, 1),
+        # Failure rule (S4): per_run_metrics already keeps every failed
+        # scenario-run in the denominator (tau 0, Top-1 wrong), so the
+        # inclusive value IS the headline value.
+        tau_inclusive=round(float(sub.kendall_tau.mean()), 3),
+        top1_inclusive=round(float(sub.top1_accuracy.mean()) * 100, 1),
     )
 
 
@@ -241,19 +249,21 @@ def _run_slices(ps, model, arm, decision_type):
 
 
 def arm_mean(ps, model, arm, decision_type, col):
-    """Paper estimator: per source_run, mean over non-failed scenarios; then
-    mean over runs. A single-run arm reduces to a plain mean."""
+    """Paper estimator: per source_run, mean over ALL scenarios (a failed one
+    carries the failure rule's chance-level value, S4); then mean over runs. A
+    single-run arm reduces to a plain mean."""
     g = _run_slices(ps, model, arm, decision_type)
     if g.empty:
         return np.nan
-    vals = [r.loc[~r["failed"].astype(bool), col].mean() for _, r in g.groupby("source_run")]
+    vals = [r[col].mean() for _, r in g.groupby("source_run")]
     return float(np.mean(vals))
 
 
 def like_for_like_gain(ps, per_run_arm, model, decision_type, other):
-    """A_H minus `other` on the scenarios each A_H run scored, run by run,
-    then the mean over runs. `other` is 'dm' (dataset-median arm of the same
-    workbook) or a {scenario_id: {"tau": ...}} map (fixed default)."""
+    """A_H minus `other` on the same scenarios, run by run, then the mean over
+    runs. Every scenario is in (failure rule S4). `other` is 'dm'
+    (dataset-median arm of the same workbook) or a {scenario_id: {"tau": ...}}
+    map (fixed default)."""
     ext = _run_slices(ps, model, per_run_arm, decision_type)
     if ext.empty:
         return np.nan, np.nan
@@ -264,10 +274,9 @@ def like_for_like_gain(ps, per_run_arm, model, decision_type, other):
         ref = lambda sids: np.mean([other[int(s)]["tau"] for s in sids])  # noqa: E731
     gains, refs = [], []
     for _, r in ext.groupby("source_run"):
-        ok = r[~r["failed"].astype(bool)]
-        base = ref(ok["scenario_id"].values)
+        base = ref(r["scenario_id"].values)
         refs.append(base)
-        gains.append(ok["kendall_tau"].mean() - base)
+        gains.append(r["kendall_tau"].mean() - base)
     return float(np.mean(gains)), float(np.mean(refs))
 
 
@@ -313,7 +322,8 @@ def regenerate(row, src):
             if model not in overall:
                 return None, "not_regenerated", "no per_run_metrics_all.csv rows for this model"
             return (overall[model][f"{metric}_inclusive"], "regenerated",
-                    "per run: failed scenario-runs at tau 0 / Top-1 1/3 over all n_total; mean over runs")
+                    "failure rule S4: failed scenario-runs at tau 0 / Top-1 wrong over all "
+                    "n_total (equals the headline value); mean over runs")
         if nid in ("AH_gptoss_success_weighted_tau_text", "AH_gptoss_success_weighted_top1_text"):
             if "gptoss" not in overall:
                 return None, "not_regenerated", "no gptoss rows"

@@ -65,6 +65,7 @@ for _p in (MISC_DIR / "core-automation",):
 from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
 from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
 from evaluate_architecture_metrics import filter_failed_scenarios, normalize_alternative, build_gt_lookup
+import evaluate_architecture_metrics as _eam
 
 # ---------------------------------------------------------------------------
 # Paths and constants
@@ -74,6 +75,14 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
 
 ICC_INPUT_CSV = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
 OUTPUT_XLSX = PROJECT_ROOT / "paper" / "per_run_metrics" / "significance_tests.xlsx"
+# S2: the two cross-model pooled inferences (MixedLM with a random intercept for
+# model, and the Stouffer combination of the per-model Wilcoxon z) are NOT paper
+# results: the paper never pools across models, the four models share the same
+# 195 scenarios (so Stouffer's independence assumption fails), and a model
+# random effect over four groups is barely identified. They are written here,
+# outside paper/, for diagnosis only.
+POOLED_DIAGNOSTICS_XLSX = (PROJECT_ROOT / "Analysis" / "diagnostics"
+                           / "significance_pooled_diagnostics_NOT_FOR_PAPER.xlsx")
 
 METRICS = [
     "kendall_tau",
@@ -355,6 +364,39 @@ def compute_scenario_metrics(matched_df):
     return pd.DataFrame(scenario_rows)
 
 
+def failed_scenario_rows(matched_df, clean_df):
+    """Per-scenario rows for the scenarios filter_failed_scenarios removed, under
+    the failure rule (S4, evaluate_architecture_metrics.FAILED_SCENARIO_*):
+    Top-1/Top-2 wrong, tau/rho at chance, MAE and RMSE at the chance-level
+    error of a uniform-random score (NaN when FAILED_SCENARIO_MAE is None, so
+    the run mean skips them). Same columns as compute_scenario_metrics."""
+    failed = sorted(set(matched_df["arch_scenario_id"]) - set(clean_df["arch_scenario_id"]))
+    if not failed:
+        return pd.DataFrame()
+    abs_m = compute_scenario_metrics(_eam.failed_error_rows(matched_df, set(failed), "abs"))
+    sq_m = compute_scenario_metrics(_eam.failed_error_rows(matched_df, set(failed), "sq"))
+    errs = None
+    if len(abs_m):
+        errs = abs_m.set_index("scenario_id")[["overall_mae"]].join(
+            sq_m.set_index("scenario_id")[["overall_rmse"]])
+        errs["overall_rmse_mae_ratio"] = errs["overall_rmse"] / errs["overall_mae"]
+    rows = []
+    for sid in failed:
+        g = matched_df[matched_df["arch_scenario_id"] == sid]
+        row = {"scenario_id": sid, "decision_type": g["decision_type"].iloc[0],
+               "kendall_tau": _eam.FAILED_SCENARIO_TAU,
+               "spearman_rho": _eam.FAILED_SCENARIO_RHO,
+               "top1_accuracy": _eam.FAILED_SCENARIO_TOP1,
+               "top2_accuracy": _eam.FAILED_SCENARIO_TOP2,
+               "overall_mae": np.nan, "overall_rmse": np.nan,
+               "overall_rmse_mae_ratio": np.nan}
+        if errs is not None and sid in errs.index:
+            for c in ("overall_mae", "overall_rmse", "overall_rmse_mae_ratio"):
+                row[c] = errs.at[sid, c]
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 # ---------------------------------------------------------------------------
 # Main per-scenario data pipeline
 # ---------------------------------------------------------------------------
@@ -409,11 +451,15 @@ def compute_per_scenario_metrics_from_raw():
                 matched = match_arch_to_gt(arch_df, arch_name, gt_lookup)
                 if len(matched) == 0:
                     continue
-                matched, n_failed, n_total = filter_failed_scenarios(matched)
-                if len(matched) == 0:
+                clean, n_failed, n_total = filter_failed_scenarios(matched)
+                # Failure rule (S4): a failed scenario-run enters the run mean
+                # as wrong / chance instead of being dropped.
+                parts = [compute_scenario_metrics(clean) if len(clean) else pd.DataFrame(),
+                         failed_scenario_rows(matched, clean)]
+                parts = [p for p in parts if len(p)]
+                if not parts:
                     continue
-                scen_metrics = compute_scenario_metrics(matched)
-                run_scenario_dfs.append(scen_metrics)
+                run_scenario_dfs.append(pd.concat(parts, ignore_index=True))
 
             if not run_scenario_dfs:
                 print(f"    [{arch_name}] No matched scenarios across all runs")
@@ -933,15 +979,19 @@ def main():
     icc_df = run_icc(icc_df_raw)
     print_table("ICC(2,1) Variance Decomposition", icc_df)
 
-    # --- Mixed-Model tests ---
-    print("\n[3] Mixed-Model Significance Tests (per-scenario) ...")
+    # --- Mixed-Model tests (pooled across models: diagnostic only, S2) ---
+    print("\n[3] Mixed-Model tests (pooled across models; NOT a paper result) ...")
     mm_df = run_mixed_model(per_scenario_df)
-    print_table("MixedLM: diff ~ 1 + (1|model) [per-scenario]", mm_df)
 
-    # --- Wilcoxon + Stouffer ---
-    print("\n[4] Per-Model Wilcoxon + Stouffer Combination (per-scenario, n=195) ...")
-    wil_df = run_wilcoxon(per_scenario_df)
-    print_table("Wilcoxon Signed-Rank + Stouffer [per-scenario]", wil_df)
+    # --- Wilcoxon (per model); the Stouffer rows are split off (S2) ---
+    print("\n[4] Per-Model Wilcoxon (per-scenario, n=195) ...")
+    wil_all = run_wilcoxon(per_scenario_df)
+    is_stouffer = wil_all["model"] == "Stouffer"
+    stouffer_df = wil_all[is_stouffer].reset_index(drop=True)
+    wil_df = (wil_all[~is_stouffer]
+              .drop(columns=["Stouffer_Z", "Stouffer_p"])
+              .reset_index(drop=True))
+    print_table("Wilcoxon Signed-Rank per model [per-scenario]", wil_df)
 
     # --- Effect Sizes ---
     print("\n[5] Effect Sizes (per-scenario, n=195) ...")
@@ -951,11 +1001,17 @@ def main():
     # --- Write Excel ---
     with pd.ExcelWriter(OUTPUT_XLSX, engine="openpyxl") as writer:
         icc_df.to_excel(writer, sheet_name="ICC", index=False)
-        mm_df.to_excel(writer, sheet_name="MixedModel", index=False)
         wil_df.to_excel(writer, sheet_name="Wilcoxon", index=False)
         es_df.to_excel(writer, sheet_name="EffectSizes", index=False)
 
+    POOLED_DIAGNOSTICS_XLSX.parent.mkdir(parents=True, exist_ok=True)
+    with pd.ExcelWriter(POOLED_DIAGNOSTICS_XLSX, engine="openpyxl") as writer:
+        mm_df.to_excel(writer, sheet_name="MixedModel_POOLED", index=False)
+        stouffer_df.to_excel(writer, sheet_name="Stouffer_POOLED", index=False)
+
     print(f"\nResults written to {OUTPUT_XLSX}")
+    print(f"Pooled cross-model diagnostics (not for the paper) written to "
+          f"{POOLED_DIAGNOSTICS_XLSX}")
 
 
 if __name__ == "__main__":

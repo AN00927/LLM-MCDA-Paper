@@ -7,7 +7,7 @@ break these" reference.
 ## ABSOLUTE RULE: minimal-diff editing on the paper
 
 When resolving a TODO, fixing a flagged sentence, or making any other targeted
-edit to `paper/paper_draft_working.tex` or `paper/supplementary_material.tex`,
+edit to `paper/paper_draft_v2.tex` or `paper/supplementary.tex`,
 touch ONLY the exact span identified — the marked sentence/clause, or the
 specific fact being corrected. Do NOT rewrite, rephrase, tighten, or "improve"
 neighboring sentences in the same paragraph, even if they read awkwardly, even
@@ -113,7 +113,7 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - Standalone master files (`*Scenarios.xlsx`) can drift from the consolidated workbook;
   the consolidated workbook is the source of truth for Test/RAG derivation.
 
-## Paper editing conventions (`paper/paper_draft_working.tex`)
+## Paper editing conventions (`paper/paper_draft_v2.tex`)
 
 ### Float placement (tables and figures)
 
@@ -181,7 +181,7 @@ appendix label; the reader's context already makes clear it's an appendix.
 
 ### Paper reading protocol
 
-When first reading `paper/paper_draft_working.tex`, always dispatch an explore
+When first reading `paper/paper_draft_v2.tex`, always dispatch an explore
 agent to map the full section structure (section/subsection line ranges, labels,
 TODO markers, figure/table references) before dispatching section-specific agents.
 This avoids redundant exploration and gives each section agent a pre-built

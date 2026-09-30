@@ -226,6 +226,22 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights) -> pd.DataFrame:
     return df
 
 
+def _failure_inclusive(m: dict, n_total) -> dict:
+    """Failure rule (S4, evaluate_architecture_metrics.FAILED_SCENARIO_*): a
+    failed scenario stays in the denominator at 0 for tau, rho, Top-1 and
+    Top-2, whatever the weights. The frames are sentinel-filtered, so the mean
+    over all n_total scenarios is the scored mean times n_scored / n_total."""
+    n_scored = m.get("n_scenarios_evaluated") or 0
+    if not n_total or not n_scored or n_total == n_scored:
+        return m
+    out = dict(m)
+    for k in ("kendall_tau", "spearman_rho", "top1_accuracy", "top2_accuracy"):
+        if k in out and pd.notna(out[k]):
+            out[k] = out[k] * n_scored / n_total
+    out["n_scenarios_evaluated"] = n_total
+    return out
+
+
 def metrics_per_run_then_average(frames: list[pd.DataFrame], weights) -> dict:
     """Method A: score each run under `weights`, then average the metrics.
 
@@ -236,7 +252,9 @@ def metrics_per_run_then_average(frames: list[pd.DataFrame], weights) -> dict:
     Every numeric key returned by compute_ranking_metrics is averaged, so callers
     that read counts (e.g. n_scenarios_evaluated) keep working.
     """
-    per_run = [compute_ranking_metrics(rerank_with_weights(f, weights)) for f in frames]
+    per_run = [_failure_inclusive(compute_ranking_metrics(rerank_with_weights(f, weights)),
+                                  f.attrs.get("n_total"))
+               for f in frames]
     out = {}
     for k in per_run[0]:
         vals = [m[k] for m in per_run]
@@ -282,6 +300,7 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
             filtered, n_failed, n_total = filter_failed_scenarios(merged)
             if n_failed:
                 print(f"  [{name}] {Path(src).name}: filtered {n_failed}/{n_total} failed scenarios.")
+            filtered.attrs["n_total"] = n_total  # failure rule (S4)
             frames.append(filtered)
         if not frames:
             print(f"  WARNING: No matched data for {name} - skipping.")
@@ -440,6 +459,7 @@ def _load_clean_merged(CONFIG: dict) -> tuple[dict, list]:
             filtered, n_failed, n_total = filter_failed_scenarios(merged)
             if n_failed:
                 print(f"  [{name}] Filtered {n_failed}/{n_total} failed scenarios.")
+            filtered.attrs["n_total"] = n_total  # failure rule (S4)
             frames.append(filtered)
         if not frames:
             print(f"  WARNING: No matched data for {name} - skipping.")
@@ -531,6 +551,7 @@ def run_alpha_sweep(model_key: str = MODEL_KEY) -> pd.DataFrame:
                 if n_failed:
                     print(f"  [{label} / {arch_name}] Filtered {n_failed}/{n_total} "
                           f"failed scenarios.")
+                filtered.attrs["n_total"] = n_total  # failure rule (S4)
                 frames.append(filtered)
             metrics = metrics_per_run_then_average(frames, baseline_weights)
             results.append({

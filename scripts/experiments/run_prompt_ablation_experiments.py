@@ -981,6 +981,13 @@ def load_reference() -> Dict[int, Dict]:
     return reference
 
 
+# Failure rule (S4, author decision 2026-09-29), the same as the main suite's
+# (evaluate_architecture_metrics.FAILED_SCENARIO_*): a failed or unscored
+# scenario is WRONG for Top-1/Top-2 and at chance (0) for Kendall tau, and it
+# stays in every denominator.
+FAILED_SCENARIO_TAU = 0.0
+
+
 def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
     """Kendall tau / Top-1 / Top-2 against the reference ranking.
 
@@ -990,17 +997,17 @@ def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
     alternative scored the sentinel, or no alternative overlaps the reference
     -- counts as WRONG for Top-1 and Top-2 (0.0, never NaN), and stays in the
     denominator: callers average top1/top2 over every scenario in the cell,
-    not only the scored ones. Kendall tau is not an accuracy metric and is
-    unchanged: NaN whenever it is undefined (fewer than two overlapping
-    alternatives, or tied ranks on either side), averaged over scored
-    scenarios only because pandas' mean() skips NaN.
+    not only the scored ones. Kendall tau follows the same failure rule (S4,
+    2026-09-29): a failed scenario gets FAILED_SCENARIO_TAU = 0 (chance) and
+    stays in the denominator. A scored scenario whose tau is undefined (fewer
+    than two overlapping alternatives) is NaN here and 0 in summarize().
 
     Tau is computed on ranks, not raw scores: `result["ranking"]` already
     applies apply_mavt_ranking's deterministic TIE_BREAK_PRIORITY tie-break
     (B60), and the reference side reuses the ground truth's own tie-broken
     "rank" column, so neither side scores tau_b on tied values.
     """
-    out = {"kendall_tau": np.nan, "top1": 0.0, "top2": 0.0,
+    out = {"kendall_tau": FAILED_SCENARIO_TAU, "top1": 0.0, "top2": 0.0,
            "failed": True, "pred_top1": ""}
     if ref is None:
         return out
@@ -1051,7 +1058,7 @@ def _failed_record(scenario: Dict, variant_id: str, variant: Dict, architecture:
         "collected_utc": collected_utc,
         "scenario_id": scenario["scenario_id"],
         "decision_type": scenario.get("decision_type", ""),
-        "kendall_tau": np.nan, "top1": 0.0, "top2": 0.0, "failed": True, "pred_top1": "",
+        "kendall_tau": FAILED_SCENARIO_TAU, "top1": 0.0, "top2": 0.0, "failed": True, "pred_top1": "",
         "api_calls": 0, "successful_calls": 0, "failed_calls": 0,
         "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
         "latency_ms": 0.0, "failure_types": f"harness_exception: {error[:200]}",
@@ -1215,8 +1222,8 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
     (`g`/`len(g)`), not just the scored ones (`ok`/`len(ok)`). This falls out
     of scenario_metrics/_failed_record already writing 0.0 (never NaN) for a
     failed scenario's top1/top2, so `g["top1"].mean()` divides by n_scenarios
-    automatically. kendall_tau is not an accuracy metric and keeps averaging
-    over the scored subset only (its NaN values are skipped by mean()).
+    automatically. kendall_tau follows the same failure rule (S4): a failed
+    scenario counts at tau 0 (chance) and every scenario is in the denominator.
     """
     rows = []
     per_run = []
@@ -1227,7 +1234,9 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
             "variant": variant, "architecture": arch, "model": model, "run": run,
             "n_scenarios": len(g), "n_scored": len(ok),
             "n_failed_scenarios": int(g["failed"].astype(bool).sum()),
-            "kendall_tau": ok["kendall_tau"].mean(),
+            # Failure rule (S4): every scenario in the denominator, a failed
+            # one at tau 0 (scenario_metrics / _failed_record write it).
+            "kendall_tau": g["kendall_tau"].fillna(FAILED_SCENARIO_TAU).mean(),
             "top1_accuracy": g["top1"].mean(),
             "top2_accuracy": g["top2"].mean(),
             "mean_criterion_sd": ok["mean_criterion_sd"].mean(),

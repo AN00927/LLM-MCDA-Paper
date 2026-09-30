@@ -24,6 +24,17 @@ replace it. Every row reports both:
     S_ok   conditional on successful extraction  (what the paper prints today)
     S_all  all 195 scenarios, failures at chance (availability-inclusive)
 
+STATUS AFTER THE S4 FIX (2026-09-30): this script is a SENSITIVITY analysis. The
+paper's headline metrics now apply the failure rule (a failed scenario stays in
+the denominator: Top-1 and Top-2 = 0, tau = rho = 0, chance-level MAE). The
+columns here are therefore:
+    *_conditional  scored-only (sensitivity; the old headline)
+    *_inclusive    metric-level chance imputation D2 (Top-1 1/3, Top-2 2/3;
+                   sensitivity, NOT the headline)
+    *_headline     the S4 rule (failed = 0), equal to per_run_metrics_all.csv
+Rows flagged failed == True in the input are the S4 rule rows; they are removed
+before the scored-only and D2 columns are computed.
+
 Input:  Analysis/per_scenario_metrics_all.csv   (written by cluster_bootstrap_ci.py)
 Output: Analysis/failure_inclusive_metrics.{xlsx,md}
 
@@ -111,10 +122,15 @@ def compute(df, universe):
 
             per_run_cond = {m: [] for m in METRICS}
             per_run_incl = {m: [] for m in METRICS}
+            per_run_head = {m: [] for m in METRICS}
             failed_counts = []
 
             for run, rdf in cell.groupby("run"):
-                sub = rdf[rdf["scenario_id"].isin(scope_ids)]
+                sub_all = rdf[rdf["scenario_id"].isin(scope_ids)]
+                if "failed" in sub_all.columns:
+                    sub = sub_all[~sub_all["failed"].astype(bool)]
+                else:
+                    sub = sub_all
                 n_ok = len(sub)
                 n_failed = n_scope - n_ok
                 failed_counts.append(n_failed)
@@ -126,6 +142,11 @@ def compute(df, universe):
                             if n_scope else np.nan)
                     per_run_cond[m].append(cond)
                     per_run_incl[m].append(incl)
+                    # S4 headline rule: failed rows are already in sub_all at
+                    # their rule value; scenarios absent from the run count 0.
+                    head = (float(sub_all[m].to_numpy(dtype=float).sum()) / n_scope
+                            if n_scope else np.nan)
+                    per_run_head[m].append(head)
 
             row = {
                 "model": model,
@@ -141,6 +162,7 @@ def compute(df, universe):
                 row[f"{m}_conditional"] = round(c, 4)
                 row[f"{m}_inclusive"] = round(i, 4)
                 row[f"{m}_delta"] = round(i - c, 4)
+                row[f"{m}_headline"] = round(float(np.nanmean(per_run_head[m])), 4)
             rows.append(row)
 
     return pd.DataFrame(rows)
@@ -168,7 +190,7 @@ def main():
         res.to_excel(xl, sheet_name="failure_inclusive", index=False)
 
     overall = res[res["scope"] == "Overall"]
-    print("OVERALL (S_ok conditional vs S_all inclusive, D2 chance imputation)")
+    print("OVERALL (sensitivity: scored-only vs D2 chance imputation; headline = S4 rule)")
     print(overall[["model", "architecture", "mean_failed_per_run",
                    "kendall_tau_conditional", "kendall_tau_inclusive", "kendall_tau_delta",
                    "top1_accuracy_conditional", "top1_accuracy_inclusive",
@@ -204,7 +226,12 @@ def main():
             flag = "" if oc == oi else "   <-- ORDER CHANGES"
             print(f"  {model:9s} {metric:14s} cond: {oc}   incl: {oi}{flag}")
 
-    md = ["# Failure-inclusive metrics (P1.2)", "",
+    md = ["# Failure-inclusive metrics (P1.2), sensitivity analysis", "",
+          "**Not the headline.** The paper's headline applies the S4 failure rule",
+          "(failed = Top-1 wrong, tau 0, chance MAE, all scenarios in the denominator);",
+          "the `*_headline` columns of the xlsx hold it. `S_ok` below is scored-only",
+          "(sensitivity) and `S_all` is D2 chance imputation (Top-1 1/3), also a",
+          "sensitivity row.", "",
           "D2 convention: each failed scenario receives the **chance value of its own",
           "metric** -- tau 0, rho 0, Top-1 1/3, Top-2 2/3 (rho's chance value is",
           "derived by direct enumeration over all 6 permutations of 3 items in the",
