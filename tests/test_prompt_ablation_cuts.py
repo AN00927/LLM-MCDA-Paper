@@ -127,6 +127,7 @@ def test_significance_uses_main_suite_control_and_wilcoxon_for_two_variants(tmp_
 
     monkeypatch.setattr(SIG, "_load_prompt_ablation_module",
                         lambda: SimpleNamespace(load_reference=lambda: {},
+                                                rescore_cell_rows=lambda df, ref: df,
                                                 main_suite_control_rows=fake_control))
     SIG.main()
     assert sorted(calls) == [("gemini", "AD", 3, 40), ("gemini", "AE", 3, 40)]

@@ -930,55 +930,83 @@ def load_reference() -> Dict[int, Dict]:
     """
     test_df = read_table_clean(
         TEST_SCENARIOS, keep_str_cols=["alternative_1", "alternative_2", "alternative_3"])
-    gt_files = {"HVAC": "ground_truth_hvac.xlsx",
-                "Appliance": "ground_truth_appliance.xlsx",
-                "Shower": "ground_truth_shower.xlsx"}
-    gt_cache = {}
-    for dtype, filename in gt_files.items():
-        path = GROUND_TRUTH_DIR / filename
-        if path.exists():
-            gt_cache[dtype] = read_table_clean(
-                path, keep_str_cols=["question", "location", "alternative"])
 
-    def clean(v) -> str:
-        if v is None:
-            return ""
-        try:
-            if pd.isna(v):
-                return ""
-        except (TypeError, ValueError):
-            pass
-        return str(v).strip()
+    # Scenario-to-ground-truth matching is the headline's own
+    # (evaluate_architecture_metrics.match_scenarios), not a re-implementation.
+    # Matching on question + location alone is ambiguous: several Shower test
+    # scenarios share both, and picking among their ground-truth scenarios by
+    # alternative overlap alone attached the wrong scenario's ranks to 16
+    # Shower scenarios, so control cells differed from the headline metrics
+    # computed from the same runs. The headline match also uses the scenario's
+    # outdoor_temp / appliance_age / flow_rate and consumes each ground-truth
+    # scenario once, in scenario order.
+    import importlib.util
+    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+    spec = importlib.util.spec_from_file_location("evaluate_architecture_metrics_for_ref", cm_path)
+    cm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cm)
+    gt_by_type = cm.load_ground_truth(cm._build_config(next(iter(MODEL_SPECS))))
+    gt_lookup = cm.build_gt_lookup(gt_by_type)
+    gt_id_lookup = cm.build_gt_id_lookup(gt_by_type)
+
+    # Long-format frame shaped like a per-run architecture workbook (the columns
+    # match_scenarios reads), one row per scenario x alternative.
+    long_rows = []
+    for i, row in test_df.iterrows():
+        for j in range(1, 4):
+            alt = str(row.get(f"alternative_{j}") or "").strip()
+            if alt and alt.lower() != "nan":
+                long_rows.append({
+                    "scenario_id": i + 1,
+                    "decision_type": row.get("decision_type"),
+                    "question": row.get("question"),
+                    "location": row.get("location"),
+                    "outdoor_temp": row.get("outdoor_temp"),
+                    "appliance_age": row.get("appliance_age"),
+                    "flow_rate": row.get("flow_rate"),
+                    "alternative": alt,
+                })
+    arch_df = cm.load_architecture(pd.DataFrame(long_rows), "reference")
+    merged, _ = cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, "reference")
 
     reference = {}
-    for i, row in test_df.iterrows():
-        sid = i + 1
-        dtype = clean(row.get("decision_type"))
-        gt = gt_cache.get(dtype)
-        if gt is None:
-            continue
-        cand = gt[(gt["question"].map(clean) == clean(row.get("question")))
-                  & (gt["location"].map(clean) == clean(row.get("location")))]
-        if cand.empty:
-            continue
-        alts = [clean(row.get(f"alternative_{j}")) for j in range(1, 4)]
-        alts = [a for a in alts if a]
-        sub = cand[cand["alternative"].map(clean).isin(alts)]
-        if sub.empty:
-            continue
-        ordered = sub.sort_values("mavt_score", ascending=False)
-        reference[sid] = {
-            "ranked_alternatives": [clean(a) for a in ordered["alternative"]],
-            "mavt_by_alt": {clean(r["alternative"]): float(r["mavt_score"])
-                            for _, r in sub.iterrows()},
+    for sid, sc in merged.groupby("arch_scenario_id", sort=True):
+        sc = sc.sort_values("gt_rank")
+        reference[int(sid)] = {
+            "ranked_alternatives": [str(a).strip() for a in sc["alternative"]],
+            "mavt_by_alt": {str(r["alternative"]).strip(): float(r["gt_mavt_score"])
+                            for _, r in sc.iterrows()},
             # Ground-truth "rank" is already the deterministic TIE_BREAK_PRIORITY
             # tie-break applied by apply_mavt_ranking (see the GT calculators) --
             # reused here rather than re-deriving ranks from mavt_score, which
             # would tie whenever two alternatives share a weighted sum.
-            "rank_by_alt": {clean(r["alternative"]): int(r["rank"])
-                            for _, r in sub.iterrows()},
+            "rank_by_alt": {str(r["alternative"]).strip(): int(r["gt_rank"])
+                            for _, r in sc.iterrows()},
         }
     return reference
+
+
+def rescore_cell_rows(df: pd.DataFrame, reference: Dict[int, Dict]) -> pd.DataFrame:
+    """Recompute kendall_tau / top1 / top2 / failed / pred_top1 of stored cell
+    rows from their stored per-alternative scores and ranks (`alt_scores_json`),
+    against `reference`. No API call. Cells collected before the load_reference
+    fix carry metrics scored against a wrong reference ranking for 16 Shower
+    scenarios; the raw scores in the cell are unaffected, so the analysis
+    rescores them here rather than rewriting the collected files. A row with no
+    stored scores (a harness exception) keeps its stored failed values."""
+    df = df.reset_index(drop=True)
+    for idx, row in df.iterrows():
+        raw = row.get("alt_scores_json")
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        alts = json.loads(raw)
+        result = {"scored": [{"alternative": str(a["alternative"]),
+                              **{c: float(a[c]) for c in CRITERIA}} for a in alts],
+                  "ranking": {"ranks": [a.get("rank") for a in alts]}}
+        m = scenario_metrics(result, reference.get(int(row["scenario_id"])))
+        for k in ("kendall_tau", "top1", "top2", "failed", "pred_top1"):
+            df.at[idx, k] = m[k]
+    return df
 
 
 # Failure rule (S4, author decision 2026-09-29), the same as the main suite's
@@ -1360,7 +1388,7 @@ def main():
                         f"cell_{variant_id}_{arch}_{model_key}_run_{run_idx:02d}.xlsx")
                     if cell_path.exists() and cell_path.stat().st_size > 0:
                         try:
-                            all_parts.append(read_table_clean(cell_path))
+                            all_parts.append(rescore_cell_rows(read_table_clean(cell_path), reference))
                             logger.info("Resume %s", cell_path.name)
                             continue
                         except Exception:
