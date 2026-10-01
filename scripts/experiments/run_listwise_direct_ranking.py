@@ -359,6 +359,19 @@ def load_listwise_runs(model_key: str) -> pd.DataFrame:
     if not paths:
         return pd.DataFrame()
     df = pd.concat([read_table_clean(p) for p in paths], ignore_index=True)
+    # Rescore from the stored rankings against the corrected reference (see
+    # run_prompt_ablation_experiments.load_reference): runs collected before
+    # that fix stored metrics against a wrong reference for 16 Shower scenarios.
+    reference = PA.load_reference()
+    for idx, row in df.iterrows():
+        ranked = json.loads(row["ranking_json"]) if isinstance(row.get("ranking_json"), str) \
+            and row["ranking_json"].strip() else None
+        if ranked is None or not isinstance(row.get("alternatives_json"), str):
+            continue
+        m = PA.scenario_metrics(ranking_result(json.loads(row["alternatives_json"]), ranked),
+                                reference.get(int(row["scenario_id"])))
+        for k in ("kendall_tau", "top1", "top2", "failed", "pred_top1"):
+            df.at[idx, k] = m[k]
     # Failure rule (S4): runs written before 2026-09-29 stored NaN for a failed
     # ranking's tau; it is the chance value 0, like every other arm.
     df.loc[df["failed"].astype(bool), "kendall_tau"] = PA.FAILED_SCENARIO_TAU

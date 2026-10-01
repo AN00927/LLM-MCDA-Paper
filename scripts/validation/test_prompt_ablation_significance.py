@@ -150,6 +150,12 @@ def load_matrix() -> pd.DataFrame:
     if not files:
         raise SystemExit(f"No cell files in {CELLS_DIR}")
     df = pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
+    # Rescore from the stored per-alternative scores against the corrected
+    # reference (see run_prompt_ablation_experiments.load_reference): cells
+    # collected before that fix stored metrics against a wrong reference
+    # ranking for 16 Shower scenarios. Raw scores are untouched.
+    pa = _load_prompt_ablation_module()
+    df = pa.rescore_cell_rows(df, pa.load_reference())
     df.loc[df["failed"].astype(bool), "kendall_tau"] = FAILED_SCENARIO_TAU
     return df
 
