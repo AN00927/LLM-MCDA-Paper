@@ -238,6 +238,20 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
         for norm_alt, arch_row in arch_norm_alts.items():
             gt_row = best_match["alt_map"].get(norm_alt)
             if gt_row is None:
+                # A_H failed scenarios store placeholder alternatives named
+                # "Alternative N (extraction failed)", all scored with the
+                # sentinel. Map the N-th placeholder to the N-th ground-truth
+                # alternative (as evaluate_architecture_metrics.py does) so the
+                # failure rule in failed_scenario_rows() sees the scenario and
+                # counts it as wrong. Without this the scenario-run was dropped
+                # and the paired tests used 193 scenarios for GPT-OSS.
+                m = _eam.PLACEHOLDER_ALT_RE.match(norm_alt)
+                if m:
+                    gt_alts = list(best_match["alt_map"].keys())
+                    alt_num = int(m.group(1))
+                    if 1 <= alt_num <= len(gt_alts):
+                        gt_row = best_match["alt_map"][gt_alts[alt_num - 1]]
+            if gt_row is None:
                 continue
             matched_alts += 1
             merged = {
