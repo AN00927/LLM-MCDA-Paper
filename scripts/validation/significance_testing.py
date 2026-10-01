@@ -212,6 +212,7 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
 
         best_match = None
         best_score = 0
+        top_entries = []
 
         for gt_entry in gt_lookup[key]:
             if gt_entry["used"]:
@@ -221,16 +222,32 @@ def match_arch_to_gt(arch_df, arch_name, gt_lookup):
             overlap = len(set(gt_entry["alt_map"].keys()) & set(arch_norm_alts.keys()))
             extra = 0
             for arch_val, gt_key in param_pairs:
-                gt_val = str(gt_entry.get(gt_key, "")).strip()
+                gt_val = _eam._gt_match_value(gt_entry, gt_key)
                 if gt_val and arch_val == gt_val:
                     extra += 100
             score = overlap + extra
             if score > best_score:
                 best_score = score
                 best_match = gt_entry
+                top_entries = [gt_entry]
+            elif score == best_score and score > 0:
+                top_entries.append(gt_entry)
 
         if best_match is None or best_score == 0:
             continue
+
+        if len(top_entries) > 1:
+            # Tie: break by the true GT scenario id (same source as
+            # evaluate_architecture_metrics.match_scenarios), never silently by order.
+            true_sid = _eam.resolve_true_gt_sid(arch_dtype, arch_sid, loc)
+            chosen = [e for e in top_entries
+                      if true_sid is not None and int(e["gt_sid"]) == true_sid]
+            if chosen:
+                best_match = chosen[0]
+            else:
+                print(f"WARN: [match_arch_to_gt] UNRESOLVED {len(top_entries)}-way tie "
+                      f"(score={best_score}) for sid={arch_sid} ({arch_dtype}): no GT id "
+                      f"source resolves it, using first GT candidate", file=sys.stderr)
 
         best_match["used"] = True
 

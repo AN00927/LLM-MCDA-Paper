@@ -44,7 +44,7 @@ from model_config import (
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
 from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
-from sentinel_utils import MAVT_ROUND_DECIMALS
+from sentinel_utils import MAVT_ROUND_DECIMALS, gpm_to_flow_rate_label
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',
@@ -137,6 +137,71 @@ def _clean_match_value(value):
     """Coerce a match parameter to a clean string; return '' for blanks/N/A."""
     s = str(value).strip()
     return "" if s.lower() in ("", "n/a", "nan", "none") else s
+
+
+_TRUE_GT_SID_CACHE = {}
+
+
+def _true_gt_sid_table():
+    """Map arch scenario_id -> (decision_type, location, true GT scenario_id).
+
+    The GT scenario_id is the 0-based master-row index in the per-type master
+    workbook. TestScenarios.xlsx carries no id column, but each decision type's
+    Test rows are the master rows NOT listed in Scenario Files/rag_membership.json,
+    in master order, and an architecture scenario_id is the 1-based row index in
+    TestScenarios.xlsx. Used ONLY to break descriptor-match ties.
+    """
+    if "table" in _TRUE_GT_SID_CACHE:
+        return _TRUE_GT_SID_CACHE["table"]
+    import json
+    sdir = PROJECT_ROOT / "Scenario Files"
+    table = {}
+    try:
+        test = pd.read_excel(sdir / "TestScenarios.xlsx")
+        with open(sdir / "rag_membership.json", "r", encoding="utf-8") as fh:
+            types = json.load(fh)["types"]
+        for dtype in ("HVAC", "Appliance", "Shower"):
+            rag_rows = {int(e["master_row"]) for e in types[dtype]}
+            test_idx = [i for i in test.index if test.loc[i, "decision_type"] == dtype]
+            master_rows = [r for r in range(len(test_idx) + len(rag_rows)) if r not in rag_rows]
+            if len(master_rows) != len(test_idx):
+                continue
+            for i, m in zip(test_idx, master_rows):
+                table[int(i) + 1] = (dtype, str(test.loc[i, "location"]).strip(), int(m))
+    except Exception as exc:  # missing/odd files: no tie-break source, caller warns
+        print(f"WARN: true GT scenario-id table unavailable ({exc})")
+        table = {}
+    _TRUE_GT_SID_CACHE["table"] = table
+    return table
+
+
+def resolve_true_gt_sid(arch_dtype, arch_sid, location=None):
+    """True GT scenario_id for an architecture scenario, or None if unknown.
+
+    Returns None when the id source is unavailable or the architecture scenario
+    does not line up with the Test sheet (decision type or location mismatch),
+    so a foreign id namespace can never force a wrong pick.
+    """
+    try:
+        entry = _true_gt_sid_table().get(int(arch_sid))
+    except (TypeError, ValueError):
+        return None
+    if entry is None or entry[0] != arch_dtype:
+        return None
+    if location is not None and str(location).strip() != entry[1]:
+        return None
+    return entry[2]
+
+
+def _gt_match_value(gt_entry, gt_key):
+    """GT-side comparison value; gpm is compared as its flow_rate label."""
+    v = _clean_match_value(gt_entry.get(gt_key, ""))
+    if gt_key == "gpm" and v:
+        try:
+            return gpm_to_flow_rate_label(float(v))
+        except (TypeError, ValueError):
+            return v
+    return v
 
 
 def is_failed_row(row):
@@ -562,7 +627,7 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             extra = 0
             param_count = 0
             for arch_val, gt_key in param_pairs:
-                gt_val = _clean_match_value(gt_entry.get(gt_key, ""))
+                gt_val = _gt_match_value(gt_entry, gt_key)
                 if gt_val and arch_val == gt_val:
                     extra += 100
                     param_count += 1
@@ -575,10 +640,17 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
             top = [(s, pc, e) for s, pc, e in valid_candidates if s == best_score]
             _, best_param_count, best_match = top[0]
             if len(top) > 1:
-                warnings_log.append(
-                    f"WARN: {len(top)}-way tie (score={best_score}) for "
-                    f"sid={arch_sid} ({arch_dtype}, '{q[:40]}') — using first GT candidate"
-                )
+                true_sid = resolve_true_gt_sid(arch_dtype, arch_sid, loc)
+                chosen = [c for c in top
+                          if true_sid is not None and int(c[2]["gt_sid"]) == true_sid]
+                if chosen:
+                    _, best_param_count, best_match = chosen[0]
+                else:
+                    _msg = (f"WARN: UNRESOLVED {len(top)}-way tie (score={best_score}) for "
+                            f"sid={arch_sid} ({arch_dtype}, '{q[:40]}'): no GT id source "
+                            f"resolves it, using first GT candidate")
+                    warnings_log.append(_msg)
+                    print(_msg, file=sys.stderr)
             if arch_dtype == "Shower" and best_param_count == 0:
                 warnings_log.append(
                     f"WARN: Shower sid={arch_sid} matched on alternative overlap only "
