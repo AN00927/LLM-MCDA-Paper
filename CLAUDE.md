@@ -74,15 +74,9 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   and report `latency_ms` measured around the successful POST only.
 - **Every run must record a UTC collection timestamp.** Any new run output (per-run
   xlsx and `*_raw.jsonl`) needs a wall-clock timestamp per run. The shipped benchmark
-  runs do not have one, and that omission is expensive: the 2026-08-03 A_H
-  alternative-ordering experiment had to collect a 3-run contemporaneous control arm
-  (2,340 extra API calls) purely to rule out provider drift, because a gap between a
-  new arm and an undated older arm is equally consistent with an ordering effect and
-  with the provider changing under you. That control earned its cost — DeepSeek's
-  run-to-run parameter agreement was 0.42 in the old session and 0.64/0.67 in the new
-  one with no manipulation involved, which without the control would have read as a
-  finding. With timestamps, a contemporaneous control becomes optional rather than
-  mandatory.
+  runs lack one, which is why the 2026-08-03 A_H alternative-ordering experiment
+  needed a 3-run contemporaneous control arm (2,340 extra API calls) purely to rule
+  out provider drift. With timestamps that control is optional, not mandatory.
 - **Proxy/true pairs (intentional):** the LLM sees a homeowner-accessible label/estimate;
   the calculator gets the true engineering value. Never leak the true value to the LLM
   prompt, never let the calculator score the label directly.
@@ -112,6 +106,9 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 
 ## Refresh workflows (order matters — build_rag_index is always LAST)
 
+Rebuilding the Chroma index (`scripts/collection/build_rag_index.py`) is always the
+final step of any refresh chain below.
+
 - **Changed a ground-truth calculator** → run that calculator (regenerates
   a workbook at an explicit safe `--output` path) → run
   `scripts/collection/sync_rag_ground_truth_scores.py --dry-run` to validate the frozen
@@ -130,9 +127,6 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   freeze has no promotion step from scratch outputs into the canonical workbooks, so a
   canonical data refresh must wait until the freeze is explicitly changed and the
   input/output workflow is reviewed.
-  The legacy `build_consolidated_scenario_workbooks.py` expects
-  `workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx`, which is currently absent;
-  it is not the normal refresh path.
 - Any data change invalidates prior `*_results.xlsx` for the affected type — those
   need fresh architecture runs.
 
@@ -144,7 +138,6 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   column types are documented in [XLSX_Schema_Map.md](XLSX_Schema_Map.md).
 - **NEVER commit or push without explicit user permission** — `git commit`/`git push` are strictly forbidden unless the user directly instructs it.
 - **Unexpected git state (a commit, branch, or file change you don't recall making) is not automatically a problem.** The user works in this repo concurrently (IDE source control, other sessions, autosave-triggered commits). If you find something you didn't expect: check whether a subagent you dispatched did it (subagent reports state explicitly whether they ran git commands); if a subagent didn't do it, assume it was the user and move on — don't investigate further, don't revert it, don't treat it as an anomaly to flag repeatedly. A one-line mention that you noticed it is enough if it's directly relevant to the task at hand.
-- **Superpowers planning artifacts are ephemeral.** Any planning, tracking, or spec documents created by superpowers skills (brainstorming specs, implementation plans, design docs under `docs/superpowers/`) must be added to `.gitignore` after creation. They are working artifacts, not deliverables.
 - The standalone HVAC, Appliance, and Shower master workbooks in `workbooks/scenarios/`
   are the current source inputs for Test/RAG derivation. `data/scenarios/rag_membership.json`
   fixes the Test/RAG split; the scratch-safe builder audits that membership against the
@@ -177,18 +170,10 @@ boundary in Results and Discussion. Rules:
   reference, use `[H]` (hard placement) — but prefer `\FloatBarrier` spacing.
 - **If you add a new `\subsection`** in Results or Discussion, add
   `\FloatBarrier` immediately before it.
-- After any float layout change, **recompile twice** (pdflatex → bibtex →
-  pdflatex × 2) and visually verify tables sit after their references.
 - **No fully pooled tables without user approval.** When presenting metrics
   across multiple models, do not pool all data into a single aggregate table
   without asking the user first. Show per-model breakdowns or at minimum
   strongest+weakest model.
-- **Table/Figure Centering Troubleshooting:** If an element using `\centering`
-  is not actually centering on the page, check parent environment constraints.
-  A common culprit is `threeparttable` or a similar wrapper missing an explicit
-  `\centering` declaration at its root level, or local alignment blocks
-  overriding the float's global alignment. Ensure `\centering` is placed
-  immediately after `\begin{threeparttable}`.
 
 ### Reading the user's inline TODOs
 
@@ -197,42 +182,14 @@ text immediately before it**, not to what follows. A marker on its own line
 between paragraphs refers to the section or paragraph that came right before it.
 Resolve the TODO against that antecedent, not against the whole subsection.
 
-When editing text in this file, change the absolute minimum required to
-satisfy the request:
-
-1. **Prefer word-level swaps over sentence rewrites.** If a single word,
-   number, or phrase needs changing, change only that token — do not
-   rephrase the surrounding sentence.
-2. **Do not reword for clarity.** Even if nearby prose could be improved,
-   leave it as-is unless the task explicitly requires it.
-3. **Do not reorder or restructure.** Keep sentences, paragraphs, and
-   sections in their original form. Move content only when the edit
-   specifically demands it.
-4. **Scope edits to the target.** If fixing one sentence, touch no other
-   sentence — not for flow, not for consistency, not for style.
-5. **When in doubt, do less.** Every character changed beyond what the
-   task requires is excess.
+Edits here follow the ABSOLUTE RULE at the top of this file: prefer word-level
+swaps, touch no sentence but the target, and when in doubt do less.
 
 ### Appendix references
 
 When referring to an appendix in the text, use **only** `\ref{APPENDIXNAME}` — do not
 prepend "appendix" before it. LaTeX will automatically resolve the reference to the
 appendix label; the reader's context already makes clear it's an appendix.
-
-### Paper reading protocol
-
-When first reading `paper/paper_draft_v2.tex`, always dispatch an explore
-agent to map the full section structure (section/subsection line ranges, labels,
-TODO markers, figure/table references) before dispatching section-specific agents.
-This avoids redundant exploration and gives each section agent a pre-built
-navigation map.
-
-## Communication conventions
-
-- **"Explain X to me" means explain in conversation.** When the user asks you to
-  explain something, they want a direct answer in the chat — not a plan item, not
-  a file edit, not a todo. Do NOT add explanatory requests to task lists or plan
-  documents. Just answer.
 
 ## Subagent usage
 
