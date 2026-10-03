@@ -77,6 +77,7 @@ from llm_mcda.common.paths import (
     require_safe_output_directory,
 )
 
+from llm_mcda.common.stats_utils import holm_adjust
 from llm_mcda.common.sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
 from llm_mcda.common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
 from scripts.analysis.evaluate_architecture_metrics import (
@@ -858,14 +859,7 @@ def run_wilcoxon(per_scenario_df):
     # raw ones, so without the running max a larger raw p can come out with a
     # smaller adjusted p. Matches holm_correct() in
     # run_rag_ablation_experiments.py and holm() in emit_per_model_pvalues.py.
-    k = int(holm_df["p_value"].notna().sum())
-    holm_df["p_holm"] = np.nan
-    ordered = holm_df.loc[holm_df["p_value"].notna(), "p_value"].sort_values(
-        kind="mergesort")
-    running_max = 0.0
-    for i, (idx, p_raw) in enumerate(ordered.items()):
-        running_max = max(running_max, min(p_raw * (k - i), 1.0))
-        holm_df.at[idx, "p_holm"] = running_max
+    holm_df["p_holm"] = holm_adjust(holm_df["p_value"].values)
     holm_df["significant_holm"] = holm_df["p_holm"].apply(
         lambda p: p < alpha if pd.notna(p) else False
     )
