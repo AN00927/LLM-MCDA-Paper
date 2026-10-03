@@ -34,6 +34,7 @@ id_rsa*
 .claude/
 .codex/
 .vscode/
+.superpowers/
 
 # Jupyter + OS
 .ipynb_checkpoints/
@@ -57,55 +58,6 @@ chroma_rag_db/
 *.sqlite3
 .rag_ablation_temp/
 
-# Agent / session working artifacts (never tracked)
-HANDOFF.md
-AGENT-HANDOFF.md
-AGENT-REPORT.md
-PAPER-EDIT-BRIEF.md
-reviewer-response-plan.md
-docs/EXECUTION_PLAN.md
-docs/REVISION_PLAN.md
-docs/cleanuprepo.txt
-.superpowers/
-
-# Superpowers planning artifacts (ephemeral by convention, see CLAUDE.md)
-docs/superpowers/
-docs/LLM_MCDA_CLEANUP_PLAN.md
-docs/claim_audit/
-
-# Maintainer-only consolidated scenario source; standalone scenario inputs remain public.
-/workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx
-/workbooks/scenarios/~$ConsolidatedforSimaltaneousediting.xlsx
-
-# Paper build outputs
-paper/Images/*
-!paper/Images/FULLFlowMCDA.png
-!paper/Images/LifestyleChangesEmissionImpact.png
-!paper/Images/PA_Residential_Emissions.png
-!paper/Images/ArchitectureFlowcharts.png
-!paper/Images/OverallPerformanceByModel.pdf
-paper/Charts
-paper/per_run_metrics/*.tex
-paper/Notebook (text format)
-paper/Charts_Significance_Notes.txt
-paper/incremental_contribution_table.tex
-paper\graphicalabstracttable.tex
-paper\highlights.txt
-paper/cover_letter.*
-cover_letter.*
-
-# Paper pipeline outputs
-paper_draft_working.spl
-paper_draft_singlecolumn.spl
-
-# Paper build artifacts
-paper/paper_draft_working.pdf
-paper/paper_draft_working.abs
-paper/paper_draft_singlecolumn.pdf
-paper/failure_analysis.csv
-paper/failure_analysis_tables.tex
-paper/pipeline_plan.md
-
 # Reference literature PDFs (downloaded papers)
 temppapers/
 
@@ -114,25 +66,6 @@ TinyTeX/
 .opencode/
 PAPERRULES.txt
 
-#template
-els-cas-templates
-paper/cas-common.sty
-paper/cas-dc.cls
-paper/thumbnails/cas-email.jpeg
-paper/thumbnails/cas-facebook.jpeg
-paper/thumbnails/cas-gplus.jpeg
-paper/thumbnails/cas-linkedin.jpeg
-paper/thumbnails/cas-twitter.jpeg
-paper/thumbnails/cas-url.jpeg
-paper/draft_sections_new_analyses.tex
-Analysis/consolidation_report.md
-Analysis/workstream_f_report.md
-
-
-# --- Markdown: ignore everything except the reader-facing docs -----------------
-# A published repo should ship README, the schema map, CLAUDE.md, and docs/.
-# Every other .md in this tree is a working artifact: revision logs, numbers
-# packs, agent reports, regenerated analysis dumps.
 *.md
 !README.md
 !CLAUDE.md
@@ -143,7 +76,6 @@ Analysis/workstream_f_report.md
 !Analysis/rerun_prep/*.md
 !Analysis/rerun_prep/**/*.md
 !Analysis/rerun_smoke/*.md
-docs/TODO_EXECUTION_PLAN.md
 
 *.pdf
 !Scoring Logic and Documentation/method/Budget_Penalties.pdf
@@ -151,56 +83,13 @@ docs/TODO_EXECUTION_PLAN.md
 !Scoring Logic and Documentation/method/Evaluation_Metric_Derivations.pdf
 !Scoring Logic and Documentation/method/Reference_Ranges_for_Value_Functions.pdf
 
-
-
-
-# Local-only inputs and working documents (keep on disk; never commit)
-/local_documentation/
-/local_manuscripts/
-/REPOSITORY_REORGANIZATION_PLAN.md
-/paper/cas-model2-names.bst
-/paper/cas-refs.bib
-/paper/paper_draft_v2.tex
-/paper/paper_draft_working.tex
-/paper/supplementary.tex
-/docs/PROVENANCE_AUDIT_PROMPT.md
-
-# Local-only paper files selected by the user; preserve their on-disk copies.
-/paper/Graphical Abstract.png
-/paper/Images/ArchitectureFlowcharts.png
-/paper/Images/FULLFlowMCDA.png
-/paper/Images/LifestyleChangesEmissionImpact.png
-/paper/Images/PA_Residential_Emissions.png
-
 !results/
 !results/**/*.md
 
-# Local-only Pass 5/6 evidence; verified copies remain under local_documentation/ or local_manuscripts/.
-/Analysis/rerun_logs/step7_status.txt
-/paper/pass5/NUMBERS_OF_RECORD.csv
-/paper/pass5/NUMBERS_OF_RECORD_D1_rows.csv
-/paper/pass5/NUMBERS_OF_RECORD_D3_rows.csv
-/paper/pass5/NUMBERS_OF_RECORD_D9_D12_rows.csv
-/paper/pass6/verify/SCRIPT_FIXES.diff
-/paper/pass6/verify/V_INFRA_cost_plan.csv
-/paper/pass6/verify/V_INFRA_experiment_scripts.diff
-/paper/pass6/verify/apply_scenario_fixes.py
-/paper/pass6/verify/scenario_fixes.json
-/paper/pass6/verify/truncation_risk_8192.csv
-/paper/pass6/verify/truncation_risk_8192.py
-# Local-only archived Baselines workbooks (user decision 2026-10-02)
-/archive/2026-09_pre_rerun/Output Files/Baselines/baseline_oracle.xlsx
-/archive/2026-09_pre_rerun/Output Files/Baselines/baseline_random_aggregated.xlsx
-/archive/2026-09_pre_rerun/Output Files/Baselines/baseline_uniform.xlsx
-
-# Local-only scratch scripts under paper/pass6 (new copies live in scripts/ and src/).
-/paper/pass6/verify/compare_scenario_workbooks.py
-/paper/pass6/verify/value_review/solar_irradiance.py
-# --- Local-only trees (author decision 2026-10-03) --------------------------
-# These stay on disk but are never tracked, and their history was scrubbed with
-# git filter-repo. Derived data the pipeline still needs was relocated first:
-# paper/*.csv + paper/per_run_metrics/ -> results/paper_outputs/.
-# Anything re-added here must be a deliberate choice, not an accident.
 /docs/
 /paper/
 /scripts/archive/
+$renderDir/paper_draft_working.spl
+archive/2026-09_pre_rerun/Output Files/Baselines/baseline_oracle.xlsx
+archive/2026-09_pre_rerun/Output Files/Baselines/baseline_random_aggregated.xlsx
+archive/2026-09_pre_rerun/Output Files/Baselines/baseline_uniform.xlsx
