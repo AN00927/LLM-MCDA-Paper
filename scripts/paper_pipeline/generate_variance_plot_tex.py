@@ -6,11 +6,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from generate_boxplot_tex import generate_boxplot_block
+from generate_boxplot_tex import generate_boxplot_block, require_local_per_run_csvs
 from generate_violin_plot_tex import generate_violin_block
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_DIR = PROJECT_ROOT / "paper" / "per_run_metrics"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_path
+
+OUTPUT_DIR = local_manuscript_path("paper", "per_run_metrics")
 OUTPUT_FILE = OUTPUT_DIR / "variance_plots.tex"
 
 METRICS = [
@@ -176,6 +182,7 @@ def build_violin_figure(metric):
 
 
 def main():
+    require_local_per_run_csvs()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     blocks = []
     for metric in METRICS:

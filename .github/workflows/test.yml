@@ -24,12 +24,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -e .
 
       - name: Run Pytest Suite
         run: |
-          pytest -v
+          python -m pytest -v
 
-      - name: Verify Deterministic Offline Pipeline
+      - name: Verify deterministic weights stage in clean checkout
         run: |
-          python paper_pipeline/run_paper_pipeline.py --only weights
+          python scripts/paper_pipeline/run_paper_pipeline.py --allow-tracked-output-writes --only weights

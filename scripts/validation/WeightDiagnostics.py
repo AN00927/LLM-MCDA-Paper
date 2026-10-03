@@ -32,8 +32,8 @@ quantities below are the ones that carry a finding:
 Everything here reads the ground-truth workbooks. No API calls.
 
 Usage:
-    python "Miscellaneous Scripts/WeightDiagnostics.py"
-    python "Miscellaneous Scripts/WeightDiagnostics.py" --scope test
+    python "scripts/validation/WeightDiagnostics.py"
+    python "scripts/validation/WeightDiagnostics.py" --scope test
 """
 
 import argparse
@@ -44,16 +44,29 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+# Make the checkout's src layout importable when this script is run directly.
+for _candidate in Path(__file__).resolve().parents:
+    if (_candidate / "src" / "llm_mcda").is_dir():
+        sys.path.insert(0, str(_candidate / "src"))
+        break
+else:
+    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
 
-from model_config import CRITERIA, CRITERION_WEIGHTS
-from sentinel_utils import _atomic_write_xlsx, read_table_clean
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 
-GT_DIR = PROJECT_ROOT / "Ground Truth"
-OUT_DIR = PROJECT_ROOT / "Scoring Logic and Documentation" / "method"
-TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+from llm_mcda.common.model_config import CRITERIA, CRITERION_WEIGHTS
+from llm_mcda.common.sentinel_utils import _atomic_write_xlsx, read_table_clean
+
+GT_DIR = PROJECT_ROOT / "workbooks/ground_truth"
+XLSX_OUT_DIR = PROJECT_ROOT / "workbooks" / "methodology"
+CSV_OUT_DIR = PROJECT_ROOT / "results" / "methodology"
+TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
 
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 SCORE_COLS = {c: f"{c}_score" for c in CRITERIA}
@@ -161,6 +174,33 @@ def main():
                              "calibrated on (default); test = 195 evaluated scenarios")
     args = parser.parse_args()
 
+    suffix = "" if args.scope == "full" else "_test"
+    try:
+        xlsx_out_dir = require_safe_output_directory(
+            XLSX_OUT_DIR, option="workbooks/methodology output", root=PROJECT_ROOT
+        )
+        csv_out_dir = require_safe_output_directory(
+            CSV_OUT_DIR, option="results/methodology output", root=PROJECT_ROOT
+        )
+        d_path = require_safe_output_path(
+            xlsx_out_dir / f"weight_discrimination{suffix}.xlsx",
+            option="weight_discrimination XLSX output", root=PROJECT_ROOT
+        )
+        c_path = require_safe_output_path(
+            xlsx_out_dir / f"cost_env_collinearity{suffix}.xlsx",
+            option="cost_env_collinearity XLSX output", root=PROJECT_ROOT
+        )
+        d_csv_path = require_safe_output_path(
+            csv_out_dir / f"weight_discrimination{suffix}.csv",
+            option="weight_discrimination CSV output", root=PROJECT_ROOT
+        )
+        c_csv_path = require_safe_output_path(
+            csv_out_dir / f"cost_env_collinearity{suffix}.csv",
+            option="cost_env_collinearity CSV output", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+
     gt = load_gt(args.scope)
     print(f"Scope: {args.scope} | {gt['_sid'].nunique()} scenarios, {len(gt)} rows")
 
@@ -197,14 +237,12 @@ def main():
          "pct_rho_equals_1", "pct_scores_identical", "combined_cost_env_weight"]
     ]
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    suffix = "" if args.scope == "full" else "_test"
-    d_path = OUT_DIR / f"weight_discrimination{suffix}.xlsx"
-    c_path = OUT_DIR / f"cost_env_collinearity{suffix}.xlsx"
+    xlsx_out_dir.mkdir(parents=True, exist_ok=True)
+    csv_out_dir.mkdir(parents=True, exist_ok=True)
     _atomic_write_xlsx(diag, d_path)
     _atomic_write_xlsx(coll, c_path)
-    diag.to_csv(d_path.with_suffix(".csv"), index=False)
-    coll.to_csv(c_path.with_suffix(".csv"), index=False)
+    diag.to_csv(d_csv_path, index=False)
+    coll.to_csv(c_csv_path, index=False)
 
     print("\nDISCRIMINATION AND REALIZED SWING")
     print("=" * 100)
@@ -232,7 +270,7 @@ def main():
               f"{r['mean_spearman_cost_env']:>11.4f}{r['pct_rho_equals_1']:>10.1f}"
               f"{r['pct_scores_identical']:>14.1f}{r['combined_cost_env_weight']:>12.3f}")
 
-    print(f"\n[OK] Wrote {d_path.name}, {c_path.name} (+ .csv)")
+    print(f"\n[OK] Wrote {d_path}, {c_path}, {d_csv_path}, and {c_csv_path}")
 
 
 if __name__ == "__main__":

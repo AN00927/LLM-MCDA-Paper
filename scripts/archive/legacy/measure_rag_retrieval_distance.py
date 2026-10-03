@@ -2,11 +2,11 @@
 query path uses (L2 on unnormalized all-MiniLM-L6-v2 embeddings).
 
 Replicates, field-for-field:
-  - Index side:  Miscellaneous Scripts/build_rag_index.py (embed path, lines ~224-235 /
+  - Index side:  scripts/collection/build_rag_index.py (embed path, lines ~224-235 /
     252-263 / 279-290): read_table_clean(RAG sheet) -> group by scenario_id ->
     first_row -> format_embedding_text(decision_type, first_row) ->
     embedding_model.encode(text) (bare, no normalize_embeddings).
-  - Query side:  Architectures/Example-Guided_LLM_Scoring.py (lines 309-327):
+  - Query side:  src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py (lines 309-327):
     read_table_clean(TestScenarios.xlsx, keep_str_cols=[alt cols]) ->
     row.to_dict() -> format_embedding_text(decision_type, scenario) ->
     embedding_model.encode(text) (bare, no normalize_embeddings).
@@ -15,26 +15,40 @@ Replicates, field-for-field:
     restricted to the same decision type's corpus entries, exactly like here.
   - Distance unit: Chroma's default hnsw space is L2 (build_rag_index.py line 204 has
     no hnsw:space key). True L2 = np.linalg.norm(q - c), the same convention as
-    the ablation harness (Miscellaneous Scripts/run_rag_ablation_experiments.py line 623).
+    the ablation harness (scripts/experiments/run_rag_ablation_experiments.py line 623).
 
 No API calls. All data on disk. New file; nothing existing is modified.
 """
 
 import json
+import argparse
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Bootstrap the checkout's src/ package before importing llm_mcda.
+_BOOTSTRAP_ROOT = Path(__file__).resolve().parents[3]
+for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+    if str(_import_root) not in sys.path:
+        sys.path.insert(0, str(_import_root))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import format_embedding_text, read_table_clean
+from llm_mcda.common.sentinel_utils import format_embedding_text, read_table_clean
 
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
 TEST_SCENARIOS = SCENARIO_DIR / "TestScenarios.xlsx"
 RAG_FILES = {
     "HVAC": "HVACRagScenarios.xlsx",
@@ -42,8 +56,8 @@ RAG_FILES = {
     "Shower": "ShowerRAGScenarios.xlsx",
 }
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "TestRAG_distances.xlsx"
-OUT_JSON = PROJECT_ROOT / "Analysis" / "TestRAG_distances.json"
+OUT_XLSX_NAME = "TestRAG_distances.xlsx"
+OUT_JSON_NAME = "TestRAG_distances.json"
 
 
 def build_corpus(model):
@@ -78,6 +92,37 @@ def l2(a, b):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Measure Test-to-RAG retrieval distances without changing source data."
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=f"Required safe output directory (or set {RUN_OUTPUT_DIR_ENV}); "
+             "scenario workbooks remain read-only.",
+    )
+    args = parser.parse_args()
+    try:
+        out_dir = require_safe_output_directory(
+            args.output_dir,
+            option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})",
+            root=PROJECT_ROOT,
+        )
+        out_xlsx = require_safe_output_path(
+            out_dir / OUT_XLSX_NAME,
+            option="retrieval-distance workbook output",
+            root=PROJECT_ROOT,
+        )
+        out_json = require_safe_output_path(
+            out_dir / OUT_JSON_NAME,
+            option="retrieval-distance JSON output",
+            root=PROJECT_ROOT,
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+
+    from sentence_transformers import SentenceTransformer
+
     print("Loading embedding model (all-MiniLM-L6-v2, unnormalized encode)...")
     model = SentenceTransformer(EMBEDDING_MODEL)
 
@@ -132,7 +177,8 @@ def main():
         })
 
     out = pd.DataFrame(rows)
-    out.to_excel(OUT_XLSX, index=False)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out.to_excel(out_xlsx, index=False)
 
     def summ(vals, label):
         v = np.array(vals, dtype=float)
@@ -184,7 +230,7 @@ def main():
         "rule": "NN median / random mean >= 0.9 -> near-random (little discrimination)",
     }
 
-    with open(OUT_JSON, "w") as f:
+    with open(out_json, "w") as f:
         json.dump(summary, f, indent=2)
 
     print("=" * 70)
@@ -209,8 +255,8 @@ def main():
           f"({nn_med:.4f} vs {rand_mean:.4f})")
     print(f"  NN median / RAG->RAG LOO median = {v['ratio_nn_to_loo']:.2f} "
           f"({nn_med:.4f} vs {loo_med:.4f})")
-    print(f"\nWrote {OUT_XLSX}")
-    print(f"Wrote {OUT_JSON}")
+    print(f"\nWrote {out_xlsx}")
+    print(f"Wrote {out_json}")
 
 
 if __name__ == "__main__":

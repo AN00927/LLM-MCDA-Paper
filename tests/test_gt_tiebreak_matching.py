@@ -13,20 +13,22 @@ from importlib.util import spec_from_file_location, module_from_spec
 import pandas as pd
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-for _p in (PROJECT_ROOT, PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation"):
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+for _p in (PROJECT_ROOT, PROJECT_ROOT / "scripts" / "analysis"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
 import evaluate_architecture_metrics as cm  # noqa: E402
-from model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
 
-SDIR = PROJECT_ROOT / "Scenario Files"
+SDIR = PROJECT_ROOT / "workbooks/scenarios"
+MEMBERSHIP_PATH = PROJECT_ROOT / "data/scenarios/rag_membership.json"
 
 
 @pytest.fixture(scope="module")
 def sig():
-    path = PROJECT_ROOT / "Miscellaneous Scripts" / "validation" / "significance_testing.py"
+    path = PROJECT_ROOT / "scripts" / "validation" / "significance_testing.py"
     spec = spec_from_file_location("significance_testing_for_tiebreak", path)
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -63,7 +65,7 @@ def gt_by_type():
 
 def _truth_map():
     test = pd.read_excel(SDIR / "TestScenarios.xlsx")
-    with open(SDIR / "rag_membership.json", encoding="utf-8") as fh:
+    with open(MEMBERSHIP_PATH, encoding="utf-8") as fh:
         types = json.load(fh)["types"]
     out = {}
     for t in ("HVAC", "Appliance", "Shower"):

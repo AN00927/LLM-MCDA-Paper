@@ -4,10 +4,34 @@
 import numpy as np
 from scipy.stats import gaussian_kde
 import pandas as pd
+import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT / "paper" / "per_run_metrics"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_path
+
+DATA_DIR = local_manuscript_path("paper", "per_run_metrics")
+PER_RUN_MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
+
+
+def _require_local_per_run_csvs():
+    paths = {
+        model: DATA_DIR / f"per_run_metrics_{model}.csv"
+        for model in PER_RUN_MODELS
+    }
+    missing = [str(path) for path in paths.values() if not path.is_file()]
+    if missing:
+        raise SystemExit(
+            "Required local-only per-run metric inputs are missing: "
+            + ", ".join(missing)
+            + "; restore them under local_manuscripts/ or set "
+            "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR."
+        )
+    return paths
 
 ARCH_MAP = {
     "Direct_LLM_Scoring": ("colorPure!60", 1),
@@ -45,7 +69,7 @@ def compute_violin_polygon(values, center_x):
 
 def generate_violin_block(model_key, metric):
     """Return pgfplots violin \addplot commands for one model x metric."""
-    csv_path = DATA_DIR / f"per_run_metrics_{model_key}.csv"
+    csv_path = _require_local_per_run_csvs()[model_key]
     df = pd.read_csv(csv_path)
     overall = df[df["decision_type"] == "Overall"]
     lines = []
@@ -62,6 +86,7 @@ def generate_violin_block(model_key, metric):
 
 
 if __name__ == "__main__":
+    _require_local_per_run_csvs()
     for model in ["gemini", "deepseek", "gptoss", "qwen"]:
         for metric in ["kendall_tau", "spearman_rho", "top1_accuracy", "overall_mae", "overall_rmse"]:
             print(f"=== {model} / {metric} ===")

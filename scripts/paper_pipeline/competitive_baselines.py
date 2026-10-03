@@ -29,10 +29,10 @@ NULL RESULTS ARE REPORTED STRAIGHT. If A_E loses to a fixed default on a
 decision type, that is the finding.
 
 SOURCES
-  A_E:            paper/per_run_metrics/per_run_metrics_all.csv
-  FixedDefault:   Output Files/Baselines/baseline_metrics.csv
-                  (produced by Miscellaneous Scripts/evaluate_baseline_metrics.py)
-  Single-crit:    Ground Truth/ground_truth_*.xlsx, restricted to the 195 Test
+  A_E:            local-only per-run metrics CSV
+  FixedDefault:   results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv
+                  (preserved output of scripts/analysis/evaluate_baseline_metrics.py)
+  Single-crit:    workbooks/ground_truth/ground_truth_*.xlsx, restricted to the 195 Test
                   scenarios by matching against a shipped run file, so the
                   scenario set is exactly the one the architectures were scored on.
 
@@ -40,12 +40,12 @@ Ties in a single-criterion ranking are not broken by list order: Top-1 and tau
 are their expected values under a uniform random tie-break (1/k credit when the
 reference winner is among k alternatives tied for the best value; tied pairs
 count 0 in tau), from paper_pipeline/single_criterion.py, the implementation
-paper/single_criterion_recovery.tex also uses.
+used by the single-criterion recovery table.
 
-Output: Analysis/competitive_baselines.xlsx (3 sheets) + .md
+Output: local-only workbook (3 sheets) and Markdown report copies
 
 Usage:
-    python paper_pipeline/competitive_baselines.py
+    python scripts/paper_pipeline/competitive_baselines.py
 """
 
 import sys
@@ -57,27 +57,32 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import CRITERIA, MODEL_SPECS  # noqa: E402
-from sentinel_utils import _is_complete_run_file  # noqa: E402
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.model_config import CRITERIA, MODEL_SPECS  # noqa: E402
+from llm_mcda.common.sentinel_utils import _is_complete_run_file  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from single_criterion import expected_tau, top1_credit  # noqa: E402
 
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
 
-PER_RUN_CSV = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
-BASELINE_CSV = PROJECT_ROOT / "Output Files" / "Baselines" / "baseline_metrics.csv"
-BASELINE_DIR = PROJECT_ROOT / "Output Files" / "Baselines"
+PER_RUN_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+BASELINE_DIR = PROJECT_ROOT / "workbooks" / "older_runs" / "unclassified_legacy" / "Baselines"
+BASELINE_CSV = PROJECT_ROOT / "results" / "older_runs" / "unclassified_legacy" / "Baselines" / "baseline_metrics.csv"
 BASELINE_FILES = {"FixedDefault": "baseline_fixeddefault.xlsx",
                   "NearestNeighbor": "baseline_nearestneighbor.xlsx"}
 TEST_METRICS = {"kendall_tau": "tau", "top1": "Top-1"}
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "competitive_baselines.xlsx"
-OUT_MD = PROJECT_ROOT / "Analysis" / "competitive_baselines.md"
+OUT_XLSX = local_manuscript_path("Analysis", "competitive_baselines.xlsx")
+OUT_MD = local_manuscript_path("Analysis", "competitive_baselines.md")
 
 AE = "Example-Guided_LLM_Scoring"
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
@@ -177,7 +182,7 @@ def ae_per_scenario(model_key, lookups):
 
 
 def _load_rag_stats():
-    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
+    path = PROJECT_ROOT / "scripts" / "experiments" / "run_rag_ablation_experiments.py"
     spec = spec_from_file_location("competitive_rag_stats", path)
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -286,6 +291,12 @@ def single_criterion_baseline(ref):
 # ---------------------------------------------------------------------------
 
 def main():
+    if not PER_RUN_CSV.is_file():
+        raise SystemExit(
+            f"Required local-only per-run metrics are missing: {PER_RUN_CSV}. "
+            "Restore the file under local_manuscripts/ or set "
+            "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR."
+        )
     warnings.filterwarnings("ignore")
     print("P1.5 competitive baselines")
     print("=" * 64)
@@ -323,13 +334,13 @@ def main():
                                "SC_tau": "best_SC_tau",
                                "SC_top1": "best_SC_top1"}))
 
-    OUT_XLSX.parent.mkdir(exist_ok=True)
+    OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xw:
         head.to_excel(xw, sheet_name="AE_vs_FixedDefault", index=False)
         sc.to_excel(xw, sheet_name="SingleCriterionArgmax", index=False)
         best.to_excel(xw, sheet_name="BestSingleCriterion", index=False)
         tests.to_excel(xw, sheet_name="PairedTests_AE_vs_baselines", index=False)
-    print(f"  Wrote {OUT_XLSX.relative_to(PROJECT_ROOT)}")
+    print(f"  Wrote {OUT_XLSX}")
 
     lines = []
     lines.append("# P1.5 - competitive baselines\n")
@@ -385,6 +396,7 @@ def main():
         lines.append("| %s | %s | %.4f | %.4f |" % (
             r["decision_type"], r["best_criterion"], r["best_SC_tau"], r["best_SC_top1"]))
 
+    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     OUT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"  Wrote {OUT_MD.relative_to(PROJECT_ROOT)}")
 

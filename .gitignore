@@ -1,26 +1,6 @@
-# ============================================================================
-# COMMIT POLICY — READ BEFORE COMMITTING
-# ----------------------------------------------------------------------------
-# NO Claude tags on any commit under any circumstances.
-# NO AI-assistant attribution of any kind (Claude, Anthropic, Copilot, etc.).
-#
-# Every commit must be attributable to a human team member. Forbidden lines:
-#   Co-Authored-By: Claude ...
-#   Co-Authored-By: <anything>@anthropic.com
-#   Claude-Session: ...
-#   🤖 Generated with Claude Code (or any variation)
-#   Any link to claude.ai/code or claude.ai/chat
-#
-# Enforcement:
-#   .githooks/commit-msg — blocks the commit locally
-#   .githooks/pre-push   — blocks the push if any commit in the push range
-#                          carries a forbidden tag
-#
-# Wire them into your clone once, after cloning:
-#   ./scripts/setup-git-hooks.sh
-#
-# Full policy: see COMMIT_POLICY.md
-# ============================================================================
+# COMMIT MESSAGE GUIDANCE (informational; no repository hooks are installed)
+# Keep commit attribution to human contributors. The former hook/setup/policy paths
+# are absent from this repository, so this file does not claim local enforcement.
 
 # Python
 .venv/
@@ -93,9 +73,9 @@ docs/superpowers/
 docs/LLM_MCDA_CLEANUP_PLAN.md
 docs/claim_audit/
 
-# Scenario Files
-Scenario Files/ConsolidatedforSimaltaneousediting.xlsx
-Scenario Files/~$ConsolidatedforSimaltaneousediting.xlsx
+# Maintainer-only consolidated scenario source; standalone scenario inputs remain public.
+/workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx
+/workbooks/scenarios/~$ConsolidatedforSimaltaneousediting.xlsx
 
 # Paper build outputs
 paper/Images/*
@@ -161,8 +141,6 @@ Analysis/workstream_f_report.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 !docs/*.md
-!paper/pass6/*.md
-!paper/pass6/**/*.md
 !Analysis/rerun_prep/*.md
 !Analysis/rerun_prep/**/*.md
 !Analysis/rerun_smoke/*.md
@@ -177,7 +155,41 @@ docs/TODO_EXECUTION_PLAN.md
 
 
 
-paper/pass6/CLOUD_AGENT_CONTEXT.md
-paper/pass6/CLOUD_AGENT_CONTEXT.md
-paper/pass6/RAG_ABLATION_OLD_VS_NEW.md
-paper/paper_draft_v2.tex
+# Local-only inputs and working documents (keep on disk; never commit)
+/local_documentation/
+/local_manuscripts/
+/REPOSITORY_REORGANIZATION_PLAN.md
+/paper/cas-model2-names.bst
+/paper/cas-refs.bib
+/paper/paper_draft_v2.tex
+/paper/paper_draft_working.tex
+/paper/supplementary.tex
+/docs/PROVENANCE_AUDIT_PROMPT.md
+
+# Local-only paper files selected by the user; preserve their on-disk copies.
+/paper/Graphical Abstract.png
+/paper/Images/ArchitectureFlowcharts.png
+/paper/Images/FULLFlowMCDA.png
+/paper/Images/LifestyleChangesEmissionImpact.png
+/paper/Images/PA_Residential_Emissions.png
+
+!results/
+!results/**/*.md
+
+# Local-only Pass 5/6 evidence; verified copies remain under local_documentation/ or local_manuscripts/.
+/Analysis/rerun_logs/step7_status.txt
+/paper/pass5/NUMBERS_OF_RECORD.csv
+/paper/pass5/NUMBERS_OF_RECORD_D1_rows.csv
+/paper/pass5/NUMBERS_OF_RECORD_D3_rows.csv
+/paper/pass5/NUMBERS_OF_RECORD_D9_D12_rows.csv
+/paper/pass6/verify/SCRIPT_FIXES.diff
+/paper/pass6/verify/V_INFRA_cost_plan.csv
+/paper/pass6/verify/V_INFRA_experiment_scripts.diff
+/paper/pass6/verify/apply_scenario_fixes.py
+/paper/pass6/verify/scenario_fixes.json
+/paper/pass6/verify/truncation_risk_8192.csv
+/paper/pass6/verify/truncation_risk_8192.py
+# Local-only archived Baselines workbooks (user decision 2026-10-02)
+/archive/2026-09_pre_rerun/Output Files/Baselines/baseline_oracle.xlsx
+/archive/2026-09_pre_rerun/Output Files/Baselines/baseline_random_aggregated.xlsx
+/archive/2026-09_pre_rerun/Output Files/Baselines/baseline_uniform.xlsx

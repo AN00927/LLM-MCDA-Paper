@@ -36,20 +36,22 @@ archived to a raw jsonl with its own collected_utc. Each run's xlsx carries
 collected_utc and model_id. HTTP 401/402/403, or the consecutive-failure
 breaker, stops the process, and the interrupted run is not written.
 
-Outputs: <model output folder>/listwise_direct/AD_listwise_run_NN.xlsx and
+Outputs: <safe output-dir>/<model>/listwise_direct/AD_listwise_run_NN.xlsx and
 ..._raw.jsonl. Resume-aware per run. Analysis writes
-Analysis/Listwise_Direct/listwise_summary.xlsx.
+<safe output-dir>/listwise_summary.xlsx. Pass the same output directory to
+later `run` or `analyze` calls, or set LLM_MCDA_RUN_OUTPUT_DIR.
 
 Run (paid; 195 calls per run, 5 runs per model by default):
-    python "Miscellaneous Scripts/experiments/run_listwise_direct_ranking.py" run
-    python "Miscellaneous Scripts/experiments/run_listwise_direct_ranking.py" run --models qwen --n 6 --runs 1   # smoke
-    python "Miscellaneous Scripts/experiments/run_listwise_direct_ranking.py" analyze
+    python "scripts/experiments/run_listwise_direct_ranking.py" run --output-dir results/listwise
+    python "scripts/experiments/run_listwise_direct_ranking.py" run --models qwen --n 6 --runs 1 --output-dir results/listwise   # smoke
+    python "scripts/experiments/run_listwise_direct_ranking.py" analyze --output-dir results/listwise
 """
 
 import argparse
 import importlib.util
 import json
 import logging
+import os
 import re
 import sys
 import threading
@@ -58,15 +60,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Bootstrap the checkout's src/ package before importing llm_mcda.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import CRITERION_WEIGHTS, MODEL_SPECS, N_RUNS
-from sentinel_utils import (
+from llm_mcda.common.model_config import CRITERION_WEIGHTS, MODEL_SPECS, N_RUNS
+from llm_mcda.common.sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,
@@ -83,7 +97,7 @@ logger = logging.getLogger("listwise_direct")
 OUTPUT_SUBDIR = "listwise_direct"
 RUN_XLSX = "AD_listwise_run_{run:02d}.xlsx"
 RUN_JSONL = "AD_listwise_run_{run:02d}_raw.jsonl"
-ANALYSIS_DIR = PROJECT_ROOT / "Analysis" / "Listwise_Direct"
+OUTPUT_DIR: Optional[Path] = None
 METRIC_COLS = ["kendall_tau", "top1", "top2"]
 
 ERR_API_EXHAUSTED = "failed_api_exhausted"
@@ -104,7 +118,7 @@ def _load(path: Path, alias: str):
 # The prompt ablation carries the checked copy of A_D's prompts, the reference
 # ranking, the metric function and the shared-client wrapper; reusing them keeps
 # this arm on exactly the same definitions.
-PA = _load(PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_prompt_ablation_experiments.py",
+PA = _load(PROJECT_ROOT / "scripts" / "experiments" / "run_prompt_ablation_experiments.py",
            "listwise_prompt_ablation")
 
 RAW_LOG = RawCallLog()
@@ -241,7 +255,9 @@ def ranking_result(alternatives: List[str], ranked: Optional[List[str]]) -> Dict
 # ---------------------------------------------------------------------------
 
 def output_dir_for(model_key: str) -> Path:
-    return PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"] / OUTPUT_SUBDIR
+    if OUTPUT_DIR is None:
+        raise RuntimeError("Output directory has not been validated; call main() first.")
+    return OUTPUT_DIR / model_key / OUTPUT_SUBDIR
 
 
 def rank_scenario(scenario: Dict, model_key: str, reference: Dict[int, Dict]) -> Dict:
@@ -382,7 +398,7 @@ def analyze(models: List[str], pointwise_runs: int = N_RUNS) -> Dict[str, pd.Dat
     """Listwise vs pointwise A_D, per model, never pooled. Per-scenario metrics
     are averaged over runs first, then compared with a paired Wilcoxon
     signed-rank test; Holm across (model x metric)."""
-    rag = _load(PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py",
+    rag = _load(PROJECT_ROOT / "scripts" / "experiments" / "run_rag_ablation_experiments.py",
                 "listwise_rag_stats")
     reference = PA.load_reference()
     summary, tests = [], []
@@ -430,15 +446,18 @@ def analyze(models: List[str], pointwise_runs: int = N_RUNS) -> Dict[str, pd.Dat
     summary_df, tests_df = pd.DataFrame(summary), pd.DataFrame(tests)
     if len(tests_df):
         tests_df["p_holm"], tests_df["significant_holm"] = rag.holm_correct(tests_df["p_value"].values)
-    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
-    with pd.ExcelWriter(ANALYSIS_DIR / "listwise_summary.xlsx") as xl:
+    if OUTPUT_DIR is None:
+        raise RuntimeError("Output directory has not been validated; call main() first.")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    summary_path = OUTPUT_DIR / "listwise_summary.xlsx"
+    with pd.ExcelWriter(summary_path) as xl:
         summary_df.to_excel(xl, sheet_name="summary", index=False)
         tests_df.to_excel(xl, sheet_name="wilcoxon_vs_pointwise", index=False)
     if len(summary_df):
         print(summary_df.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
     if len(tests_df):
         print(tests_df.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
-    print(f"Wrote {ANALYSIS_DIR / 'listwise_summary.xlsx'}")
+    print(f"Wrote {summary_path}")
     return {"summary": summary_df, "tests": tests_df}
 
 
@@ -447,6 +466,7 @@ def analyze(models: List[str], pointwise_runs: int = N_RUNS) -> Dict[str, pd.Dat
 # ---------------------------------------------------------------------------
 
 def main(argv=None):
+    global OUTPUT_DIR
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("command", choices=["run", "analyze"])
     p.add_argument("--models", nargs="+", default=list(MODEL_SPECS), choices=list(MODEL_SPECS))
@@ -454,7 +474,16 @@ def main(argv=None):
     p.add_argument("--n", default="all", help="Test scenarios ('all' = 195, or a stratified count).")
     p.add_argument("--seed", type=int, default=13)
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--output-dir", default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+                   help=f"New or existing safe output directory (or set {RUN_OUTPUT_DIR_ENV}); "
+                        "required to write results outside frozen repository data.")
     args = p.parse_args(argv)
+    try:
+        OUTPUT_DIR = require_safe_output_directory(
+            args.output_dir, option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        p.error(str(exc))
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
     if args.command == "analyze":

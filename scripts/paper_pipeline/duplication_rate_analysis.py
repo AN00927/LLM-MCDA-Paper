@@ -5,8 +5,8 @@ For each model x architecture x decision type x run, computes the fraction of
 scored alternatives (sentinel rows excluded) where the architecture assigned
 the identical value to energy_cost and environmental (np.isclose). Reports the
 five-run mean and standard deviation per cell, writes per-run values plus
-summary to Analysis/duplication_rates_all_runs.xlsx, and renders the paper
-table snippet to paper/duplication_table.tex.
+summary to local-only `duplication_rates_all_runs.xlsx`, and renders the paper
+table snippet to local-only `duplication_table.tex`.
 
 The paper table covers A_D and A_E (matching task brief C6). A_H duplication
 rates are computed as auxiliary context (its criterion scores are calculator
@@ -18,11 +18,16 @@ import sys
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-from sentinel_utils import is_sentinel  # noqa: E402
-from model_config import MODEL_SPECS  # noqa: E402
+SOURCE_ROOT = os.path.join(PROJECT_ROOT, "src")
+if SOURCE_ROOT not in sys.path:
+    sys.path.insert(0, SOURCE_ROOT)
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
 
 N_RUNS = 5
 # Column order matches the task brief's run-01 example table.
@@ -46,8 +51,8 @@ ARCH_KEYS = {
     "LLM-Parameterized_Reference_Scoring": "A_H",
 }
 
-OUT_XLSX = os.path.join(PROJECT_ROOT, "Analysis", "duplication_rates_all_runs.xlsx")
-OUT_TEX = os.path.join(PROJECT_ROOT, "paper", "duplication_table.tex")
+OUT_XLSX = local_manuscript_path("Analysis", "duplication_rates_all_runs.xlsx")
+OUT_TEX = local_manuscript_path("paper", "duplication_table.tex")
 
 
 def duplication_rate(path, decision_type):
@@ -189,6 +194,7 @@ def main():
     summary = summary_frame(per_run)
 
     os.makedirs(os.path.dirname(OUT_XLSX), exist_ok=True)
+    OUT_TEX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as writer:
         per_run.to_excel(writer, sheet_name="per_run", index=False)
         summary.to_excel(writer, sheet_name="summary", index=False)
@@ -198,8 +204,8 @@ def main():
     with open(OUT_TEX, "w") as fh:
         fh.write(tex_snippet(summary))
 
-    print("Wrote " + OUT_XLSX)
-    print("Wrote " + OUT_TEX)
+    print(f"Wrote {OUT_XLSX}")
+    print(f"Wrote {OUT_TEX}")
 
     print("\nMean +/- std duplication rate (percent) per model/arch/decision type:")
     print(f"{'Model':16s} {'Arch':4s} {'HVAC':>14s} {'Shower':>14s} {'Appliance':>14s}")

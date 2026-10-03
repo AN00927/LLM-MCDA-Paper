@@ -1,3 +1,4 @@
+import argparse
 import sys
 import pandas as pd
 import math
@@ -7,13 +8,18 @@ import re
 from typing import Dict, List, Tuple
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores, SENTINEL_VALUE
+from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores, SENTINEL_VALUE
 
 
 class HVACGroundTruthCalculator:
@@ -64,7 +70,7 @@ class HVACGroundTruthCalculator:
     #   0.2, over the TMY3 hours whose dry-bulb falls in the scenario outdoor range of each
     #   mode (heat 5-62 F, AC 68-102 F). The 24-h mean matches the cost model, which bills
     #   each 8 h period three times a day (calculate_monthly_cost). Script:
-    #   paper/pass6/verify/value_review/solar_irradiance.py.
+    #   src/llm_mcda/calculators/solar_irradiance.py.
     GLAZING_FRACTION_OF_FLOOR = 0.15
     GLAZING_ATTACHED_FACTOR = {"Townhouse": 0.75, "Rowhouse": 0.75,
                                "Apartment": 0.56, "Condo": 0.56}
@@ -754,9 +760,15 @@ class HVACGroundTruthCalculator:
 
 def process_hvac_scenarios(
     csv_filename: str = str(SCENARIO_DIR / "HVACScenarios.xlsx"),
-    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx")):
+    output_filename: str | None = None):
     csv_path = Path(csv_filename)
-    output_path = Path(output_filename)
+    output_path = require_safe_output_path(
+        output_filename,
+        option="--output",
+        root=PROJECT_ROOT,
+    )
+    if output_path == csv_path.resolve():
+        raise UnsafeOutputPathError("--output must be separate from the scenario input workbook")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     df = read_table_clean(
@@ -860,5 +872,25 @@ def process_hvac_scenarios(
     return results_df
 
 
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Calculate HVAC ground-truth scores.")
+    parser.add_argument(
+        "--input",
+        default=str(SCENARIO_DIR / "HVACScenarios.xlsx"),
+        help="scenario workbook to read (default: workbooks/scenarios/HVACScenarios.xlsx)",
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="explicit safe output workbook path outside frozen repository data",
+    )
+    args = parser.parse_args(argv)
+    try:
+        process_hvac_scenarios(args.input, args.output)
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    return 0
+
+
 if __name__ == "__main__":
-    process_hvac_scenarios()
+    sys.exit(main())

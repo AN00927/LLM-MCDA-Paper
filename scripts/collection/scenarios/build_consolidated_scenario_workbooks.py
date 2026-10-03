@@ -6,7 +6,7 @@ TestScenarios sheet inside ConsolidatedforSimaltaneousediting.xlsx.
 
 Operates ONLY on the workbook (no repo code). Follows the schema-locked spec:
   - back up first (stop on failure)
-  - clean master pools (safe-only, logged) and write fixes back
+  - clean master pools (safe-only, logged) and write fixes to a separate output copy
   - cache existing RAG scores, rebuild RAG (long, 3 rows/scenario, carried scores)
   - partition: Test = master scenarios not present in RAG (wide, no scores)
   - enforce Text / Number cell formats everywhere written (never General)
@@ -17,38 +17,114 @@ Decisions confirmed with the user:
   - RAG scenario_id = sequential 1..N per decision type (unique within type).
 """
 
+import argparse
 import os, re, sys, shutil, unicodedata
+from pathlib import Path
 from datetime import datetime, timezone
 from collections import defaultdict, Counter
 
 import pandas as pd
 import openpyxl
 
-SEED = 20260602
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-WB_PATH = os.path.join(HERE, "ConsolidatedforSimaltaneousediting.xlsx")
-DUMP_DIR = os.path.join(HERE, "rebuild_dumps")
-BACKUP_DIR = os.path.join(HERE, "Backups")  # timestamped backups of exported standalone files
+# Make the checkout's src layout importable when this script is run directly.
+for _candidate in Path(__file__).resolve().parents:
+    if (_candidate / "src" / "llm_mcda").is_dir():
+        sys.path.insert(0, str(_candidate / "src"))
+        break
+else:
+    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
 
 # Single source of truth for the two derived labels (also used by BuildRAG /
 # Eample-Guided_LLM_Scoring.pycoring.py) so the band/flow buckets can never drift between the
 # scenario sheets and the RAG index. This is the only repo import rebuild makes.
-PROJECT_ROOT = os.path.dirname(HERE)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-from sentinel_utils import house_age_to_band_label, gpm_to_flow_rate_label, appliance_age_to_band_label
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+from llm_mcda.common.sentinel_utils import house_age_to_band_label, gpm_to_flow_rate_label, appliance_age_to_band_label
+
+SEED = 20260602
+SCENARIO_DIR = PROJECT_ROOT / "workbooks" / "scenarios"
+INPUT_WORKBOOK = SCENARIO_DIR / "ConsolidatedforSimaltaneousediting.xlsx"
 
 # ----------------------------------------------------------------------------
 # 0. Backup (stop on failure)
 # ----------------------------------------------------------------------------
-def backup():
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    bak = os.path.join(HERE, f"ConsolidatedforSimaltaneousediting_BACKUP_{ts}.xlsx")
-    shutil.copy2(WB_PATH, bak)
-    if not os.path.exists(bak) or os.path.getsize(bak) == 0:
+def backup(input_path, backup_dir, timestamp):
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    bak = backup_dir / f"ConsolidatedforSimaltaneousediting_BACKUP_{timestamp}.xlsx"
+    shutil.copy2(input_path, bak)
+    if not bak.exists() or bak.stat().st_size == 0:
         raise RuntimeError("Backup failed or empty -> aborting")
     return bak
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Rebuild consolidated scenario workbooks into a separate safe output directory."
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=(f"Explicit safe destination for rebuilt workbooks, backups, and CSV dumps "
+              f"(required unless {RUN_OUTPUT_DIR_ENV} is set)."),
+    )
+    args = parser.parse_args(argv)
+    try:
+        output_dir = require_safe_output_directory(
+            args.output_dir,
+            option="--output-dir",
+            root=PROJECT_ROOT,
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_dir = output_dir / "backups"
+    dump_dir = output_dir / "rebuild_dumps"
+    output_workbook = output_dir / INPUT_WORKBOOK.name
+    standalone_names = [
+        "TestScenarios.xlsx",
+        "HVACRagScenarios.xlsx",
+        "ApplianceRAGScenarios.xlsx",
+        "ShowerRAGScenarios.xlsx",
+    ]
+    dump_names = [
+        "TestScenarios.csv",
+        "HVACRAGScenarios.csv",
+        "ApplianceRAGScenarios.csv",
+        "ShowerRAGScenarios.csv",
+        "change_log.csv",
+    ]
+    generated_paths = [
+        output_workbook,
+        backup_dir / f"ConsolidatedforSimaltaneousediting_BACKUP_{timestamp}.xlsx",
+        *(output_dir / name for name in standalone_names),
+        *(backup_dir / f"{Path(name).stem}_BACKUP_{timestamp}.xlsx"
+          for name in standalone_names),
+        *(dump_dir / name for name in dump_names),
+    ]
+    try:
+        backup_dir = require_safe_output_directory(
+            backup_dir, option="--output-dir backups", root=PROJECT_ROOT
+        )
+        dump_dir = require_safe_output_directory(
+            dump_dir, option="--output-dir rebuild_dumps", root=PROJECT_ROOT
+        )
+        for path in generated_paths:
+            require_safe_output_path(path, option="--output-dir destination", root=PROJECT_ROOT)
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    args.output_dir = output_dir
+    args.backup_dir = backup_dir
+    args.dump_dir = dump_dir
+    args.output_workbook = output_workbook
+    args.timestamp = timestamp
+    return args
 
 # ----------------------------------------------------------------------------
 # helpers
@@ -177,7 +253,7 @@ def put(cell, kind, val):
         cell.value = int(f) if f.is_integer() else f
     cell.number_format = FMT[kind]
 
-def export_standalone(fname, cols, rows):
+def export_standalone(output_dir, backup_dir, timestamp, fname, cols, rows):
     """Write one regenerated table to its standalone single-sheet xlsx.
 
     Backs up any existing file (timestamped, into Backups/) first, then writes
@@ -185,12 +261,11 @@ def export_standalone(fname, cols, rows):
     sheets. The pipeline's read_table_clean reads the first worksheet, so a single
     sheet named 'Sheet1' with snake_case headers is preserved.
     """
-    out_path = os.path.join(HERE, fname)
-    if os.path.exists(out_path):
-        os.makedirs(BACKUP_DIR, exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        stem = os.path.splitext(fname)[0]
-        shutil.copy2(out_path, os.path.join(BACKUP_DIR, f"{stem}_BACKUP_{ts}.xlsx"))
+    out_path = output_dir / fname
+    if out_path.exists():
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        stem = Path(fname).stem
+        shutil.copy2(out_path, backup_dir / f"{stem}_BACKUP_{timestamp}.xlsx")
     nb = openpyxl.Workbook()
     ws = nb.active
     ws.title = "Sheet1"
@@ -260,14 +335,15 @@ SCORE_KEYS = ["energy_cost_score","environmental_score","comfort_score",
 # ----------------------------------------------------------------------------
 # main
 # ----------------------------------------------------------------------------
-def main():
+def main(argv=None):
+    args = parse_args(argv)
     import random
     random.seed(SEED)
 
-    bak = backup()
+    bak = backup(INPUT_WORKBOOK, args.backup_dir, args.timestamp)
     print(f"[backup] {os.path.basename(bak)}")
 
-    wb = openpyxl.load_workbook(WB_PATH)  # keeps formulas
+    wb = openpyxl.load_workbook(INPUT_WORKBOOK)  # read-only source; output is saved separately
     change_log = []  # (sheet, source_row, column, before, after, reason)
     flags = []       # human-review WARN notes
     info_notes = []  # benign observations
@@ -1026,7 +1102,7 @@ def main():
     # ========================================================================
     # save workbook
     # ========================================================================
-    wb.save(WB_PATH)
+    wb.save(args.output_workbook)
 
     # ========================================================================
     # PHASE G: export regenerated tables to the standalone files the pipeline reads
@@ -1034,28 +1110,33 @@ def main():
     #   Skipped if the audit failed so a bad rebuild can never clobber the inputs.
     # ========================================================================
     if not fails:
-        export_standalone("TestScenarios.xlsx", TEST_COLS, test_rows)
-        export_standalone("HVACRagScenarios.xlsx", HVAC_RAG_COLS, hvac_rag_rows)
-        export_standalone("ApplianceRAGScenarios.xlsx", APPL_RAG_COLS, appl_rag_rows)
-        export_standalone("ShowerRAGScenarios.xlsx", SHOWER_RAG_COLS, shower_rag_rows)
-        print(f"[export] standalone files refreshed (pre-run backups in {os.path.relpath(BACKUP_DIR, HERE)}/)")
+        export_standalone(args.output_dir, args.backup_dir, args.timestamp,
+                          "TestScenarios.xlsx", TEST_COLS, test_rows)
+        export_standalone(args.output_dir, args.backup_dir, args.timestamp,
+                          "HVACRagScenarios.xlsx", HVAC_RAG_COLS, hvac_rag_rows)
+        export_standalone(args.output_dir, args.backup_dir, args.timestamp,
+                          "ApplianceRAGScenarios.xlsx", APPL_RAG_COLS, appl_rag_rows)
+        export_standalone(args.output_dir, args.backup_dir, args.timestamp,
+                          "ShowerRAGScenarios.xlsx", SHOWER_RAG_COLS, shower_rag_rows)
+        print(f"[export] standalone files refreshed in {args.output_dir} "
+              f"(pre-run backups in {args.backup_dir}/)")
     else:
         print("[export] SKIPPED standalone export (audit FAILED) -> standalone files untouched")
 
     # ========================================================================
     # dumps
     # ========================================================================
-    os.makedirs(DUMP_DIR, exist_ok=True)
+    args.dump_dir.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(test_rows, columns=[c[0] for c in TEST_COLS]).to_csv(
-        os.path.join(DUMP_DIR, "TestScenarios.csv"), index=False, encoding="utf-8-sig")
+        args.dump_dir / "TestScenarios.csv", index=False, encoding="utf-8-sig")
     pd.DataFrame(hvac_rag_rows, columns=[c[0] for c in HVAC_RAG_COLS]).to_csv(
-        os.path.join(DUMP_DIR, "HVACRAGScenarios.csv"), index=False, encoding="utf-8-sig")
+        args.dump_dir / "HVACRAGScenarios.csv", index=False, encoding="utf-8-sig")
     pd.DataFrame(appl_rag_rows, columns=[c[0] for c in APPL_RAG_COLS]).to_csv(
-        os.path.join(DUMP_DIR, "ApplianceRAGScenarios.csv"), index=False, encoding="utf-8-sig")
+        args.dump_dir / "ApplianceRAGScenarios.csv", index=False, encoding="utf-8-sig")
     pd.DataFrame(shower_rag_rows, columns=[c[0] for c in SHOWER_RAG_COLS]).to_csv(
-        os.path.join(DUMP_DIR, "ShowerRAGScenarios.csv"), index=False, encoding="utf-8-sig")
+        args.dump_dir / "ShowerRAGScenarios.csv", index=False, encoding="utf-8-sig")
     pd.DataFrame(change_log, columns=["sheet","source_row","column","before","after","reason"]).to_csv(
-        os.path.join(DUMP_DIR, "change_log.csv"), index=False, encoding="utf-8-sig")
+        args.dump_dir / "change_log.csv", index=False, encoding="utf-8-sig")
 
     # ========================================================================
     # print summary

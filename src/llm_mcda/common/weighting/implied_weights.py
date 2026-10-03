@@ -48,21 +48,20 @@ Inputs:  ground_truth_hvac.xlsx, ground_truth_appliance.xlsx, ground_truth_showe
 Outputs: implied_weights_summary.xlsx
 """
 
-import os
 import sys
 import warnings
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from itertools import combinations
 from scipy.optimize import minimize
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import find_file_in_paths, read_table_clean
+from llm_mcda.common.sentinel_utils import find_file_in_paths, read_table_clean
 
 # Console output contains math symbols (σ, ≥, Σ, −); ensure stdout can encode them
 # on Windows where the default codec (cp1252) cannot.
@@ -100,21 +99,12 @@ SUBJECTIVE_WEIGHTS = {
 
 OUTPUT_CSV  = "implied_weights_summary.xlsx"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Prefer repository-level Ground Truth and deterministic script-relative locations
-SEARCH_DIRS = [
-    os.path.join(BASE_DIR, "..", "Ground Truth"),
-    os.path.join(BASE_DIR, ".."),
-    os.path.join(BASE_DIR, "Ground Truth"),
-    BASE_DIR,
-    os.path.join(os.getcwd(), "Ground Truth"),
-    os.getcwd(),
-]
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks" / "ground_truth"
+SEARCH_DIRS = [str(GROUND_TRUTH_DIR)]
 
-# Default output inside Scoring Logic and Documentation/method
-OUTPUT_DIR = os.path.join(BASE_DIR, "..", "Scoring Logic and Documentation", "method")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-OUTPUT_CSV = os.path.join(OUTPUT_DIR, OUTPUT_CSV)
+# Preserve this analysis workbook at its manifest destination.
+OUTPUT_DIR = PROJECT_ROOT / "workbooks" / "methodology" / "scoring_logic"
+OUTPUT_CSV = OUTPUT_DIR / OUTPUT_CSV
 
 
 # ---------------------------------------------------------------------------
@@ -321,6 +311,7 @@ def print_implied_result(label: str, res: dict, var_df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 
 def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     print("\nIMPLIED WEIGHT ANALYSIS — PAIRWISE RANKING REGRESSION")
     print("=" * 65)
     print("References:")

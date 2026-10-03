@@ -21,24 +21,38 @@ reader re-running the benchmark would spend. Mixing a 60-scenario correction pas
 into them would describe neither run.
 
 Usage:
-    python paper_pipeline/reconcile_recollection_diagnostics.py --dry-run
-    python paper_pipeline/reconcile_recollection_diagnostics.py
+    python scripts/paper_pipeline/reconcile_recollection_diagnostics.py
+    python scripts/paper_pipeline/reconcile_recollection_diagnostics.py --write
 """
 
 import argparse
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# Bootstrap the checkout's src/ package before importing llm_mcda.
+_BOOTSTRAP_ROOT = Path(__file__).resolve().parents[2]
+for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+    if str(_import_root) not in sys.path:
+        sys.path.insert(0, str(_import_root))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import is_sentinel  # noqa: E402
-from model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
 
 ARCH = "Example-Guided_LLM_Scoring"
 CRIT = ["energy_cost", "environmental", "comfort", "practicality"]
@@ -80,8 +94,31 @@ def all_failures(df):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="Report changes without writing (default)")
+    ap.add_argument(
+        "--write",
+        action="store_true",
+        help="Write reconciled diagnostics to a separate safe output directory; "
+             "source JSON files remain read-only.",
+    )
+    ap.add_argument(
+        "--output-dir",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=f"Safe destination for --write output (or set {RUN_OUTPUT_DIR_ENV}); "
+             "required with --write unless --dry-run is also set.",
+    )
     args = ap.parse_args()
+
+    output_dir = None
+    if args.write and not args.dry_run:
+        try:
+            output_dir = require_safe_output_directory(
+                args.output_dir,
+                option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})",
+                root=PROJECT_ROOT,
+            )
+        except UnsafeOutputPathError as exc:
+            ap.error(str(exc))
 
     total_changed = 0
     for folder in FOLDERS:
@@ -152,12 +189,20 @@ def main():
                   f"(retired {n_alt} shower call failures, {n_scen} scenarios)")
             total_changed += 1
 
-            if not args.dry_run:
-                jpath.write_text(json.dumps(j, indent=2), encoding="utf-8")
+            if args.write and not args.dry_run:
+                output_path = require_safe_output_path(
+                    output_dir / folder / jpath.name,
+                    option="reconciled diagnostic output",
+                    root=PROJECT_ROOT,
+                )
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(json.dumps(j, indent=2), encoding="utf-8")
 
     print("")
-    print(f"{'DRY RUN - nothing written' if args.dry_run else 'WRITTEN'}: "
-          f"{total_changed} diagnostics files reconciled")
+    if args.write and not args.dry_run:
+        print(f"WRITTEN to {output_dir}: {total_changed} diagnostics files reconciled")
+    else:
+        print(f"DRY RUN - nothing written: {total_changed} diagnostics files reconciled")
     return 0
 
 

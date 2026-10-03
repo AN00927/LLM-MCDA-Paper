@@ -62,7 +62,8 @@ Significance-testing methodology (one correction layer):
   for every model x arm x metric; they describe an arm's own sampling
   uncertainty rather than a pairwise comparison.
 
-Outputs (Analysis/Hybrid_Ablation/ by default, --output-dir to redirect):
+Outputs in a required safe destination supplied with --output-dir or
+LLM_MCDA_RUN_OUTPUT_DIR:
     hybrid_ablation_pairwise_tests.xlsx
     hybrid_ablation_bootstrap_ci.xlsx
     hybrid_ablation_significance.xlsx     pairwise / descriptives
@@ -73,17 +74,28 @@ decimal from the headline A_H value (mean of per-run means); the headline value
 lives in hybrid_ablation_summary.xlsx, sheet `summary`.
 
 Run:
-    python "Miscellaneous Scripts/validation/test_hybrid_ablation_significance.py"
+    python "scripts/validation/test_hybrid_ablation_significance.py" --output-dir results/scratch/hybrid-significance
 """
 
 import argparse
 import importlib.util
+import os
 import sys
 from pathlib import Path
 
+# Direct script execution does not add src/ when the package is uninstalled.
+_SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+if _SRC_ROOT.is_dir() and str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -103,7 +115,7 @@ PROVENANCE_ARMS = ["extracted", "default_params"]
 
 
 def _load_rag_module():
-    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
+    path = PROJECT_ROOT / "scripts" / "experiments" / "run_rag_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_rag_ablations", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -135,15 +147,28 @@ def parse_args():
     p.add_argument("--summary", default=str(SUMMARY_XLSX),
                    help="hybrid_ablation_summary.xlsx written by "
                         "run_hybrid_ablation_experiments.py")
-    p.add_argument("--output-dir", default=str(OUT_DIR))
+    p.add_argument("--output-dir", default=None,
+                   help=f"Safe output directory (required unless {RUN_OUTPUT_DIR_ENV} is set).")
     return p.parse_args()
 
 
-def main():
-    args = parse_args()
+def main(args=None):
+    library_call = args is None
+    if args is None:
+        args = argparse.Namespace(summary=str(SUMMARY_XLSX), output_dir=None)
     summary_xlsx = Path(args.summary)
-    out_dir = Path(args.output_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    output_value = args.output_dir
+    output_option = "--output-dir"
+    if output_value is None:
+        output_value = os.environ.get(RUN_OUTPUT_DIR_ENV)
+        if output_value is not None:
+            output_option = RUN_OUTPUT_DIR_ENV
+    if output_value is None and library_call:
+        # Preserve the existing in-process default for callers that replace
+        # OUT_DIR with a scratch path; the shared validator rejects its frozen
+        # repository default before any output directory is created.
+        output_value = OUT_DIR
+    out_dir = require_safe_output_directory(output_value, option=output_option)
     if not summary_xlsx.exists():
         raise SystemExit(f"Missing {summary_xlsx}. Run run_hybrid_ablation_experiments.py first.")
 
@@ -220,6 +245,7 @@ def main():
     descriptives.columns = ["_".join(c).strip("_") for c in descriptives.columns.to_flat_index()]
     descriptives = descriptives.reset_index()
 
+    out_dir.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(out_dir / "hybrid_ablation_significance.xlsx") as xl:
         pairwise.to_excel(xl, sheet_name="pairwise", index=False)
         descriptives.to_excel(xl, sheet_name="descriptives", index=False)
@@ -244,4 +270,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(parse_args())

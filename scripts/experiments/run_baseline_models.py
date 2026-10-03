@@ -4,6 +4,7 @@ run_baseline_models.py - Non-LLM Baselines
 Computes four baselines for MCDA architecture comparison.
 """
 import argparse
+import os
 import sys
 import warnings
 import logging
@@ -13,31 +14,29 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-GT_CALC_DIR = PROJECT_ROOT / "Ground Truth Calculators"
-if str(GT_CALC_DIR) not in sys.path:
-    sys.path.insert(0, str(GT_CALC_DIR))
-
-MISC_SCRIPTS_DIR = Path(__file__).resolve().parent
-if str(MISC_SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(MISC_SCRIPTS_DIR))
-
-EXPERIMENTS_DIR = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments"
-if str(EXPERIMENTS_DIR) not in sys.path:
-    sys.path.insert(0, str(EXPERIMENTS_DIR))
-
-from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from sentinel_utils import (read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking,
+from llm_mcda.common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+from llm_mcda.common.sentinel_utils import (read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking,
                             MAVT_ROUND_DECIMALS)
 
-from HVACGroundTruthCalculator import HVACGroundTruthCalculator
-from ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
-from ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
+from llm_mcda.calculators.HVACGroundTruthCalculator import HVACGroundTruthCalculator
+from llm_mcda.calculators.ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
+from llm_mcda.calculators.ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
 
-from run_rag_ablation_experiments import (
+from scripts.experiments.run_rag_ablation_experiments import (
     nearest_neighbor_prediction,
     NN_FALLBACKS,
     build_collection,
@@ -74,8 +73,8 @@ SHOWER_DEFAULT_OUTDOOR_TEMP = 51.8
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 COMMON_STR_COLS = [
     'question', 'location', 'alternative', 'housing_type', 
     'insulation', 'appliance', 'appliance_age', 'house_age',
@@ -136,7 +135,7 @@ def retrieval_set_appliance_mode():
     cached."""
     global _RETRIEVAL_APPLIANCE_MODE
     if _RETRIEVAL_APPLIANCE_MODE is None:
-        from run_hybrid_ablation_experiments import compute_defaults
+        from scripts.experiments.run_hybrid_ablation_experiments import compute_defaults
         _RETRIEVAL_APPLIANCE_MODE = compute_defaults()["Appliance"]["appliance"]
     return _RETRIEVAL_APPLIANCE_MODE
 
@@ -340,7 +339,7 @@ def run_fixed_default_baseline(test_df):
 
 def run_nearest_neighbor_baseline(test_df, k=1, fallback="tie"):
     groups_by_type = load_source_groups()
-    from run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
+    from scripts.experiments.run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
     import tempfile, shutil
     temp_path, collection, model, _ = build_collection(DEFAULT_EMBEDDING_MODEL, Path(tempfile.gettempdir()))
     try:
@@ -473,7 +472,7 @@ def run_all_baselines(test_df, baselines=None, k=1, nn_fallback="tie"):
         print("Running Nearest-Neighbor baseline..."); results['NearestNeighbor'] = run_nearest_neighbor_baseline(test_df, k=k, fallback=nn_fallback)
     return results
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
     parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
                         choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
@@ -489,9 +488,25 @@ def main():
     parser.add_argument('--verify', action='store_true', help='Run verification checks')
     parser.add_argument('--baseline', type=str, help='Run single baseline (for verification)')
     parser.add_argument('--assert-top1-min', type=float, help='Assert minimum Top-1 accuracy')
-    parser.add_argument('--output-dir', default=str(PROJECT_ROOT / "Output Files" / "Baselines"),
-                        help='Where the baseline_*.xlsx files are written')
-    args = parser.parse_args()
+    parser.add_argument('--output-dir', default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+                        help=f'Required safe destination for baseline_*.xlsx files '
+                             f'(or set {RUN_OUTPUT_DIR_ENV})')
+    parser.add_argument('--list', action='store_true',
+                        help='List available --baselines choices and exit')
+    args = parser.parse_args(argv)
+
+    if args.list:
+        print("Available --baselines choices: fixed_default, nearest_neighbor, all")
+        return
+
+    try:
+        output_dir = require_safe_output_directory(
+            args.output_dir,
+            option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})",
+            root=PROJECT_ROOT,
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
     
     baselines = ['fixed_default', 'nearest_neighbor'] if args.baselines == ['all'] else args.baselines
     
@@ -504,11 +519,10 @@ def main():
     
     results = run_all_baselines(test_df, baselines, k=args.k, nn_fallback=args.nn_fallback)
     
-    OUTPUT_DIR = Path(args.output_dir)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     for name, df in results.items():
-        df.to_excel(OUTPUT_DIR / f"baseline_{name.lower()}.xlsx", index=False, engine="openpyxl")
-        print(f"Saved {name} baseline to {OUTPUT_DIR} ({len(df)} rows)")
+        df.to_excel(output_dir / f"baseline_{name.lower()}.xlsx", index=False, engine="openpyxl")
+        print(f"Saved {name} baseline to {output_dir} ({len(df)} rows)")
 
 if __name__ == "__main__":
     main()

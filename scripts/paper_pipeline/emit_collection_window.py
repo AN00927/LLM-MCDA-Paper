@@ -30,16 +30,16 @@ all models, split here by each record's `model` id).
 
 Outputs
 -------
-  paper/collection_window.csv          one row per artifact:
+  local-only collection_window.csv     one row per artifact:
       model, architecture, run, artifact, filename, start_utc_iso,
       end_utc_iso, time_source, mtime_utc_iso, last_commit_utc_iso,
       last_commit_sha, last_commit_subject
-  paper/collection_window_summary.csv  one row per (model, architecture):
+  local-only collection_window_summary.csv one row per (model, architecture):
       earliest start, latest end, span in hours, sources used, and how many
       artifacts fell back to mtime
 
 Usage:
-    python paper_pipeline/emit_collection_window.py [--out-dir DIR]
+    python scripts/paper_pipeline/emit_collection_window.py [--out-dir DIR]
 """
 
 import argparse
@@ -51,13 +51,18 @@ from pathlib import Path
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import MODEL_SPECS
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS
 
-PAPER_DIR = PROJECT_ROOT / "paper"
+PAPER_DIR = local_manuscript_path("paper")
 
 ARCHITECTURES = [
     "Direct_LLM_Scoring",
@@ -267,7 +272,7 @@ def last_commit_index():
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--out-dir", default=str(PAPER_DIR),
-                    help="Where collection_window*.csv go (default paper/)")
+                    help="Where collection_window*.csv go (default: local-only paper artifacts)")
     args = ap.parse_args()
     out_dir = Path(args.out_dir)
     out_rows = out_dir / "collection_window.csv"

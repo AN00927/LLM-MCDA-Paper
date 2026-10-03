@@ -1,3 +1,4 @@
+import argparse
 import sys
 import logging
 import numpy as np
@@ -5,13 +6,18 @@ from typing import Dict, List, Tuple
 import pandas as pd
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
+from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
 
 class ShowerGroundTruthCalculator:
     """Key sources:
@@ -478,9 +484,15 @@ class ShowerGroundTruthCalculator:
 
 def process_shower_scenarios(
     xlsx_filename: str = str(SCENARIO_DIR / "ShowerScenarios.xlsx"),
-    output_filename: str = str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx")):
+    output_filename: str | None = None):
     csv_path = Path(xlsx_filename)
-    output_path = Path(output_filename)
+    output_path = require_safe_output_path(
+        output_filename,
+        option="--output",
+        root=PROJECT_ROOT,
+    )
+    if output_path == csv_path.resolve():
+        raise UnsafeOutputPathError("--output must be separate from the scenario input workbook")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df = read_table_clean(
         csv_path,
@@ -571,5 +583,25 @@ def process_shower_scenarios(
     return results_df
 
 
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Calculate shower ground-truth scores.")
+    parser.add_argument(
+        "--input",
+        default=str(SCENARIO_DIR / "ShowerScenarios.xlsx"),
+        help="scenario workbook to read (default: workbooks/scenarios/ShowerScenarios.xlsx)",
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="explicit safe output workbook path outside frozen repository data",
+    )
+    args = parser.parse_args(argv)
+    try:
+        process_shower_scenarios(args.input, args.output)
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    return 0
+
+
 if __name__ == "__main__":
-    process_shower_scenarios()
+    sys.exit(main())

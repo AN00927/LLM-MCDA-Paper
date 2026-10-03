@@ -1,4 +1,5 @@
 import os
+import argparse
 import sys
 import json
 import hashlib
@@ -11,11 +12,22 @@ from pathlib import Path
 from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# Allow direct execution from the repository without an installed package.
+SRC_ROOT = Path(__file__).resolve().parents[2]
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import (
+from llm_mcda.common.model_config import (
     CRITERION_WEIGHTS,
     TIE_BREAK_PRIORITY,
     get_model_id,
@@ -40,7 +52,7 @@ from model_config import (
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
-from sentinel_utils import (
+from llm_mcda.common.sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     add_call_usage,
@@ -72,8 +84,8 @@ ARCHITECTURE = "LLM-Parameterized_Reference_Scoring"
 # writes nothing and keeps its own capture.
 RAW_LOG = RawCallLog()
 
-TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
-GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"
+TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
+GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "src/llm_mcda/calculators"
 
 def _load_calculator_class(module_filename: str, class_name: str):
     module_path = GROUND_TRUTH_CALCULATORS_DIR / module_filename
@@ -1387,7 +1399,21 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     print(f"Score statistics saved to {stats_path}")
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Run LLM-Parameterized Reference Scoring.")
+    parser.add_argument(
+        "--output-dir",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=f"Explicit safe output directory (or set {RUN_OUTPUT_DIR_ENV}); populated directories are allowed for resume.",
+    )
+    args, _unknown = parser.parse_known_args(argv)
+    try:
+        output_dir = require_safe_output_directory(
+            args.output_dir, option="--output-dir", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+
     if not os.getenv("OPENROUTER_API_KEY"):
         raise RuntimeError("OPENROUTER_API_KEY not found in .env file")
 
@@ -1398,7 +1424,6 @@ def main():
     print(f"Model: {API_CONFIG['model']}")
     print(f"Temperature: {API_CONFIG['temperature']}")
 
-    output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
     output_dir.mkdir(parents=True, exist_ok=True)
     output_csv = output_dir / "LLM-Parameterized_Reference_Scoring_results.xlsx"
     output_diagnostics = output_dir / "LLM-Parameterized_Reference_Scoring_results_diagnostics.json"

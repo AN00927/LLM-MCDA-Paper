@@ -6,30 +6,34 @@ The paper uses NO \\input{}: every table is literal LaTeX, hand-pasted after
 inspecting a pipeline artifact (see run_paper_pipeline.py:10-15). The repo's own
 hand-paste map covers only 4 floats. This builds the complete one.
 
-For each float in both .tex files it records: label, kind, line range, caption
+For each float in both local-only .tex copies it records: label, kind, line range, caption
 head, how many extracted numbers it contains, and whether any \\ref{} points at
 it. The PRODUCER column is filled in by hand in the plan's ledger - this script
 establishes the inventory those entries attach to.
 
 Usage:
-    python paper_pipeline/map_floats_to_artifacts.py
+    python scripts/paper_pipeline/map_floats_to_artifacts.py
 """
 
 import csv
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PAPER_DIR = PROJECT_ROOT / "paper"
-OUT_DIR = PROJECT_ROOT / "Analysis"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_documentation_path, local_manuscript_path
+
+OUT_DIR = local_documentation_path("paper-pipeline", "analysis")
 NUMBERS_CSV = OUT_DIR / "numbers_baseline.csv"
-
 TEX_FILES = [
-    ("main", PAPER_DIR / "paper_draft_working.tex"),
-    ("supp", PAPER_DIR / "supplementary_material.tex"),
+    ("main", local_manuscript_path("paper", "paper_draft_working.tex")),
+    ("supp", local_manuscript_path("paper", "supplementary.tex")),
 ]
-
 BEGIN_RE = re.compile(r"\\begin\{(table|figure)(\*?)\}")
 END_RE = re.compile(r"\\end\{(table|figure)\*?\}")
 LABEL_RE = re.compile(r"\\label\{([^}]*)\}")
@@ -107,7 +111,10 @@ def scan(kind, path):
 
 
 def main():
-    OUT_DIR.mkdir(exist_ok=True)
+    missing = [str(path) for _, path in TEX_FILES if not path.is_file()]
+    if missing:
+        raise SystemExit("Required local-only manuscript inputs are missing: "+", ".join(missing)+"; restore them under local_manuscripts/ or set LLM_MCDA_LOCAL_MANUSCRIPTS_DIR.")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     all_floats, all_refs = [], Counter()
     for kind, path in TEX_FILES:

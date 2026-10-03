@@ -17,23 +17,37 @@ Per-decision-type p-values are Holm-corrected across the three types within each
 types is twelve tests and a single borderline cell means nothing.
 
 Usage:
-    python "Miscellaneous Scripts/aggregate_position_bias_results.py"
+    python "scripts/archive/legacy/aggregate_position_bias_results.py"
 """
 
+import argparse
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Bootstrap the checkout's src/ package before importing llm_mcda.
+_BOOTSTRAP_ROOT = Path(__file__).resolve().parents[3]
+for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+    if str(_import_root) not in sys.path:
+        sys.path.insert(0, str(_import_root))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import MODEL_SPECS, get_output_folder
-from sentinel_utils import _atomic_write_xlsx
+from llm_mcda.common.model_config import MODEL_SPECS, get_output_folder
+from llm_mcda.common.sentinel_utils import _atomic_write_xlsx
 
-OUT_DIR = PROJECT_ROOT / "Analysis" / "PositionBias"
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
 # Weakest to strongest on the paper's headline Kendall tau, so the table reads
@@ -42,8 +56,8 @@ MODEL_ORDER = ["qwen", "gptoss", "deepseek", "gemini"]
 MODEL_LABELS = {
     "qwen": "Qwen3.5 9B",
     "gptoss": "GPT-OSS 20B",
-    "deepseek": "DeepSeek V4 Flash",
-    "gemini": "Gemini 3.5 Flash",
+    "deepseek": "DeepSeek V4 Flash 0731",
+    "gemini": "Gemini 3.8 Flash",
 }
 # A_D only. The A_H order arm lives in run_hybrid_ablation_experiments.py, where it is
 # compared against A_H's own five shipped runs rather than against a sample.
@@ -77,6 +91,25 @@ def load_paired(model_key):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Aggregate position-bias control results without changing source data."
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=f"Required safe output directory (or set {RUN_OUTPUT_DIR_ENV}); "
+             "source workbooks remain read-only.",
+    )
+    args = parser.parse_args()
+    try:
+        out_dir = require_safe_output_directory(
+            args.output_dir,
+            option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})",
+            root=PROJECT_ROOT,
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+
     frames = [f for f in (load_paired(m) for m in MODEL_ORDER) if f is not None]
     if not frames:
         print("[ERROR] No paired-test workbooks found. Run the control arms first.")
@@ -126,10 +159,19 @@ def main():
     )
     summary = summary.sort_values(["architecture", "_m", "_s"]).drop(columns=["_m", "_s"])
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = OUT_DIR / "position_bias_summary_all_models.xlsx"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = require_safe_output_path(
+        out_dir / "position_bias_summary_all_models.xlsx",
+        option="position-bias workbook output",
+        root=PROJECT_ROOT,
+    )
+    csv_path = require_safe_output_path(
+        out_path.with_suffix(".csv"),
+        option="position-bias CSV output",
+        root=PROJECT_ROOT,
+    )
     _atomic_write_xlsx(summary, out_path)
-    summary.to_csv(out_path.with_suffix(".csv"), index=False)
+    summary.to_csv(csv_path, index=False)
 
     print("POSITION-BIAS CONTROL: REVERSED ALTERNATIVE ORDER vs SHIPPED ORDER")
     print("=" * 104)
@@ -167,7 +209,7 @@ def main():
               f"{neg}/{len(s)} models; significant against every shipped run in "
               f"{sig}/{len(s)}")
 
-    print(f"\n[OK] Wrote {out_path.name} (+ .csv) to {OUT_DIR}")
+    print(f"\n[OK] Wrote {out_path.name} and {csv_path.name} to {out_dir}")
 
 
 if __name__ == "__main__":

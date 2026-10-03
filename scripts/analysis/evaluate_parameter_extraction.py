@@ -3,18 +3,31 @@ import importlib.util
 import math
 import sys
 import warnings
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+# Make the checkout's src layout importable when this script is run directly.
+for _candidate in Path(__file__).resolve().parents:
+    if (_candidate / "src" / "llm_mcda").is_dir():
+        sys.path.insert(0, str(_candidate / "src"))
+        break
+else:
+    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
 
-from model_config import MODEL_KEY, get_output_folder
-from sentinel_utils import (read_table_clean, SENTINEL_FLOAT, SENTINEL_VALUE, CRITERIA, is_sentinel,
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+from llm_mcda.common.model_config import MODEL_KEY, get_output_folder
+from llm_mcda.common.sentinel_utils import (read_table_clean, SENTINEL_FLOAT, SENTINEL_VALUE, CRITERIA, is_sentinel,
                             apply_mavt_ranking, _is_complete_run_file)
 
 SENTINEL = SENTINEL_FLOAT
@@ -48,7 +61,7 @@ def _load_calculator(decision_type: str):
         "Shower": ("ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"),
     }
     filename, class_name = module_names[decision_type]
-    module_path = PROJECT_ROOT / "Ground Truth Calculators" / filename
+    module_path = PROJECT_ROOT / "src/llm_mcda/calculators" / filename
     spec = importlib.util.spec_from_file_location(class_name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Unable to load calculator module {module_path}")
@@ -478,7 +491,7 @@ AH_STEM = "LLM-Parameterized_Reference_Scoring"
 
 def _discover_run_files(folder: Path) -> List[Path]:
     """The shipped per-run A_H files, with the same completeness rule as
-    paper_pipeline/calculate_per_run_metrics.py."""
+    scripts/paper_pipeline/calculate_per_run_metrics.py."""
     return [p for p in sorted(folder.glob(f"{AH_STEM}_results_run_*.xlsx"))
             if _is_complete_run_file(p)]
 
@@ -613,6 +626,10 @@ def _mean_over_runs(per_run: pd.DataFrame, mean_cols: List[str], sum_cols: List[
     return per_run.groupby(["decision_type", "parameter"]).agg(**agg).reset_index()
 
 
+def _resolved_path_key(path: Path) -> str:
+    return os.path.normcase(str(Path(path).expanduser().resolve()))
+
+
 def evaluate(args) -> Dict:
     """Evaluate A_H parameter extraction on the per-run basis: each run file is
     evaluated on its own (failed scenario-runs dropped) and every error, match
@@ -621,12 +638,29 @@ def evaluate(args) -> Dict:
     output_path = Path(args.output)
     scenario_dir = Path(args.scenario_dir)
     if args.results:
-        run_paths = [Path(p) for p in args.results]
+        candidate_run_paths = [Path(p) for p in args.results]
     else:
         folder = PROJECT_ROOT / get_output_folder(args.model)
-        run_paths = _discover_run_files(folder)
-        if not run_paths:
+        candidate_run_paths = sorted(folder.glob(f"{AH_STEM}_results_run_*.xlsx"))
+        if not candidate_run_paths:
             raise SystemExit(f"No {AH_STEM}_results_run_*.xlsx files in {folder}")
+    input_paths = [
+        *candidate_run_paths,
+        scenario_dir / "TestScenarios.xlsx",
+        *(scenario_dir / fname for fname in SCENARIO_FILES.values()),
+    ]
+    output_key = _resolved_path_key(output_path)
+    for input_path in input_paths:
+        if output_key == _resolved_path_key(input_path):
+            raise SystemExit(f"--output would overwrite an evaluation input: {input_path}")
+
+    if args.results:
+        run_paths = candidate_run_paths
+    else:
+        run_paths = [path for path in candidate_run_paths if _is_complete_run_file(path)]
+        if not run_paths:
+            folder = PROJECT_ROOT / get_output_folder(args.model)
+            raise SystemExit(f"No complete {AH_STEM}_results_run_*.xlsx files in {folder}")
     for path in run_paths:
         _check_per_run_file(path)
 
@@ -730,7 +764,7 @@ def evaluate(args) -> Dict:
     }
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Evaluate LLM-Parameterized_Reference_Scoring parameter extraction against source scenario ground truth, per run.")
     parser.add_argument(
         "--model",
@@ -748,17 +782,40 @@ def parse_args():
     parser.add_argument(
         "--output",
         default=None,
-        help="Markdown report output path (default: the model's output folder).",
+        help=(f"Markdown report output path (required unless {RUN_OUTPUT_DIR_ENV} is set; "
+              "the environment variable is treated as an output directory)."),
     )
     parser.add_argument(
         "--scenario-dir",
-        default=str(PROJECT_ROOT / "Scenario Files"),
+        default=str(PROJECT_ROOT / "workbooks/scenarios"),
         help="Directory containing TestScenarios.xlsx and domain scenario files.",
     )
-    args = parser.parse_args()
-    if args.output is None:
-        args.output = str(PROJECT_ROOT / get_output_folder(args.model)
-                          / "LLM-Parameterized_Reference_Scoring_parameter_evaluation.md")
+    args = parser.parse_args(argv)
+    try:
+        if args.output is not None:
+            output_path = require_safe_output_path(
+                args.output, option="--output", root=PROJECT_ROOT
+            )
+        else:
+            output_dir_value = os.environ.get(RUN_OUTPUT_DIR_ENV)
+            if not output_dir_value:
+                output_path = require_safe_output_path(
+                    None, option=f"--output or {RUN_OUTPUT_DIR_ENV}", root=PROJECT_ROOT
+                )
+            else:
+                output_dir = require_safe_output_directory(
+                    output_dir_value, option=RUN_OUTPUT_DIR_ENV, root=PROJECT_ROOT
+                )
+                output_path = require_safe_output_path(
+                    output_dir / "LLM-Parameterized_Reference_Scoring_parameter_evaluation.md",
+                    option=RUN_OUTPUT_DIR_ENV,
+                    root=PROJECT_ROOT,
+                )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    if output_path.suffix.casefold() != ".md":
+        parser.error(f"--output must name a Markdown report ending in .md: {output_path}")
+    args.output = str(output_path)
     return args
 
 

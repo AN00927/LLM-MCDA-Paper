@@ -2,7 +2,7 @@
 
 The control cell is main-suite runs 1..R rescored by run_prompt_ablation_experiments
 (`main_suite_control_rows`, which reads `load_reference`). The headline is
-paper/per_run_metrics/per_run_metrics_all.csv (evaluate_architecture_metrics
+the aggregate per-run metrics CSV (evaluate_architecture_metrics
 under the S4 failure rule). Both score the same run files, so every per-run
 Kendall tau / Top-1 / Top-2 must agree. They disagreed for 16 Shower scenarios
 when load_reference matched ground truth on question + location alone.
@@ -20,7 +20,12 @@ import pytest
 import arch_patch_harness as H  # noqa: F401  (dummy API key / no-network guard)
 
 REPO = H.REPO
-CSV = REPO / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
+SOURCE_ROOT = REPO / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_input_path
+
+CSV = local_manuscript_input_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
 STEM = {"AD": "Direct_LLM_Scoring", "AE": "Example-Guided_LLM_Scoring"}
 TOL = 6e-5  # the CSV is rounded to 4 decimals
 
@@ -33,7 +38,7 @@ def _load(path: Path, alias: str):
     return m
 
 
-PA = _load(REPO / "Miscellaneous Scripts" / "experiments" / "run_prompt_ablation_experiments.py",
+PA = _load(REPO / "scripts" / "experiments" / "run_prompt_ablation_experiments.py",
            "ctrl_pa")
 
 

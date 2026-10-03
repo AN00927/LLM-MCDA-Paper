@@ -9,7 +9,7 @@ consolidated workbook (ConsolidatedforSimaltaneousediting.xlsx) that no longer
 exists. This script reads ONLY:
 
   masters     HVACScenarios.xlsx, ApplianceScenarios.xlsx, ShowerScenarios.xlsx
-  membership  rag_membership.json  (which master rows are RAG; committed, fixed)
+  membership  data/scenarios/rag_membership.json (which master rows are RAG; committed, fixed)
   old RAG     HVACRagScenarios.xlsx, ApplianceRAGScenarios.xlsx,
               ShowerRAGScenarios.xlsx  (ONLY to carry their score columns)
 
@@ -29,8 +29,9 @@ alternative SET, with the question text and the engineering-only values
 So a grammar fix to a question, a cell-type fix, or an hvac_age correction never
 changes which scenarios are RAG. A fix to a signature field (e.g. a location
 typo in a RAG row) fails loudly instead of silently moving the scenario.
-Create the file once with --init-membership (derives it from the current RAG
-sheets); after that it is the source of truth for the split.
+Create a separate file once with --init-membership --membership-output PATH
+(derives it from the current RAG sheets; refuses to overwrite existing files);
+after that it is the source of truth for the split.
 
 Carried scores. The five score columns, rank and raw_* are copied verbatim from
 the existing RAG sheet row with the same scenario_id and alternative (after the
@@ -44,20 +45,21 @@ because the sync always rewrites them that way right after a rebuild; emitting
 that format here makes rebuild -> sync a no-op on everything but score values.
 
 Safety.
-  - Default output is a fresh scratch directory; --out-dir picks another one.
-  - Only --in-place writes into the masters directory (Scenario Files/), and
-    only after the audit passes, backing up each file to Backups/ first.
+  - Default output is a fresh scratch directory; --output-dir picks another safe one
+    (--out-dir remains a compatibility alias).
+  - --in-place is refused for frozen repository data. Use --output-dir for audited
+    output that must not replace the scenario inputs.
   - The masters are never written.
 
 Refresh workflow (CLAUDE.md): edit masters -> this script -> GT calculators ->
 sync_rag_ground_truth_scores.py -> build_rag_index.py (always last).
 
 Usage:
-    python "Scenario Files/build_scenario_workbooks.py"                  # -> scratch dir
-    python "Scenario Files/build_scenario_workbooks.py" --out-dir DIR
-    python "Scenario Files/build_scenario_workbooks.py" --masters-dir DIR --out-dir DIR2
-    python "Scenario Files/build_scenario_workbooks.py" --in-place       # live refresh
-    python "Scenario Files/build_scenario_workbooks.py" --init-membership  # one-time
+    python "scripts/collection/scenarios/build_scenario_workbooks.py"                  # -> scratch dir
+    python "scripts/collection/scenarios/build_scenario_workbooks.py" --output-dir DIR
+    python "scripts/collection/scenarios/build_scenario_workbooks.py" --masters-dir DIR --output-dir DIR2
+    python "scripts/collection/scenarios/build_scenario_workbooks.py" --in-place       # custom safe input tree only
+    python "scripts/collection/scenarios/build_scenario_workbooks.py" --init-membership --membership-output scratch/rag_membership.json
 """
 
 import argparse
@@ -76,17 +78,30 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(HERE)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+# Make the checkout's src layout importable when this script is run directly.
+for _candidate in Path(__file__).resolve().parents:
+    if (_candidate / "src" / "llm_mcda").is_dir():
+        sys.path.insert(0, str(_candidate / "src"))
+        break
+else:
+    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 # Single source of truth for the banded labels (also used by the RAG embedding).
-from sentinel_utils import (appliance_age_to_band_label, gpm_to_flow_rate_label,
+from llm_mcda.common.sentinel_utils import (appliance_age_to_band_label, gpm_to_flow_rate_label,
                             house_age_to_band_label, is_sentinel)
 
-DEFAULT_MEMBERSHIP = os.path.join(HERE, "rag_membership.json")
-SYNC_SCRIPT = os.path.join(PROJECT_ROOT, "Miscellaneous Scripts", "core-automation",
-                           "sync_rag_ground_truth_scores.py")
+SCENARIO_DIR = PROJECT_ROOT / "workbooks" / "scenarios"
+DEFAULT_MEMBERSHIP = PROJECT_ROOT / "data" / "scenarios" / "rag_membership.json"
+SYNC_SCRIPT = PROJECT_ROOT / "scripts" / "collection" / "sync_rag_ground_truth_scores.py"
 
 MASTER_FILES = {"HVAC": "HVACScenarios.xlsx", "Appliance": "ApplianceScenarios.xlsx",
                 "Shower": "ShowerScenarios.xlsx"}
@@ -730,27 +745,132 @@ def audit(out_dir, masters, resolved, test_sources):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--masters-dir", default=HERE,
-                    help="directory holding the three master workbooks (default: Scenario Files/)")
+    ap.add_argument("--masters-dir", default=str(SCENARIO_DIR),
+                    help="directory holding the three master workbooks (default: workbooks/scenarios/)")
     ap.add_argument("--rag-scores-dir", default=None,
                     help="directory holding the existing RAG sheets whose score columns are "
                          "carried (default: --masters-dir)")
-    ap.add_argument("--membership", default=DEFAULT_MEMBERSHIP,
-                    help="RAG membership JSON (default: Scenario Files/rag_membership.json)")
-    ap.add_argument("--out-dir", default=None,
-                    help="where to write the four derived files (default: a new scratch dir)")
+    ap.add_argument("--membership", default=str(DEFAULT_MEMBERSHIP),
+                    help="RAG membership JSON (default: data/scenarios/rag_membership.json)")
+    ap.add_argument("--output-dir", "--out-dir", dest="output_dir", default=None,
+                    help="safe destination for the four derived files; --out-dir is a legacy alias "
+                         "(default: a new scratch dir)")
     ap.add_argument("--in-place", action="store_true",
                     help="write into --masters-dir after the audit passes, backing up each "
-                         "file to <masters-dir>/Backups/ first")
+                         "file to workbooks/backups/scenarios/ first")
     ap.add_argument("--init-membership", action="store_true",
-                    help="derive the membership file from the current RAG sheets and exit "
-                         "(refuses to overwrite an existing file)")
+                    help="derive membership from the current RAG sheets; requires a separate "
+                         "--membership-output JSON path and refuses existing files")
+    ap.add_argument("--membership-output", default=None,
+                    help="separate JSON destination used only with --init-membership")
     args = ap.parse_args(argv)
 
     masters_dir = os.path.abspath(args.masters_dir)
     rag_dir = os.path.abspath(args.rag_scores_dir or masters_dir)
-    if args.in_place and args.out_dir:
-        ap.error("--in-place and --out-dir are mutually exclusive")
+    membership_output = None
+    if args.init_membership:
+        if args.membership_output is None:
+            ap.error("--init-membership requires --membership-output with a separate safe JSON destination")
+        if Path(args.membership_output).suffix.lower() != ".json":
+            ap.error("--membership-output must have a .json suffix")
+        try:
+            membership_output = require_safe_output_path(
+                args.membership_output,
+                option="--membership-output",
+                root=PROJECT_ROOT,
+            )
+        except UnsafeOutputPathError as exc:
+            ap.error(str(exc))
+        source_paths = [
+            Path(args.membership),
+            *(Path(masters_dir) / MASTER_FILES[t] for t in TYPES),
+            *(Path(rag_dir) / RAG_FILES[t] for t in TYPES),
+        ]
+        output_key = os.path.normcase(str(membership_output.resolve()))
+        for source_path in source_paths:
+            if output_key == os.path.normcase(str(source_path.expanduser().resolve())):
+                ap.error(f"--membership-output aliases an input source: {source_path}")
+        for source_dir, label in ((Path(masters_dir), "--masters-dir"),
+                                  (Path(rag_dir), "--rag-scores-dir")):
+            try:
+                membership_output.resolve().relative_to(source_dir.resolve())
+            except ValueError:
+                continue
+            ap.error(f"--membership-output must be outside the {label} input tree")
+        if membership_output.exists():
+            ap.error(f"--membership-output already exists; refusing to overwrite it: {membership_output}")
+    elif args.membership_output is not None:
+        ap.error("--membership-output is only valid with --init-membership")
+    if args.in_place and args.output_dir:
+        ap.error("--in-place and --output-dir are mutually exclusive")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    target_names = [TEST_FILE] + [RAG_FILES[t] for t in TYPES]
+
+    if args.in_place:
+        try:
+            require_safe_output_directory(
+                masters_dir,
+                option="--in-place",
+                root=PROJECT_ROOT,
+            )
+        except UnsafeOutputPathError as exc:
+            ap.error(
+                f"--in-place cannot rewrite frozen scenario inputs. {exc} "
+                "Write the audited files to a separate safe location with --output-dir instead."
+            )
+        backup_dir = PROJECT_ROOT / "workbooks" / "backups" / "scenarios"
+        try:
+            for fname in target_names:
+                require_safe_output_path(
+                    Path(masters_dir) / fname,
+                    option="--in-place destination",
+                    root=PROJECT_ROOT,
+                )
+                backup_path = backup_dir / (
+                    f"{os.path.splitext(fname)[0]}_BACKUP_{ts}.xlsx"
+                )
+                require_safe_output_path(
+                    backup_path,
+                    option="--in-place backup destination",
+                    root=PROJECT_ROOT,
+                )
+        except UnsafeOutputPathError as exc:
+            ap.error(
+                f"Unsafe --in-place destination: {exc} Use a separate safe "
+                "--output-dir instead."
+            )
+    else:
+        requested_output = args.output_dir or os.path.join(
+            tempfile.gettempdir(), f"scenario_rebuild_{ts}"
+        )
+        try:
+            output_dir = require_safe_output_directory(
+                requested_output,
+                option="--output-dir",
+                root=PROJECT_ROOT,
+            )
+        except UnsafeOutputPathError as exc:
+            ap.error(str(exc))
+        try:
+            for fname in target_names:
+                require_safe_output_path(
+                    output_dir / fname,
+                    option="--output-dir destination",
+                    root=PROJECT_ROOT,
+                )
+        except UnsafeOutputPathError as exc:
+            ap.error(str(exc))
+
+        for input_dir, label in ((masters_dir, "--masters-dir"), (rag_dir, "--rag-scores-dir")):
+            resolved_input = Path(input_dir).resolve()
+            try:
+                output_dir.relative_to(resolved_input)
+            except ValueError:
+                continue
+            ap.error(
+                f"--output-dir must be separate from {label}; choose a scratch or "
+                "run-specific directory outside its input tree."
+            )
 
     notes = []
     masters = load_masters(masters_dir, notes)
@@ -758,11 +878,8 @@ def main(argv=None):
           ", ".join(f"{t}={len(masters[t])}" for t in TYPES))
 
     if args.init_membership:
-        if os.path.exists(args.membership):
-            print(f"[init-membership] REFUSED: {args.membership} already exists")
-            return 2
-        mem = init_membership(masters, rag_dir, args.membership)
-        print(f"[init-membership] wrote {args.membership}: " +
+        mem = init_membership(masters, rag_dir, membership_output)
+        print(f"[init-membership] wrote {membership_output}: " +
               ", ".join(f"{t}={len(mem['types'][t])}" for t in TYPES))
         return 0
 
@@ -780,12 +897,18 @@ def main(argv=None):
         return 1
 
     # Stage: in-place writes go to a temp dir first and are copied only on PASS.
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     if args.in_place:
-        stage = tempfile.mkdtemp(prefix="scenario_rebuild_stage_")
+        try:
+            stage_parent = require_safe_output_directory(
+                tempfile.gettempdir(),
+                option="temporary stage directory",
+                root=PROJECT_ROOT,
+            )
+        except UnsafeOutputPathError as exc:
+            ap.error(str(exc))
+        stage = tempfile.mkdtemp(prefix="scenario_rebuild_stage_", dir=stage_parent)
     else:
-        stage = os.path.abspath(args.out_dir or os.path.join(
-            tempfile.gettempdir(), f"scenario_rebuild_{ts}"))
+        stage = str(output_dir)
         os.makedirs(stage, exist_ok=True)
 
     sync_write = load_sync_writer()
@@ -822,7 +945,6 @@ def main(argv=None):
         return 1
 
     if args.in_place:
-        backup_dir = os.path.join(masters_dir, "Backups")
         os.makedirs(backup_dir, exist_ok=True)
         for fname in [TEST_FILE] + [RAG_FILES[t] for t in TYPES]:
             dest = os.path.join(masters_dir, fname)
@@ -834,7 +956,7 @@ def main(argv=None):
                     print(f"[FAIL] backup of {fname} failed; stopping before any write")
                     return 1
             shutil.copy2(os.path.join(stage, fname), dest)
-            print(f"[in-place] {fname} written (backup in Backups/)")
+            print(f"[in-place] {fname} written (backup in workbooks/backups/scenarios/)")
         shutil.rmtree(stage, ignore_errors=True)
         print("Next: GT calculators -> sync_rag_ground_truth_scores.py -> build_rag_index.py")
     else:

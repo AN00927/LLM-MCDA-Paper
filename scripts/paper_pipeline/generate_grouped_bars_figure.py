@@ -3,11 +3,11 @@
 matplotlib-rendered vector PDF, replacing the original tikz/pgfplots groupplot.
 
 This is a one-off figure script (not wired into run_paper_pipeline.py). Data is
-hardcoded from the confirmed source values in paper/paper_draft_working.tex
+hardcoded from confirmed source values in the local manuscript
 (architecture comparison across four metrics: Kendall's tau, Top-1 %, MAE, RMSE).
 
 Colors reuse the document's existing, previously-unused per-architecture color
-definitions (paper/paper_draft_working.tex ~line 277-279):
+definitions from the local manuscript:
     colorPure    = RGB(180,180,180)  -> A_D (Direct scoring)
     colorRAG     = RGB(100,149,200)  -> A_E (Example-Guided / RAG scoring)
     colorLLMParameterizedReferenceScoring = RGB(31,73,125) -> A_H (Hybrid reference scoring)
@@ -20,9 +20,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_PATH = PROJECT_ROOT / "paper" / "Images" / "OverallPerformanceByModel.pdf"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_path
+OUTPUT_PATH = local_manuscript_path("paper", "Images", "OverallPerformanceByModel.pdf")
 
 MODELS = ["Gemini", "DeepSeek", "GPT-OSS", "Qwen"]
 
@@ -69,6 +74,7 @@ PANEL_ORDER = ["kendall_tau", "top1", "mae", "rmse"]
 
 
 def main():
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     fig, axes = plt.subplots(2, 2, figsize=(9, 7))
     axes = axes.flatten()
 

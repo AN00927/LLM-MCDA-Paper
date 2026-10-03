@@ -14,11 +14,12 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import read_table_clean
+from llm_mcda.common.sentinel_utils import read_table_clean
 
 
 SUBJECTIVE_WEIGHTS = {
@@ -74,14 +75,14 @@ def resolve_criterion_columns(df: pd.DataFrame) -> dict[str, str]:
 def load_ground_truth_data(project_root: Path) -> pd.DataFrame:
     """Load and concatenate all ground-truth tables into one DataFrame."""
     file_specs = (
-        ("HVAC", ("Ground Truth/ground_truth_hvac.xlsx", "Output Files/ground_truth_hvac.xlsx")),
+        ("HVAC", ("workbooks/ground_truth/ground_truth_hvac.xlsx",)),
         (
             "Appliance",
-            ("Ground Truth/ground_truth_appliance.xlsx", "Output Files/ground_truth_appliance.xlsx"),
+            ("workbooks/ground_truth/ground_truth_appliance.xlsx",),
         ),
         (
             "Shower",
-            ("Ground Truth/ground_truth_shower.xlsx", "Output Files/ground_truth_shower.xlsx"),
+            ("workbooks/ground_truth/ground_truth_shower.xlsx",),
         ),
     )
 
@@ -188,8 +189,8 @@ def build_comparison_table(data: pd.DataFrame, column_map: dict[str, str]) -> pd
 
 
 def export_results(comparison_table: pd.DataFrame, project_root: Path) -> Path:
-    """Write the comparison table to Scoring Logic and Documentation/method/entropy_weights.xlsx."""
-    output_dir = project_root / "Scoring Logic and Documentation" / "method"
+    """Write the comparison table to the canonical methodology workbook path."""
+    output_dir = project_root / "workbooks" / "methodology"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "entropy_weights.xlsx"
     comparison_table.reset_index().to_excel(output_path, index=False, engine="openpyxl")

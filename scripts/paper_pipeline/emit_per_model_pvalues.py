@@ -27,7 +27,7 @@ significance_tests.xlsx, so genuinely tiny p-values are not displayed as 0.
 No API calls; reads only per-run xlsx already on disk.
 
 Usage:
-    python paper_pipeline/emit_per_model_pvalues.py
+    python scripts/paper_pipeline/emit_per_model_pvalues.py
 """
 
 import sys
@@ -38,19 +38,24 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-_MISC = PROJECT_ROOT / "Miscellaneous Scripts"
-if str(_MISC) not in sys.path:
-    sys.path.insert(0, str(_MISC))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+_VALIDATION = PROJECT_ROOT / "scripts" / "validation"
+if str(_VALIDATION) not in sys.path:
+    sys.path.insert(0, str(_VALIDATION))
 
-_SIG_PATH = _MISC / "validation" / "significance_testing.py"
+_SIG_PATH = _VALIDATION / "significance_testing.py"
 _spec = spec_from_file_location("significance_testing", _SIG_PATH)
 _sig = module_from_spec(_spec)
 _spec.loader.exec_module(_sig)
 
-OUT = PROJECT_ROOT / "paper" / "per_model_pvalues.csv"
+OUT = local_manuscript_path("paper", "per_model_pvalues.csv")
 
 HEADLINE_METRICS = ["kendall_tau", "overall_mae", "top1_accuracy"]
 METRIC_LABEL = {"kendall_tau": "tau", "overall_mae": "MAE", "top1_accuracy": "Top-1"}
@@ -139,6 +144,7 @@ def main():
             "p_holm_family", "significant_holm_subset", "significant_holm_family"]
     sub = sub[cols].sort_values(["comparison", "metric", "model"],
                                 kind="mergesort").reset_index(drop=True)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     sub.to_csv(OUT, index=False)
     print(f"\n[2] Wrote {OUT} ({len(sub)} rows)")

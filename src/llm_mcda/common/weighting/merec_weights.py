@@ -39,18 +39,17 @@ Inputs:  ground_truth_hvac.xlsx, ground_truth_appliance.xlsx, ground_truth_showe
 Outputs: merec_weights_summary.xlsx
 """
 
-import os
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import find_file_in_paths, read_table_clean
+from llm_mcda.common.sentinel_utils import find_file_in_paths, read_table_clean
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -81,21 +80,11 @@ SUBJECTIVE_WEIGHTS = {
 
 OUTPUT_CSV  = "merec_weights_summary.xlsx"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SEARCH_DIRS = [
-    os.path.join(PROJECT_ROOT, "Ground Truth"),
-    os.path.join(BASE_DIR, "..", "Ground Truth"),
-    os.path.join(BASE_DIR, ".."),
-    os.path.join(BASE_DIR, "Ground Truth"),
-    BASE_DIR,
-    os.path.join(os.getcwd(), "Ground Truth"),
-    os.getcwd(),
-]
+SEARCH_DIRS = [str(PROJECT_ROOT / "workbooks" / "ground_truth")]
 
-# Default output inside Scoring Logic and Documentation/method
-OUTPUT_DIR = os.path.join(PROJECT_ROOT, "Scoring Logic and Documentation", "method")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-OUTPUT_CSV = os.path.join(OUTPUT_DIR, OUTPUT_CSV)
+# Preserve this analysis workbook at its manifest destination.
+OUTPUT_DIR = PROJECT_ROOT / "workbooks" / "methodology"
+OUTPUT_CSV = OUTPUT_DIR / OUTPUT_CSV
 
 # Small constant added before log to avoid ln(0).
 # Scores are on [0, 1]; epsilon = 0.01 has negligible effect on scores > 0.01
@@ -264,6 +253,7 @@ def print_merec_result(label: str, res: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     print("\nMEREC PER-SCENARIO OBJECTIVE WEIGHT ANALYSIS")
     print("=" * 65)
     print("Reference: Keshavarz-Ghorabaee et al. (2021)")

@@ -31,8 +31,8 @@ import pytest
 import arch_patch_harness as H  # noqa: F401  (forces the dummy API key / no-network guard)
 
 REPO = H.REPO
-EXP = REPO / "Miscellaneous Scripts" / "experiments"
-VAL = REPO / "Miscellaneous Scripts" / "validation"
+EXP = REPO / "scripts" / "experiments"
+VAL = REPO / "scripts" / "validation"
 
 
 def _load(path: Path, alias: str):

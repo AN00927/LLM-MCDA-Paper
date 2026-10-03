@@ -1,0 +1,9 @@
+{
+  "$schema": "schema/run-registry.schema.json",
+  "schema_version": "1.1",
+  "current_run_status": "deferred",
+  "current_run_status_note": "Run paths remain frozen at their existing locations and history. Provenance and current-run scope must be reviewed before assigning current pins.",
+  "current_run_ids": {},
+  "current_experiment_run_ids": {},
+  "runs": []
+}

@@ -7,9 +7,9 @@ Computes ranking and error metrics for each individual model run
  generate_boxplot_tex.py and generate_violin_plot_tex.py.
 
 Usage:
-    python paper_pipeline/calculate_per_run_metrics.py
-    python paper_pipeline/calculate_per_run_metrics.py --all-models
-    python paper_pipeline/calculate_per_run_metrics.py --model gemini
+    python scripts/paper_pipeline/calculate_per_run_metrics.py
+    python scripts/paper_pipeline/calculate_per_run_metrics.py --all-models
+    python scripts/paper_pipeline/calculate_per_run_metrics.py --model gemini
 """
 
 import argparse
@@ -21,14 +21,20 @@ import pandas as pd
 import numpy as np
 import scipy.stats as stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import MODEL_KEY, MODEL_SPECS
-from sentinel_utils import _is_complete_run_file, read_table_clean
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+
+from llm_mcda.common.model_config import MODEL_KEY, MODEL_SPECS
+from llm_mcda.common.sentinel_utils import _is_complete_run_file, read_table_clean
 
 # ---------- dynamic import of CalculateMetrics ----------
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("CalculateMetrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
@@ -46,7 +52,7 @@ compute_ranking_metrics_inclusive = _cm.compute_ranking_metrics_inclusive
 compute_criterion_metrics_inclusive = _cm.compute_criterion_metrics_inclusive
 _build_config = _cm._build_config
 
-OUTPUT_DIR = PROJECT_ROOT / "paper" / "per_run_metrics"
+OUTPUT_DIR = local_manuscript_path("paper", "per_run_metrics")
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",

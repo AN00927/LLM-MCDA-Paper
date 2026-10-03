@@ -4,7 +4,7 @@ analyze_benchmark_failures.py
 Scans per-run xlsx files for 1928 sentinel values, loads diagnostics JSONs for
 failure mode breakdown, and outputs LaTeX tables for a failure analysis subsection.
 
-Usage: python paper_pipeline/analyze_benchmark_failures.py
+Usage: python scripts/paper_pipeline/analyze_benchmark_failures.py
 """
 import json
 import pandas as pd
@@ -12,13 +12,18 @@ import numpy as np
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import MODEL_SPECS
-from sentinel_utils import SENTINEL_VALUE
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS
+from llm_mcda.common.sentinel_utils import SENTINEL_VALUE
 
-OUTPUT_DIR = PROJECT_ROOT / "paper"
+OUTPUT_DIR = local_manuscript_path("paper")
 FAILURE_CSV = OUTPUT_DIR / "failure_analysis.csv"
 FAILURE_TEX = OUTPUT_DIR / "failure_analysis_tables.tex"
 
@@ -190,7 +195,7 @@ tex.append(r"\end{tabular}")
 tex.append(r"\end{table}")
 
 # === Table F4: Per-scenario-parameter failure patterns ===
-scenario_master = pd.read_excel(PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx")
+scenario_master = pd.read_excel(PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx")
 scenario_master = scenario_master.drop(columns=["decision_type"], errors="ignore")
 scenario_master["scenario_id"] = scenario_master.index + 1
 

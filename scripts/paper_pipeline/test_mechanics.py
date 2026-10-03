@@ -2,7 +2,7 @@
 """
 test_mechanics.py - task P1.7 of the EMS revision plan.
 
-Three fixes to what `Miscellaneous Scripts/significance_testing.py` reports.
+Three fixes to what `scripts/validation/significance_testing.py` reports.
 That script is NOT modified; this is a separate artifact that supersedes three
 of its outputs.
 
@@ -51,12 +51,12 @@ FIX 3 - REPLACE ICC(1,1).
     moves the metric more than rerunning does. That is the claim the paper
     actually needs, stated as a comparison of two dispersions.
 
-Inputs:  Analysis/per_scenario_metrics_all.csv   (built by cluster_bootstrap_ci.py)
-         paper/per_run_metrics/per_run_metrics_all.csv
-Output:  Analysis/test_mechanics.{xlsx,md}
+Inputs:  local-first per_scenario_metrics_all.csv (falls back to the repository Analysis copy)
+         local-only per_run_metrics_all.csv
+Output:  local-only workbook and public Markdown report
 
 Usage:
-    python paper_pipeline/test_mechanics.py
+    python scripts/paper_pipeline/test_mechanics.py
 """
 
 import sys
@@ -67,13 +67,19 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
 
-PER_SCENARIO_CSV = PROJECT_ROOT / "Analysis" / "per_scenario_metrics_all.csv"
-PER_RUN_CSV = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "test_mechanics.xlsx"
-OUT_MD = PROJECT_ROOT / "Analysis" / "test_mechanics.md"
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_input_path, local_manuscript_path  # noqa: E402
+
+PER_SCENARIO_CSV = local_manuscript_input_path("Analysis", "per_scenario_metrics_all.csv")
+PER_RUN_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+OUT_XLSX = local_manuscript_path("Analysis", "test_mechanics.xlsx")
+OUT_MD = local_manuscript_path("Analysis", "test_mechanics.md")
 
 ARCH_SHORT = {
     "Direct_LLM_Scoring": "A_D",
@@ -244,6 +250,19 @@ def run_dispersion(per_run):
 
 
 def main():
+    missing = []
+    if not PER_SCENARIO_CSV.is_file():
+        missing.append(f"per-scenario metrics: {PER_SCENARIO_CSV}")
+    if not PER_RUN_CSV.is_file():
+        missing.append(f"local-only per-run metrics: {PER_RUN_CSV}")
+    if missing:
+        raise SystemExit(
+            "Required paper-pipeline inputs are missing: "
+            + "; ".join(missing)
+            + ". Restore local-only files under local_manuscripts/ or set "
+            "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR. The per-scenario input also "
+            "uses the public Analysis copy when present."
+        )
     warnings.filterwarnings("ignore")
     print("P1.7 test mechanics")
     print("=" * 64)
@@ -261,7 +280,7 @@ def main():
     disp = run_dispersion(per_run)
     print("  Dispersion rows: %d" % len(disp))
 
-    OUT_XLSX.parent.mkdir(exist_ok=True)
+    OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xw:
         wil.to_excel(xw, sheet_name="Wilcoxon_stratified", index=False)
         disp.to_excel(xw, sheet_name="Dispersion_replaces_ICC", index=False)
@@ -269,7 +288,7 @@ def main():
 
     L = []
     L.append("# P1.7 - test mechanics\n")
-    L.append("Supersedes three outputs of `Miscellaneous Scripts/significance_testing.py`.")
+    L.append("Supersedes three outputs of `scripts/validation/significance_testing.py`.")
     L.append("That script is unchanged; this is a separate artifact.\n")
 
     L.append("## Fix 1+2 - Wilcoxon stratified by decision type, with tie handling stated\n")
@@ -307,6 +326,7 @@ def main():
             r["between_model_range"], r["within_cell_sd_median"],
             r["within_cell_sd_max"], r["range_over_median_sd"]))
 
+    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     OUT_MD.write_text("\n".join(L) + "\n", encoding="utf-8")
     print("  Wrote %s" % OUT_MD.relative_to(PROJECT_ROOT))
     return 0

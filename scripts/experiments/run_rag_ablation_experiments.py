@@ -14,17 +14,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_BOOTSTRAP_ROOT = Path(__file__).resolve().parents[2]
+for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+    if str(_import_root) not in sys.path:
+        sys.path.insert(0, str(_import_root))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-LEGACY_DIR = PROJECT_ROOT / "Miscellaneous Scripts" / "legacy"
-if str(LEGACY_DIR) not in sys.path:
-    sys.path.insert(0, str(LEGACY_DIR))
-
 import numpy as np
 import pandas as pd
 
-from model_config import (
+from llm_mcda.common.model_config import (
     CRITERION_WEIGHTS,
     MAX_RETRIES,
     MAX_RETRY_BACKOFF,
@@ -33,12 +41,11 @@ from model_config import (
     TEMPERATURE,
     _is_transient_http_status,
     get_model_id,
-    get_output_folder,
     get_reasoning_payload,
     MODEL_SPECS,
 )
 
-from sentinel_utils import (
+from llm_mcda.common.sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,
@@ -57,10 +64,10 @@ from sentinel_utils import (
     read_table_clean,
 )
 
-from CreateRepresentativeSample import stratified_sample_by_features as stratified_sample
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
-OUTPUT_DIR = PROJECT_ROOT / get_output_folder()
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+from scripts.archive.legacy.CreateRepresentativeSample import (
+    stratified_sample_by_features as stratified_sample,
+)
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
 
 SENTINEL = SENTINEL_FLOAT
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
@@ -1567,17 +1574,18 @@ def load_checkpoint(path: Path, expected_header: Dict) -> Optional[Dict]:
     return saved
 
 
-def write_checkpoint(path: Path, header: Dict, rows: List[Dict], unit_meta: Dict) -> None:
+def write_checkpoint(path: Path, header: Dict, rows: List[Dict], unit_meta: Dict,
+                     tmp_path: Optional[Path] = None) -> None:
     """Atomic write (tmp + os.replace). Called from the main thread only, after
     the unit's thread pool has been joined, so no two writers ever race."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = tmp_path or path.with_suffix(path.suffix + ".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump({"header": header, "unit": unit_meta, "rows": rows}, f, default=_json_default)
     os.replace(tmp, path)
 
 
-def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator, model_keys: Optional[List[str]] = None, workers: int = 1, checkpoint_dir: Optional[Path] = None, run_meta: Optional[Dict] = None) -> List[Dict]:
+def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[str, Tuple], rng: np.random.Generator, model_keys: Optional[List[str]] = None, workers: int = 1, checkpoint_dir: Optional[Path] = None, run_meta: Optional[Dict] = None, checkpoint_paths=None, checkpoint_tmp_paths=None) -> List[Dict]:
     """Run every (ablation x model x scenario) cell and flatten to per-alternative rows.
 
     Checkpointing (`checkpoint_dir`): each (ablation, model) unit is saved to
@@ -1625,7 +1633,10 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
             saved = None
             header = None
             if checkpoint_dir is not None:
-                ckpt_path = checkpoint_path(checkpoint_dir, ablation_id, model_key)
+                ckpt_path = (checkpoint_paths or {}).get(
+                    (ablation_id, model_key),
+                    checkpoint_path(checkpoint_dir, ablation_id, model_key),
+                )
                 header = _checkpoint_header(ablation_id, spec, model_key, model_id, sample, run_meta)
                 saved = load_checkpoint(ckpt_path, header)
 
@@ -1773,15 +1784,15 @@ def build_result_rows(sample: List[Dict], specs: OrderedDict, collections: Dict[
                 "collected_utc_end": unit_end_utc,
                 "api_calls": n_calls,
                 "failed_calls": n_failed,
-            })
+            }, tmp_path=(checkpoint_tmp_paths or {}).get((ablation_id, model_key)))
             # Read back, so the final workbook is assembled from the checkpoints.
             rows.extend(load_checkpoint(ckpt_path, header)["rows"])
     return rows
 
 
-def _atomic_write_xlsx(df: pd.DataFrame, path: Path) -> None:
+def _atomic_write_xlsx(df: pd.DataFrame, path: Path, tmp_path: Optional[Path] = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = tmp_path or path.with_suffix(path.suffix + ".tmp")
     df.to_excel(tmp, index=False, engine="openpyxl")
     os.replace(tmp, path)
 
@@ -1873,12 +1884,284 @@ def write_report(output_path: Path, sample_size: Optional[int], seed: int, specs
             f.write(section + "\n\n")
 
 
+def _resolved_path_key(path: Path) -> str:
+    return os.path.normcase(str(Path(path).expanduser().resolve()))
+
+
+def _validate_report_destination(output_dir: Path, report_path: Path, input_paths=()) -> None:
+    if report_path.suffix.casefold() != ".md":
+        raise UnsafeOutputPathError(
+            f"--output must name a Markdown report ending in .md: {report_path}"
+        )
+
+    generated_paths = [
+        output_dir / "rag_ablation_results.xlsx",
+        output_dir / "rag_ablation_summary.xlsx",
+        output_dir / "rag_ablation_summary_by_decision_type.xlsx",
+        output_dir / "rag_ablation_friedman_tests.xlsx",
+        output_dir / "rag_ablation_posthoc_tests.xlsx",
+        output_dir / "rag_ablation_bootstrap_ci.xlsx",
+        output_dir / "rag_ablation_results_raw.jsonl",
+        *(output_dir / "checkpoints" / f"{ablation_id}__{model_key}.json"
+          for ablation_id in ABLATION_SPECS for model_key in MODEL_SPECS),
+    ]
+    report_key = _resolved_path_key(report_path)
+    for generated_path in generated_paths:
+        if report_key == _resolved_path_key(generated_path):
+            raise UnsafeOutputPathError(
+                f"--output collides with a generated RAG ablation artifact: {generated_path}"
+            )
+    for input_path in input_paths:
+        if report_key == _resolved_path_key(input_path):
+            raise UnsafeOutputPathError(
+                f"--output would overwrite a RAG ablation input: {input_path}"
+            )
+
+
+def resolve_output_paths(output_dir_value, report_output_value):
+    """Resolve all writer destinations before the command creates anything."""
+    if output_dir_value is None and report_output_value is None:
+        raise UnsafeOutputPathError(
+            f"An explicit --output-dir (or {RUN_OUTPUT_DIR_ENV}) or a safe --output report path is required."
+        )
+
+    if output_dir_value is None:
+        report_path = require_safe_output_path(
+            report_output_value,
+            option="--output",
+            root=PROJECT_ROOT,
+        )
+        output_dir = report_path.parent
+    else:
+        output_dir = require_safe_output_directory(
+            output_dir_value,
+            option="--output-dir",
+            root=PROJECT_ROOT,
+        )
+        report_value = report_output_value or output_dir / "rag_ablation_results.md"
+        report_path = require_safe_output_path(
+            report_value,
+            option="--output",
+            root=PROJECT_ROOT,
+        )
+    _validate_report_destination(output_dir, report_path)
+    return output_dir, report_path
+
+
+def validate_recompute_directories(input_dir: Path, output_dir: Path) -> Tuple[Path, Path]:
+    """Resolve recompute input/output dirs and require disjoint trees."""
+    resolved_input = Path(input_dir).expanduser().resolve()
+    resolved_output = Path(output_dir).expanduser().resolve()
+    input_key = os.path.normcase(os.path.normpath(str(resolved_input)))
+    output_key = os.path.normcase(os.path.normpath(str(resolved_output)))
+    try:
+        common = os.path.commonpath((input_key, output_key))
+    except ValueError:
+        common = None
+    if common in {input_key, output_key}:
+        raise UnsafeOutputPathError(
+            "For --recompute-significance-only, --input-dir and --output-dir must "
+            "be disjoint directories after resolving symlinks. "
+            f"Input: {resolved_input}; output: {resolved_output}. Choose separate trees."
+        )
+    return resolved_input, resolved_output
+
+
+def _require_disjoint_from_input(path: Path, input_dir: Path, *, option: str) -> Path:
+    """Reject resolved output targets that touch a read-only input tree."""
+    resolved_path = Path(path).expanduser().resolve()
+    resolved_input = Path(input_dir).expanduser().resolve()
+    path_key = os.path.normcase(os.path.normpath(str(resolved_path)))
+    input_key = os.path.normcase(os.path.normpath(str(resolved_input)))
+    try:
+        common = os.path.commonpath((path_key, input_key))
+    except ValueError:
+        common = None
+    if common in {path_key, input_key}:
+        raise UnsafeOutputPathError(
+            f"{option} resolves into or overlaps the read-only input tree "
+            f"{resolved_input}: {resolved_path}. Choose a separate output destination."
+        )
+    return resolved_path
+
+
+def _validate_report_outside_input(report_path: Path, input_dir: Path) -> Path:
+    """Reports must not be written anywhere inside the source directory."""
+    resolved_report = Path(report_path).expanduser().resolve()
+    resolved_input = Path(input_dir).expanduser().resolve()
+    report_key = os.path.normcase(os.path.normpath(str(resolved_report)))
+    input_key = os.path.normcase(os.path.normpath(str(resolved_input)))
+    try:
+        common = os.path.commonpath((report_key, input_key))
+    except ValueError:
+        common = None
+    if common == input_key:
+        raise UnsafeOutputPathError(
+            f"--output report must be outside the read-only --input-dir tree: "
+            f"{resolved_input}. Resolved report: {resolved_report}"
+        )
+    return resolved_report
+
+
+def _preflight_output_paths(output_dir: Path, report_path: Path, input_dir: Path,
+                            *, full_run: bool, checkpoint_keys=()) -> Dict:
+    """Resolve and validate every destination before reading source data.
+
+    All paths are passed through the shared frozen-path validators, which
+    resolve existing symlinks/junctions. Outputs are additionally kept
+    disjoint from the read-only source tree. Atomic temporary siblings are
+    preflighted too and returned for use by the writers.
+    """
+    output_dir = require_safe_output_directory(
+        output_dir, option="--output-dir", root=PROJECT_ROOT
+    )
+    output_dir = _require_disjoint_from_input(
+        output_dir, input_dir, option="--output-dir"
+    )
+    report_path = require_safe_output_path(
+        report_path, option="--output", root=PROJECT_ROOT
+    )
+    if report_path.suffix.casefold() != ".md":
+        raise UnsafeOutputPathError(
+            f"--output must name a Markdown report ending in .md: {report_path}"
+        )
+    report_path = _validate_report_outside_input(report_path, input_dir)
+
+    result = {"output_dir": output_dir, "report": report_path}
+    directories = {}
+    if full_run:
+        directories["temp_dir"] = output_dir / ".rag_ablation_temp"
+        if checkpoint_keys is not None:
+            directories["checkpoint_dir"] = output_dir / "checkpoints"
+    for name, value in directories.items():
+        safe_dir = require_safe_output_directory(
+            value, option=f"{name} output directory", root=PROJECT_ROOT
+        )
+        result[name] = _require_disjoint_from_input(
+            safe_dir, input_dir, option=f"{name} output directory"
+        )
+
+    file_values = {}
+    if full_run:
+        file_values.update({
+            "results": output_dir / "rag_ablation_results.xlsx",
+            "summary": output_dir / "rag_ablation_summary.xlsx",
+            "dtype_summary": output_dir / "rag_ablation_summary_by_decision_type.xlsx",
+            "friedman": output_dir / "rag_ablation_friedman_tests.xlsx",
+            "posthoc": output_dir / "rag_ablation_posthoc_tests.xlsx",
+            "bootstrap": output_dir / "rag_ablation_bootstrap_ci.xlsx",
+            "raw_log": output_dir / "rag_ablation_results_raw.jsonl",
+        })
+        for ablation_id, model_key in checkpoint_keys or ():
+            file_values[f"checkpoint:{ablation_id}:{model_key}"] = (
+                result["checkpoint_dir"] / f"{ablation_id}__{model_key}.json"
+            )
+    else:
+        file_values.update({
+            "summary": output_dir / "rag_ablation_summary.xlsx",
+            "dtype_summary": output_dir / "rag_ablation_summary_by_decision_type.xlsx",
+            "friedman": output_dir / "rag_ablation_friedman_tests.xlsx",
+            "posthoc": output_dir / "rag_ablation_posthoc_tests.xlsx",
+            "bootstrap": output_dir / "rag_ablation_bootstrap_ci.xlsx",
+        })
+
+    file_values["report"] = report_path
+    safe_files = {}
+    temp_files = {}
+    all_targets = {}
+    for name, value in file_values.items():
+        safe_path = require_safe_output_path(
+            value, option=("--output" if name == "report" else f"{name} output"),
+            root=PROJECT_ROOT,
+        )
+        safe_path = _require_disjoint_from_input(
+            safe_path, input_dir,
+            option=("--output" if name == "report" else f"{name} output"),
+        )
+        key = _resolved_path_key(safe_path)
+        if key in all_targets:
+            raise UnsafeOutputPathError(
+                f"Output paths collide after resolving symlinks: {name} and "
+                f"{all_targets[key]} both target {safe_path}."
+            )
+        all_targets[key] = name
+        safe_files[name] = safe_path
+        if safe_path.suffix.casefold() == ".xlsx":
+            tmp_value = safe_path.with_suffix(safe_path.suffix + ".tmp")
+            tmp_path = require_safe_output_path(
+                tmp_value, option=f"temporary {name} output", root=PROJECT_ROOT
+            )
+            tmp_path = _require_disjoint_from_input(
+                tmp_path, input_dir, option=f"temporary {name} output"
+            )
+            tmp_key = _resolved_path_key(tmp_path)
+            if tmp_key in all_targets:
+                raise UnsafeOutputPathError(
+                    f"Temporary output for {name} collides after resolving symlinks "
+                    f"with {all_targets[tmp_key]}: {tmp_path}"
+                )
+            all_targets[tmp_key] = f"temporary {name}"
+            temp_files[name] = tmp_path
+
+    # Checkpoint JSON files also use atomic .tmp siblings.
+    checkpoint_paths = {}
+    checkpoint_tmp_paths = {}
+    for ablation_id, model_key in checkpoint_keys or ():
+        name = f"checkpoint:{ablation_id}:{model_key}"
+        path = safe_files[name]
+        tmp_path = require_safe_output_path(
+            path.with_suffix(path.suffix + ".tmp"),
+            option=f"temporary checkpoint {ablation_id}/{model_key} output",
+            root=PROJECT_ROOT,
+        )
+        tmp_path = _require_disjoint_from_input(
+            tmp_path, input_dir,
+            option=f"temporary checkpoint {ablation_id}/{model_key} output",
+        )
+        tmp_key = _resolved_path_key(tmp_path)
+        if tmp_key in all_targets:
+            raise UnsafeOutputPathError(
+                f"Temporary checkpoint output collides after resolving symlinks "
+                f"with {all_targets[tmp_key]}: {tmp_path}"
+            )
+        all_targets[tmp_key] = f"temporary {name}"
+        checkpoint_paths[(ablation_id, model_key)] = path
+        checkpoint_tmp_paths[(ablation_id, model_key)] = tmp_path
+
+    result["files"] = safe_files
+    result["temporary_files"] = temp_files
+    result["checkpoint_paths"] = checkpoint_paths
+    result["checkpoint_tmp_paths"] = checkpoint_tmp_paths
+    return result
+
+
 def run(args) -> Dict:
+    output_dir, report_path = resolve_output_paths(
+        getattr(args, "output_dir", None),
+        getattr(args, "output", None),
+    )
     sample_size = parse_sample_size(args.sample_size)
     ablation_ids = set(args.ablations)
     specs = OrderedDict((k, v) for k, v in ABLATION_SPECS.items() if k in ablation_ids)
     if not specs:
         raise ValueError("No ablations selected")
+
+    selected_model_keys = getattr(args, "models", None) or list(MODEL_SPECS.keys())
+    checkpoint_keys = None
+    if not getattr(args, "no_checkpoint", False):
+        checkpoint_keys = []
+        for ablation_id, spec in specs.items():
+            model_keys = selected_model_keys if spec["llm"] else ["offline"]
+            checkpoint_keys.extend((ablation_id, model_key) for model_key in model_keys)
+    output_paths = _preflight_output_paths(
+        output_dir,
+        report_path,
+        SCENARIO_DIR,
+        full_run=True,
+        checkpoint_keys=checkpoint_keys,
+    )
+    output_dir = output_paths["output_dir"]
+    report_path = output_paths["report"]
     if any(spec["llm"] for spec in specs.values()) and not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY not found. Use --ablations nearest-neighbor for an offline-only run.")
 
@@ -1887,7 +2170,7 @@ def run(args) -> Dict:
     sample = stratified_sample(groups_by_type, sample_size, args.seed)
     logging.info("Loaded %s source scenarios; sampled %s", sum(len(v) for v in groups_by_type.values()), len(sample))
 
-    temp_root = PROJECT_ROOT / ".rag_ablation_temp"
+    temp_root = output_paths["temp_dir"]
     temp_root.mkdir(parents=True, exist_ok=True)
     embedding_models = sorted({spec["embedding_model"] for spec in specs.values()})
     collections = {}
@@ -1895,7 +2178,6 @@ def run(args) -> Dict:
         logging.info("Building temporary Chroma collection with %s", embedding_model_name)
         collections[embedding_model_name] = build_collection(embedding_model_name, temp_root)
 
-    output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     rng = np.random.default_rng(args.seed)
@@ -1906,12 +2188,14 @@ def run(args) -> Dict:
         "source_sha256": source_files_sha256(),
         "nn_fallback": getattr(args, "nn_fallback", "tie"),
     }
-    checkpoint_dir = None if getattr(args, "no_checkpoint", False) else output_dir / "checkpoints"
-    RAW_LOG.start(output_dir / "rag_ablation_results_raw.jsonl")
+    checkpoint_dir = output_paths.get("checkpoint_dir")
+    RAW_LOG.start(output_paths["files"]["raw_log"])
     try:
         rows = build_result_rows(sample, specs, collections, rng, getattr(args, "models", None),
                                  workers=getattr(args, "workers", 1),
-                                 checkpoint_dir=checkpoint_dir, run_meta=run_meta)
+                                 checkpoint_dir=checkpoint_dir, run_meta=run_meta,
+                                 checkpoint_paths=output_paths["checkpoint_paths"],
+                                 checkpoint_tmp_paths=output_paths["checkpoint_tmp_paths"])
     finally:
         RAW_LOG.stop()
     rows_df = pd.DataFrame(rows)
@@ -1924,21 +2208,20 @@ def run(args) -> Dict:
     rows_df["top2_accuracy"] = rows_df["top2_correct"].astype(float)
     rows_df["success_rate"] = np.where(rows_df["api_calls"] > 0, rows_df["successful_calls"] / rows_df["api_calls"], np.nan)
 
-    results_path = output_dir / "rag_ablation_results.xlsx"
-    summary_path = output_dir / "rag_ablation_summary.xlsx"
-    dtype_summary_path = output_dir / "rag_ablation_summary_by_decision_type.xlsx"
-    report_path = Path(args.output)
-    _atomic_write_xlsx(rows_df, results_path)
+    results_path = output_paths["files"]["results"]
+    summary_path = output_paths["files"]["summary"]
+    dtype_summary_path = output_paths["files"]["dtype_summary"]
+    _atomic_write_xlsx(rows_df, results_path, output_paths["temporary_files"]["results"])
     summary_df = summarize_rows(rows_df)
     dtype_summary_df = summarize_by_decision_type(rows_df)
-    _atomic_write_xlsx(summary_df, summary_path)
-    _atomic_write_xlsx(dtype_summary_df, dtype_summary_path)
+    _atomic_write_xlsx(summary_df, summary_path, output_paths["temporary_files"]["summary"])
+    _atomic_write_xlsx(dtype_summary_df, dtype_summary_path, output_paths["temporary_files"]["dtype_summary"])
 
     scenario_df = scenario_level_df(rows_df)
     stat_metrics = ['kendall_tau', 'score_mae', 'score_rmse', 'top1_accuracy']
 
     friedman_results, posthoc_df, bootstrap_df, paths = run_significance_suite(
-        scenario_df, stat_metrics, output_dir)
+        scenario_df, stat_metrics, output_dir, output_paths=output_paths)
 
     write_report(report_path, sample_size, args.seed, specs, summary_df, dtype_summary_df, rows_df, [],
                  friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
@@ -1970,7 +2253,8 @@ def run(args) -> Dict:
 
 
 def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
-                            output_dir: Path, model_col: str = 'model_key'):
+                            output_dir: Path, model_col: str = 'model_key',
+                            output_paths: Optional[Dict] = None):
     """Friedman -> Holm-corrected family -> gated post-hoc -> bootstrap CI pipeline.
 
     This is the single significance-testing entry point for the RAG ablation,
@@ -2048,8 +2332,10 @@ def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
             model_col, 'metric', 'chi2', 'p_value', 'df', 'n_scenarios', 'n_configs',
             'p_holm', 'significant_holm',
         ])
-    friedman_path = output_dir / "rag_ablation_friedman_tests.xlsx"
-    _atomic_write_xlsx(friedman_results, friedman_path)
+    files = (output_paths or {}).get("files", {})
+    temporary_files = (output_paths or {}).get("temporary_files", {})
+    friedman_path = files.get("friedman", output_dir / "rag_ablation_friedman_tests.xlsx")
+    _atomic_write_xlsx(friedman_results, friedman_path, temporary_files.get("friedman"))
 
     posthoc_parts = []
     for model_key, stratum in strata:
@@ -2067,8 +2353,8 @@ def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
             ph.insert(0, model_col, model_key)
             posthoc_parts.append(ph)
     posthoc_df = pd.concat(posthoc_parts, ignore_index=True) if posthoc_parts else pd.DataFrame()
-    posthoc_path = output_dir / "rag_ablation_posthoc_tests.xlsx"
-    _atomic_write_xlsx(posthoc_df, posthoc_path)
+    posthoc_path = files.get("posthoc", output_dir / "rag_ablation_posthoc_tests.xlsx")
+    _atomic_write_xlsx(posthoc_df, posthoc_path, temporary_files.get("posthoc"))
 
     bootstrap_parts = []
     for model_key, stratum in scenario_df.groupby(model_col, dropna=False):
@@ -2079,8 +2365,8 @@ def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
             bc.insert(0, model_col, model_key)
             bootstrap_parts.append(bc)
     bootstrap_df = pd.concat(bootstrap_parts, ignore_index=True) if bootstrap_parts else pd.DataFrame()
-    bootstrap_path = output_dir / "rag_ablation_bootstrap_ci.xlsx"
-    _atomic_write_xlsx(bootstrap_df, bootstrap_path)
+    bootstrap_path = files.get("bootstrap", output_dir / "rag_ablation_bootstrap_ci.xlsx")
+    _atomic_write_xlsx(bootstrap_df, bootstrap_path, temporary_files.get("bootstrap"))
 
     paths = {
         "friedman_path": friedman_path,
@@ -2090,17 +2376,33 @@ def run_significance_suite(scenario_df: pd.DataFrame, stat_metrics: List[str],
     return friedman_results, posthoc_df, bootstrap_df, paths
 
 
-def recompute_significance_only(output_dir: Path, report_path: Path):
+def recompute_significance_only(source_dir: Path, output_dir: Path, report_path: Path):
     """Recompute the Friedman/post-hoc/bootstrap suite from a saved results file.
 
-    Loads `rag_ablation_results.xlsx` (already-collected scenario-level rows
-    from a prior full run) and reruns only the statistics, making zero API
-    calls. Use this after a change to the significance-testing code itself
+    Loads `source_dir/rag_ablation_results.xlsx` (already-collected
+    scenario-level rows from a prior full run) and writes refreshed outputs
+    to a separate safe output directory, making zero API calls. Use this after
+    a change to the significance-testing code itself
     (e.g. adding the Holm family correction) when the underlying scenario
     data has not changed and re-querying the models would be pure cost with
     no new information.
     """
-    results_path = output_dir / "rag_ablation_results.xlsx"
+    output_dir, report_path = resolve_output_paths(output_dir, report_path)
+    try:
+        source_dir, output_dir = validate_recompute_directories(source_dir, output_dir)
+    except UnsafeOutputPathError as exc:
+        raise SystemExit(str(exc)) from exc
+    results_path = source_dir / "rag_ablation_results.xlsx"
+    try:
+        _validate_report_outside_input(report_path, source_dir)
+        _validate_report_destination(output_dir, report_path, input_paths=[results_path])
+        output_paths = _preflight_output_paths(
+            output_dir, report_path, source_dir, full_run=False
+        )
+    except UnsafeOutputPathError as exc:
+        raise SystemExit(str(exc)) from exc
+    output_dir = output_paths["output_dir"]
+    report_path = output_paths["report"]
     if not results_path.exists():
         raise SystemExit(f"Missing {results_path}. Run a full ablation first.")
     rows_df = pd.read_excel(results_path)
@@ -2108,17 +2410,17 @@ def recompute_significance_only(output_dir: Path, report_path: Path):
     stat_metrics = ['kendall_tau', 'score_mae', 'score_rmse', 'top1_accuracy']
 
     friedman_results, posthoc_df, bootstrap_df, paths = run_significance_suite(
-        scenario_df, stat_metrics, output_dir)
+        scenario_df, stat_metrics, output_dir, output_paths=output_paths)
 
     # Summaries are recomputed from the loaded rows rather than read back off
     # disk: a stale summary written by an earlier, smaller run would otherwise
     # be republished into the report alongside freshly recomputed statistics.
-    summary_path = output_dir / "rag_ablation_summary.xlsx"
-    dtype_summary_path = output_dir / "rag_ablation_summary_by_decision_type.xlsx"
+    summary_path = output_paths["files"]["summary"]
+    dtype_summary_path = output_paths["files"]["dtype_summary"]
     summary_df = summarize_rows(rows_df)
     dtype_summary_df = summarize_by_decision_type(rows_df)
-    _atomic_write_xlsx(summary_df, summary_path)
-    _atomic_write_xlsx(dtype_summary_df, dtype_summary_path)
+    _atomic_write_xlsx(summary_df, summary_path, output_paths["temporary_files"]["summary"])
+    _atomic_write_xlsx(dtype_summary_df, dtype_summary_path, output_paths["temporary_files"]["dtype_summary"])
 
     write_report(report_path, None, None, OrderedDict(), summary_df, dtype_summary_df, rows_df, [],
                  friedman_results=friedman_results, posthoc_df=posthoc_df, bootstrap_df=bootstrap_df)
@@ -2183,13 +2485,24 @@ def parse_args():
     )
     parser.add_argument(
         "--output-dir",
-        default=str(PROJECT_ROOT / "Analysis" / "RAG_Ablation"),
-        help="Directory for Excel outputs.",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=f"Explicit safe output directory (or set {RUN_OUTPUT_DIR_ENV}).",
     )
     parser.add_argument(
         "--output",
-        default=str(PROJECT_ROOT / "rag_ablation_results.md"),
-        help="Markdown report output path.",
+        default=None,
+        help=(
+            "Optional safe Markdown report output path. If --output-dir is omitted, "
+            "the report's parent directory is also used for Excel outputs."
+        ),
+    )
+    parser.add_argument(
+        "--input-dir",
+        default=None,
+        help=(
+            "Read-only directory containing a prior rag_ablation_results.xlsx; "
+            "required with --recompute-significance-only."
+        ),
     )
     parser.add_argument(
         "--nn-fallback",
@@ -2213,17 +2526,41 @@ def parse_args():
         "--recompute-significance-only",
         action="store_true",
         help="Skip retrieval and all API calls; reload the existing "
-             "rag_ablation_results.xlsx in --output-dir and rerun only the "
+             "rag_ablation_results.xlsx in --input-dir and rerun only the "
              "Friedman/post-hoc/bootstrap significance suite. Use this after "
              "a change to the significance-testing code (e.g. correction "
              "policy) when the underlying scenario data has not changed.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.recompute_significance_only:
+        if not args.input_dir:
+            parser.error("--input-dir is required with --recompute-significance-only.")
+        try:
+            output_dir, report_path = resolve_output_paths(args.output_dir, args.output)
+            input_dir, output_dir = validate_recompute_directories(
+                Path(args.input_dir), output_dir
+            )
+            _validate_report_outside_input(report_path, input_dir)
+        except UnsafeOutputPathError as exc:
+            parser.error(str(exc))
+        args.input_dir = input_dir
+        args.output_dir = output_dir
+        args.output = report_path
+    return args
 
 
 if __name__ == "__main__":
     args = parse_args()
+    try:
+        output_dir, report_path = resolve_output_paths(args.output_dir, args.output)
+    except UnsafeOutputPathError as exc:
+        raise SystemExit(str(exc)) from exc
     if args.recompute_significance_only:
-        recompute_significance_only(Path(args.output_dir), Path(args.output))
+        recompute_significance_only(Path(args.input_dir), output_dir, report_path)
     else:
-        run(args)
+        args.output_dir = output_dir
+        args.output = report_path
+        try:
+            run(args)
+        except UnsafeOutputPathError as exc:
+            raise SystemExit(str(exc)) from exc

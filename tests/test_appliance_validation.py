@@ -2,15 +2,14 @@
 git commit `daafa48`, "Refactor ApplianceGroundTruthCalculator: strict appliance and time
 parsing, validate utility_budget and baseline_time").
 
-Pins the fixes described in `paper/pass6/verify/V_APPLIANCE.md` discrepancies D1, D2, D3, D4
-and D6 (all now raise inside `calculate_scenario_scores`'s try/except and emit the sentinel
-instead of silently defaulting or crashing), plus the Appliance and Shower budget-penalty
-continuity (D13's test-coverage gap; HVAC's own continuity test is
-`tests/test_hvac_reference.py::test_budget_penalty_continuous_above_1_5`).
+Covers strict parsing and input validation in calculate_scenario_scores, including
+sentinel handling for invalid fields, and pins Appliance and Shower budget-penalty
+continuity. The HVAC analogue is covered by
+tests/test_hvac_reference.py::test_budget_penalty_continuous_above_1_5.
 
 The Appliance calculator file under test is APPLIANCE_CALC_PATH if set, otherwise the
-installed file at `Ground Truth Calculators/ApplianceGroundTruthCalculator.py`. The Shower
-calculator file is SHOWER_CALC_PATH if set, otherwise `Ground Truth Calculators/
+installed file at `src/llm_mcda/calculators/ApplianceGroundTruthCalculator.py`. The Shower
+calculator file is SHOWER_CALC_PATH if set, otherwise `src/llm_mcda/calculators/
 ShowerGroundTruthCalculator.py`. Import style follows tests/test_appliance_tariffs.py and
 tests/test_shower_reference.py.
 """
@@ -22,14 +21,15 @@ from pathlib import Path
 
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-APPLIANCE_DEFAULT_PATH = PROJECT_ROOT / "Ground Truth Calculators" / "ApplianceGroundTruthCalculator.py"
-SHOWER_DEFAULT_PATH = PROJECT_ROOT / "Ground Truth Calculators" / "ShowerGroundTruthCalculator.py"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+APPLIANCE_DEFAULT_PATH = PROJECT_ROOT / "src/llm_mcda/calculators" / "ApplianceGroundTruthCalculator.py"
+SHOWER_DEFAULT_PATH = PROJECT_ROOT / "src/llm_mcda/calculators" / "ShowerGroundTruthCalculator.py"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import is_sentinel, has_sentinel_scores, SENTINEL_VALUE, CRITERIA
+from llm_mcda.common.sentinel_utils import is_sentinel, has_sentinel_scores, SENTINEL_VALUE, CRITERIA
 
 
 def _load(env_var: str, default_path: Path, module_name: str):

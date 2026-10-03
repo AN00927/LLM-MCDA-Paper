@@ -24,15 +24,16 @@ import numpy as np
 # ---------------------------------------------------------------------------
 # Project path bootstrap
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import (
+from llm_mcda.common.sentinel_utils import (
     SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA,
     coerce_score, is_sentinel, has_sentinel_scores, coerce_score_series,
 )
-from model_config import (
+from llm_mcda.common.model_config import (
     EXTRACTION_INVALID_JSON,
     FAILED_MISSING_SCORE,
     FAILED_OUT_OF_BOUNDS,
@@ -57,7 +58,7 @@ import importlib.util as _ilu
 def _load_calc_metrics():
     spec = _ilu.spec_from_file_location(
         "calculate_metrics",
-        PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+        PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
     )
     mod = _ilu.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -635,7 +636,7 @@ class TestRetryPolicy:
         "Direct_LLM_Scoring.py", "Example-Guided_LLM_Scoring.py", "LLM-Parameterized_Reference_Scoring.py"
     ])
     def test_transient_codes_retry(self, arch_file):
-        arch_path = PROJECT_ROOT / "Architectures" / arch_file
+        arch_path = PROJECT_ROOT / "src/llm_mcda/architectures" / arch_file
         fn = self._get_is_transient(arch_path)
         if fn is None:
             pytest.skip(f"_is_transient_http_status not found in {arch_file}")
@@ -646,7 +647,7 @@ class TestRetryPolicy:
         "Direct_LLM_Scoring.py", "Example-Guided_LLM_Scoring.py", "LLM-Parameterized_Reference_Scoring.py"
     ])
     def test_non_transient_codes_do_not_retry(self, arch_file):
-        arch_path = PROJECT_ROOT / "Architectures" / arch_file
+        arch_path = PROJECT_ROOT / "src/llm_mcda/architectures" / arch_file
         fn = self._get_is_transient(arch_path)
         if fn is None:
             pytest.skip(f"_is_transient_http_status not found in {arch_file}")

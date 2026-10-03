@@ -86,7 +86,7 @@ Collecting the reversed arm costs one extraction call per scenario per run, and
 is a separate, resumable step. --models defaults to all four keys, which is the
 set the paper reports:
 
-    python "Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py" --collect-only
+    python "scripts/experiments/run_hybrid_ablation_experiments.py" --collect-only --output-dir results/hybrid-ablation
 
 With no flags that collects the paper's design: the reversed arm, runs 1-6
 (DEFAULT_ORDER_ARMS, ORDER_ARM_DEFAULT_RUNS), i.e. 195 x 6 x 4 = 4,680 calls.
@@ -119,13 +119,26 @@ import io
 import itertools
 import json
 import math
+import os
 import sys
 from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Bootstrap the checkout's src/ package before importing llm_mcda.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -133,9 +146,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binomtest, kendalltau
 
-import model_config
-from model_config import MODEL_SPECS, CRITERION_WEIGHTS
-from sentinel_utils import (
+from llm_mcda.common import model_config
+from llm_mcda.common.model_config import MODEL_SPECS, CRITERION_WEIGHTS
+from llm_mcda.common.sentinel_utils import (
     CRITERIA,
     SENTINEL_FLOAT,
     _atomic_write_xlsx,
@@ -146,9 +159,9 @@ from sentinel_utils import (
     read_table_clean,
 )
 
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
 TEST_SCENARIOS = SCENARIO_DIR / "TestScenarios.xlsx"
-AH_ARCHITECTURE = PROJECT_ROOT / "Architectures" / "LLM-Parameterized_Reference_Scoring.py"
+AH_ARCHITECTURE = PROJECT_ROOT / "src/llm_mcda/architectures" / "LLM-Parameterized_Reference_Scoring.py"
 
 ALT_COLS = ["alternative_1", "alternative_2", "alternative_3"]
 
@@ -180,9 +193,12 @@ DEFAULT_ORDER_ARMS = ("reversed",)
 # each arm is collected up to its own total here.
 ORDER_ARM_DEFAULT_RUNS = {"reversed": 6, "control": 3}
 
+# Set by main() after validating the caller's explicit safe output root.
+OUTPUT_DIR: Optional[Path] = None
+
 # Hidden engineering parameters the LLM is asked to estimate, by decision type.
 # Must stay in lockstep with the extraction prompt in
-# Architectures/LLM-Parameterized_Reference_Scoring.py.
+# src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py.
 HIDDEN_PARAMS = {
     "HVAC": {
         "numeric": ["r_value", "seer", "hvac_age"],
@@ -247,7 +263,7 @@ def _load_calculator(decision_type: str):
         "Shower": ("ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"),
     }
     filename, class_name = names[decision_type]
-    path = PROJECT_ROOT / "Ground Truth Calculators" / filename
+    path = PROJECT_ROOT / "src/llm_mcda/calculators" / filename
     spec = importlib.util.spec_from_file_location(class_name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -340,7 +356,9 @@ def match_ground_truth(test_row: pd.Series, gt_df: pd.DataFrame,
 # ---------------------------------------------------------------------------
 
 def order_arm_dir(model_key: str) -> Path:
-    return PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"] / ORDER_ARM_SUBDIR
+    if OUTPUT_DIR is None:
+        raise RuntimeError("Output directory has not been validated; call main() first.")
+    return OUTPUT_DIR / model_key / ORDER_ARM_SUBDIR
 
 
 def reverse_alternative_values(payload: Dict) -> Dict:
@@ -1013,7 +1031,7 @@ def run(args) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 def _shipped_run_paths(model_key: str) -> List[Path]:
-    # Same discovery rule as paper_pipeline/calculate_per_run_metrics.py, so a
+    # Same discovery rule as scripts/paper_pipeline/calculate_per_run_metrics.py, so a
     # half-written run file is skipped here exactly as it is there.
     folder = PROJECT_ROOT / MODEL_SPECS[model_key]["output_folder"]
     return [p for p in sorted(folder.glob(
@@ -1493,13 +1511,36 @@ def parse_args():
                         "--order-run-start 4 --order-runs 5 collects runs 4 and 5. "
                         "Default: each arm's design total "
                         f"({', '.join(f'{a} {n}' for a, n in ORDER_ARM_DEFAULT_RUNS.items())}).")
-    p.add_argument("--output-dir", default=str(PROJECT_ROOT / "Analysis" / "Hybrid_Ablation"))
-    p.add_argument("--output", default=str(PROJECT_ROOT / "hybrid_ablation_results.md"))
-    return p.parse_args()
+    p.add_argument("--output-dir", default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+                   help=f"New or existing safe output directory (or set {RUN_OUTPUT_DIR_ENV}); "
+                        "required to write results outside frozen repository data.")
+    p.add_argument("--output", default=None,
+                   help="Optional markdown report path (defaults inside --output-dir).")
+    args = p.parse_args()
+    try:
+        args.output_dir = require_safe_output_directory(
+            args.output_dir, option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        p.error(str(exc))
+    if args.output is not None:
+        output_path = Path(args.output).expanduser().resolve()
+        try:
+            require_safe_output_directory(
+                output_path.parent, option="--output parent", root=PROJECT_ROOT
+            )
+        except UnsafeOutputPathError as exc:
+            p.error(str(exc))
+        if output_path.is_dir():
+            p.error(f"--output must name a file: {output_path}")
+        args.output = output_path
+    return args
 
 
 def main():
+    global OUTPUT_DIR
     args = parse_args()
+    OUTPUT_DIR = args.output_dir
 
     if args.collect or args.collect_only:
         for model_key in args.models:
@@ -1523,7 +1564,7 @@ def main():
     summary_by_type = summarize(df, by_type=True)
     lfl = like_for_like(df)
 
-    out_dir = Path(args.output_dir)
+    out_dir = OUTPUT_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(out_dir / "hybrid_ablation_summary.xlsx") as xl:
         summary.to_excel(xl, sheet_name="summary", index=False)
@@ -1614,8 +1655,10 @@ def main():
                   "Descriptive agreement bands:", "",
                   _md(order_summary[desc])]
 
-    Path(args.output).write_text("\n".join(lines), encoding="utf-8")
-    print(f"\nWrote {args.output} and {out_dir / 'hybrid_ablation_summary.xlsx'}")
+    output_path = args.output or (out_dir / "hybrid_ablation_results.md")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"\nWrote {output_path} and {out_dir / 'hybrid_ablation_summary.xlsx'}")
 
 
 if __name__ == "__main__":

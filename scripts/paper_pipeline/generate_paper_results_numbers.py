@@ -4,10 +4,22 @@ import argparse
 import pandas as pd
 import numpy as np
 import os
+import sys
+from pathlib import Path
+
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
 
 _ap = argparse.ArgumentParser(description="Generate numbers_master.csv from raw data sources.")
-_ap.add_argument("--output", default="paper/numbers_master.csv",
-                 help="CSV to write (default paper/numbers_master.csv)")
+_ap.add_argument("--output", default=str(local_manuscript_path("paper", "numbers_master.csv")),
+                 help="CSV to write (default: local_manuscripts/paper/numbers_master.csv)")
 # Averaging basis of the IncrementalContribution table (S6). Every row, the two
 # baselines and the LLM rows alike, uses the same one:
 #   per_type_mean  unweighted mean of the HVAC / Appliance / Shower means
@@ -24,8 +36,24 @@ _ap.add_argument("--table7-basis", choices=TABLE7_BASES, default="pooled",
                  help="Averaging basis of the IncrementalContribution rows (default "
                       "pooled, the author's choice)")
 _args = _ap.parse_args()
-OUT = _args.output
+OUT = Path(_args.output).expanduser()
+if not OUT.is_absolute():
+    OUT = PROJECT_ROOT / OUT
 TABLE7_BASIS = _args.table7_basis
+
+REQUIRED_PER_RUN_CSVS = [
+    local_manuscript_path("paper", "per_run_metrics", f"per_run_metrics_{model}.csv")
+    for model in ("deepseek", "gemini", "gptoss", "qwen")
+]
+MISSING_PER_RUN_CSVS = [str(path) for path in REQUIRED_PER_RUN_CSVS if not path.is_file()]
+if MISSING_PER_RUN_CSVS:
+    _ap.error(
+        "Required local-only per-run metric inputs are missing: "
+        + ", ".join(MISSING_PER_RUN_CSVS)
+        + "; restore them under local_manuscripts/ or set "
+        "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR."
+    )
+
 rows = []
 
 def add(category, architecture, model_or_pooled, decision_type, metric, value, sd=None,
@@ -52,12 +80,12 @@ MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
 MODEL_LABELS = {"deepseek": "DeepSeek", "gemini": "Gemini", "gptoss": "GPT-OSS", "qwen": "Qwen"}
 
 per_run_frames = []
-for f in MODELS:
-    df = pd.read_csv(f"paper/per_run_metrics/per_run_metrics_{f}.csv")
+for f, path in zip(MODELS, REQUIRED_PER_RUN_CSVS):
+    df = pd.read_csv(path)
     per_run_frames.append(df)
 per_run = pd.concat(per_run_frames, ignore_index=True)
 
-rag = pd.read_excel("Analysis/RAG_Ablation/rag_ablation_summary.xlsx")
+rag = pd.read_excel(PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "rag_ablation_summary.xlsx")
 
 # ────────────────────────────────────────────────────────────────
 # TABLES 5-7: no rows pooled across models
@@ -145,10 +173,8 @@ for arch in LLM_ARCHS:
 import json
 import glob
 import re
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from model_config import MODEL_SPECS
+sys.path.insert(0, str(PROJECT_ROOT))
+from llm_mcda.common.model_config import MODEL_SPECS
 
 # List price per 1M tokens, parsed from the MODEL_SPECS label strings so that a
 # price edit in model_config propagates here instead of being duplicated.
@@ -167,7 +193,7 @@ for model_key, spec in MODEL_SPECS.items():
     label = MODEL_KEY_TO_LABEL[model_key]
     for arch in LLM_ARCHS:
         paths = sorted(glob.glob(
-            os.path.join(folder, f"{arch}_results_diagnostics_run_*.json")))
+            str(PROJECT_ROOT / folder / f"{arch}_results_diagnostics_run_*.json")))
         if not paths:
             continue
         tok_in = tok_out = calls = 0
@@ -226,25 +252,19 @@ for _, r in rag.iterrows():
 # LLM rows computed from per-run CSVs as per-type arithmetic means.
 # ────────────────────────────────────────────────────────────────
 
-# FixedDefault and NearestNeighbor are deterministic. These used to be literals
-# transcribed into this file, which meant they could not be checked and did not
-# follow a change to the baseline code -- and they silently went stale when the
-# Fixed-Default appliance defaults were corrected. They are now read from
-# Output Files/Baselines/baseline_metrics.csv, produced by
-# "Miscellaneous Scripts/evaluate_baseline_metrics.py" (which itself consumes
-# run_baseline_models.py's output). Regenerate in that order after any baseline
-# change.
+# FixedDefault and NearestNeighbor are deterministic. Their metric snapshot is
+# preserved at results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv.
+# Baseline regeneration is a separate operation and is not part of the safe
+# paper pipeline.
 #
 # The pooled aggregate is used here, matching what the manuscript's baseline
 # rows have always reported; per-decision-type arithmetic means are also
 # available in that CSV under decision_type == "Overall_per_type_mean".
-_BASELINE_METRICS = "Output Files/Baselines/baseline_metrics.csv"
+_BASELINE_METRICS = PROJECT_ROOT / "results" / "older_runs" / "unclassified_legacy" / "Baselines" / "baseline_metrics.csv"
 if not os.path.exists(_BASELINE_METRICS):
     raise FileNotFoundError(
-        f"{_BASELINE_METRICS} not found. Run:\n"
-        '  python "Miscellaneous Scripts/run_baseline_models.py" '
-        "--baselines fixed_default nearest_neighbor\n"
-        '  python "Miscellaneous Scripts/evaluate_baseline_metrics.py"'
+        f"{_BASELINE_METRICS} not found. Restore the preserved baseline metrics "
+        "file under results/older_runs/unclassified_legacy/Baselines/."
     )
 _bm = pd.read_csv(_BASELINE_METRICS)
 _bm = _bm[_bm["decision_type"] == {"per_type_mean": "Overall_per_type_mean",
@@ -445,6 +465,7 @@ for arch in LLM_ARCHS:
 # ────────────────────────────────────────────────────────────────
 
 df_out = pd.DataFrame(rows)
+OUT.parent.mkdir(parents=True, exist_ok=True)
 df_out.to_csv(OUT, index=False)
 print(f"Wrote {len(df_out)} rows to {OUT}")
 

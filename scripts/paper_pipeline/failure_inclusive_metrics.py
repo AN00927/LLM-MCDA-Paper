@@ -35,11 +35,11 @@ columns here are therefore:
 Rows flagged failed == True in the input are the S4 rule rows; they are removed
 before the scored-only and D2 columns are computed.
 
-Input:  Analysis/per_scenario_metrics_all.csv   (written by cluster_bootstrap_ci.py)
-Output: Analysis/failure_inclusive_metrics.{xlsx,md}
+Input:  local-first per_scenario_metrics_all.csv (falls back to the repository Analysis copy)
+Output: local-only workbook and Markdown report copy
 
 Usage:
-    python paper_pipeline/failure_inclusive_metrics.py
+    python scripts/paper_pipeline/failure_inclusive_metrics.py
 """
 
 import sys
@@ -48,12 +48,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-IN_CSV = PROJECT_ROOT / "Analysis" / "per_scenario_metrics_all.csv"
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "failure_inclusive_metrics.xlsx"
-OUT_MD = PROJECT_ROOT / "Analysis" / "failure_inclusive_metrics.md"
+from llm_mcda.common.paths import local_manuscript_input_path, local_manuscript_path  # noqa: E402
+
+IN_CSV = local_manuscript_input_path("Analysis", "per_scenario_metrics_all.csv")
+OUT_XLSX = local_manuscript_path("Analysis", "failure_inclusive_metrics.xlsx")
+OUT_MD = local_manuscript_path("Analysis", "failure_inclusive_metrics.md")
 
 ARCH_SHORT = {
     "Direct_LLM_Scoring": "A_D",
@@ -186,6 +192,7 @@ def main():
     res = compute(df, universe)
     res = res.sort_values(["architecture", "model", "scope"]).reset_index(drop=True)
 
+    OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xl:
         res.to_excel(xl, sheet_name="failure_inclusive", index=False)
 
@@ -292,6 +299,7 @@ def main():
                       f"| {r[f'{m}_delta']:+.4f} |")
     md.append("")
 
+    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     OUT_MD.write_text("\n".join(md), encoding="utf-8")
     print("")
     print(f"  Wrote {OUT_XLSX.relative_to(PROJECT_ROOT)}")

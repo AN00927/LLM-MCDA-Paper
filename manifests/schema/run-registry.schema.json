@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LLM-MCDA run registry",
+  "description": "Canonical source of truth for immutable model and experiment run records and current-run selection. Selection may be explicitly deferred until provenance is reviewed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "current_run_status",
+    "current_run_ids",
+    "current_experiment_run_ids",
+    "runs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.1"
+    },
+    "current_run_ids": {
+      "type": "object",
+      "description": "Maps each model_key to the immutable run_id that analyses must treat as current.",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "not": {
+          "const": "unknown"
+        }
+      }
+    },
+    "current_experiment_run_ids": {
+      "type": "object",
+      "description": "Maps each experiment key to its pinned immutable run_id. Use an empty object when there are no registered experiments.",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "not": {
+          "const": "unknown"
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run"
+      }
+    },
+    "current_run_status": {
+      "type": "string",
+      "enum": [
+        "deferred",
+        "pinned"
+      ],
+      "description": "Use deferred when no current run has been approved; use pinned only when current_run_ids or current_experiment_run_ids identify reviewed immutable run IDs."
+    },
+    "current_run_status_note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Required explanation while current_run_status is deferred."
+    }
+  },
+  "$defs": {
+    "unknownableString": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Use the literal string 'unknown' when the value is unavailable; do not omit required provenance fields."
+    },
+    "sha256OrUnknown": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "const": "unknown"
+        }
+      ]
+    },
+    "sizeOrUnknown": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "const": "unknown"
+        }
+      ]
+    },
+    "scenarioSourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256OrUnknown"
+        },
+        "role": {
+          "$ref": "#/$defs/unknownableString"
+        }
+      }
+    },
+    "promptHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prompt_id",
+        "sha256"
+      ],
+      "properties": {
+        "prompt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256OrUnknown"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "size_bytes",
+        "kind",
+        "role"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+          "description": "Repository-relative POSIX path. Absolute paths, backslashes, and parent traversal are forbidden."
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256OrUnknown"
+        },
+        "size_bytes": {
+          "$ref": "#/$defs/sizeOrUnknown"
+        },
+        "kind": {
+          "$ref": "#/$defs/unknownableString"
+        },
+        "role": {
+          "$ref": "#/$defs/unknownableString"
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "model_key",
+        "model_id",
+        "requested_provider",
+        "observed_provider",
+        "scenario_ids",
+        "scenario_source_refs",
+        "prompt_hashes",
+        "timestamp_utc",
+        "files"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "description": "Immutable identifier. Never reuse an ID for a rerun or change the artifacts assigned to an existing ID."
+        },
+        "model_key": {
+          "$ref": "#/$defs/unknownableString"
+        },
+        "model_id": {
+          "$ref": "#/$defs/unknownableString"
+        },
+        "requested_provider": {
+          "description": "Provider pin/request sent to the API, or the literal 'unknown'. Current OpenRouter provider objects are supported.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/unknownableString"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "only",
+                "allow_fallbacks",
+                "require_parameters"
+              ],
+              "properties": {
+                "only": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                },
+                "allow_fallbacks": {
+                  "type": "boolean"
+                },
+                "require_parameters": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        },
+        "observed_provider": {
+          "description": "Provider reported by the response(s), a list when different responses report different providers, or the literal 'unknown'.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/unknownableString"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/unknownableString"
+              },
+              "uniqueItems": true
+            }
+          ]
+        },
+        "scenario_ids": {
+          "description": "Scenario identifiers included in the run, or the literal 'unknown'.",
+          "anyOf": [
+            {
+              "const": "unknown"
+            },
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "scenario_source_refs": {
+          "description": "Source workbook/file references and their hashes, or the literal 'unknown'.",
+          "anyOf": [
+            {
+              "const": "unknown"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/scenarioSourceRef"
+              },
+              "uniqueItems": true
+            }
+          ]
+        },
+        "prompt_hashes": {
+          "description": "Prompt identifiers and content hashes, or the literal 'unknown'.",
+          "anyOf": [
+            {
+              "const": "unknown"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/promptHash"
+              },
+              "uniqueItems": true
+            }
+          ]
+        },
+        "timestamp_utc": {
+          "description": "RFC 3339 timestamp with an explicit UTC offset, or the literal 'unknown'.",
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "const": "unknown"
+            }
+          ]
+        },
+        "experiment_key": {
+          "description": "Experiment/ablation key for experiment records; use 'unknown' when the run is not tied to a named experiment or that key is unavailable.",
+          "$ref": "#/$defs/unknownableString"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "current_run_status": {
+            "const": "deferred"
+          }
+        },
+        "required": [
+          "current_run_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "current_run_status_note"
+        ],
+        "properties": {
+          "current_run_ids": {
+            "maxProperties": 0
+          },
+          "current_experiment_run_ids": {
+            "maxProperties": 0
+          }
+        }
+      },
+      "else": {
+        "anyOf": [
+          {
+            "properties": {
+              "current_run_ids": {
+                "minProperties": 1
+              }
+            }
+          },
+          {
+            "properties": {
+              "current_experiment_run_ids": {
+                "minProperties": 1
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

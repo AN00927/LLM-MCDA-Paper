@@ -6,7 +6,7 @@ S_disc = the Test scenarios where the comfort-criterion argmax DIFFERS from the
 reference MAVT winner. These are the scenarios you cannot get right by simply
 maximising comfort.
 
-WHY IT MATTERS. paper/single_criterion_recovery.tex shows that comfort alone
+WHY IT MATTERS. The single-criterion recovery table shows that comfort alone
 recovers the reference winner in 85.7% of HVAC and 92.3% of Appliance
 scenarios. An architecture that has merely learned "pick the most comfortable
 option" therefore scores well on most of the corpus without doing any
@@ -22,12 +22,12 @@ mean over the S_disc scenarios that run actually scored, then mean across runs.
 Failed scenarios are filtered out of per_scenario_metrics_all.csv (failed == True), so the
 denominator is the scored subset of S_disc and is reported per cell.
 
-Inputs:  Analysis/per_scenario_metrics_all.csv  (built by cluster_bootstrap_ci.py)
-         Ground Truth/ground_truth_*.xlsx       (via the project matcher)
-Output:  Analysis/discriminating_subset.{xlsx,md}
+Inputs:  local-first per_scenario_metrics_all.csv (falls back to the repository Analysis copy)
+         workbooks/ground_truth/ground_truth_*.xlsx       (via the project matcher)
+Output:  local-only workbook and Markdown report copy
 
 Usage:
-    python paper_pipeline/discriminating_subset.py
+    python scripts/paper_pipeline/discriminating_subset.py
 """
 
 import sys
@@ -38,19 +38,24 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.paths import local_manuscript_input_path, local_manuscript_path  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
 
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
 
-PER_SCENARIO_CSV = PROJECT_ROOT / "Analysis" / "per_scenario_metrics_all.csv"
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "discriminating_subset.xlsx"
-OUT_MD = PROJECT_ROOT / "Analysis" / "discriminating_subset.md"
+PER_SCENARIO_CSV = local_manuscript_input_path("Analysis", "per_scenario_metrics_all.csv")
+OUT_XLSX = local_manuscript_path("Analysis", "discriminating_subset.xlsx")
+OUT_MD = local_manuscript_path("Analysis", "discriminating_subset.md")
 
 ARCH_SHORT = {
     "Direct_LLM_Scoring": "A_D",
@@ -118,6 +123,13 @@ def metrics_on(df, sids):
 
 
 def main():
+    if not PER_SCENARIO_CSV.is_file():
+        raise SystemExit(
+            f"Required per-scenario metrics input is missing: {PER_SCENARIO_CSV}. "
+            "Restore it under local_manuscripts/ or Analysis/, or set "
+            "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR. The public Analysis copy is used "
+            "automatically when no local copy exists."
+        )
     warnings.filterwarnings("ignore")
     print("P1.6 discriminating subset S_disc")
     print("=" * 64)
@@ -176,7 +188,7 @@ def main():
         bytype["arch_order"] = bytype["architecture"].map({a: i for i, a in enumerate(ARCH_ORDER)})
         bytype = bytype.sort_values(["decision_type", "model", "arch_order"]).drop(columns="arch_order")
 
-    OUT_XLSX.parent.mkdir(exist_ok=True)
+    OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xw:
         counts.to_excel(xw, sheet_name="S_disc_counts", index=False)
         comb.to_excel(xw, sheet_name="Overall_full_vs_Sdisc", index=False)
@@ -214,6 +226,7 @@ def main():
                 r["decision_type"], r["model"], r["architecture"],
                 r["tau"], r["top1"], r["n_scored_mean"]))
 
+    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     OUT_MD.write_text("\n".join(L) + "\n", encoding="utf-8")
     print(f"  Wrote {OUT_MD.relative_to(PROJECT_ROOT)}")
     print("\n" + "\n".join(L))

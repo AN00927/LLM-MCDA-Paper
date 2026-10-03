@@ -5,8 +5,8 @@ Duquesne's flat rate, the corrected city-to-utility mapping and the recomputed b
 
 The calculator file under test is APPLIANCE_CALC_PATH if set, otherwise CALC_PATH below.
 After installation, point it at the shipped file:
-    APPLIANCE_CALC_PATH="Ground Truth Calculators/ApplianceGroundTruthCalculator.py" \
-        python -m pytest Analysis/rerun_prep/tests/test_appliance_tariffs.py
+    APPLIANCE_CALC_PATH="src/llm_mcda/calculators/ApplianceGroundTruthCalculator.py" \
+        python -m pytest tests/test_appliance_tariffs.py
 """
 import importlib.util
 import os
@@ -16,9 +16,10 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CALC_PATH = PROJECT_ROOT / "Ground Truth Calculators" / "ApplianceGroundTruthCalculator.py"
-MASTER_XLSX = PROJECT_ROOT / "Scenario Files" / "ApplianceScenarios.xlsx"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+CALC_PATH = PROJECT_ROOT / "src/llm_mcda/calculators" / "ApplianceGroundTruthCalculator.py"
+MASTER_XLSX = PROJECT_ROOT / "workbooks/scenarios" / "ApplianceScenarios.xlsx"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))

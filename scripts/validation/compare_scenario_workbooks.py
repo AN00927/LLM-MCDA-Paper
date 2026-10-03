@@ -3,7 +3,7 @@
 """
 Cell-by-cell comparison of the four derived scenario files in two directories
 (TestScenarios.xlsx and the three RAG sheets). Used as the reproduction gate for
-Scenario Files/build_scenario_workbooks.py and to diff the Phase I dry run.
+scripts/collection/scenarios/build_scenario_workbooks.py and to diff the Phase I dry run.
 
 For every sheet it compares the sheet names, the used range, and for every cell
 in the union of both ranges: the value, the Python type of the value, the
@@ -17,8 +17,25 @@ import argparse
 import csv
 import os
 import sys
+from pathlib import Path
 
 import openpyxl
+
+# Make the checkout's src layout importable when this script is run directly.
+for _candidate in Path(__file__).resolve().parents:
+    if (_candidate / "src" / "llm_mcda").is_dir():
+        sys.path.insert(0, str(_candidate / "src"))
+        break
+else:
+    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_path,
+)
+
+PROJECT_ROOT = repository_root(start=__file__)
 
 FILES = ["TestScenarios.xlsx", "HVACRagScenarios.xlsx",
          "ApplianceRAGScenarios.xlsx", "ShowerRAGScenarios.xlsx"]
@@ -54,12 +71,19 @@ def compare(dir_a, dir_b):
     return diffs
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("dir_a")
     ap.add_argument("dir_b")
     ap.add_argument("--csv", default=None, help="also write the differences to this CSV")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
+    if args.csv:
+        try:
+            args.csv = str(require_safe_output_path(
+                args.csv, option="--csv", root=PROJECT_ROOT
+            ))
+        except UnsafeOutputPathError as exc:
+            ap.error(str(exc))
     diffs = compare(args.dir_a, args.dir_b)
     per_file = {f: sum(1 for d in diffs if d["file"] == f) for f in FILES}
     for f in FILES:

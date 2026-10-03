@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
 """
 build_numbers_of_record.py -- regenerate every row of
-paper/pass5/NUMBERS_OF_RECORD.csv that still exists in the study design, from
+the local-only Pass 5 record, from
 the outputs the pipeline and the experiment scripts write, so a fresh rerun's
 numbers can be diffed against the ones on record without hand-checking each cell.
 
 Inputs (each overridable; defaults are where the scripts write):
-  per-run metrics    paper/per_run_metrics/per_run_metrics_all.csv
-                     (paper_pipeline/calculate_per_run_metrics.py)
+  per-run metrics    local-only per_run_metrics_all.csv
+                     (scripts/paper_pipeline/calculate_per_run_metrics.py)
   hybrid summary     Analysis/Hybrid_Ablation/hybrid_ablation_summary.xlsx,
                      sheets `summary` and `per_scenario`
-                     (Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py)
+                     (scripts/experiments/run_hybrid_ablation_experiments.py)
   pairwise tests     Analysis/Hybrid_Ablation/hybrid_ablation_pairwise_tests.xlsx
-                     (Miscellaneous Scripts/validation/test_hybrid_ablation_significance.py)
-  baseline metrics   Output Files/Baselines/baseline_metrics.csv
-                     (Miscellaneous Scripts/core-automation/evaluate_baseline_metrics.py)
-  fixed default      Output Files/Baselines/baseline_fixeddefault.xlsx
+                     (scripts/validation/test_hybrid_ablation_significance.py)
+  baseline metrics   results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv
+                     (preserved output of scripts/analysis/evaluate_baseline_metrics.py)
+  fixed default      workbooks/older_runs/unclassified_legacy/Baselines/baseline_fixeddefault.xlsx
                      (run_baseline_models.py; scored here per scenario for the
                      like-for-like A_H - FD gaps)
-  numbers master     paper/numbers_master.csv, category GPTOSS_recovery
-                     (paper_pipeline/generate_paper_results_numbers.py)
+  numbers master     local-only numbers_master.csv, category GPTOSS_recovery
+                     (scripts/paper_pipeline/generate_paper_results_numbers.py)
 
-The arithmetic is the one Analysis/rerun_prep/pipeline/pipeline_gate.py used to
-reproduce these rows on the shipped data (arm_aggregate, the dataset-median and
-fixed-default like-for-like blocks, per_scenario_rank_metrics), ported here.
+The arithmetic reproduces the shipped rows using the arm aggregate, the
+dataset-median and fixed-default like-for-like blocks, and per-scenario ranking
+metrics implemented here.
 Every metric is per model; nothing is pooled across models. Failure rule (S4,
 2026-09-29): a failed scenario-run stays in every denominator at chance-level
 values (Top-1 wrong, tau 0, MAE the uniform-guess error). per_run_metrics and
@@ -56,12 +56,12 @@ itself marks "mismatch" (the paper's printed number disagrees with the
 documented computation); for those the regenerated value is checked against the
 reproduction written in the record's basis_notes instead (KNOWN_RECORD_ERRORS).
 
-READ-ONLY on paper/pass5/: writes numbers_of_record_regenerated.csv (the
+READ-ONLY on local-only paper inputs: writes numbers_of_record_regenerated.csv (the
 record's columns plus regen_value / regen_status / regen_note /
 regen_matches_value / expected_value) to --output-dir.
 
 Usage:
-    python paper_pipeline/build_numbers_of_record.py --output-dir <scratch dir> [--strict]
+    python scripts/paper_pipeline/build_numbers_of_record.py --output-dir <scratch dir> [--strict]
 """
 import argparse
 import contextlib
@@ -75,18 +75,23 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_documentation_path, local_manuscript_path
 
-SOURCE_CSV = PROJECT_ROOT / "paper" / "pass5" / "NUMBERS_OF_RECORD.csv"
-PER_RUN_METRICS_CSV = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
+SOURCE_CSV = local_manuscript_path("paper", "pass5", "NUMBERS_OF_RECORD.csv")
+PER_RUN_METRICS_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
 HYBRID_SUMMARY_XLSX = PROJECT_ROOT / "Analysis" / "Hybrid_Ablation" / "hybrid_ablation_summary.xlsx"
 PAIRWISE_XLSX = PROJECT_ROOT / "Analysis" / "Hybrid_Ablation" / "hybrid_ablation_pairwise_tests.xlsx"
-BASELINE_METRICS_CSV = PROJECT_ROOT / "Output Files" / "Baselines" / "baseline_metrics.csv"
-BASELINE_FD_XLSX = PROJECT_ROOT / "Output Files" / "Baselines" / "baseline_fixeddefault.xlsx"
-NUMBERS_MASTER_CSV = PROJECT_ROOT / "paper" / "numbers_master.csv"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "Analysis"
+BASELINE_METRICS_CSV = PROJECT_ROOT / "results" / "older_runs" / "unclassified_legacy" / "Baselines" / "baseline_metrics.csv"
+BASELINE_FD_XLSX = PROJECT_ROOT / "workbooks" / "older_runs" / "unclassified_legacy" / "Baselines" / "baseline_fixeddefault.xlsx"
+NUMBERS_MASTER_CSV = local_manuscript_path("paper", "numbers_master.csv")
+DEFAULT_OUTPUT_DIR = local_documentation_path("paper-pipeline", "analysis")
 
 AH_ARCH = "LLM-Parameterized_Reference_Scoring"
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
@@ -203,12 +208,11 @@ def per_scenario_rank_metrics(clean):
 
 def _fd_per_scenario(path):
     """Fixed-default tau / Top-1 per Test scenario, keyed by the 1-based Test
-    row the hybrid harness uses (baseline_fixeddefault's scenario_id is the
-    0-based row; verified row by row in Analysis/pass5/d2)."""
+    row the hybrid harness uses (baseline_fixeddefault's scenario_id is zero-based)."""
     if not path.exists():
         raise FileNotFoundError(path)
     ebm = _load_module("evaluate_baseline_metrics",
-                       "Miscellaneous Scripts/core-automation/evaluate_baseline_metrics.py")
+                       "scripts/analysis/evaluate_baseline_metrics.py")
     cm = ebm._cm
     with contextlib.redirect_stdout(io.StringIO()):
         gt = cm.load_ground_truth(cm._build_config("gemini"))  # only the GT paths are used
@@ -530,7 +534,7 @@ def main():
     warnings.filterwarnings("ignore")
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR),
-                    help="Where to write numbers_of_record_regenerated.csv (default: Analysis/).")
+                    help="Where to write local-only regenerated paper evidence (default: local_documentation/paper-pipeline/analysis/).")
     ap.add_argument("--record", default=str(SOURCE_CSV))
     ap.add_argument("--per-run-metrics", default=str(PER_RUN_METRICS_CSV))
     ap.add_argument("--hybrid-summary", default=str(HYBRID_SUMMARY_XLSX))
@@ -549,12 +553,20 @@ def main():
     record_path = Path(args.record)
     if out_dir.resolve() == record_path.parent.resolve():
         raise SystemExit("Refusing to write next to the record; pass a different --output-dir.")
+
+    private_inputs = {
+        "Pass 5 record": record_path,
+        "per-run metrics": Path(args.per_run_metrics),
+        "numbers master": Path(args.numbers_master),
+    }
+    missing = [f"{label}: {path}" for label, path in private_inputs.items() if not path.is_file()]
+    if missing:
+        print("[ERROR] Required local-only paper inputs are missing:")
+        for item in missing:
+            print(f"  - {item}")
+        print("Restore them under local_manuscripts/ or pass explicit local paths.")
+        return 2
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    if not record_path.exists():
-        print(f"[ERROR] {record_path} not found; nothing to regenerate against.")
-        return 1
-
     records = pd.read_csv(record_path)
     src = Sources(args)
 

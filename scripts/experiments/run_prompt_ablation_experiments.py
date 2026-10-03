@@ -33,7 +33,8 @@ Retry policy, temperature, timeout and the reasoning payload all come from
 Sentinel 1928 marks any failed or invalid score; it never enters a mean or a
 ranking and is never replaced by a neutral default.
 
-Outputs route to `Analysis/Prompt_Ablation/` and never touch `Output Files*`.
+Outputs route to the required safe `--output-dir` (or
+`LLM_MCDA_RUN_OUTPUT_DIR`) and never touch frozen paths.
 Resume-aware per (variant, architecture, model, run).
 """
 
@@ -52,7 +53,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Bootstrap the checkout's src/ package before importing llm_mcda.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -62,7 +75,7 @@ import requests
 from dotenv import load_dotenv
 from scipy.stats import kendalltau
 
-from model_config import (
+from llm_mcda.common.model_config import (
     MAX_RETRIES,
     MAX_RETRY_BACKOFF,
     MODEL_SPECS,
@@ -75,7 +88,7 @@ from model_config import (
     _is_transient_http_status,
     get_reasoning_payload,
 )
-from sentinel_utils import (
+from llm_mcda.common.sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,
@@ -100,8 +113,8 @@ OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "https://local.ap
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "LLM-MCDA-Paper")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 logger = logging.getLogger("prompt_ablation")
 
@@ -406,8 +419,8 @@ def _assert_control_matches_shipped() -> None:
     def norm(s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
 
-    ad_src = (PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py").read_text(encoding="utf-8")
-    ae_src = (PROJECT_ROOT / "Architectures" / "Example-Guided_LLM_Scoring.py").read_text(encoding="utf-8")
+    ad_src = (PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py").read_text(encoding="utf-8")
+    ae_src = (PROJECT_ROOT / "src/llm_mcda/architectures" / "Example-Guided_LLM_Scoring.py").read_text(encoding="utf-8")
 
     problems = []
     # Anchor on distinctive sentences rather than trying to re-parse the files.
@@ -453,7 +466,7 @@ def _capture_stub(*args, **kwargs):
 
 def _load_direct_module():
     import importlib.util
-    path = PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py"
+    path = PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py"
     spec = importlib.util.spec_from_file_location("direct_llm_scoring_for_check", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -737,7 +750,7 @@ def _load_ae_module():
         if _ae_module is not None:
             return _ae_module
         import importlib.util
-        path = PROJECT_ROOT / "Architectures" / "Example-Guided_LLM_Scoring.py"
+        path = PROJECT_ROOT / "src/llm_mcda/architectures" / "Example-Guided_LLM_Scoring.py"
         spec = importlib.util.spec_from_file_location("example_guided_llm_scoring", path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -923,7 +936,7 @@ def score_scenario(scenario: Dict, architecture: str, variant: Dict,
 def load_reference() -> Dict[int, Dict]:
     """Reference MAVT ranking per test scenario, keyed by scenario_id.
 
-    Built from the same Ground Truth workbooks the paper's reference calculators
+    Built from the same workbooks/ground_truth workbooks the paper's reference calculators
     write, matched to the Test sheet by question+location with progressive
     narrowing on the alternative labels (the coordinate-system bug fixed in
     evaluate_parameter_extraction came from matching on positional indices instead).
@@ -941,7 +954,7 @@ def load_reference() -> Dict[int, Dict]:
     # outdoor_temp / appliance_age / flow_rate and consumes each ground-truth
     # scenario once, in scenario order.
     import importlib.util
-    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+    cm_path = PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
     spec = importlib.util.spec_from_file_location("evaluate_architecture_metrics_for_ref", cm_path)
     cm = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cm)
@@ -1340,11 +1353,29 @@ def main():
                              f"requested (still capped at {COT_MAX_TOKENS_CAP}), skipping the "
                              "OpenRouter /endpoints GET lookup entirely. Use only when that "
                              "free lookup is unavailable.")
-    parser.add_argument("--output-dir",
-                        default=str(PROJECT_ROOT / "Analysis" / "Prompt_Ablation"))
-    parser.add_argument("--output",
-                        default=str(PROJECT_ROOT / "prompt_ablation_results.md"))
+    parser.add_argument("--output-dir", default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+                        help=f"New or existing safe output directory (or set {RUN_OUTPUT_DIR_ENV}); "
+                             "required to write results outside frozen repository data.")
+    parser.add_argument("--output", default=None,
+                        help="Optional markdown report path (defaults inside --output-dir).")
     args = parser.parse_args()
+    try:
+        args.output_dir = require_safe_output_directory(
+            args.output_dir, option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    if args.output is not None:
+        output_path = Path(args.output).expanduser().resolve()
+        try:
+            require_safe_output_directory(
+                output_path.parent, option="--output parent", root=PROJECT_ROOT
+            )
+        except UnsafeOutputPathError as exc:
+            parser.error(str(exc))
+        if output_path.is_dir():
+            parser.error(f"--output must name a file: {output_path}")
+        args.output = output_path
 
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s - %(levelname)s - %(message)s")
@@ -1372,7 +1403,7 @@ def main():
         logger.warning("%s scenario(s) have no reference ranking and will report as "
                        "failed: %s", len(missing_ref), missing_ref[:10])
 
-    out_dir = Path(args.output_dir)
+    out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
     all_parts = []
@@ -1470,8 +1501,10 @@ def main():
         "## Per-run detail", "",
         _md(per_run_df),
     ]
-    Path(args.output).write_text("\n".join(lines), encoding="utf-8")
-    print(f"\nWrote {args.output} and {out_dir / 'prompt_ablation_summary.xlsx'}")
+    output_path = args.output or (out_dir / "prompt_ablation_results.md")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"\nWrote {output_path} and {out_dir / 'prompt_ablation_summary.xlsx'}")
 
 
 if __name__ == "__main__":

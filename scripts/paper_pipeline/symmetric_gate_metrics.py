@@ -19,11 +19,11 @@ seeing:
 Per plan D4 this is a ROBUSTNESS CHECK for the supplement, not a headline
 replacement. Report N alongside every number.
 
-Input:  Analysis/per_scenario_metrics_all.csv
-Output: Analysis/symmetric_gate_metrics.{xlsx,md}
+Input:  local-first per_scenario_metrics_all.csv (falls back to the repository Analysis copy)
+Output: local-only workbook and Markdown report copy
 
 Usage:
-    python paper_pipeline/symmetric_gate_metrics.py
+    python scripts/paper_pipeline/symmetric_gate_metrics.py
 """
 
 import sys
@@ -32,10 +32,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-IN_CSV = PROJECT_ROOT / "Analysis" / "per_scenario_metrics_all.csv"
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "symmetric_gate_metrics.xlsx"
-OUT_MD = PROJECT_ROOT / "Analysis" / "symmetric_gate_metrics.md"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_input_path, local_manuscript_path
+
+IN_CSV = local_manuscript_input_path("Analysis", "per_scenario_metrics_all.csv")
+OUT_XLSX = local_manuscript_path("Analysis", "symmetric_gate_metrics.xlsx")
+OUT_MD = local_manuscript_path("Analysis", "symmetric_gate_metrics.md")
 
 ARCH_SHORT = {
     "Direct_LLM_Scoring": "A_D",
@@ -103,6 +109,7 @@ def main():
                     })
 
     res = pd.DataFrame(rows)
+    OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xl:
         res.to_excel(xl, sheet_name="symmetric_gate", index=False)
 
@@ -163,6 +170,7 @@ def main():
                   f"| {r['top1_accuracy_all']:.4f} | {r['top1_accuracy_strict']:.4f} "
                   f"| {r['top1_delta']:+.4f} |")
     md.append("")
+    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     OUT_MD.write_text("\n".join(md), encoding="utf-8")
 
     print("")

@@ -1,22 +1,35 @@
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 
+# Bootstrap the checkout's src/ package before importing llm_mcda.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import model_config
-from model_config import CRITERIA, MODEL_SPECS, get_output_folder
-from sentinel_utils import (
+from llm_mcda.common import model_config
+from llm_mcda.common.model_config import CRITERIA, MODEL_SPECS, get_output_folder
+from llm_mcda.common.sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     _is_complete_run_file,
@@ -25,7 +38,7 @@ from sentinel_utils import (
     SENTINEL_FLOAT,
 )
 
-TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
 ALT_COLS = ["alternative_1", "alternative_2", "alternative_3"]
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
@@ -33,6 +46,9 @@ DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 # downsample an arm launched without --n, so there is no default: pass it.
 DEFAULT_N = 195
 DEFAULT_SEED = 20260803
+
+# Set by main() after validating the caller's safe output root.
+OUTPUT_DIR = None
 
 # A_D only. A_E was dropped: its arm changes the same two-element "other
 # options" list A_D's does, and an earlier A_E run was invalidated when the
@@ -42,7 +58,7 @@ DEFAULT_SEED = 20260803
 # numbered sequence is A_H, and that arm now lives in run_hybrid_ablation_experiments.py
 # where it can be compared against A_H's own run-to-run variation.
 ARCHITECTURES = {
-    "Direct_LLM_Scoring": PROJECT_ROOT / "Architectures" / "Direct_LLM_Scoring.py",
+    "Direct_LLM_Scoring": PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py",
 }
 
 RESULT_COLUMNS = [
@@ -211,7 +227,9 @@ def normalize_result(result, scenario):
 # --------------------------------------------------------------------------
 
 def output_dir_for(model_key):
-    return PROJECT_ROOT / get_output_folder(model_key) / "position_bias"
+    if OUTPUT_DIR is None:
+        raise RuntimeError("Output directory has not been validated; call main() first.")
+    return OUTPUT_DIR / model_key / "position_bias"
 
 
 def write_sample_manifest(sampled, alloc, model_key, n_total, seed):
@@ -350,7 +368,7 @@ def run_reversed_arm(model_key, n_total, seed, n_runs=1):
 # --------------------------------------------------------------------------
 
 def _load_metrics_helpers():
-    path = PROJECT_ROOT / "paper_pipeline" / "calculate_per_run_metrics.py"
+    path = PROJECT_ROOT / "scripts" / "paper_pipeline" / "calculate_per_run_metrics.py"
     spec = spec_from_file_location("posbias_metrics", path)
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -466,7 +484,7 @@ def add_mcnemar_holm(paired):
     correlated; Holm is valid under any dependence. Rows without a test
     (shipped_vs_shipped) keep NaN. Uses the project's single Holm
     implementation (run_rag_ablation_experiments.holm_correct)."""
-    rag_path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
+    rag_path = PROJECT_ROOT / "scripts" / "experiments" / "run_rag_ablation_experiments.py"
     spec = spec_from_file_location("posbias_rag_stats", rag_path)
     rag = module_from_spec(spec)
     spec.loader.exec_module(rag)
@@ -738,6 +756,7 @@ def analyze(model_key):
 # --------------------------------------------------------------------------
 
 def main():
+    global OUTPUT_DIR
     parser = argparse.ArgumentParser(description="Position-bias control arm")
     parser.add_argument("command", choices=["run", "analyze"])
     # Defaults reproduce the paper's design with no flags: A_D reversed on all
@@ -756,7 +775,16 @@ def main():
                         help="Reversed runs per model (default 1, the paper's "
                              "design: each is compared against the model's five "
                              "original runs).")
+    parser.add_argument("--output-dir", default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+                        help=f"New or existing safe output directory (or set {RUN_OUTPUT_DIR_ENV}); "
+                             "required to write results outside frozen repository data.")
     args = parser.parse_args()
+    try:
+        OUTPUT_DIR = require_safe_output_directory(
+            args.output_dir, option=f"--output-dir (or {RUN_OUTPUT_DIR_ENV})", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
 
     for model_key in args.models:
         print(f"\n##### model: {model_key} #####")

@@ -290,7 +290,7 @@ class RawCallLog:
     said* costs a re-collection.
 
     Field names match the order-arm jsonl written by
-    Miscellaneous Scripts/run_hybrid_ablation_experiments.py (scenario_id, run,
+    scripts/experiments/run_hybrid_ablation_experiments.py (scenario_id, run,
     decision_type, prompt, prompt_sha256, response, prompt_tokens,
     completion_tokens, latency_ms) so both sources can be read by one parser.
 
@@ -449,7 +449,7 @@ def provider_prefs_for_model(model_id: str) -> dict:
     repoint API_CONFIG["model"] (position bias, order arm) get that model's
     routing, not MODEL_KEY's."""
     import copy
-    from model_config import MODEL_SPECS
+    from .model_config import MODEL_SPECS
     for spec in MODEL_SPECS.values():
         if spec.get("openrouter_id") == model_id:
             return copy.deepcopy(spec.get("provider", DEFAULT_PROVIDER_PREFS))
@@ -536,7 +536,7 @@ def openrouter_chat(payload: dict, headers: dict, *, endpoint: str, max_retries:
     """
     import time
     import requests
-    from model_config import FAILED_API_EXHAUSTED
+    from .model_config import FAILED_API_EXHAUSTED
     global _consecutive_api_failures
 
     out = {
@@ -843,7 +843,7 @@ def apply_mavt_ranking(alternatives_scores):
         ``ranks``              — parallel list of 1-based int ranks (or SENTINEL_VALUE)
         ``weighted_scores``    — parallel list of weighted sums (or SENTINEL_FLOAT)
     """
-    from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+    from .model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
     import math
 
     alternatives = [a["alternative"] for a in alternatives_scores]

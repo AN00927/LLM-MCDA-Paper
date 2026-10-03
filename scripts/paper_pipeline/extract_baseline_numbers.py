@@ -2,7 +2,7 @@
 """
 extract_baseline_numbers.py - P0.1 baseline snapshot for the EMS revision.
 
-Scans paper_draft_working.tex and supplementary_material.tex for every numeric
+Scans local copies of the main manuscript and supplementary source for every numeric
 claim, tags each with its file, line, enclosing section, and enclosing float
 label, and writes a reproducible baseline to Analysis/.
 
@@ -15,26 +15,30 @@ run_paper_pipeline.py) - so this file scan is the only complete inventory of
 printed numbers that exists.
 
 Usage:
-    python paper_pipeline/extract_baseline_numbers.py
-    python paper_pipeline/extract_baseline_numbers.py --tag post_revision
+    python scripts/paper_pipeline/extract_baseline_numbers.py
+    python scripts/paper_pipeline/extract_baseline_numbers.py --tag post_revision
 """
 
 import argparse
 import csv
 import re
+import sys
 from collections import Counter, OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PAPER_DIR = PROJECT_ROOT / "paper"
-OUT_DIR = PROJECT_ROOT / "Analysis"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_documentation_path, local_manuscript_path
 
+OUT_DIR = local_documentation_path("paper-pipeline", "analysis")
 TEX_FILES = [
-    ("main", PAPER_DIR / "paper_draft_working.tex"),
-    ("supp", PAPER_DIR / "supplementary_material.tex"),
+    ("main", local_manuscript_path("paper", "paper_draft_working.tex")),
+    ("supp", local_manuscript_path("paper", "supplementary.tex")),
 ]
-
 # Numeric patterns worth tracking. Order matters: more specific first, and a
 # span already claimed by an earlier pattern is not re-matched.
 PATTERNS = OrderedDict([
@@ -152,8 +156,11 @@ def main():
     parser.add_argument("--tag", default="baseline",
                         help="Label for the output files (default: baseline)")
     args = parser.parse_args()
+    missing = [str(path) for _, path in TEX_FILES if not path.is_file()]
+    if missing:
+        parser.error("Required local-only manuscript inputs are missing: "+", ".join(missing)+"; restore them under local_manuscripts/ or set LLM_MCDA_LOCAL_MANUSCRIPTS_DIR.")
 
-    OUT_DIR.mkdir(exist_ok=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     records = []
@@ -179,7 +186,7 @@ def main():
     md = [
         f"# Printed-number inventory ({args.tag})",
         "",
-        f"Generated {stamp} by `paper_pipeline/extract_baseline_numbers.py`.",
+        f"Generated {stamp} by `scripts/paper_pipeline/extract_baseline_numbers.py`.",
         "",
         "Diff target for P7.2. The paper uses no `\\input{}` - every table is",
         "literal LaTeX - so this is the only complete inventory of printed",

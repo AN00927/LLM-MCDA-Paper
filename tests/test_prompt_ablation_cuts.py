@@ -25,8 +25,8 @@ import pytest
 import arch_patch_harness as H  # noqa: F401  (dummy API key / no-network guard)
 
 REPO = H.REPO
-EXP = REPO / "Miscellaneous Scripts" / "experiments"
-VAL = REPO / "Miscellaneous Scripts" / "validation"
+EXP = REPO / "scripts" / "experiments"
+VAL = REPO / "scripts" / "validation"
 
 
 def _load(path: Path, alias: str):
@@ -157,12 +157,12 @@ def test_collected_control_is_used_instead_of_main_suite(tmp_path):
 HY = _load(EXP / "run_hybrid_ablation_experiments.py", "cuts_hybrid")
 
 
-def test_order_arm_default_collects_reversed_only(monkeypatch):
+def test_order_arm_default_collects_reversed_only(tmp_path, monkeypatch):
     assert HY.DEFAULT_ORDER_ARMS == ("reversed",)
     # Six reversed runs against the five main-suite A_H runs (author decision
     # 2026-09-29): unequal groups, so the permutation floor is 1/462.
     assert HY.ORDER_ARM_DEFAULT_RUNS["reversed"] == 6
-    monkeypatch.setattr(sys, "argv", ["x", "--collect-only", "--models", "qwen"])
+    monkeypatch.setattr(sys, "argv", ["x", "--collect-only", "--models", "qwen", "--output-dir", str(tmp_path)])
     calls = []
     monkeypatch.setattr(HY, "collect_order_arm",
                         lambda mk, run, arm: calls.append((mk, run, arm)))
@@ -170,9 +170,9 @@ def test_order_arm_default_collects_reversed_only(monkeypatch):
     assert calls == [("qwen", r, "reversed") for r in range(1, 7)]
 
 
-def test_order_arm_run6_only_with_run_start(monkeypatch):
+def test_order_arm_run6_only_with_run_start(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["x", "--collect-only", "--models", "qwen",
-                                      "--order-run-start", "6"])
+                                      "--order-run-start", "6", "--output-dir", str(tmp_path)])
     calls = []
     monkeypatch.setattr(HY, "collect_order_arm",
                         lambda mk, run, arm: calls.append((mk, run, arm)))
@@ -211,9 +211,9 @@ def test_exchangeability_test_null_is_one():
     assert p == pytest.approx(1.0)
 
 
-def test_order_arm_control_still_collectable_on_request(monkeypatch):
+def test_order_arm_control_still_collectable_on_request(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["x", "--collect-only", "--models", "qwen",
-                                      "--order-arms", "control"])
+                                      "--order-arms", "control", "--output-dir", str(tmp_path)])
     calls = []
     monkeypatch.setattr(HY, "collect_order_arm",
                         lambda mk, run, arm: calls.append((mk, run, arm)))
@@ -241,7 +241,7 @@ def test_main_suite_and_ablation_parse_replies_identically(reply):
     replies, with the same scores (author decision 2026-09-27: the main suite
     uses the lenient parser)."""
     ad = PA._load_direct_module()
-    ae_path = REPO / "Architectures" / "Example-Guided_LLM_Scoring.py"
+    ae_path = REPO / "src/llm_mcda/architectures" / "Example-Guided_LLM_Scoring.py"
     ae = sys.modules.get("cuts_ae") or _load(ae_path, "cuts_ae")
     pa_scores, pa_error = PA.parse_scores(reply, 1.0)
     ad_scores, ad_diag = ad._validate_scores(reply, {}, "alt")
