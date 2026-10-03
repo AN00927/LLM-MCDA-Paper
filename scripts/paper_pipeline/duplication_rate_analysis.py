@@ -25,19 +25,17 @@ if PROJECT_ROOT not in sys.path:
 SOURCE_ROOT = os.path.join(PROJECT_ROOT, "src")
 if SOURCE_ROOT not in sys.path:
     sys.path.insert(0, SOURCE_ROOT)
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
-from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.model_config import get_display_label, get_output_folder  # noqa: E402
 
 N_RUNS = 5
 # Column order matches the task brief's run-01 example table.
 DECISION_TYPES = ["HVAC", "Shower", "Appliance"]
 
 MODEL_FOLDERS = [
-    (MODEL_SPECS["gemini"]["output_folder"].replace("Output Files ", ""), MODEL_SPECS["gemini"]["output_folder"]),
-    ("GPT-OSS 20B", "Output Files GPT-OSS 20B"),
-    ("Qwen3.5 9B", "Output Files Qwen3.5 9B"),
-    (MODEL_SPECS["deepseek"]["output_folder"].replace("Output Files ", ""), MODEL_SPECS["deepseek"]["output_folder"]),
+    (get_display_label(model_key), get_output_folder(model_key))
+    for model_key in ("gemini", "gptoss", "qwen", "deepseek")
 ]
 
 # C6's paper table lists A_D and A_E only.
@@ -51,8 +49,8 @@ ARCH_KEYS = {
     "LLM-Parameterized_Reference_Scoring": "A_H",
 }
 
-OUT_XLSX = local_manuscript_path("Analysis", "duplication_rates_all_runs.xlsx")
-OUT_TEX = local_manuscript_path("paper", "duplication_table.tex")
+OUT_XLSX = repository_path("Combined Metrics", "duplication_rates_all_runs.xlsx")
+OUT_TEX = repository_path("paper", "duplication_table.tex")
 
 
 def duplication_rate(path, decision_type):

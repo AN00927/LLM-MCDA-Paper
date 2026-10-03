@@ -27,7 +27,13 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 
-from llm_mcda.common.model_config import CRITERION_WEIGHTS, MODEL_KEY, MODEL_SPECS, TIE_BREAK_PRIORITY
+from llm_mcda.common.model_config import (
+    CRITERION_WEIGHTS,
+    MODEL_KEY,
+    MODEL_SPECS,
+    TIE_BREAK_PRIORITY,
+    get_model_artifact_subdir,
+)
 from llm_mcda.common.sentinel_utils import _atomic_write_xlsx
 from scripts.analysis.evaluate_architecture_metrics import (
     CRITERIA,
@@ -43,8 +49,20 @@ from scripts.analysis.evaluate_architecture_metrics import (
 )
 from pathlib import Path
 
+# Read-only input: the objective weight vectors the weights stage writes.
 METHOD_DIR = PROJECT_ROOT / "workbooks" / "methodology"
-SENSITIVITY_OUTPUT_DIR = METHOD_DIR / "sensitivity_analysis"
+
+# Outputs are partitioned by SCOPE. A workbook describing one model belongs
+# beside that model's other artifacts; the pooled four-model workbook spans
+# models, so it belongs in the repository-level cross-model folder.
+POOLED_OUTPUT_DIR = PROJECT_ROOT / "Combined Metrics"
+
+
+def model_sensitivity_dir(model_key: str) -> Path:
+    """Directory holding one model's sensitivity workbooks."""
+    return PROJECT_ROOT / get_model_artifact_subdir(model_key, "sensitivity")
+
+
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
 # C1: value-function shape parameter sweep (ground-truth side only).
@@ -62,24 +80,27 @@ def _normalize(w: dict[str, float]) -> dict[str, float]:
     return {c: max(0.0, v) / total for c, v in w.items()}
 
 
-def _preflight_outputs(filenames: list[str]) -> None:
-    """Validate the fixed output directory and every selected artifact early."""
-    global SENSITIVITY_OUTPUT_DIR
+def _preflight_outputs(paths: list[Path]) -> None:
+    """Validate every selected artifact destination before doing any work.
+
+    Destinations differ per model now, so callers pass full paths rather than
+    bare file names. Failing here keeps a long run from aborting halfway
+    through on a destination it could have rejected up front.
+    """
     try:
-        output_dir = require_safe_output_directory(
-            SENSITIVITY_OUTPUT_DIR,
-            option="sensitivity analysis output directory",
-            root=PROJECT_ROOT,
-        )
-        for filename in filenames:
+        for path in paths:
+            require_safe_output_directory(
+                path.parent,
+                option="sensitivity analysis output directory",
+                root=PROJECT_ROOT,
+            )
             require_safe_output_path(
-                output_dir / filename,
+                path,
                 option="sensitivity analysis output",
                 root=PROJECT_ROOT,
             )
     except UnsafeOutputPathError as exc:
         raise SystemExit(str(exc)) from exc
-    SENSITIVITY_OUTPUT_DIR = output_dir
 
 
 def _load_objective_weights() -> dict[str, dict[str, dict[str, float]]]:
@@ -303,7 +324,7 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
     print(f"Model: {model_key}")
 
     CONFIG = _build_config(model_key)
-    OUTPUT_DIR = SENSITIVITY_OUTPUT_DIR
+    OUTPUT_DIR = model_sensitivity_dir(model_key)
 
     # 1. Load data
     print("\n[1] Loading ground truth and architectures...")
@@ -645,8 +666,8 @@ def run_alpha_sweep(model_key: str = MODEL_KEY) -> pd.DataFrame:
           f"/{n_alpha} alpha values; by top1 in "
           f"{int((sweep['top1_verdict'] == 'PRESERVED').sum())}/{n_alpha}")
 
-    output_path = SENSITIVITY_OUTPUT_DIR / f"Sensitivity_alpha_sweep_{model_key}.xlsx"
-    SENSITIVITY_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = model_sensitivity_dir(model_key) / f"Sensitivity_alpha_sweep_{model_key}.xlsx"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_xlsx(results_df, output_path)
     print(f"\n  Results saved to: {output_path}")
 
@@ -724,8 +745,8 @@ def run_objective_arms_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
         results_df.loc[results_df["scenario_name"] == scen, "tau_ah"] = ah
         print(f"  {scen:<24}{ed:>+12.4f}{ah:>10.4f}{held:>12}")
 
-    output_path = SENSITIVITY_OUTPUT_DIR / f"Sensitivity_merec_entropy_arms_{model_key}.xlsx"
-    SENSITIVITY_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = model_sensitivity_dir(model_key) / f"Sensitivity_merec_entropy_arms_{model_key}.xlsx"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_xlsx(results_df, output_path)
     print(f"\n  Results saved to: {output_path}")
 
@@ -744,13 +765,13 @@ def main():
     parser.add_argument("--alpha-sweep", action="store_true",
                         help="C1: sweep the ground-truth value-function shape "
                              "parameter alpha and write one workbook per model, "
-                             "workbooks/methodology/sensitivity_analysis/"
+                             "Output Files <model>/sensitivity/"
                              "Sensitivity_alpha_sweep_<model>.xlsx. "
                              "Never an unsuffixed pooled file.")
     parser.add_argument("--objective-arms", action="store_true",
                         help="C7: run the MEREC/Entropy per-decision-type arms "
                              "and write one workbook per model, in "
-                             "workbooks/methodology/sensitivity_analysis/"
+                             "Output Files <model>/sensitivity/"
                              "Sensitivity_merec_entropy_arms_<model>.xlsx. "
                              "Never an unsuffixed pooled file.")
     args = parser.parse_args()
@@ -762,12 +783,14 @@ def main():
             models = [args.model]
         else:
             models = [MODEL_KEY]
-        output_names = []
+        output_paths = []
         if args.alpha_sweep:
-            output_names.extend(f"Sensitivity_alpha_sweep_{mk}.xlsx" for mk in models)
+            output_paths.extend(model_sensitivity_dir(mk) / f"Sensitivity_alpha_sweep_{mk}.xlsx"
+                                for mk in models)
         if args.objective_arms:
-            output_names.extend(f"Sensitivity_merec_entropy_arms_{mk}.xlsx" for mk in models)
-        _preflight_outputs(output_names)
+            output_paths.extend(model_sensitivity_dir(mk) / f"Sensitivity_merec_entropy_arms_{mk}.xlsx"
+                                for mk in models)
+        _preflight_outputs(output_paths)
         for mk in models:
             if args.alpha_sweep:
                 run_alpha_sweep(mk)
@@ -782,10 +805,11 @@ def main():
     else:
         models = [MODEL_KEY]
 
-    output_names = [f"sensitivity_analysis_{mk}.xlsx" for mk in models]
+    output_paths = [model_sensitivity_dir(mk) / f"sensitivity_analysis_{mk}.xlsx" for mk in models]
     if args.all_models:
-        output_names.extend(["sensitivity_analysis_all.xlsx", "sensitivity_analysis_all.csv"])
-    _preflight_outputs(output_names)
+        output_paths.extend([POOLED_OUTPUT_DIR / "sensitivity_analysis_all.xlsx",
+                             POOLED_OUTPUT_DIR / "sensitivity_analysis_all.csv"])
+    _preflight_outputs(output_paths)
 
     frames = []
     for mk in models:
@@ -794,7 +818,7 @@ def main():
 
     if args.all_models and frames:
         pooled = pd.concat(frames, ignore_index=True)
-        pooled_path = SENSITIVITY_OUTPUT_DIR / "sensitivity_analysis_all.xlsx"
+        pooled_path = POOLED_OUTPUT_DIR / "sensitivity_analysis_all.xlsx"
         pooled_path.parent.mkdir(parents=True, exist_ok=True)
         _atomic_write_xlsx(pooled, pooled_path)
         pooled.to_csv(pooled_path.with_suffix(".csv"), index=False)

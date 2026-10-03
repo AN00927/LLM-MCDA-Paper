@@ -39,6 +39,7 @@ MODEL_SPECS = {
         "label": "input Price: $0.018/M, Output Price: $0.09/M",
         "openrouter_id": "openai/gpt-oss-20b:floor",
         "output_folder": "Output Files GPT-OSS 20B",
+        "display_label": "GPT-OSS 20B",
         "reasoning_effort": "low",
         "provider": {
             "only": ["darkbloom/fp8"],
@@ -50,6 +51,7 @@ MODEL_SPECS = {
         "label": "Input Price: $0.10/M, Output Price: $0.15/M",
         "openrouter_id": "qwen/qwen3.5-9b:floor",
         "output_folder": "Output Files Qwen3.5 9B",
+        "display_label": "Qwen3.5 9B",
         "reasoning_effort": "none",
         "provider": {
             "only": ["venice/fp8"],
@@ -60,7 +62,12 @@ MODEL_SPECS = {
     "deepseek": {
         "label": "Input Price: $0.13/M, Output Price: $0.26/M",
         "openrouter_id": "deepseek/deepseek-v4-flash-0731:floor",
+        # The folder name keeps the build suffix (renaming it would break the
+        # git-pathspec timestamp walk in emit_collection_window.py); the display
+        # label is the short form the manuscript uses throughout, with the 0731
+        # build recorded in the OpenRouter id above and in Supplementary S1.
         "output_folder": "Output Files DeepSeek V4 Flash 0731",
+        "display_label": "DeepSeek V4 Flash",
         "reasoning_effort": "none",
         "provider": {
             "only": ["relace/fp4"],
@@ -72,6 +79,7 @@ MODEL_SPECS = {
         "label": "Input Price: $0.375/M, Output Price: $1.875/M",
         "openrouter_id": "google/gemini-3.8-flash:floor",
         "output_folder": "Output Files Gemini 3.8 Flash",
+        "display_label": "Gemini 3.8 Flash",
         "reasoning_effort": "minimal",
         "provider": {
             "only": ["google-ai-studio/flex"],
@@ -96,6 +104,38 @@ def _resolve_model_key(model_key: str) -> str:
 def get_output_folder(model_key: str = MODEL_KEY) -> str:
     resolved_key = _resolve_model_key(model_key)
     return MODEL_SPECS[resolved_key]["output_folder"]
+
+
+def get_display_label(model_key: str = MODEL_KEY) -> str:
+    """Canonical human-readable model name for figures, tables and data columns.
+
+    Single source of truth: do not derive a label by stripping the
+    "Output Files " prefix off output_folder, and do not hard-code it.
+    """
+    resolved_key = _resolve_model_key(model_key)
+    return MODEL_SPECS[resolved_key]["display_label"]
+
+
+#: Per-model artifact subdirectories inside a model's output folder. Each holds
+#: work whose scope is exactly one model; anything spanning models belongs in
+#: the repository-level "Combined Metrics" directory instead.
+MODEL_ARTIFACT_KINDS = (
+    "position_bias",
+    "hybrid_order_reversal",
+    "listwise_direct",
+    "prompt_ablation",
+    "rag_ablation",
+    "sensitivity",
+    "metrics",
+)
+
+
+def get_model_artifact_subdir(model_key: str, kind: str) -> str:
+    """Repo-relative directory holding one model's artifacts of a given kind."""
+    if kind not in MODEL_ARTIFACT_KINDS:
+        valid = ", ".join(MODEL_ARTIFACT_KINDS)
+        raise ValueError(f"Unknown artifact kind: '{kind}'. Must be one of: {valid}")
+    return f"{get_output_folder(model_key)}/{kind}"
 
 
 def get_output_folder_for_model_id(model_id: str) -> str:

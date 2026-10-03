@@ -35,7 +35,7 @@ if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 if str(PROJECT_ROOT / "scripts" / "paper_pipeline") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "paper_pipeline"))
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 warnings.filterwarnings("ignore")
 
 with contextlib.redirect_stdout(io.StringIO()):
@@ -50,7 +50,7 @@ ARCHS = {
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 EPS = 1e-9
 
-DEFAULT_OUTPUT_DIR = local_manuscript_path("Analysis")
+DEFAULT_OUTPUT_DIR = repository_path("Combined Metrics")
 
 
 def load_runs(model_key, arch_stem):
@@ -105,7 +105,7 @@ def per_scenario_regret(clean_df):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR),
-                    help="Where to write regret CSVs (default: local-only Analysis/).")
+                    help="Where to write regret CSVs (default: Combined Metrics/).")
     args = ap.parse_args()
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

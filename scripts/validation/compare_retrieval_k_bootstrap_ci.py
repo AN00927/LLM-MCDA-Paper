@@ -26,7 +26,7 @@ scripts/validation/compute_confidence_intervals.py for the per-run metrics)
 is reported as a cross-check. The point estimate is the observed mean
 difference, which is the quantity the CI describes.
 
-Input : Analysis/RAG_Ablation/rag_ablation_results.xlsx (scenario-level rows)
+Input : Combined Metrics/rag_ablation_results.xlsx (scenario-level rows)
 Output: k1_vs_k3_bootstrap_ci.xlsx in a required safe --output path or the
         directory supplied with LLM_MCDA_RUN_OUTPUT_DIR
 
@@ -49,6 +49,7 @@ from scipy import stats
 
 from llm_mcda.common.paths import (
     RUN_OUTPUT_DIR_ENV,
+    repository_path,
     repository_root,
     require_safe_output_directory,
     require_safe_output_path,
@@ -63,8 +64,8 @@ if str(PROJECT_ROOT) not in sys.path:
 # call time and makes no API calls at import.
 from scripts.experiments.run_rag_ablation_experiments import derive_bootstrap_seed
 
-INPUT_XLSX = PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "rag_ablation_results.xlsx"
-OUTPUT_XLSX = PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "k1_vs_k3_bootstrap_ci.xlsx"
+INPUT_XLSX = repository_path("Combined Metrics","rag_ablation_results.xlsx")
+OUTPUT_XLSX = repository_path("Combined Metrics","k1_vs_k3_bootstrap_ci.xlsx")
 
 N_BOOTSTRAP = 10000
 RANDOM_SEED = 42

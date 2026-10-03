@@ -27,20 +27,20 @@ PROJECT_ROOT = repository_root(start=__file__)
 SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
-from llm_mcda.common.paths import local_manuscript_path
+from llm_mcda.common.paths import repository_path
+from llm_mcda.common.model_config import get_model_artifact_subdir
 
-DATA_DIR = local_manuscript_path("paper", "per_run_metrics")
 PER_RUN_MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
-OUTPUT_DIR = local_manuscript_path("paper", "per_run_metrics")
+OUTPUT_DIR = repository_path("paper")
 OUTPUT_FILE = OUTPUT_DIR / "variance_plots.tex"
-OUTPUT_PATH = local_manuscript_path("paper", "Images", "OverallPerformanceByModel.pdf")
+OUTPUT_PATH = repository_path("paper", "Images", "OverallPerformanceByModel.pdf")
 
 FIGURES = ["boxplot", "violin", "variance", "grouped_bars"]
 
 
 def require_local_per_run_csvs():
     paths = {
-        model: DATA_DIR / f"per_run_metrics_{model}.csv"
+        model: repository_path(get_model_artifact_subdir(model, "metrics"), f"per_run_metrics_{model}.csv")
         for model in PER_RUN_MODELS
     }
     missing = [str(path) for path in paths.values() if not path.is_file()]

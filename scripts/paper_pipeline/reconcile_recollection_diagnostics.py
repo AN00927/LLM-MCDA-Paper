@@ -52,12 +52,12 @@ PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
-from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.model_config import get_output_folder  # noqa: E402
 
 ARCH = "Example-Guided_LLM_Scoring"
 CRIT = ["energy_cost", "environmental", "comfort", "practicality"]
-FOLDERS = [MODEL_SPECS["deepseek"]["output_folder"], MODEL_SPECS["gemini"]["output_folder"],
-           "Output Files GPT-OSS 20B", "Output Files Qwen3.5 9B"]
+FOLDERS = [get_output_folder(model_key)
+           for model_key in ("deepseek", "gemini", "gptoss", "qwen")]
 
 # Fields that count failures and must shrink; token/latency fields are untouched.
 COUNT_FIELDS = ["failed_calls", "failed_scenarios"]

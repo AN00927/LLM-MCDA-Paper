@@ -18,7 +18,6 @@ from generate_pgfplots import (  # noqa: E402,F401
     VIOLIN_ARCH_MAP as ARCH_MAP,
     N_GRID,
     MAX_HALF_WIDTH,
-    DATA_DIR,
     PER_RUN_MODELS,
 )
 

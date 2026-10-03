@@ -12,13 +12,12 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
-from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
+from llm_mcda.common.model_config import get_display_label, get_model_artifact_subdir  # noqa: E402
 
-PER_RUN_DIR = local_manuscript_path("paper", "per_run_metrics")
 PER_RUN_MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
 PER_RUN_PATHS = {
-    model: PER_RUN_DIR / f"per_run_metrics_{model}.csv"
+    model: repository_path(get_model_artifact_subdir(model, "metrics"), f"per_run_metrics_{model}.csv")
     for model in PER_RUN_MODELS
 }
 MISSING_PER_RUN_PATHS = [
@@ -58,12 +57,7 @@ CRITERION_MAP = {
     "practicality_mae": "Practicality",
 }
 MODEL_ORDER = ["gemini", "deepseek", "gptoss", "qwen"]
-MODEL_LABELS = {
-    "gemini": MODEL_SPECS["gemini"]["output_folder"].replace("Output Files ", ""),
-    "deepseek": MODEL_SPECS["deepseek"]["output_folder"].replace("Output Files ", ""),
-    "gptoss": "GPT-OSS 20B",
-    "qwen": "Qwen 3.5 9B",
-}
+MODEL_LABELS = {model_key: get_display_label(model_key) for model_key in MODEL_ORDER}
 COLORS = {
     "gemini": "colorGemini",
     "deepseek": "colorDeepSeek",
@@ -233,7 +227,7 @@ latex_lines.append(r"}")
 
 latex_output = "\n".join(latex_lines) + "\n"
 
-FIGURE_TEX = local_manuscript_path("paper", "step5_figures.tex")
+FIGURE_TEX = repository_path("paper", "step5_figures.tex")
 FIGURE_TEX.parent.mkdir(parents=True, exist_ok=True)
 with FIGURE_TEX.open("w", encoding="utf-8") as f:
     f.write(latex_output)

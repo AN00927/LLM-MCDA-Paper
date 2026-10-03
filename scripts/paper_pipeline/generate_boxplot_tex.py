@@ -15,7 +15,6 @@ from generate_pgfplots import (  # noqa: E402,F401
     require_local_per_run_csvs,
     generate_boxplot_block,
     BOX_ARCH_MAP as ARCH_MAP,
-    DATA_DIR,
     PER_RUN_MODELS,
 )
 

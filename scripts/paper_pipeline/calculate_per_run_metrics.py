@@ -28,9 +28,9 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 
-from llm_mcda.common.model_config import MODEL_KEY, MODEL_SPECS
+from llm_mcda.common.model_config import MODEL_KEY, MODEL_SPECS, get_model_artifact_subdir
 from llm_mcda.common.sentinel_utils import _is_complete_run_file, read_table_clean
 
 # ---------- dynamic import of CalculateMetrics ----------
@@ -52,7 +52,11 @@ compute_ranking_metrics_inclusive = _cm.compute_ranking_metrics_inclusive
 compute_criterion_metrics_inclusive = _cm.compute_criterion_metrics_inclusive
 _build_config = _cm._build_config
 
-OUTPUT_DIR = local_manuscript_path("paper", "per_run_metrics")
+OUTPUT_DIR = repository_path("Combined Metrics")
+
+
+def model_metrics_dir(model_key):
+    return repository_path(get_model_artifact_subdir(model_key, "metrics"))
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",
@@ -226,13 +230,13 @@ def compute_per_run_metrics_for_model(model_key):
         return None
 
     df = pd.DataFrame(all_rows)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    model_metrics_dir(model_key).mkdir(parents=True, exist_ok=True)
     
-    xlsx_path = OUTPUT_DIR / f"per_run_metrics_{model_key}.xlsx"
+    xlsx_path = model_metrics_dir(model_key) / f"per_run_metrics_{model_key}.xlsx"
     df.to_excel(xlsx_path, index=False, engine="openpyxl")
     print(f"  [OK] Wrote {xlsx_path} ({len(df)} rows)")
 
-    csv_path = OUTPUT_DIR / f"per_run_metrics_{model_key}.csv"
+    csv_path = model_metrics_dir(model_key) / f"per_run_metrics_{model_key}.csv"
     df.to_csv(csv_path, index=False)
     print(f"  [OK] Wrote {csv_path} ({len(df)} rows)")
 
@@ -244,7 +248,7 @@ def write_aggregate_all_models():
     per_run_metrics_all.csv (+.xlsx), matching each model's own row order."""
     dfs = []
     for mk in sorted(MODEL_SPECS.keys()):
-        csv_path = OUTPUT_DIR / f"per_run_metrics_{mk}.csv"
+        csv_path = model_metrics_dir(mk) / f"per_run_metrics_{mk}.csv"
         if not csv_path.exists():
             print(f"  [SKIP] {mk}: {csv_path} not found, cannot include in aggregate")
             continue
@@ -256,6 +260,7 @@ def write_aggregate_all_models():
 
     all_df = pd.concat(dfs, ignore_index=True)
 
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     all_csv_path = OUTPUT_DIR / "per_run_metrics_all.csv"
     all_df.to_csv(all_csv_path, index=False)
     print(f"  [OK] Wrote {all_csv_path} ({len(all_df)} rows)")

@@ -92,6 +92,7 @@ import pandas as pd
 
 from llm_mcda.common.paths import (
     RUN_OUTPUT_DIR_ENV,
+    repository_path,
     repository_root,
     require_safe_output_directory,
 )
@@ -99,7 +100,7 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-OUT_DIR = PROJECT_ROOT / "Analysis" / "Hybrid_Ablation"
+OUT_DIR = repository_path("Combined Metrics")
 SUMMARY_XLSX = OUT_DIR / "hybrid_ablation_summary.xlsx"
 
 METRIC_COLS = ["kendall_tau", "top1", "mae"]

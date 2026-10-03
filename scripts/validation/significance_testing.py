@@ -73,7 +73,7 @@ PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
 from llm_mcda.common.paths import (
     RUN_OUTPUT_DIR_ENV,
-    local_manuscript_path,
+    repository_path,
     require_safe_output_directory,
 )
 
@@ -93,7 +93,7 @@ from scripts.analysis import evaluate_architecture_metrics as _eam
 
 GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
-ICC_INPUT_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+ICC_INPUT_CSV = repository_path("Combined Metrics", "per_run_metrics_all.csv")
 OUTPUT_XLSX_NAME = "significance_tests.xlsx"
 # S2: the two cross-model pooled inferences (MixedLM with a random intercept for
 # model, and the Stouffer combination of the per-model Wilcoxon z) are NOT paper

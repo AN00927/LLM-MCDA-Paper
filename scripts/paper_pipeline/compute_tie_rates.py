@@ -38,7 +38,7 @@ if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 if str(PROJECT_ROOT / "scripts" / "paper_pipeline") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "paper_pipeline"))
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 warnings.filterwarnings("ignore")
 
 from llm_mcda.common.model_config import MODEL_SPECS, CRITERION_WEIGHTS, TIE_BREAK_PRIORITY  # noqa: E402
@@ -56,7 +56,7 @@ ARCHS = {
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 EPS = 1e-9
 
-DEFAULT_OUTPUT_DIR = local_manuscript_path("Analysis")
+DEFAULT_OUTPUT_DIR = repository_path("Combined Metrics")
 
 
 def wsum(row, prefix="arch_"):
@@ -115,7 +115,7 @@ def per_scenario_tie_flags(clean_df):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR),
-                    help="Where to write tie_rates.csv (default: local-only Analysis/).")
+                    help="Where to write tie_rates.csv (default: Combined Metrics/).")
     args = ap.parse_args()
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

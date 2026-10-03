@@ -64,7 +64,7 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 from llm_mcda.common.model_config import CRITERIA, MODEL_SPECS  # noqa: E402
 from llm_mcda.common.sentinel_utils import _is_complete_run_file  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -75,14 +75,14 @@ _cm_spec = spec_from_file_location("evaluate_architecture_metrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
 
-PER_RUN_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+PER_RUN_CSV = repository_path("Combined Metrics", "per_run_metrics_all.csv")
 BASELINE_DIR = PROJECT_ROOT / "workbooks" / "older_runs" / "unclassified_legacy" / "Baselines"
 BASELINE_CSV = PROJECT_ROOT / "results" / "older_runs" / "unclassified_legacy" / "Baselines" / "baseline_metrics.csv"
 BASELINE_FILES = {"FixedDefault": "baseline_fixeddefault.xlsx",
                   "NearestNeighbor": "baseline_nearestneighbor.xlsx"}
 TEST_METRICS = {"kendall_tau": "tau", "top1": "Top-1"}
-OUT_XLSX = local_manuscript_path("Analysis", "competitive_baselines.xlsx")
-OUT_MD = local_manuscript_path("Analysis", "competitive_baselines.md")
+OUT_XLSX = repository_path("Combined Metrics", "competitive_baselines.xlsx")
+OUT_MD = repository_path("Combined Metrics", "competitive_baselines.md")
 
 AE = "Example-Guided_LLM_Scoring"
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
