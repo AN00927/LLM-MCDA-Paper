@@ -38,7 +38,7 @@ FAILED_API_BAD_REQUEST = "FAILED_API_BAD_REQUEST"
 
 # Output cap sent as max_tokens on every architecture call. Reasoning tokens
 # count against it on most providers. Chosen from the historical per-call
-# evidence in Analysis/rerun_prep/arch_new/token_evidence.csv: no shipped-prompt
+# evidence in Combined Metrics/token_evidence.csv: no shipped-prompt
 # call on any model came near it (largest per-scenario SUM of three A_D calls:
 # 2,501; largest A_H call: 247; largest run-mean per call: 601), and it sits
 # inside every model's max output (gpt-oss 32,768; Gemini 65,536; the smallest

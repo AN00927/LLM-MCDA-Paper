@@ -2,7 +2,7 @@
 and averaging window, and the implied window solar gain q = SHGC x IAC x I per ft2 of glass.
 
 Reproducible, standard library + numpy only. Review aid for the HVAC calculator's solar
-term (paper/pass6/verify/value_review/HVAC_SOLAR.md); it writes nothing to the repo.
+term; it writes nothing to the repo.
 
 Data: TMY3 EPW files from climate.onebuilding.org (NREL TMY3, 1991-2005 NSRDB-based,
 "NREL TMY Data Set (2008) updated 2015"), downloaded into --epw-dir if missing:

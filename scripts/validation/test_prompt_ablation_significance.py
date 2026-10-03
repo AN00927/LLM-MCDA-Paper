@@ -88,15 +88,20 @@ import pandas as pd
 
 from llm_mcda.common.paths import (
     RUN_OUTPUT_DIR_ENV,
+    repository_path,
     repository_root,
     require_safe_output_directory,
 )
+from llm_mcda.common.model_config import get_model_artifact_subdir
 PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-CELLS_DIR = PROJECT_ROOT / "Analysis" / "Prompt_Ablation"
-OUTPUT_XLSX = CELLS_DIR / "prompt_ablation_significance.xlsx"
+CELLS_DIRS = [
+    repository_path(get_model_artifact_subdir(mk, "prompt_ablation"))
+    for mk in ("deepseek", "gemini", "gptoss", "qwen")
+]
+OUTPUT_XLSX = repository_path("Combined Metrics", "prompt_ablation_significance.xlsx")
 
 # Metrics tested. `top1` and `top2` are binary per scenario; Friedman on a
 # binary outcome is valid but low-powered, so they are reported alongside tau
@@ -159,9 +164,13 @@ def load_matrix() -> pd.DataFrame:
     it is set to the rule's value here, so no failed scenario drops out of a
     paired test.
     """
-    files = sorted(glob.glob(str(CELLS_DIR / "cell_*.xlsx")))
+    files = sorted(
+        f for d in CELLS_DIRS for f in glob.glob(str(d / "cell_*.xlsx"))
+    )
     if not files:
-        raise SystemExit(f"No cell files in {CELLS_DIR}")
+        raise SystemExit(
+            "No cell files in " + ", ".join(str(d) for d in CELLS_DIRS)
+        )
     df = pd.concat([pd.read_excel(f) for f in files], ignore_index=True)
     # Rescore from the stored per-alternative scores against the corrected
     # reference (see run_prompt_ablation_experiments.load_reference): cells

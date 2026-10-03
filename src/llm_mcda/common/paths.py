@@ -1,6 +1,7 @@
 """Stable repository and local-only document path resolution."""
 from __future__ import annotations
 
+import fnmatch
 import os
 from pathlib import Path
 
@@ -10,15 +11,31 @@ LOCAL_MANUSCRIPTS_ENV = "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR"
 LOCAL_DOCUMENTATION_ENV = "LLM_MCDA_LOCAL_DOCUMENTATION_DIR"
 RUN_OUTPUT_DIR_ENV = "LLM_MCDA_RUN_OUTPUT_DIR"
 ALLOW_TRACKED_OUTPUT_WRITES_ENV = "LLM_MCDA_ALLOW_TRACKED_OUTPUT_WRITES"
+ALLOW_RAW_ARTIFACT_OVERWRITE_ENV = "LLM_MCDA_ALLOW_RAW_ARTIFACT_OVERWRITE"
 
 
 _FROZEN_OUTPUT_PREFIXES = (
-    ("analysis",),
     ("archive",),
     ("paper",),
     ("workbooks", "ground_truth"),
     ("workbooks", "older_runs"),
     ("workbooks", "scenarios"),
+)
+
+#: First path component of a per-model output folder ("Output Files <model>").
+_MODEL_OUTPUT_PREFIX = "output files"
+
+#: Collected run data, protected by FILENAME rather than by directory. Each of
+#: these is produced once by a paid collection run and cannot be regenerated
+#: deterministically, so it must stay protected wherever it sits -- while the
+#: derived artifacts in a model folder's subdirectories (metrics/, sensitivity/,
+#: position_bias/, ...) stay writable, because the pipeline regenerates them.
+#: Patterns are matched case-insensitively against the file name alone.
+_RAW_ARTIFACT_PATTERNS = (
+    "*_results_run_[0-9][0-9].xlsx",
+    "*_results_diagnostics_run_[0-9][0-9].json",
+    "*_raw.jsonl",
+    "cell_*",
 )
 
 # Tracked destinations that pipeline stages legitimately regenerate. Unlike the
@@ -55,7 +72,40 @@ def _output_destination(value: str | Path | None, *, option: str, root: str | Pa
     return candidate.resolve(), base
 
 
-def _reject_frozen_output_destination(destination: Path, base: Path, *, option: str) -> None:
+def _raw_artifact_overwrite_allowed() -> bool:
+    return os.environ.get(ALLOW_RAW_ARTIFACT_OVERWRITE_ENV, "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
+def _reject_raw_artifact_overwrite(destination: Path, *, option: str) -> None:
+    """Refuse to overwrite collected run data, wherever it sits.
+
+    This blocks clobbering, not creating: a destination that does not exist yet
+    is always allowed, so a fresh run can write its artifacts into a new
+    directory. Only replacing an existing raw artifact needs the opt-in.
+    """
+    if _raw_artifact_overwrite_allowed() or not destination.exists():
+        return
+    name = destination.name.casefold()
+    if any(fnmatch.fnmatchcase(name, pattern) for pattern in _RAW_ARTIFACT_PATTERNS):
+        raise UnsafeOutputPathError(
+            f"{option} would overwrite collected run data ({destination.name}). "
+            "That artifact came from a paid collection run and cannot be "
+            f"regenerated deterministically. Set {ALLOW_RAW_ARTIFACT_OVERWRITE_ENV}=1 "
+            "only if you intend to replace it; otherwise choose another destination."
+        )
+
+
+def _reject_frozen_output_destination(
+    destination: Path,
+    base: Path,
+    *,
+    option: str,
+    is_file: bool = False,
+) -> None:
+    _reject_raw_artifact_overwrite(destination, option=option)
+
     try:
         relative = destination.relative_to(base)
     except ValueError:
@@ -68,14 +118,33 @@ def _reject_frozen_output_destination(destination: Path, base: Path, *, option: 
             "or run-specific destination."
         )
     frozen = any(parts[: len(prefix)] == prefix for prefix in _FROZEN_OUTPUT_PREFIXES)
-    frozen = frozen or parts[0].startswith("output files")
     if frozen:
         shown = relative.as_posix()
         raise UnsafeOutputPathError(
             f"{option} resolves into frozen repository data ({shown}). Choose a "
-            "scratch or run-specific destination outside Analysis/, archive/, paper/, "
-            "Output Files*/, and frozen workbook inputs."
+            "scratch or run-specific destination outside archive/, paper/, and the "
+            "frozen workbook inputs."
         )
+
+    if parts[0].startswith(_MODEL_OUTPUT_PREFIX):
+        # A model's output folder. Its ROOT holds that model's collected runs,
+        # so a file written straight into it is refused; its subdirectories hold
+        # derived artifacts the pipeline owns and regenerates, so those are
+        # allowed. The raw-filename check above still guards collected data that
+        # happens to sit in a subdirectory.
+        # Count the directory components below the model folder, ignoring a
+        # trailing file name. Zero means the destination is the folder root
+        # itself (or a file sitting directly in it); one or more means it is
+        # inside an artifact subdirectory.
+        subdir_depth = len(parts) - 2 if is_file else len(parts) - 1
+        if subdir_depth < 1:
+            shown = relative.as_posix()
+            raise UnsafeOutputPathError(
+                f"{option} resolves to the root of a model output folder ({shown}), "
+                "which holds that model's collected run data. Write derived "
+                "artifacts to one of its subdirectories (metrics/, sensitivity/, "
+                "position_bias/, ...) or to Combined Metrics/ instead."
+            )
 
     tracked = any(parts[: len(prefix)] == prefix for prefix in _TRACKED_OUTPUT_PREFIXES)
     if tracked and not _tracked_output_writes_allowed():
@@ -102,7 +171,7 @@ def require_safe_output_directory(
     cannot redirect writes into a protected directory.
     """
     destination, base = _output_destination(value, option=option, root=root)
-    _reject_frozen_output_destination(destination, base, option=option)
+    _reject_frozen_output_destination(destination, base, option=option, is_file=False)
     if destination.exists():
         if not destination.is_dir():
             raise UnsafeOutputPathError(
@@ -131,7 +200,7 @@ def require_safe_output_path(
     destination, base = _output_destination(value, option=option, root=root)
     if not destination.name:
         raise UnsafeOutputPathError(f"{option} must name a file, not a directory: {destination}")
-    _reject_frozen_output_destination(destination, base, option=option)
+    _reject_frozen_output_destination(destination, base, option=option, is_file=True)
     if destination.exists() and destination.is_dir():
         raise UnsafeOutputPathError(
             f"{option} target is a directory: {destination}. Choose a file destination."
@@ -247,6 +316,8 @@ def local_documentation_path(*parts: str) -> Path:
 
 
 __all__ = [
+    "ALLOW_RAW_ARTIFACT_OVERWRITE_ENV",
+    "ALLOW_TRACKED_OUTPUT_WRITES_ENV",
     "LOCAL_DOCUMENTATION_ENV",
     "LOCAL_MANUSCRIPTS_ENV",
     "REPOSITORY_ROOT_ENV",

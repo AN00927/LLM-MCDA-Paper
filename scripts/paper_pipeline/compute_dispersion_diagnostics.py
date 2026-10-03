@@ -57,8 +57,8 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
-from llm_mcda.common.model_config import CRITERION_WEIGHTS, MODEL_SPECS, get_output_folder
+from llm_mcda.common.paths import repository_path  # noqa: E402
+from llm_mcda.common.model_config import CRITERION_WEIGHTS, get_display_label, get_output_folder
 from llm_mcda.common.sentinel_utils import CRITERIA, _is_complete_run_file, read_table_clean
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -73,12 +73,7 @@ _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
 
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
-MODEL_LABELS = {
-    "deepseek": MODEL_SPECS["deepseek"]["output_folder"].replace("Output Files ", ""),
-    "gemini": MODEL_SPECS["gemini"]["output_folder"].replace("Output Files ", ""),
-    "gptoss": "GPT-OSS 20B",
-    "qwen": "Qwen3.5 9B",
-}
+MODEL_LABELS = {model_key: get_display_label(model_key) for model_key in MODELS}
 ARCHITECTURES = [
     "Direct_LLM_Scoring",
     "Example-Guided_LLM_Scoring",
@@ -92,7 +87,8 @@ ARCH_TEX = {
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 CENTRAL_BAND = (0.3, 0.7)
 
-PAPER_DIR = local_manuscript_path("paper")
+PAPER_DIR = repository_path("paper")
+COMBINED_METRICS_DIR = repository_path("Combined Metrics")
 GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 GT_FILES = {
     "HVAC": GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx",
@@ -294,7 +290,7 @@ def _fmt(v, nd=3):
 
 def pick_best_worst_models():
     """Best/worst model by mean Kendall tau over all architectures and runs."""
-    path = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+    path = repository_path("Combined Metrics", "per_run_metrics_all.csv")
     if not path.exists():
         return "gemini", "qwen"
     pr = pd.read_csv(path)
@@ -495,8 +491,9 @@ def main():
                   + "  ".join(f"{c}={rec[dt][c][0]:.1f}" for c in CRITERIA))
 
     diag = pd.DataFrame(_rows)
+    COMBINED_METRICS_DIR.mkdir(parents=True, exist_ok=True)
     PAPER_DIR.mkdir(parents=True, exist_ok=True)
-    csv_path = PAPER_DIR / "dispersion_diagnostics.csv"
+    csv_path = COMBINED_METRICS_DIR / "dispersion_diagnostics.csv"
     diag.to_csv(csv_path, index=False)
     print(f"\n  [OK] wrote {csv_path} ({len(diag)} rows)")
 

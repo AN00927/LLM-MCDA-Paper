@@ -73,15 +73,9 @@ PAPERRULES.txt
 !SECURITY.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
-!Analysis/rerun_prep/*.md
-!Analysis/rerun_prep/**/*.md
-!Analysis/rerun_smoke/*.md
+!Combined Metrics/*.md
 
 *.pdf
-!Scoring Logic and Documentation/method/Budget_Penalties.pdf
-!Scoring Logic and Documentation/method/Calculator_Examples.pdf
-!Scoring Logic and Documentation/method/Evaluation_Metric_Derivations.pdf
-!Scoring Logic and Documentation/method/Reference_Ranges_for_Value_Functions.pdf
 
 !results/
 !results/**/*.md
@@ -89,7 +83,8 @@ PAPERRULES.txt
 /docs/
 /paper/
 /scripts/archive/
-$renderDir/paper_draft_working.spl
+
+#specific ignores
 archive/2026-09_pre_rerun/Output Files/Baselines/baseline_oracle.xlsx
 archive/2026-09_pre_rerun/Output Files/Baselines/baseline_random_aggregated.xlsx
 archive/2026-09_pre_rerun/Output Files/Baselines/baseline_uniform.xlsx

@@ -19,13 +19,12 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 from llm_mcda.common.model_config import MODEL_SPECS
 from llm_mcda.common.sentinel_utils import SENTINEL_VALUE
 
-OUTPUT_DIR = local_manuscript_path("paper")
-FAILURE_CSV = OUTPUT_DIR / "failure_analysis.csv"
-FAILURE_TEX = OUTPUT_DIR / "failure_analysis_tables.tex"
+FAILURE_CSV = repository_path("Combined Metrics", "failure_analysis.csv")
+FAILURE_TEX = repository_path("paper", "failure_analysis_tables.tex")
 
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
 ARCHS = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring", "LLM-Parameterized_Reference_Scoring"]
@@ -106,7 +105,8 @@ if not rows:
 
 failure_df = pd.DataFrame(rows)
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+FAILURE_CSV.parent.mkdir(parents=True, exist_ok=True)
+FAILURE_TEX.parent.mkdir(parents=True, exist_ok=True)
 failure_df.to_csv(FAILURE_CSV, index=False)
 print(f"Wrote {len(failure_df)} failure records to {FAILURE_CSV}")
 

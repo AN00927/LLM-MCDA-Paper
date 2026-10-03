@@ -57,7 +57,7 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
 from llm_mcda.common.sentinel_utils import _is_complete_run_file  # noqa: E402
 
@@ -66,10 +66,10 @@ _cm_spec = spec_from_file_location("CalculateMetrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
 
-OUT_DIR = local_manuscript_path("Analysis")
+OUT_DIR = repository_path("Combined Metrics")
 PER_SCENARIO_CSV = OUT_DIR / "per_scenario_metrics_all.csv"
 OUT_XLSX = OUT_DIR / "cluster_bootstrap_ci.xlsx"
-OUT_MD = local_manuscript_path("Analysis", "cluster_bootstrap_ci.md")
+OUT_MD = repository_path("Combined Metrics", "cluster_bootstrap_ci.md")
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",

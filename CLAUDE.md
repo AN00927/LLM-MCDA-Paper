@@ -42,10 +42,23 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
 - Migration-updated run, analysis, validation, and legacy writers require `--output-dir`
   or `LLM_MCDA_RUN_OUTPUT_DIR`; single-file writers use their documented `--output`
   option. Relative destinations resolve from the repository root. Missing or unsafe
-  destinations stop with an error. Do not write into frozen `Analysis/`, `archive/`,
-  `paper/`, `Output Files*/`, or frozen `workbooks/scenarios/`, `workbooks/ground_truth/`,
-  and `workbooks/older_runs/` paths. Existing non-frozen destinations are allowed and
-  are not automatically cleared.
+  destinations stop with an error. Do not write into frozen `archive/`, `paper/`,
+  or frozen `workbooks/scenarios/`, `workbooks/ground_truth/`, and
+  `workbooks/older_runs/` paths. Existing non-frozen destinations are allowed and
+  are not automatically cleared. `Combined Metrics/` is not guarded; pipeline stages
+  write there freely.
+- **Collected run data is protected by FILENAME, not by location.** The guard
+  refuses to *overwrite* an existing `*_results_run_NN.xlsx`,
+  `*_results_diagnostics_run_NN.json`, `*_raw.jsonl` or `cell_*` artifact
+  anywhere in the tree, because each one came from a paid collection run and
+  cannot be regenerated deterministically. Creating such a file at a new path is
+  always allowed; replacing one needs `LLM_MCDA_ALLOW_RAW_ARTIFACT_OVERWRITE=1`.
+  Separately, a file written straight into an `Output Files <model>/` root is
+  refused (that root is where the collected runs live), while the artifact
+  subdirectories `metrics/`, `sensitivity/`, `position_bias/`,
+  `hybrid_order_reversal/`, `listwise_direct/`, `prompt_ablation/` and
+  `rag_ablation/` are writable, because the pipeline owns and regenerates them.
+  Resolve them with `get_model_artifact_subdir()`, never by string-building.
 - **Tracked outputs are a second, softer tier.** `workbooks/methodology/` and
   `results/methodology/` hold committed artifacts that the `weights` stage
   legitimately regenerates, so they are writable but only on explicit opt-in:
@@ -145,7 +158,7 @@ final step of any refresh chain below.
 
 ## Paper editing conventions (`paper/paper_draft_v2.tex`)
 
-The manuscript sources and selected figure assets are local-only; they are preserved under the ignored local manuscript/documentation directories and are not part of a public clone.
+The manuscript sources (`paper/`) and author documentation (`docs/`) are gitignored and are not part of a public clone.
 
 
 ### Float placement (tables and figures)

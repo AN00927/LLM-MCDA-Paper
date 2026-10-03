@@ -45,7 +45,7 @@ if str(PROJECT_ROOT) not in sys.path:
 SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 from llm_mcda.common.stats_utils import holm_adjust  # noqa: E402
 _VALIDATION = PROJECT_ROOT / "scripts" / "validation"
 if str(_VALIDATION) not in sys.path:
@@ -56,7 +56,7 @@ _spec = spec_from_file_location("significance_testing", _SIG_PATH)
 _sig = module_from_spec(_spec)
 _spec.loader.exec_module(_sig)
 
-OUT = local_manuscript_path("paper", "per_model_pvalues.csv")
+OUT = repository_path("Combined Metrics", "per_model_pvalues.csv")
 
 HEADLINE_METRICS = ["kendall_tau", "overall_mae", "top1_accuracy"]
 METRIC_LABEL = {"kendall_tau": "tau", "overall_mae": "MAE", "top1_accuracy": "Top-1"}

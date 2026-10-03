@@ -50,12 +50,10 @@ from scipy import stats
 from llm_mcda.common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 
-from llm_mcda.common.paths import local_manuscript_path
+from llm_mcda.common.paths import repository_path
 
-INPUT_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
-OUTPUT_XLSX = local_manuscript_path(
-    "paper", "per_run_metrics", "bootstrap_confidence_intervals.xlsx"
-)
+INPUT_CSV = repository_path("Combined Metrics", "per_run_metrics_all.csv")
+OUTPUT_XLSX = repository_path("Combined Metrics", "bootstrap_confidence_intervals.xlsx")
 
 N_BOOTSTRAP = 10000
 RANDOM_SEED = 42

@@ -15,10 +15,11 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
+from llm_mcda.common.model_config import get_model_artifact_subdir  # noqa: E402
 
 _ap = argparse.ArgumentParser(description="Generate numbers_master.csv from raw data sources.")
-_ap.add_argument("--output", default=str(local_manuscript_path("paper", "numbers_master.csv")),
+_ap.add_argument("--output", default=str(repository_path("Combined Metrics", "numbers_master.csv")),
                  help="CSV to write (default: local_manuscripts/paper/numbers_master.csv)")
 # Averaging basis of the IncrementalContribution table (S6). Every row, the two
 # baselines and the LLM rows alike, uses the same one:
@@ -42,7 +43,7 @@ if not OUT.is_absolute():
 TABLE7_BASIS = _args.table7_basis
 
 REQUIRED_PER_RUN_CSVS = [
-    local_manuscript_path("paper", "per_run_metrics", f"per_run_metrics_{model}.csv")
+    repository_path(get_model_artifact_subdir(model, "metrics"), f"per_run_metrics_{model}.csv")
     for model in ("deepseek", "gemini", "gptoss", "qwen")
 ]
 MISSING_PER_RUN_CSVS = [str(path) for path in REQUIRED_PER_RUN_CSVS if not path.is_file()]
@@ -77,7 +78,6 @@ ARCH_SHORT = {
 }
 LLM_ARCHS = list(ARCH_SHORT.keys())
 MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
-MODEL_LABELS = {"deepseek": "DeepSeek", "gemini": "Gemini", "gptoss": "GPT-OSS", "qwen": "Qwen"}
 
 per_run_frames = []
 for f, path in zip(MODELS, REQUIRED_PER_RUN_CSVS):
@@ -85,7 +85,7 @@ for f, path in zip(MODELS, REQUIRED_PER_RUN_CSVS):
     per_run_frames.append(df)
 per_run = pd.concat(per_run_frames, ignore_index=True)
 
-rag = pd.read_excel(PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "rag_ablation_summary.xlsx")
+rag = pd.read_excel(repository_path("Combined Metrics","rag_ablation_summary.xlsx"))
 
 # ────────────────────────────────────────────────────────────────
 # TABLES 5-7: no rows pooled across models
@@ -184,13 +184,12 @@ def _parse_prices(label):
         raise ValueError(f"Cannot parse input/output price from label: {label!r}")
     return float(nums[0]), float(nums[1])
 
-MODEL_KEY_TO_LABEL = {"gptoss": "GPT-OSS", "qwen": "Qwen",
-                      "deepseek": "DeepSeek", "gemini": "Gemini"}
 N_SCENARIOS = 195
 
 for model_key, spec in MODEL_SPECS.items():
     folder = spec["output_folder"]
-    label = MODEL_KEY_TO_LABEL[model_key]
+    # Table 8 identifies models by the same raw key every other category uses.
+    label = model_key
     for arch in LLM_ARCHS:
         paths = sorted(glob.glob(
             str(PROJECT_ROOT / folder / f"{arch}_results_diagnostics_run_*.json")))

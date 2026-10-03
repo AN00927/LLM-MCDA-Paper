@@ -25,7 +25,7 @@ existing aggregation and ranking machinery (CalculateMetrics.impute_failed_score
 an average or a ranking.
 
 Zero API calls. Writes a local-only workbook under
-`local_manuscripts/Analysis/MetricsSummary/`.
+`Combined Metrics/`.
 
 Embedded verification: (a) checked against the local-only per-run CSV and the
 supplementary table tab:imputed_comparison.
@@ -45,7 +45,7 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.paths import repository_path  # noqa: E402
 
 from llm_mcda.common.model_config import MODEL_SPECS, get_output_folder  # noqa: E402
 from llm_mcda.common.sentinel_utils import SENTINEL_VALUE, _is_complete_run_file  # noqa: E402
@@ -57,9 +57,7 @@ ARCH_STEMS = {
 }
 MODEL_KEYS = sorted(MODEL_SPECS.keys())  # deepseek, gemini, gptoss, qwen
 
-OUT_XLSX = local_manuscript_path(
-    "Analysis", "MetricsSummary", "metrics_summary_all_models_imputed_perrun.xlsx"
-)
+OUT_XLSX = repository_path("Combined Metrics", "metrics_summary_all_models_imputed_perrun.xlsx")
 
 RANK_METRICS = ["kendall_tau", "spearman_rho", "top1_accuracy", "top2_accuracy"]
 CRIT_KEYS = ["energy_cost", "environmental", "comfort", "practicality"]
@@ -306,7 +304,7 @@ def main():
     print("=" * 72)
 
     # (a) per-run vs pipeline per-run CSVs
-    pipeline_csv = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+    pipeline_csv = repository_path("Combined Metrics", "per_run_metrics_all.csv")
     max_diff_a = 0.0
     n_cmp_a = 0
     if pipeline_csv.exists():

@@ -7,6 +7,12 @@ order. Nothing here calls an LLM API: the architecture runners and the
 run_*_experiments.py ablation scripts are deliberately EXCLUDED because they
 cost money and must be launched by hand.
 
+COMPLETENESS IS THE POINT. The manuscript's availability statement claims every
+table, figure and statistical test can be regenerated from this repository, so
+any script producing a number the paper prints belongs in STEPS below. If you
+add such a script, add it here too, and keep it out of the guarded stages unless
+it writes a tracked or frozen path.
+
 The paper does NOT use \\input{} for any table. Every table in
 paper_draft_working.tex and supplementary_material.tex is literal LaTeX,
 hand-pasted after inspecting the outputs below. That is intentional - this
@@ -33,12 +39,19 @@ PROJECT_ROOT = repository_root(start=__file__)
 SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
-from llm_mcda.common.paths import local_manuscript_path
+from llm_mcda.common.paths import repository_path
+from llm_mcda.common.model_config import get_model_artifact_subdir
 SCRIPTS = "scripts"
 PIPELINE = f"{SCRIPTS}/paper_pipeline"
 VALIDATION = f"{SCRIPTS}/validation"
+ANALYSIS = f"{SCRIPTS}/analysis"
 WEIGHTING = "src/llm_mcda/common/weighting"
 GUARDED_STAGES = {"weights", "sensitivity"}
+
+# Cross-model destination for every artifact this pipeline generates. Not
+# guarded, unlike the per-model "Output Files <model>/" trees.
+COMBINED = "Combined Metrics"
+PIPELINE_MODELS = ("deepseek", "gemini", "gptoss", "qwen")
 
 # (stage, label, argv-after-interpreter)
 # Order is load-bearing:
@@ -69,12 +82,27 @@ STEPS = [
      [f"{PIPELINE}/generate_paper_results_numbers.py"]),
     ("numbers", "Imputed-failure robustness tables",
      [f"{PIPELINE}/generate_imputed_robustness_tables.py"]),
+    # Must precede the failure analysis. analyze_benchmark_failures.py reads
+    # sentinel COUNTS from each run xlsx but failure-MODE attribution from that
+    # run's diagnostics JSON, and the A_E Shower re-collection left the two
+    # disagreeing. Read-only here: it reports drift without touching the source
+    # JSON, so a nonzero report means the failure-mode table needs attention.
+    ("numbers", "Re-collection diagnostics reconciliation (read-only check)",
+     [f"{PIPELINE}/reconcile_recollection_diagnostics.py", "--dry-run"]),
     ("numbers", "Benchmark failure analysis",
      [f"{PIPELINE}/analyze_benchmark_failures.py"]),
     ("numbers", "Duplication rate analysis",
      [f"{PIPELINE}/duplication_rate_analysis.py"]),
+    # significance_testing.py requires an explicit destination (it is one of the
+    # migration-updated validation writers). Its artifacts span all four models,
+    # so they belong in Combined Metrics/ like the rest of this stage's outputs.
     ("numbers", "Significance testing",
-     [f"{VALIDATION}/significance_testing.py"]),
+     [f"{VALIDATION}/significance_testing.py", "--output-dir", COMBINED]),
+    # Order is load-bearing from here: significance_testing.py writes
+    # per_scenario_metrics_all.csv, which failure_inclusive_metrics.py and
+    # symmetric_gate_metrics.py both read.
+    ("numbers", "Run-level bootstrap confidence intervals",
+     [f"{VALIDATION}/compute_confidence_intervals.py"]),
     ("numbers", "Cluster bootstrap CIs",
      [f"{PIPELINE}/cluster_bootstrap_ci.py"]),
     ("numbers", "Failure-inclusive metrics",
@@ -87,15 +115,51 @@ STEPS = [
      [f"{PIPELINE}/compute_tie_rates.py"]),
     ("numbers", "Decision regret (A_D/A_E/A_H vs reference MAVT)",
      [f"{PIPELINE}/compute_regret.py"]),
-    ("numbers", "Numbers-of-record regeneration check",
-     [f"{PIPELINE}/build_numbers_of_record.py"]),
 
-    ("figures", "Variance plot snippet",
-     [f"{PIPELINE}/generate_variance_plot_tex.py"]),
-    ("figures", "Violin plot snippet",
-     [f"{PIPELINE}/generate_violin_plot_tex.py"]),
-    ("figures", "Boxplot snippet",
-     [f"{PIPELINE}/generate_boxplot_tex.py"]),
+    # Baselines and dispersion. Both feed floats the paper prints but neither
+    # was reachable from this pipeline before: competitive_baselines.py carries
+    # the fixed-default and nearest-neighbour-copy comparisons, and
+    # compute_dispersion_diagnostics.py writes paper/dispersion_table.tex and
+    # paper/single_criterion_recovery.tex.
+    ("numbers", "Competitive baselines (fixed default, nearest-neighbour copy)",
+     [f"{PIPELINE}/competitive_baselines.py"]),
+    ("numbers", "Score-dispersion and single-criterion recovery",
+     [f"{PIPELINE}/compute_dispersion_diagnostics.py"]),
+
+    # Ablation significance. The main significance family above covers the
+    # A_D/A_E/A_H comparison only; these three cover the hybrid order-reversal,
+    # prompt and retrieval-depth arms, each of which the paper reports as
+    # surviving (or not surviving) Holm correction.
+    ("numbers", "Hybrid ablation significance (order reversal)",
+     [f"{VALIDATION}/test_hybrid_ablation_significance.py", "--output-dir", COMBINED]),
+    ("numbers", "Prompt ablation significance",
+     [f"{VALIDATION}/test_prompt_ablation_significance.py", "--output-dir", COMBINED]),
+    ("numbers", "Retrieval depth k=1 vs k=3 bootstrap CIs",
+     [f"{VALIDATION}/compare_retrieval_k_bootstrap_ci.py",
+      "--output", f"{COMBINED}/k1_vs_k3_bootstrap_ci.xlsx"]),
+
+    # Parameter-extraction accuracy, per model: the source of the extraction
+    # accuracy table and of the "probability an extraction error changes the
+    # top-ranked alternative" column. One model's report, so it belongs beside
+    # that model's other artifacts.
+    *[("numbers", f"Parameter-extraction accuracy ({model})",
+       [f"{ANALYSIS}/evaluate_parameter_extraction.py", "--model", model,
+        "--output", f"{get_model_artifact_subdir(model, 'metrics')}"
+                    "/LLM-Parameterized_Reference_Scoring_parameter_evaluation.md"])
+      for model in PIPELINE_MODELS],
+
+    # Collection provenance. Nothing in the paper cites it today, but it is the
+    # only artifact that recovers each run's UTC collection window, which is
+    # what answers a provider-drift question without a fresh control arm.
+    ("numbers", "Collection window provenance",
+     [f"{PIPELINE}/emit_collection_window.py"]),
+
+    # One invocation covers boxplot, violin, variance AND grouped_bars. The
+    # three single-figure shims omitted grouped_bars, so the paper's overall
+    # performance-by-model figure (paper/Images/OverallPerformanceByModel.pdf)
+    # was never regenerated by this pipeline.
+    ("figures", "pgfplots snippets and vector figures (all four)",
+     [f"{PIPELINE}/generate_pgfplots.py", "--figure", "all"]),
     ("figures", "Paper figures",
      [f"{PIPELINE}/generate_paper_figures.py"]),
 ]
@@ -160,21 +224,19 @@ def main():
         os.environ[ALLOW_TRACKED_OUTPUT_WRITES_ENV] = "1"
 
     required_local = []
-    if "numbers" in wanted:
-        required_local.append(local_manuscript_path("paper", "pass5", "NUMBERS_OF_RECORD.csv"))
     if ("numbers" in wanted or "figures" in wanted) and "metrics" not in wanted:
         required_local.extend(
-            local_manuscript_path("paper", "per_run_metrics", f"per_run_metrics_{model}.csv")
+            repository_path(get_model_artifact_subdir(model, "metrics"), f"per_run_metrics_{model}.csv")
             for model in ("deepseek", "gemini", "gptoss", "qwen")
         )
         if "numbers" in wanted:
             required_local.append(
-                local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+                repository_path("Combined Metrics", "per_run_metrics_all.csv")
             )
     if required_local:
         missing_local = [str(path) for path in required_local if not path.is_file()]
         if missing_local:
-            parser.error("The selected paper pipeline stages require local-only inputs: "+", ".join(missing_local)+"; restore them under local_manuscripts/ or set LLM_MCDA_LOCAL_MANUSCRIPTS_DIR.")
+            parser.error("The selected paper pipeline stages require inputs that are not present: "+", ".join(missing_local)+"; restore them at those paths before rerunning.")
 
     failed = []
     for stage, label, argv in selected:
@@ -191,10 +253,9 @@ def main():
     else:
         print("  Pipeline complete - all steps OK")
     print("")
-    print("  The pipeline does not write to the manuscript copies. Generated snippets")
-    print("  and reports use local-only destinations under local_manuscripts/.")
-    print("    tab:sensitivity_by_model  <- frozen Analysis/Sensitivity_*_<model>.xlsx")
-    print("    tab:sensitivity_top1      <- frozen Analysis/Sensitivity_*_<model>.xlsx")
+    print(f"  Generated data artifacts go to {COMBINED}/; LaTeX snippets and figures go to paper/.")
+    print("    tab:sensitivity_by_model  <- per-model sensitivity workbooks in Output Files <model>/sensitivity/")
+    print("    tab:sensitivity_top1      <- per-model sensitivity workbooks in Output Files <model>/sensitivity/")
     print("    tab:zero_variance         <- workbooks/methodology/")
     print("    tab:weight_comparison     <- workbooks/methodology/")
     print("=" * 64)

@@ -94,15 +94,15 @@ The two halves have very different requirements:
 | **Collecting the benchmark and ablations** | Yes | 27,300 calls for the main benchmark, plus the ablation suites (see [Ablation Suites](#ablation-suites)) | `src/llm_mcda/architectures/*.py`, `scripts/experiments/run_*_experiments.py`, `scripts/experiments/run_baseline_models.py` |
 | **Everything analytical** | No | Free | `scripts/paper_pipeline/run_paper_pipeline.py` and everything it calls |
 
-Historical benchmark runs remain at their frozen `Output Files */`, `Analysis/`, and archive paths. Those paths are read-only evidence for the migration-updated command-line tools. The deterministic analysis entry point is `scripts/paper_pipeline/run_paper_pipeline.py`; it reads existing benchmark files and makes no API calls. Some manuscript or archive inputs are local-only and are not included in a public clone (see “Preserved results and local-only sources” below). Re-collecting the benchmark is only necessary to change the model set, the scenario data, or a prompt.
+Historical benchmark runs remain at their frozen `Output Files */` and archive paths. Those paths are read-only evidence for the migration-updated command-line tools. The deterministic analysis entry point is `scripts/paper_pipeline/run_paper_pipeline.py`; it reads existing benchmark files and makes no API calls. Some manuscript or archive inputs are local-only and are not included in a public clone (see “Preserved results and local-only sources” below). Re-collecting the benchmark is only necessary to change the model set, the scenario data, or a prompt.
 
 Reference scores are likewise reproducible offline: calculator CLIs now require an explicit safe `--output` file, such as `results/scratch/ground_truth_hvac.xlsx`; they cannot overwrite the frozen `workbooks/ground_truth/` inputs. If you change a calculator or the scenario data, see the refresh-order and freeze rules in [CLAUDE.md](CLAUDE.md) -- `scripts/collection/build_rag_index.py` always runs last when operating on an approved working copy.
 
 ### Safe destinations for generated outputs
 
-Migration-updated run, analysis, validation, and legacy writer CLIs require `--output-dir PATH` or the `LLM_MCDA_RUN_OUTPUT_DIR` environment variable. Single-file writers use `--output PATH` (or the documented file option). If a required destination is missing or resolves under `Analysis/`, `archive/`, `paper/`, `Output Files*/`, or frozen scenario/ground-truth/older-run workbook paths, the command stops with an error before writing. Relative destinations resolve from the repository root. Existing non-frozen destinations are allowed so interrupted runs can resume; commands do not clear them automatically. The scenario workbook builder is an exception: it creates a fresh temporary output directory by default and accepts `--output-dir` to choose another safe location; `--in-place` is refused for the frozen repository scenario workbooks.
+Migration-updated run, analysis, validation, and legacy writer CLIs require `--output-dir PATH` or the `LLM_MCDA_RUN_OUTPUT_DIR` environment variable. Single-file writers use `--output PATH` (or the documented file option). If a required destination is missing or resolves under `archive/`, `paper/`, `Output Files*/`, or frozen scenario/ground-truth/older-run workbook paths, the command stops with an error before writing. `Combined Metrics/` is not guarded, so pipeline stages write there directly; `workbooks/methodology/` and `results/methodology/` are writable only with `--allow-tracked-output-writes` or `LLM_MCDA_ALLOW_TRACKED_OUTPUT_WRITES=1`. Relative destinations resolve from the repository root. Existing non-frozen destinations are allowed so interrupted runs can resume; commands do not clear them automatically. The scenario workbook builder is an exception: it creates a fresh temporary output directory by default and accepts `--output-dir` to choose another safe location; `--in-place` is refused for the frozen repository scenario workbooks.
 
-The frozen historical trees remain useful as input evidence. They are not output defaults and should not be edited by analysis or validation commands. The CLI-by-CLI option table is maintained in the author's local-only documentation tree.
+The frozen historical trees remain useful as input evidence. They are not output defaults and should not be edited by analysis or validation commands. The CLI-by-CLI option table is maintained in the author's documentation under `docs/`, which is gitignored and not part of a public clone.
 
 ---
 
@@ -178,7 +178,7 @@ Each value is the sum of `total_cost_usd` across the five run diagnostics for th
 
 ### Imputation Robustness Test
 
-Per-run imputed robustness is computed via [scripts/paper_pipeline/generate_imputed_robustness_tables.py](scripts/paper_pipeline/generate_imputed_robustness_tables.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Its workbook is written under the ignored local-only `local_manuscripts/Analysis/MetricsSummary/` tree; it does not write to frozen `Analysis/`.
+Per-run imputed robustness is computed via [scripts/paper_pipeline/generate_imputed_robustness_tables.py](scripts/paper_pipeline/generate_imputed_robustness_tables.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Its workbook is written to `Combined Metrics/metrics_summary_all_models_imputed_perrun.xlsx`.
 
 ---
 
@@ -219,25 +219,24 @@ LLM-MCDA-Paper/
 │   ├── older_runs/
 │   └── backups/
 ├── data/scenarios/
+├── Combined Metrics/                    (cross-model artifacts; flat, plus logs/)
+├── Output Files <model>/                (four per-model folders; frozen benchmark outputs)
 ├── results/
-│   ├── paper_outputs/
 │   ├── older_runs/
 │   └── methodology/
-├── Analysis/ and existing Output Files*/  (frozen benchmark and analysis artifacts)
 ├── archive/                             (frozen archival run outputs)
-├── local_manuscripts/                   (ignored, local-only)
-├── local_documentation/                 (ignored, local-only)
-├── tests/
+├── docs/                                (gitignored author documentation)
+├── paper/                               (gitignored manuscript)
 ├── model_config.py                      (compatibility shim)
-├── sentinel_utils.py                     (compatibility shim)
+├── sentinel_utils.py                    (compatibility shim)
 └── pyproject.toml
 ```
 
 ### Preserved results and local-only sources
 
-Existing run and output history stays at its recorded paths. This includes the 514 selected run paths, all 294 `Analysis/**` artifacts, the 23 derived paper outputs, and the 124 archived run outputs; the existing `Output Files*/`, `Analysis/`, and archive trees are frozen historical data, not active code locations. Curated analysis outputs are organized under `results/`; the derived manuscript tables and per-run metrics live in `results/paper_outputs/`.
+Existing run and output history stays at its recorded paths: the four per-model `Output Files*/` folders and the `archive/` tree are frozen historical data, not active code locations. Each model folder holds the three architectures' result files at its top level plus `position_bias/`, `hybrid_order_reversal/`, `listwise_direct/`, `prompt_ablation/`, `rag_ablation/`, `sensitivity/`, and `metrics/` subfolders. Every artifact that spans models (pooled metrics, bootstrap intervals, significance tests, ablation summaries, numbers of record, and their logs) lives in `Combined Metrics/`. Curated methodology outputs are organized under `results/`.
 
-Manuscript drafts, selected manuscript figures, and archival documents are local-only under the ignored `local_manuscripts/` and `local_documentation/` directories. The three archived Baselines workbooks are local-only under `archive/2026-09_pre_rerun/Output Files/Baselines/` and may be moved as needed. The legacy `build_consolidated_scenario_workbooks.py` expects `workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx`; that workbook is currently absent. The standalone scenario builder writes to a fresh temporary directory by default or to a caller-selected safe `--output-dir`. Its `--in-place` option is rejected when the masters are the frozen repository workbooks; use a separate safe input copy for a scratch rebuild. Local manuscript and archival lookups can be redirected with `LLM_MCDA_LOCAL_MANUSCRIPTS_DIR` and `LLM_MCDA_LOCAL_DOCUMENTATION_DIR`.
+The manuscript (`paper/`) and author documentation (`docs/`) are gitignored and are not part of a public clone. The three archived Baselines workbooks are local-only under `archive/2026-09_pre_rerun/Output Files/Baselines/` and may be moved as needed. The legacy `build_consolidated_scenario_workbooks.py` expects `workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx`; that workbook is currently absent. The standalone scenario builder writes to a fresh temporary directory by default or to a caller-selected safe `--output-dir`. Its `--in-place` option is rejected when the masters are the frozen repository workbooks; use a separate safe input copy for a scratch rebuild.
 
 ---
 
@@ -438,7 +437,7 @@ Three scripts independently validate the subjective MAVT weights against the ref
 | [build_rag_index.py](scripts/collection/build_rag_index.py) | Builds/refreshes the ChromaDB vector index from the RAG scenario files. Computes SHA-256 of source files and stores a schema version in collection metadata to detect when a rebuild is needed. Current schema version: 4. |
 | [build_scenario_workbooks.py](scripts/collection/scenarios/build_scenario_workbooks.py) | Rebuilds derived Test/RAG workbooks from the three standalone scenario masters and fixed RAG membership; audits the outputs, writes to a fresh temporary directory by default, and accepts `--output-dir`. Its `--in-place` option is refused for frozen repository scenario inputs. |
 | [evaluate_architecture_metrics.py](scripts/analysis/evaluate_architecture_metrics.py) | Computes Top-1/2 accuracy, Kendall's tau, MAE, RMSE per architecture/model/decision-type. Reads benchmark inputs and writes `metrics_summary_{MODEL_KEY}.xlsx` into required `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [evaluate_baseline_metrics.py](scripts/analysis/evaluate_baseline_metrics.py) | Applies the same metric computation to preserved baseline results; accepts an explicit CSV `--output` (default under `results/current/baselines/`). |
+| [evaluate_baseline_metrics.py](scripts/analysis/evaluate_baseline_metrics.py) | Applies the same metric computation to preserved baseline results; accepts an explicit CSV `--output`. |
 | [run_baseline_models.py](scripts/experiments/run_baseline_models.py) | Computes the non-LLM baselines used in the incremental-contribution table: Fixed-Default and Nearest-Neighbor. Requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--list` previews baseline choices without writing. |
 | [run_rag_ablation_experiments.py](scripts/experiments/run_rag_ablation_experiments.py) | Runs the RAG retrieval/exemplar-content ablation configurations described above. Requires `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--output` can name a safe Markdown report path. |
 | [compare_retrieval_k_bootstrap_ci.py](scripts/validation/compare_retrieval_k_bootstrap_ci.py) | Percentile-bootstrap confidence intervals on the k=1-minus-k=3 Kendall's tau difference; writes to an explicit safe `--output` file or the directory in `LLM_MCDA_RUN_OUTPUT_DIR`. |
@@ -448,7 +447,7 @@ Three scripts independently validate the subjective MAVT weights against the ref
 | [test_hybrid_ablation_significance.py](scripts/validation/test_hybrid_ablation_significance.py) | Significance testing for the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [run_position_bias_control.py](scripts/experiments/run_position_bias_control.py) / `aggregate_position_bias_results.py` (author-side, not in this repo) | Runs and aggregates the alternative-ordering test; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [significance_testing.py](scripts/validation/significance_testing.py) / [compute_confidence_intervals.py](scripts/validation/compute_confidence_intervals.py) | Shared Holm-corrected Friedman/Wilcoxon and percentile-bootstrap CI utilities; the significance writer requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). Writes under `workbooks/methodology/sensitivity_analysis/`; its paper-pipeline stage remains guarded. |
+| [SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). Its default destination is `workbooks/methodology/sensitivity_analysis/`; its paper-pipeline stage remains guarded. The collected per-model workbooks are in each model folder's `sensitivity/` subfolder and the pooled table is `Combined Metrics/sensitivity_analysis_all.xlsx`. |
 | [WeightDiagnostics.py](scripts/validation/WeightDiagnostics.py) | Diagnostic breakdown of within-scenario criterion dispersion and zero-variance rates by decision type, feeding the implied-weights corner-solution discussion. |
 | [EntropyWeights.py](src/llm_mcda/common/weighting/EntropyWeights.py) | Computes Shannon entropy weights from reference score distributions overall and by decision type. Writes under `workbooks/methodology/`. |
 | [merec_weights.py](src/llm_mcda/common/weighting/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Writes under `workbooks/methodology/`. |

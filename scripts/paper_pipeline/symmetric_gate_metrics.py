@@ -37,11 +37,11 @@ PROJECT_ROOT = repository_root(start=__file__)
 SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
-from llm_mcda.common.paths import local_manuscript_input_path, local_manuscript_path
+from llm_mcda.common.paths import repository_path
 
-IN_CSV = local_manuscript_input_path("Analysis", "per_scenario_metrics_all.csv")
-OUT_XLSX = local_manuscript_path("Analysis", "symmetric_gate_metrics.xlsx")
-OUT_MD = local_manuscript_path("Analysis", "symmetric_gate_metrics.md")
+IN_CSV = repository_path("Combined Metrics", "per_scenario_metrics_all.csv")
+OUT_XLSX = repository_path("Combined Metrics", "symmetric_gate_metrics.xlsx")
+OUT_MD = repository_path("Combined Metrics", "symmetric_gate_metrics.md")
 
 ARCH_SHORT = {
     "Direct_LLM_Scoring": "A_D",

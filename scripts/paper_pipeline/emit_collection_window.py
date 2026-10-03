@@ -24,8 +24,8 @@ read-only `git log`), still only an upper bound.
 Covered: each model's main runs (the three architectures), the A_D position-bias
 arm (`position_bias/`), the A_H order arms (`hybrid_order_reversal/`), the
 listwise A_D arm (`listwise_direct/`), the prompt-ablation cells
-(`Analysis/Prompt_Ablation/cell_*_<model>_run_NN_raw.jsonl`) and the RAG
-ablation (`Analysis/RAG_Ablation/rag_ablation_results_raw.jsonl`, one log for
+(`Output Files <model>/prompt_ablation/cell_*_<model>_run_NN_raw.jsonl`) and the RAG
+ablation (`Combined Metrics/rag_ablation_results_raw.jsonl`, one log for
 all models, split here by each record's `model` id).
 
 Outputs
@@ -59,10 +59,10 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
-from llm_mcda.common.model_config import MODEL_SPECS
+from llm_mcda.common.paths import repository_path  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS, get_model_artifact_subdir
 
-PAPER_DIR = local_manuscript_path("paper")
+PAPER_DIR = repository_path("Combined Metrics")
 
 ARCHITECTURES = [
     "Direct_LLM_Scoring",
@@ -181,8 +181,10 @@ def artifact_specs(folder):
     return specs
 
 
-PROMPT_ABLATION_DIR = PROJECT_ROOT / "Analysis" / "Prompt_Ablation"
-RAG_ABLATION_LOG = PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "rag_ablation_results_raw.jsonl"
+PROMPT_ABLATION_DIRS = [
+    repository_path(get_model_artifact_subdir(mk, "prompt_ablation")) for mk in MODEL_SPECS
+]
+RAG_ABLATION_LOG = repository_path("Combined Metrics","rag_ablation_results_raw.jsonl")
 
 
 def rag_log_windows(path=RAG_ABLATION_LOG):
@@ -226,7 +228,7 @@ def ablation_rows(commits):
     rows = []
     rag = rag_log_windows()
     for model_key, spec in MODEL_SPECS.items():
-        for path in sorted(PROMPT_ABLATION_DIR.glob(f"cell_*_{model_key}_run_*_raw.jsonl")):
+        for path in sorted(p for d in PROMPT_ABLATION_DIRS for p in d.glob(f"cell_*_{model_key}_run_*_raw.jsonl")):
             start, end, source = window_from_jsonl(path)
             if start is not None:
                 rows.append(_row(model_key, "prompt_ablation:" + path.name.split(f"_{model_key}_run_")[0],
