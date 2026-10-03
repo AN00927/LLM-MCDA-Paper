@@ -23,10 +23,10 @@ import pytest
 import requests
 
 import arch_patch_harness as H
-import sentinel_utils as SU
-from model_config import MODEL_SPECS
+from llm_mcda.common import sentinel_utils as SU
+from llm_mcda.common.model_config import MODEL_SPECS
 
-EXP = H.REPO / "Miscellaneous Scripts" / "experiments"
+EXP = H.REPO / "scripts" / "experiments"
 
 
 def _load_pa():

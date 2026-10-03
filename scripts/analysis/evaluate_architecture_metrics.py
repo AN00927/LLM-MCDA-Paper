@@ -15,15 +15,26 @@ from scipy import stats
 import re
 import warnings
 import sys
+import os
 from pathlib import Path
 from collections import defaultdict
 
 warnings.filterwarnings("default")
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_BOOTSTRAP_ROOT = Path(__file__).resolve().parents[2]
+for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+    if str(_import_root) not in sys.path:
+        sys.path.insert(0, str(_import_root))
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    require_safe_output_directory,
+)
 
-from model_config import (
+from llm_mcda.common.model_config import (
     get_output_folder,
     MODEL_KEY,
     MODEL_SPECS,
@@ -43,20 +54,21 @@ from model_config import (
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
-from sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
-from sentinel_utils import MAVT_ROUND_DECIMALS, gpm_to_flow_rate_label
+from llm_mcda.common.sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
+from llm_mcda.common.sentinel_utils import MAVT_ROUND_DECIMALS, gpm_to_flow_rate_label
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',
     'housing_type', 'insulation', 'appliance', 'appliance_age', 'house_age',
 ]
 
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 
-def _build_config(model_key: str) -> dict:
+def _build_config(model_key: str, metrics_output_dir: Path | None = None) -> dict:
     """Build the CONFIG dict for a given model_key."""
-    output_dir = PROJECT_ROOT / get_output_folder(model_key)
+    model_output_dir = PROJECT_ROOT / get_output_folder(model_key)
+    metrics_output_dir = Path(metrics_output_dir) if metrics_output_dir is not None else model_output_dir
     return {
         "ground_truth": {
             "HVAC": str(GROUND_TRUTH_DIR / "ground_truth_hvac.xlsx"),
@@ -64,11 +76,11 @@ def _build_config(model_key: str) -> dict:
             "Shower": str(GROUND_TRUTH_DIR / "ground_truth_shower.xlsx"),
         },
         "architectures": {
-            "Direct_LLM_Scoring": str(output_dir / "Direct_LLM_Scoring_results.xlsx"),
-            "Example-Guided_LLM_Scoring": str(output_dir / "Example-Guided_LLM_Scoring_results.xlsx"),
-            "LLM-Parameterized_Reference_Scoring": str(output_dir / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
+            "Direct_LLM_Scoring": str(model_output_dir / "Direct_LLM_Scoring_results.xlsx"),
+            "Example-Guided_LLM_Scoring": str(model_output_dir / "Example-Guided_LLM_Scoring_results.xlsx"),
+            "LLM-Parameterized_Reference_Scoring": str(model_output_dir / "LLM-Parameterized_Reference_Scoring_results.xlsx"),
         },
-        "output_csv": str(output_dir / f"metrics_summary_{model_key}.xlsx"),
+        "output_csv": str(metrics_output_dir / f"metrics_summary_{model_key}.xlsx"),
         "gt_score_cols": {
             "energy_cost": "energy_cost_score",
             "environmental": "environmental_score",
@@ -147,18 +159,18 @@ def _true_gt_sid_table():
 
     The GT scenario_id is the 0-based master-row index in the per-type master
     workbook. TestScenarios.xlsx carries no id column, but each decision type's
-    Test rows are the master rows NOT listed in Scenario Files/rag_membership.json,
+    Test rows are the master rows NOT listed in data/scenarios/rag_membership.json,
     in master order, and an architecture scenario_id is the 1-based row index in
     TestScenarios.xlsx. Used ONLY to break descriptor-match ties.
     """
     if "table" in _TRUE_GT_SID_CACHE:
         return _TRUE_GT_SID_CACHE["table"]
     import json
-    sdir = PROJECT_ROOT / "Scenario Files"
+    sdir = PROJECT_ROOT / "workbooks/scenarios"
     table = {}
     try:
         test = pd.read_excel(sdir / "TestScenarios.xlsx")
-        with open(sdir / "rag_membership.json", "r", encoding="utf-8") as fh:
+        with open(PROJECT_ROOT / "data/scenarios/rag_membership.json", "r", encoding="utf-8") as fh:
             types = json.load(fh)["types"]
         for dtype in ("HVAC", "Appliance", "Shower"):
             rag_rows = {int(e["master_row"]) for e in types[dtype]}
@@ -1411,20 +1423,32 @@ if __name__ == "__main__":
         '--all-models', action='store_true',
         help='Evaluate ALL models sequentially and write one metrics file per model.'
     )
+    parser.add_argument(
+        '--output-dir',
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=(
+            f"Explicit safe output directory for metrics (or set {RUN_OUTPUT_DIR_ENV}). "
+            "Required unless the environment variable is set."
+        ),
+    )
     parser.add_argument('--include-baselines', action='store_true',
                         help='Include 4 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor)')
     args = parser.parse_args()
 
-    def _output_stem(mk):
-        """Return output path stem for model mk."""
-        od = PROJECT_ROOT / get_output_folder(mk)
-        return str(od / f"metrics_summary_{mk}.xlsx")
+    try:
+        metrics_output_dir = require_safe_output_directory(
+            args.output_dir,
+            option='--output-dir',
+            root=PROJECT_ROOT,
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    metrics_output_dir.mkdir(parents=True, exist_ok=True)
 
     if args.all_models:
         all_filtered_dfs = []
         for mk in _all_model_keys:
-            cfg = _build_config(mk)
-            cfg["output_csv"] = _output_stem(mk)
+            cfg = _build_config(mk, metrics_output_dir)
             mdf, _ = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)
             shared = mdf[mdf["mode"].isna()]
             md = pd.concat([
@@ -1434,10 +1458,10 @@ if __name__ == "__main__":
             md["model"] = mk
             all_filtered_dfs.append(md)
         combined = pd.concat(all_filtered_dfs, ignore_index=True)
-        _atomic_write_xlsx(combined, str(PROJECT_ROOT / "Analysis" / "MetricsSummary" / "metrics_summary_all_models.xlsx"))
-        print(f"\nCombined metrics saved for all models.")
+        combined_path = metrics_output_dir / "metrics_summary_all_models.xlsx"
+        _atomic_write_xlsx(combined, str(combined_path))
+        print(f"\nCombined metrics saved to: {combined_path}")
     else:
         mk = args.model if args.model else MODEL_KEY
-        cfg = _build_config(mk)
-        cfg["output_csv"] = _output_stem(mk)
+        cfg = _build_config(mk, metrics_output_dir)
         metrics_df, merged_dfs = evaluate_all(cfg, include_baselines=args.include_baselines, model_key=mk)

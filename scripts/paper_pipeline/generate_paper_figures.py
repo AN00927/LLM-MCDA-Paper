@@ -4,14 +4,37 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from model_config import MODEL_SPECS  # noqa: E402
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
+
+PER_RUN_DIR = local_manuscript_path("paper", "per_run_metrics")
+PER_RUN_MODELS = ["deepseek", "gemini", "gptoss", "qwen"]
+PER_RUN_PATHS = {
+    model: PER_RUN_DIR / f"per_run_metrics_{model}.csv"
+    for model in PER_RUN_MODELS
+}
+MISSING_PER_RUN_PATHS = [
+    str(path) for path in PER_RUN_PATHS.values() if not path.is_file()
+]
+if MISSING_PER_RUN_PATHS:
+    raise SystemExit(
+        "Required local-only per-run metric inputs are missing: "
+        + ", ".join(MISSING_PER_RUN_PATHS)
+        + "; restore them under local_manuscripts/ or set "
+        "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR."
+    )
 
 per_run_frames = []
-for f in ["deepseek", "gemini", "gptoss", "qwen"]:
-    df = pd.read_csv(f"paper/per_run_metrics/per_run_metrics_{f}.csv")
+for f in PER_RUN_MODELS:
+    df = pd.read_csv(PER_RUN_PATHS[f])
     per_run_frames.append(df)
 per_run = pd.concat(per_run_frames, ignore_index=True)
 
@@ -210,9 +233,11 @@ latex_lines.append(r"}")
 
 latex_output = "\n".join(latex_lines) + "\n"
 
-with open("paper/step5_figures.tex", "w") as f:
+FIGURE_TEX = local_manuscript_path("paper", "step5_figures.tex")
+FIGURE_TEX.parent.mkdir(parents=True, exist_ok=True)
+with FIGURE_TEX.open("w", encoding="utf-8") as f:
     f.write(latex_output)
 
 print("\n" + "=" * 80)
-print("LaTeX written to paper/step5_figures.tex")
+print(f"LaTeX written to {FIGURE_TEX}")
 print("=" * 80)

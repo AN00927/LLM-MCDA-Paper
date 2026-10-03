@@ -60,7 +60,8 @@ run_rag_ablation_experiments.py and test_hybrid_ablation_significance.py exactly
   stratum x metric regardless of the Friedman outcome.
 
 Outputs (mirroring the RAG ablation's artifact set so both are tracked and
-inspected the same way):
+inspected the same way) in a required safe destination supplied with
+--output-dir or LLM_MCDA_RUN_OUTPUT_DIR:
     prompt_ablation_significance.xlsx      friedman / posthoc / descriptives
     prompt_ablation_friedman_tests.xlsx
     prompt_ablation_posthoc_tests.xlsx
@@ -68,17 +69,29 @@ inspected the same way):
     prompt_ablation_summary_by_decision_type.xlsx
 
 Run:
-    python "Miscellaneous Scripts/test_prompt_ablation_significance.py"
+    python "scripts/validation/test_prompt_ablation_significance.py" --output-dir results/scratch/prompt-significance
 """
 
+import argparse
 import glob
 import importlib.util
+import os
 import sys
 from pathlib import Path
 
+# Direct script execution does not add src/ when the package is uninstalled.
+_SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+if _SRC_ROOT.is_dir() and str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -99,7 +112,7 @@ FAILED_SCENARIO_TAU = 0.0
 
 def _load_rag_module():
     """Import run_rag_ablation_experiments for its reviewed statistical helpers."""
-    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_rag_ablation_experiments.py"
+    path = PROJECT_ROOT / "scripts" / "experiments" / "run_rag_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_rag_ablations", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -110,7 +123,7 @@ def _load_prompt_ablation_module():
     """Import run_prompt_ablation_experiments for the main-suite control loader
     and the reference ranking, so control rows are scored by the same code as
     the collected cells."""
-    path = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments" / "run_prompt_ablation_experiments.py"
+    path = PROJECT_ROOT / "scripts" / "experiments" / "run_prompt_ablation_experiments.py"
     spec = importlib.util.spec_from_file_location("run_prompt_ablation", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -160,6 +173,15 @@ def load_matrix() -> pd.DataFrame:
     return df
 
 
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--output-dir",
+        help=f"Safe output directory (required unless {RUN_OUTPUT_DIR_ENV} is set).",
+    )
+    return parser.parse_args(argv)
+
+
 def two_variant_test(stratum: pd.DataFrame, metric_cols, rag) -> list:
     """Omnibus rows for a 2-variant stratum: one paired Wilcoxon signed-rank
     test per metric (Friedman needs 3 groups). The rows carry the same columns
@@ -183,7 +205,21 @@ def two_variant_test(stratum: pd.DataFrame, metric_cols, rag) -> list:
     return rows
 
 
-def main():
+def main(args=None):
+    library_call = args is None
+    output_value = args.output_dir if args is not None else None
+    output_option = "--output-dir"
+    if output_value is None:
+        output_value = os.environ.get(RUN_OUTPUT_DIR_ENV)
+        if output_value is not None:
+            output_option = RUN_OUTPUT_DIR_ENV
+    if output_value is None and library_call:
+        # Keep the in-process path override used by existing callers while
+        # rejecting the frozen repository default before any writes.
+        output_value = OUTPUT_XLSX.parent
+    out_dir = require_safe_output_directory(output_value, option=output_option)
+    output_xlsx = out_dir / OUTPUT_XLSX.name
+
     rag = _load_rag_module()
     df = add_main_suite_control(load_matrix())
 
@@ -293,16 +329,17 @@ def main():
         .sort_values(["architecture", "model", "variant", "decision_type"])
     )
 
-    with pd.ExcelWriter(OUTPUT_XLSX) as xl:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with pd.ExcelWriter(output_xlsx) as xl:
         friedman.to_excel(xl, sheet_name="friedman", index=False)
         posthoc.to_excel(xl, sheet_name="posthoc", index=False)
         descriptives.to_excel(xl, sheet_name="descriptives", index=False)
 
     # Standalone files mirroring the RAG ablation's layout.
-    friedman.to_excel(CELLS_DIR / "prompt_ablation_friedman_tests.xlsx", index=False)
-    posthoc.to_excel(CELLS_DIR / "prompt_ablation_posthoc_tests.xlsx", index=False)
-    bootstrap.to_excel(CELLS_DIR / "prompt_ablation_bootstrap_ci.xlsx", index=False)
-    by_dtype.to_excel(CELLS_DIR / "prompt_ablation_summary_by_decision_type.xlsx", index=False)
+    friedman.to_excel(out_dir / "prompt_ablation_friedman_tests.xlsx", index=False)
+    posthoc.to_excel(out_dir / "prompt_ablation_posthoc_tests.xlsx", index=False)
+    bootstrap.to_excel(out_dir / "prompt_ablation_bootstrap_ci.xlsx", index=False)
+    by_dtype.to_excel(out_dir / "prompt_ablation_summary_by_decision_type.xlsx", index=False)
 
     print(f"Strata tested: {friedman[['architecture','model']].drop_duplicates().shape[0]}")
     print(f"Scenario rows (run-averaged): {len(per_scenario)}")
@@ -327,8 +364,8 @@ def main():
                     "p_holm", "rank_biserial", "rank_biserial_interpretation", "n_nonzero"]]
         print(show.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 
-    print(f"\nWrote {OUTPUT_XLSX}")
+    print(f"\nWrote {output_xlsx}")
 
 
 if __name__ == "__main__":
-    main()
+    main(parse_args())

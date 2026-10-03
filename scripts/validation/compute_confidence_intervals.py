@@ -7,8 +7,8 @@ for five primary metrics (kendall_tau, top1_accuracy, overall_mae, overall_rmse,
 overall_rmse_mae_ratio) across three LLM-MCDA architectures and four models,
 plus pooled (all-models) estimates per architecture.
 
-Input:  paper/per_run_metrics/per_run_metrics_all.csv
-Output: paper/per_run_metrics/bootstrap_confidence_intervals.xlsx
+Input:  local-only per_run_metrics_all.csv
+Output: local-only bootstrap_confidence_intervals.xlsx
 
 Methodology:
   For each (metric, architecture, model) triplet and each (metric, architecture)
@@ -47,16 +47,14 @@ from scipy import stats
 # Configuration
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 
-INPUT_CSV = (
-    PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
-)
-OUTPUT_XLSX = (
-    PROJECT_ROOT
-    / "paper"
-    / "per_run_metrics"
-    / "bootstrap_confidence_intervals.xlsx"
+from llm_mcda.common.paths import local_manuscript_path
+
+INPUT_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+OUTPUT_XLSX = local_manuscript_path(
+    "paper", "per_run_metrics", "bootstrap_confidence_intervals.xlsx"
 )
 
 N_BOOTSTRAP = 10000

@@ -1,11 +1,11 @@
 """Tests for the HVAC reference calculator (P1-HVAC changes, revision 2).
 
 The calculator is imported from HVAC_CALC_PATH (env var, absolute or relative to the repo
-root) or, by default, from Ground Truth Calculators/HVACGroundTruthCalculator.py.
+root) or, by default, from src/llm_mcda/calculators/HVACGroundTruthCalculator.py.
 After installation run:
 
-    set HVAC_CALC_PATH=Ground Truth Calculators\\HVACGroundTruthCalculator.py
-    python -m pytest Analysis/rerun_prep/tests/test_hvac_reference.py
+    set HVAC_CALC_PATH=src/llm_mcda/calculators\\HVACGroundTruthCalculator.py
+    python -m pytest tests/test_hvac_reference.py
 """
 import importlib.util
 import math
@@ -17,12 +17,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CALC_PATH = PROJECT_ROOT / "Ground Truth Calculators" / "HVACGroundTruthCalculator.py"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+DEFAULT_CALC_PATH = PROJECT_ROOT / "src/llm_mcda/calculators" / "HVACGroundTruthCalculator.py"
 CALC_PATH = Path(os.environ.get("HVAC_CALC_PATH", DEFAULT_CALC_PATH))
 if not CALC_PATH.is_absolute():
     CALC_PATH = PROJECT_ROOT / CALC_PATH
-MASTER_XLSX = PROJECT_ROOT / "Scenario Files" / "HVACScenarios.xlsx"
+MASTER_XLSX = PROJECT_ROOT / "workbooks/scenarios" / "HVACScenarios.xlsx"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))

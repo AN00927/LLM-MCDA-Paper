@@ -25,10 +25,10 @@ This module provides `stratified_sample_by_features`, which:
 Usage
 -----
 Option A — use as a standalone script to inspect the sample:
-    python "Miscellaneous Scripts/CreateRepresentativeSample.py" --sample-size 33
+    python "scripts/archive/legacy/CreateRepresentativeSample.py" --sample-size 33
 
 Option B — replace `stratified_sample` in run_rag_ablation_experiments.py:
-    from CreateRepresentativeSample import stratified_sample_by_features as stratified_sample
+    from scripts.archive.legacy.CreateRepresentativeSample import stratified_sample_by_features as stratified_sample
 
     # Then in run():
     sample = stratified_sample(groups_by_type, sample_size, args.seed)
@@ -42,11 +42,12 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import read_table_clean
+from llm_mcda.common.sentinel_utils import read_table_clean
 
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
@@ -55,7 +56,7 @@ RAG_FILES = {
     "Appliance": "ApplianceRAGScenarios.xlsx",
     "Shower":    "ShowerRAGScenarios.xlsx",
 }
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +236,7 @@ def stratified_sample_by_features(
 
 def _load_groups():
     """Load the RAG source groups the same way run_rag_ablation_experiments does."""
-    from sentinel_utils import read_table_clean
+    from llm_mcda.common.sentinel_utils import read_table_clean
 
     def _to_float(v):
         try:

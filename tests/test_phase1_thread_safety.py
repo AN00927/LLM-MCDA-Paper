@@ -14,8 +14,8 @@ from unittest import mock
 import pytest
 
 import arch_patch_harness as H
-import sentinel_utils as SU
-from model_config import (MAX_RETRIES, REQUEST_TIMEOUT, RETRY_BASE_DELAY, MAX_RETRY_BACKOFF,
+from llm_mcda.common import sentinel_utils as SU
+from llm_mcda.common.model_config import (MAX_RETRIES, REQUEST_TIMEOUT, RETRY_BASE_DELAY, MAX_RETRY_BACKOFF,
                           _is_transient_http_status)
 
 

@@ -6,8 +6,10 @@ Why this exists
 ---------------
 `run_baseline_models.py` produces the baseline predictions but never scores
 them, and `evaluate_architecture_metrics.py --include-baselines` accepts the
-flag without acting on it, so no code path in the repository turned
-`Output Files/Baselines/*.xlsx` into Top-1 / Kendall tau. The baseline figures
+flag without acting on it, so no code path in the repository turned the
+baseline workbooks into Top-1 / Kendall tau. New runs use
+`workbooks/current_runs/baselines/`; preserved inputs remain under
+`workbooks/older_runs/unclassified_legacy/Baselines/`. The baseline figures
 in the manuscript were consequently carried as literals inside
 `generate_paper_results_numbers.py`, where they could not be checked and could
 not follow a change to the baseline code. This script closes that gap.
@@ -20,34 +22,45 @@ Both pooled and per-decision-type-arithmetic-mean aggregates are emitted,
 because the manuscript's baseline rows and its LLM rows have historically used
 different ones (see paper/REVISION_NUMBERS.md).
 
-Output: Output Files/Baselines/baseline_metrics.csv
+Output: results/current/baselines/baseline_metrics.csv
         columns: baseline, decision_type, metric, value, n_scenarios
 
 Usage:
-    python "Miscellaneous Scripts/evaluate_baseline_metrics.py"
+    python "scripts/analysis/evaluate_baseline_metrics.py"
 """
 
+import argparse
+import os
 import sys
 import warnings
-from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Make the checkout's src layout importable when this script is run directly.
+for _candidate in Path(__file__).resolve().parents:
+    if (_candidate / "src" / "llm_mcda").is_dir():
+        sys.path.insert(0, str(_candidate / "src"))
+        break
+else:
+    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sentinel_utils import CRITERIA
+from llm_mcda.common.sentinel_utils import CRITERIA
+from scripts.analysis import evaluate_architecture_metrics as _cm
 
-_CM_PATH = Path(__file__).resolve().parent / "evaluate_architecture_metrics.py"
-_spec = spec_from_file_location("evaluate_architecture_metrics", _CM_PATH)
-_cm = module_from_spec(_spec)
-_spec.loader.exec_module(_cm)
-
-BASELINE_DIR = PROJECT_ROOT / "Output Files" / "Baselines"
-OUT_CSV = BASELINE_DIR / "baseline_metrics.csv"
+CURRENT_BASELINE_DIR = PROJECT_ROOT / "workbooks/current_runs/baselines"
+LEGACY_BASELINE_DIR = PROJECT_ROOT / "workbooks/older_runs/unclassified_legacy/Baselines"
+DEFAULT_OUT_CSV = PROJECT_ROOT / "results/current/baselines/baseline_metrics.csv"
 
 BASELINES = {
     "FixedDefault": "baseline_fixeddefault.xlsx",
@@ -65,7 +78,30 @@ def load_baseline(path, name):
     return _cm.load_architecture(df, name)
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument(
+        "--input-dir",
+        default=str(CURRENT_BASELINE_DIR),
+        help=("directory containing baseline workbook inputs; use "
+              f"{LEGACY_BASELINE_DIR} to re-evaluate preserved legacy outputs"),
+    )
+    parser.add_argument("--output", default=str(DEFAULT_OUT_CSV),
+                        help="CSV output path (defaults to results/current/baselines/)")
+    args = parser.parse_args(argv)
+    baseline_dir = Path(args.input_dir)
+    try:
+        out_csv = require_safe_output_path(
+            args.output, option="--output", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+    output_key = os.path.normcase(str(out_csv.resolve()))
+    for name, filename in BASELINES.items():
+        input_path = (baseline_dir / filename).resolve()
+        if output_key == os.path.normcase(str(input_path)):
+            parser.error(f"--output would overwrite the {name} input workbook: {input_path}")
+
     warnings.filterwarnings("ignore")
     config = _cm._build_config("gemini")   # only the GT paths are used
     gt_by_type = _cm.load_ground_truth(config)
@@ -74,7 +110,7 @@ def main():
 
     rows = []
     for name, fname in BASELINES.items():
-        path = BASELINE_DIR / fname
+        path = baseline_dir / fname
         if not path.exists():
             print(f"  [SKIP] {name}: {path} not found -- run run_baseline_models.py first")
             continue
@@ -144,8 +180,9 @@ def main():
 
     df = pd.DataFrame(rows)
     df["value"] = df["value"].astype(float).round(6)
-    df.to_csv(OUT_CSV, index=False)
-    print(f"\n[OK] wrote {OUT_CSV} ({len(df)} rows)")
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_csv, index=False)
+    print(f"\n[OK] wrote {out_csv} ({len(df)} rows)")
 
 
 if __name__ == "__main__":

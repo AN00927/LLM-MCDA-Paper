@@ -3,13 +3,13 @@
 Refreshes the score columns in each RAG scenario file from the latest ground
 truth files WITHOUT changing which scenario_ids are assigned to RAG.
 
-Run this after re-running any Ground Truth Calculator to propagate updated
+Run this after re-running any workbooks/ground_truth Calculator to propagate updated
 scores into the RAG corpus (then re-run build_rag_index.py to rebuild ChromaDB).
 
 Workflow:
-    1. python "Ground Truth Calculators/<Domain>GroundTruthCalculator.py"
-    2. python "Miscellaneous Scripts/sync_rag_ground_truth_scores.py"
-    3. python "Miscellaneous Scripts/build_rag_index.py"
+    1. python "src/llm_mcda/calculators/<Domain>GroundTruthCalculator.py"
+    2. python "scripts/collection/sync_rag_ground_truth_scores.py"
+    3. python "scripts/collection/build_rag_index.py"
 
 Matching is intentionally strict: before overwriting anything the script
 verifies that every descriptor column (question/description, location,
@@ -20,6 +20,7 @@ Any mismatch aborts the entire run so that no file is touched.
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -27,9 +28,15 @@ from pathlib import Path
 import pandas as pd
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SCENARIO_DIR = PROJECT_ROOT / "Scenario Files"
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+from llm_mcda.common.paths import (
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 
 # Score columns that are allowed to differ (these are what we refresh).
@@ -191,9 +198,21 @@ def sync_domain(
     cfg: dict,
     *,
     dry_run: bool = False,
+    output_path: str | Path | None = None,
 ) -> dict:
     rag_path = SCENARIO_DIR / cfg["rag_file"]
     gt_path = GROUND_TRUTH_DIR / cfg["gt_file"]
+    destination = None
+    if not dry_run:
+        destination = require_safe_output_path(
+            output_path,
+            option="--output-dir destination",
+            root=PROJECT_ROOT,
+        )
+        if destination == rag_path.resolve():
+            raise UnsafeOutputPathError(
+                "Sync output must be separate from the frozen RAG input workbook."
+            )
 
     if not rag_path.exists():
         raise FileNotFoundError(f"RAG file not found: {rag_path}")
@@ -259,7 +278,7 @@ def sync_domain(
         )
 
     if not dry_run:
-        write_xlsx(updated, rag_path)
+        write_xlsx(updated, destination)
 
     return {
         "scenarios_synced": rag_df["scenario_id"].nunique(),
@@ -269,15 +288,45 @@ def sync_domain(
     }
 
 
-def main(dry_run: bool = False) -> None:
+def main(dry_run: bool = False, output_dir: str | Path | None = None) -> None:
+    if output_dir is None and not dry_run:
+        raise UnsafeOutputPathError(
+            "An explicit --output-dir is required for sync writes. Choose a separate "
+            "scratch or run-specific directory outside frozen repository paths."
+        )
+
+    safe_output_dir = None
+    destinations = {}
+    if output_dir is not None:
+        safe_output_dir = require_safe_output_directory(
+            output_dir,
+            option="--output-dir",
+            root=PROJECT_ROOT,
+        )
+        destinations = {
+            dtype: require_safe_output_path(
+                safe_output_dir / cfg["rag_file"],
+                option="--output-dir destination",
+                root=PROJECT_ROOT,
+            )
+            for dtype, cfg in CONFIG.items()
+        }
+
     print(f"{'DRY RUN - ' if dry_run else ''}Syncing RAG scenario files from ground truth...\n")
+    if not dry_run:
+        print(f"Output directory: {safe_output_dir}\n")
 
     all_passed = True
     results = {}
 
     for dtype, cfg in CONFIG.items():
         try:
-            result = sync_domain(dtype, cfg, dry_run=dry_run)
+            result = sync_domain(
+                dtype,
+                cfg,
+                dry_run=dry_run,
+                output_path=destinations.get(dtype),
+            )
             status = "DRY RUN" if dry_run else "WRITTEN"
             print(
                 f"  [{status}] {dtype}: {result['scenarios_synced']} scenarios, "
@@ -299,5 +348,18 @@ def main(dry_run: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    dry_run = "--dry-run" in sys.argv
-    main(dry_run=dry_run)
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="validate all frozen inputs without writing output workbooks",
+    )
+    parser.add_argument(
+        "--output-dir",
+        help="explicit safe directory for refreshed RAG workbooks (required unless --dry-run)",
+    )
+    args = parser.parse_args()
+    try:
+        main(dry_run=args.dry_run, output_dir=args.output_dir)
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))

@@ -15,11 +15,11 @@ step here writes into either .tex file, so running the pipeline can never
 clobber hand edits.
 
 Usage:
-    python paper_pipeline/run_paper_pipeline.py                # everything
-    python paper_pipeline/run_paper_pipeline.py --skip-metrics # skip per-run metrics
-    python paper_pipeline/run_paper_pipeline.py --only weights # one stage
-    python paper_pipeline/run_paper_pipeline.py --list         # show stages
-    python paper_pipeline/run_paper_pipeline.py --keep-going   # don't stop on failure
+    python scripts/paper_pipeline/run_paper_pipeline.py                # safe stages
+    python scripts/paper_pipeline/run_paper_pipeline.py --skip-metrics # skip per-run metrics
+    python scripts/paper_pipeline/run_paper_pipeline.py --only weights # list guarded stage
+    python scripts/paper_pipeline/run_paper_pipeline.py --list         # show stages
+    python scripts/paper_pipeline/run_paper_pipeline.py --allow-tracked-output-writes --only weights
 """
 
 import argparse
@@ -27,67 +27,76 @@ import subprocess
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MISC = "Miscellaneous Scripts"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+from llm_mcda.common.paths import local_manuscript_path
+SCRIPTS = "scripts"
+PIPELINE = f"{SCRIPTS}/paper_pipeline"
+VALIDATION = f"{SCRIPTS}/validation"
+WEIGHTING = "src/llm_mcda/common/weighting"
+GUARDED_STAGES = {"weights", "sensitivity"}
 
 # (stage, label, argv-after-interpreter)
 # Order is load-bearing:
-#   weights  -> writes Scoring Logic and Documentation/method/*.xlsx
+#   weights  -> writes the tracked methodology workbooks under workbooks/methodology
 #   sensitivity reads those, so it MUST follow weights.
-#   metrics  -> writes paper/per_run_metrics/, read by the numbers stage.
+#   metrics  -> writes local-only per-run metrics, read by the numbers stage.
 STEPS = [
     ("weights", "MEREC objective weights",
-     [f"{MISC}/core-automation/merec_weights.py"]),
+     [f"{WEIGHTING}/merec_weights.py"]),
     ("weights", "Entropy objective weights",
-     [f"{MISC}/core-automation/EntropyWeights.py"]),
+     [f"{WEIGHTING}/EntropyWeights.py"]),
     ("weights", "Implied weights (constrained least squares)",
-     [f"{MISC}/core-automation/implied_weights.py"]),
+     [f"{WEIGHTING}/implied_weights.py"]),
     ("weights", "Weight discrimination / zero-variance diagnostics",
-     [f"{MISC}/validation/WeightDiagnostics.py"]),
+     [f"{VALIDATION}/WeightDiagnostics.py"]),
 
     ("metrics", "Per-run metrics (all models)",
-     ["paper_pipeline/calculate_per_run_metrics.py", "--all-models"]),
+     [f"{PIPELINE}/calculate_per_run_metrics.py", "--all-models"]),
 
     ("sensitivity", "Weight-perturbation sensitivity (all models)",
-     [f"{MISC}/validation/SensitivityAnalysis.py", "--all-models"]),
+     [f"{VALIDATION}/SensitivityAnalysis.py", "--all-models"]),
     ("sensitivity", "MEREC/Entropy objective arms (all models)",
-     [f"{MISC}/validation/SensitivityAnalysis.py", "--objective-arms", "--all-models"]),
+     [f"{VALIDATION}/SensitivityAnalysis.py", "--objective-arms", "--all-models"]),
     ("sensitivity", "Alpha sweep (all models)",
-     [f"{MISC}/validation/SensitivityAnalysis.py", "--alpha-sweep", "--all-models"]),
+     [f"{VALIDATION}/SensitivityAnalysis.py", "--alpha-sweep", "--all-models"]),
 
     ("numbers", "Paper results numbers (numbers_master.csv)",
-     ["paper_pipeline/generate_paper_results_numbers.py"]),
+     [f"{PIPELINE}/generate_paper_results_numbers.py"]),
     ("numbers", "Imputed-failure robustness tables",
-     ["paper_pipeline/generate_imputed_robustness_tables.py"]),
+     [f"{PIPELINE}/generate_imputed_robustness_tables.py"]),
     ("numbers", "Benchmark failure analysis",
-     ["paper_pipeline/analyze_benchmark_failures.py"]),
+     [f"{PIPELINE}/analyze_benchmark_failures.py"]),
     ("numbers", "Duplication rate analysis",
-     ["paper_pipeline/duplication_rate_analysis.py"]),
+     [f"{PIPELINE}/duplication_rate_analysis.py"]),
     ("numbers", "Significance testing",
-     [f"{MISC}/validation/significance_testing.py"]),
+     [f"{VALIDATION}/significance_testing.py"]),
     ("numbers", "Cluster bootstrap CIs",
-     ["paper_pipeline/cluster_bootstrap_ci.py"]),
+     [f"{PIPELINE}/cluster_bootstrap_ci.py"]),
     ("numbers", "Failure-inclusive metrics",
-     ["paper_pipeline/failure_inclusive_metrics.py"]),
+     [f"{PIPELINE}/failure_inclusive_metrics.py"]),
     ("numbers", "Symmetric gate metrics",
-     ["paper_pipeline/symmetric_gate_metrics.py"]),
+     [f"{PIPELINE}/symmetric_gate_metrics.py"]),
     ("numbers", "Per-model p-values export",
-     ["paper_pipeline/emit_per_model_pvalues.py"]),
+     [f"{PIPELINE}/emit_per_model_pvalues.py"]),
     ("numbers", "Tie rates (share of scenario-runs tied before the tie-break)",
-     ["paper_pipeline/compute_tie_rates.py"]),
+     [f"{PIPELINE}/compute_tie_rates.py"]),
     ("numbers", "Decision regret (A_D/A_E/A_H vs reference MAVT)",
-     ["paper_pipeline/compute_regret.py"]),
+     [f"{PIPELINE}/compute_regret.py"]),
     ("numbers", "Numbers-of-record regeneration check",
-     ["paper_pipeline/build_numbers_of_record.py"]),
+     [f"{PIPELINE}/build_numbers_of_record.py"]),
 
     ("figures", "Variance plot snippet",
-     ["paper_pipeline/generate_variance_plot_tex.py"]),
+     [f"{PIPELINE}/generate_variance_plot_tex.py"]),
     ("figures", "Violin plot snippet",
-     ["paper_pipeline/generate_violin_plot_tex.py"]),
+     [f"{PIPELINE}/generate_violin_plot_tex.py"]),
     ("figures", "Boxplot snippet",
-     ["paper_pipeline/generate_boxplot_tex.py"]),
+     [f"{PIPELINE}/generate_boxplot_tex.py"]),
     ("figures", "Paper figures",
-     ["paper_pipeline/generate_paper_figures.py"]),
+     [f"{PIPELINE}/generate_paper_figures.py"]),
 ]
 
 STAGES = ["weights", "metrics", "sensitivity", "numbers", "figures"]
@@ -116,6 +125,8 @@ def main():
                         help="Run only this stage (repeatable)")
     parser.add_argument("--keep-going", action="store_true",
                         help="Continue after a failing step instead of aborting")
+    parser.add_argument("--allow-tracked-output-writes", action="store_true",
+                        help="Run weights and sensitivity stages, which can overwrite tracked or frozen artifacts")
     parser.add_argument("--list", action="store_true",
                         help="List the steps that would run, then exit")
     args = parser.parse_args()
@@ -129,8 +140,36 @@ def main():
     if args.list:
         print("Steps that would run:")
         for stage, label, argv in selected:
-            print(f"  [{stage:<11}] {label}")
+            guard = (" (guarded; requires --allow-tracked-output-writes)"
+                     if stage in GUARDED_STAGES and not args.allow_tracked_output_writes else "")
+            print(f"  [{stage:<11}] {label}{guard}")
         return
+
+    guarded = [(stage, label) for stage, label, _ in selected if stage in GUARDED_STAGES]
+    if guarded and not args.allow_tracked_output_writes:
+        selected = [(stage, label, argv) for stage, label, argv in selected
+                    if stage not in GUARDED_STAGES]
+        print("Skipping stages that may overwrite tracked or frozen outputs by default:")
+        for stage, label in guarded:
+            print(f"  [{stage:<11}] {label}")
+        print("Pass --allow-tracked-output-writes to run them after reviewing the destinations.\n")
+
+    required_local = []
+    if "numbers" in wanted:
+        required_local.append(local_manuscript_path("paper", "pass5", "NUMBERS_OF_RECORD.csv"))
+    if ("numbers" in wanted or "figures" in wanted) and "metrics" not in wanted:
+        required_local.extend(
+            local_manuscript_path("paper", "per_run_metrics", f"per_run_metrics_{model}.csv")
+            for model in ("deepseek", "gemini", "gptoss", "qwen")
+        )
+        if "numbers" in wanted:
+            required_local.append(
+                local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+            )
+    if required_local:
+        missing_local = [str(path) for path in required_local if not path.is_file()]
+        if missing_local:
+            parser.error("The selected paper pipeline stages require local-only inputs: "+", ".join(missing_local)+"; restore them under local_manuscripts/ or set LLM_MCDA_LOCAL_MANUSCRIPTS_DIR.")
 
     failed = []
     for stage, label, argv in selected:
@@ -142,15 +181,17 @@ def main():
         print(f"  Pipeline finished with {len(failed)} FAILED step(s):")
         for label in failed:
             print(f"    - {label}")
+    elif guarded and not args.allow_tracked_output_writes:
+        print("  Safe stages complete; guarded weights and sensitivity stages were skipped.")
     else:
         print("  Pipeline complete - all steps OK")
     print("")
-    print("  No .tex file was modified. Paper tables are literal LaTeX and are")
-    print("  hand-pasted; re-paste any table whose source numbers changed:")
-    print("    tab:sensitivity_by_model  <- Analysis/Sensitivity_*_<model>.xlsx")
-    print("    tab:sensitivity_top1      <- Analysis/Sensitivity_*_<model>.xlsx")
-    print("    tab:zero_variance         <- Analysis/.../weight_discrimination.xlsx")
-    print("    tab:weight_comparison     <- Scoring Logic and Documentation/method/")
+    print("  The pipeline does not write to the manuscript copies. Generated snippets")
+    print("  and reports use local-only destinations under local_manuscripts/.")
+    print("    tab:sensitivity_by_model  <- frozen Analysis/Sensitivity_*_<model>.xlsx")
+    print("    tab:sensitivity_top1      <- frozen Analysis/Sensitivity_*_<model>.xlsx")
+    print("    tab:zero_variance         <- workbooks/methodology/")
+    print("    tab:weight_comparison     <- workbooks/methodology/")
     print("=" * 64)
 
 

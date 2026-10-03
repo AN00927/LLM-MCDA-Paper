@@ -3,8 +3,8 @@
 
 Computes, for all 4 models x 3 architectures, two comparison columns:
 
-STATUS AFTER THE S4 FIX (2026-09-30): this is a SENSITIVITY analysis. The headline
-(paper/per_run_metrics/per_run_metrics_all.csv) keeps failed scenarios in every
+STATUS AFTER THE S4 FIX (2026-09-30): this is a SENSITIVITY analysis. The
+headline metrics in local-only `per_run_metrics_all.csv` keep failed scenarios in every
 denominator (Top-1 wrong, tau 0, chance MAE). "Method A" below is therefore the
 SCORED-ONLY (sensitivity) column and is labelled "ScoredOnly_sensitivity" in the
 output workbook; it equals the headline only for runs with no failures.
@@ -24,10 +24,10 @@ existing aggregation and ranking machinery (CalculateMetrics.impute_failed_score
 + recompute_arch_ranks) runs on the imputed scores. The sentinel 1928 never enters
 an average or a ranking.
 
-Zero API calls. Writes:
-  Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx
+Zero API calls. Writes a local-only workbook under
+`local_manuscripts/Analysis/MetricsSummary/`.
 
-Embedded verification: (a) checked against paper/per_run_metrics_all.csv and the
+Embedded verification: (a) checked against the local-only per-run CSV and the
 supplementary table tab:imputed_comparison.
 """
 
@@ -38,11 +38,17 @@ from importlib.util import spec_from_file_location, module_from_spec
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import MODEL_SPECS, get_output_folder  # noqa: E402
-from sentinel_utils import SENTINEL_VALUE, _is_complete_run_file  # noqa: E402
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+
+from llm_mcda.common.model_config import MODEL_SPECS, get_output_folder  # noqa: E402
+from llm_mcda.common.sentinel_utils import SENTINEL_VALUE, _is_complete_run_file  # noqa: E402
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",
@@ -51,7 +57,9 @@ ARCH_STEMS = {
 }
 MODEL_KEYS = sorted(MODEL_SPECS.keys())  # deepseek, gemini, gptoss, qwen
 
-OUT_XLSX = PROJECT_ROOT / "Analysis" / "MetricsSummary" / "metrics_summary_all_models_imputed_perrun.xlsx"
+OUT_XLSX = local_manuscript_path(
+    "Analysis", "MetricsSummary", "metrics_summary_all_models_imputed_perrun.xlsx"
+)
 
 RANK_METRICS = ["kendall_tau", "spearman_rho", "top1_accuracy", "top2_accuracy"]
 CRIT_KEYS = ["energy_cost", "environmental", "comfort", "practicality"]
@@ -102,12 +110,12 @@ SUPP_METHOD_A = {
 def _load_modules():
     """Dynamically import CalculateMetrics and calculate_per_run_metrics
     (same pattern as the pipeline; paths contain spaces / hyphens)."""
-    cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+    cm_path = PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
     cm_spec = spec_from_file_location("CalculateMetrics", cm_path)
     cm = module_from_spec(cm_spec)
     cm_spec.loader.exec_module(cm)
 
-    prm_path = PROJECT_ROOT / "paper_pipeline" / "calculate_per_run_metrics.py"
+    prm_path = PROJECT_ROOT / "scripts" / "paper_pipeline" / "calculate_per_run_metrics.py"
     prm_spec = spec_from_file_location("calculate_per_run_metrics", prm_path)
     prm = module_from_spec(prm_spec)
     prm_spec.loader.exec_module(prm)
@@ -298,7 +306,7 @@ def main():
     print("=" * 72)
 
     # (a) per-run vs pipeline per-run CSVs
-    pipeline_csv = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
+    pipeline_csv = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
     max_diff_a = 0.0
     n_cmp_a = 0
     if pipeline_csv.exists():
@@ -314,7 +322,7 @@ def main():
                 if pd.notna(r.get(m)) and pd.notna(prow[m].iloc[0]):
                     max_diff_a = max(max_diff_a, abs(r[m] - prow[m].iloc[0]))
                     n_cmp_a += 1
-        print(f"  (a) max |per-run diff| vs paper/per_run_metrics_all.csv (failure-free runs only): {max_diff_a:.6f} "
+        print(f"  (a) max |per-run diff| vs local-only per-run metrics (failure-free runs only): {max_diff_a:.6f} "
               f"({n_cmp_a} values compared)")
 
     # (a) per-model vs supplementary table Method A

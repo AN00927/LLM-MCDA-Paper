@@ -7,8 +7,10 @@ combination, and effect sizes for three architectures (AD, AE, AH) across
 four models on 195 scenarios.
 
 Input:  Raw per-run xlsx files from each model's output folder, plus
-        ground truth xlsx files from Ground Truth/.
-Output: significance_tests.xlsx (four sheets) + stdout tables.
+        ground truth xlsx files from workbooks/ground_truth/.
+Output: significance_tests.xlsx (four sheets) and pooled diagnostics workbook
+        in a required safe destination supplied with --output-dir or
+        LLM_MCDA_RUN_OUTPUT_DIR, plus stdout tables.
 
 Aggregation method:
     Per-scenario metrics are computed independently for each of the 5 runs,
@@ -42,11 +44,22 @@ Wilcoxon notes:
 
 ICC is computed on per-run aggregate metrics (the per_run_metrics_all.csv
 file) because it is a variance decomposition, not a pairwise test.
+
+Run:
+    python "scripts/validation/significance_testing.py" --output-dir results/scratch/significance
 """
 
+import argparse
+import os
 import sys
 import warnings
 from pathlib import Path
+
+# Direct script execution does not add src/ when the package is uninstalled.
+_SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+if _SRC_ROOT.is_dir() and str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -55,34 +68,39 @@ from statsmodels.regression.mixed_linear_model import MixedLM
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
-MISC_DIR = PROJECT_ROOT / "Miscellaneous Scripts"
-for _p in (MISC_DIR / "core-automation",):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    local_manuscript_path,
+    require_safe_output_directory,
+)
 
-from sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
-from model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
-from evaluate_architecture_metrics import filter_failed_scenarios, normalize_alternative, build_gt_lookup
-import evaluate_architecture_metrics as _eam
+from llm_mcda.common.sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
+from llm_mcda.common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
+from scripts.analysis.evaluate_architecture_metrics import (
+    filter_failed_scenarios,
+    normalize_alternative,
+    build_gt_lookup,
+)
+from scripts.analysis import evaluate_architecture_metrics as _eam
 
 # ---------------------------------------------------------------------------
 # Paths and constants
 # ---------------------------------------------------------------------------
 
-GROUND_TRUTH_DIR = PROJECT_ROOT / "Ground Truth"
+GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
-ICC_INPUT_CSV = PROJECT_ROOT / "paper" / "per_run_metrics" / "per_run_metrics_all.csv"
-OUTPUT_XLSX = PROJECT_ROOT / "paper" / "per_run_metrics" / "significance_tests.xlsx"
+ICC_INPUT_CSV = local_manuscript_path("paper", "per_run_metrics", "per_run_metrics_all.csv")
+OUTPUT_XLSX_NAME = "significance_tests.xlsx"
 # S2: the two cross-model pooled inferences (MixedLM with a random intercept for
 # model, and the Stouffer combination of the per-model Wilcoxon z) are NOT paper
 # results: the paper never pools across models, the four models share the same
 # 195 scenarios (so Stouffer's independence assumption fails), and a model
 # random effect over four groups is barely identified. They are written here,
 # outside paper/, for diagnosis only.
-POOLED_DIAGNOSTICS_XLSX = (PROJECT_ROOT / "Analysis" / "diagnostics"
-                           / "significance_pooled_diagnostics_NOT_FOR_PAPER.xlsx")
+POOLED_DIAGNOSTICS_XLSX_NAME = "significance_pooled_diagnostics_NOT_FOR_PAPER.xlsx"
 
 METRICS = [
     "kendall_tau",
@@ -989,7 +1007,27 @@ def print_table(title, df):
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1].strip())
+    parser.add_argument(
+        "--output-dir",
+        help=f"Safe output directory (required unless {RUN_OUTPUT_DIR_ENV} is set).",
+    )
+    return parser.parse_args(argv)
+
+
+def main(output_dir=None):
+    output_option = "--output-dir"
+    if output_dir is None:
+        output_dir = os.environ.get(RUN_OUTPUT_DIR_ENV)
+        output_option = (
+            RUN_OUTPUT_DIR_ENV if output_dir is not None
+            else f"--output-dir or {RUN_OUTPUT_DIR_ENV}"
+        )
+    output_dir = require_safe_output_directory(output_dir, option=output_option)
+    output_xlsx = output_dir / OUTPUT_XLSX_NAME
+    pooled_diagnostics_xlsx = output_dir / POOLED_DIAGNOSTICS_XLSX_NAME
+
     print("=" * 72)
     print("  STATISTICAL SIGNIFICANCE TESTING")
     print("  Per-scenario Wilcoxon (n=195) + ICC + MixedLM + Effect Sizes")
@@ -1030,20 +1068,20 @@ def main():
     print_table("Effect Sizes [per-scenario]", es_df)
 
     # --- Write Excel ---
-    with pd.ExcelWriter(OUTPUT_XLSX, engine="openpyxl") as writer:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with pd.ExcelWriter(output_xlsx, engine="openpyxl") as writer:
         icc_df.to_excel(writer, sheet_name="ICC", index=False)
         wil_df.to_excel(writer, sheet_name="Wilcoxon", index=False)
         es_df.to_excel(writer, sheet_name="EffectSizes", index=False)
 
-    POOLED_DIAGNOSTICS_XLSX.parent.mkdir(parents=True, exist_ok=True)
-    with pd.ExcelWriter(POOLED_DIAGNOSTICS_XLSX, engine="openpyxl") as writer:
+    with pd.ExcelWriter(pooled_diagnostics_xlsx, engine="openpyxl") as writer:
         mm_df.to_excel(writer, sheet_name="MixedModel_POOLED", index=False)
         stouffer_df.to_excel(writer, sheet_name="Stouffer_POOLED", index=False)
 
-    print(f"\nResults written to {OUTPUT_XLSX}")
+    print(f"\nResults written to {output_xlsx}")
     print(f"Pooled cross-model diagnostics (not for the paper) written to "
-          f"{POOLED_DIAGNOSTICS_XLSX}")
+          f"{pooled_diagnostics_xlsx}")
 
 
 if __name__ == "__main__":
-    main()
+    main(parse_args().output_dir)

@@ -1,7 +1,7 @@
 """Tests for the Shower reference calculator (P1-HVAC: comments + continuous budget penalty).
 
 File under test: SHOWER_CALC_PATH (env var, absolute or relative to the repo root), else
-Ground Truth Calculators/ShowerGroundTruthCalculator.py.
+src/llm_mcda/calculators/ShowerGroundTruthCalculator.py.
 """
 import importlib.util
 import math
@@ -11,8 +11,9 @@ from pathlib import Path
 
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CALC_PATH = PROJECT_ROOT / "Ground Truth Calculators" / "ShowerGroundTruthCalculator.py"
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
+DEFAULT_CALC_PATH = PROJECT_ROOT / "src/llm_mcda/calculators" / "ShowerGroundTruthCalculator.py"
 CALC_PATH = Path(os.environ.get("SHOWER_CALC_PATH", DEFAULT_CALC_PATH))
 if not CALC_PATH.is_absolute():
     CALC_PATH = PROJECT_ROOT / CALC_PATH

@@ -18,13 +18,11 @@
 
 This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) reference calculator, across **195 test scenarios** (70 HVAC, 65 Appliance, 60 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **90-scenario RAG corpus** (35 HVAC, 35 Appliance, 20 Shower) seeds the retrieval index used by the example-guided architecture and never appears in evaluation.
 
-Four models are evaluated: Gemini 3.5 Flash, DeepSeek V4 Flash, GPT-OSS 20B, and Qwen 3.5 9B, each run at its lowest available reasoning tier. Each architecture--model pair runs 5 trials over the 195-scenario test set: 585 calls/run for the two architectures that score one alternative per call, 195 calls/run for the one that extracts once per scenario. Across all three architectures and four models, the main benchmark totals 27,300 API calls.
+Four models are evaluated: Gemini 3.8 Flash, DeepSeek V4 Flash 0731, GPT-OSS 20B, and Qwen 3.5 9B, each run at its configured reasoning tier. Each architecture--model pair runs 5 trials over the 195-scenario test set: 585 calls/run for the two architectures that score one alternative per call, 195 calls/run for the one that extracts once per scenario. Across all three architectures and four models, the main benchmark totals 27,300 API calls.
 
 The three decision types were chosen for high behavioral plasticity and contribution to controllable residential energy/water use: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
 
 ---
-
-![image](https://github.com/AN00927/LLM-MCDA-Paper/blob/main/paper/Graphical%20Abstract.png)
 
 ## Setup
 
@@ -39,7 +37,7 @@ python -m venv .venv
 .venv\Scripts\activate        # Windows (PowerShell / cmd)
 source .venv/bin/activate     # macOS / Linux
 
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### API key
@@ -54,9 +52,9 @@ OPENROUTER_API_KEY=your_key_here
 
 ### Selecting a model and run count
 
-Both live in [model_config.py](model_config.py):
+Both live in [src/llm_mcda/common/model_config.py](src/llm_mcda/common/model_config.py):
 
-- `MODEL_KEY` -- one of `gptoss`, `qwen`, `deepseek`, `gemini` (see [Model Set](#model-set)). This also routes output to that model's folder.
+- `MODEL_KEY` -- one of `gptoss`, `qwen`, `deepseek`, `gemini` (see [Model Set](#model-set)). It selects the model; choose output routing separately with `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`.
 - `N_RUNS` -- number of repeated trials per architecture (5 for the reported benchmark).
 
 ### Running the benchmark
@@ -64,22 +62,28 @@ Both live in [model_config.py](model_config.py):
 ```bash
 # Build the ChromaDB retrieval index first -- required by the example-guided architecture,
 # and it must be rebuilt after any change to the RAG scenario workbooks.
-python "Miscellaneous Scripts/core-automation/build_rag_index.py"
+python "scripts/collection/build_rag_index.py"
 
-python Architectures/Direct_LLM_Scoring.py
-python Architectures/Example-Guided_LLM_Scoring.py
-python Architectures/LLM-Parameterized_Reference_Scoring.py
+python src/llm_mcda/architectures/Direct_LLM_Scoring.py --output-dir results/scratch/deepseek/direct
+python src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py --output-dir results/scratch/deepseek/example-guided
+python src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py --output-dir results/scratch/deepseek/parameterized
 ```
 
-Runs are resume-aware: a per-run `*_results_run_NN.xlsx` that already exists and is readable is skipped, so an interrupted benchmark can be relaunched without repaying for completed runs. Each run also writes `*_results_diagnostics_run_NN.json` (token counts, latency, failure-type counters, UTC collection timestamp) and `*_results_run_NN_raw.jsonl` (one record per API call with the prompt, the raw model response, and per-call latency and token counts).
+Set `MODEL_KEY` in `model_config.py` to the model being collected, and use a separate output directory for each model/architecture combination. Runs are resume-aware: a per-run `*_results_run_NN.xlsx` that already exists and is readable is skipped, so an interrupted benchmark can be relaunched without repaying for completed runs. Each run also writes `*_results_diagnostics_run_NN.json` (token counts, latency, failure-type counters, UTC collection timestamp) and `*_results_run_NN_raw.jsonl` (one record per API call with the prompt, the raw model response, and per-call latency and token counts).
 
-### Regenerating every paper number and figure
+### Running the deterministic paper pipeline
 
 ```bash
-python paper_pipeline/run_paper_pipeline.py
+python scripts/paper_pipeline/run_paper_pipeline.py
 ```
 
-This is the single entry point for the analysis side. It runs every deterministic step -- objective weights, per-run metrics, sensitivity arms, results numbers, figures, and LaTeX snippet generators -- in dependency order, reading only files already on disk. It makes **no API calls** and costs nothing. `--list` shows the stages, `--only <stage>` runs one.
+This entry point makes **no API calls**. By default it skips the guarded `weights` and `sensitivity` stages, which can overwrite tracked or frozen outputs; the remaining selected stages run in dependency order. Use `--list` to preview stages and destinations. The `numbers` stage also needs local-only manuscript inputs. To run only the weights stage, use the explicit opt-in in a clean or disposable checkout after reviewing its destinations:
+
+```bash
+python scripts/paper_pipeline/run_paper_pipeline.py --allow-tracked-output-writes --only weights
+```
+
+The `--allow-tracked-output-writes` flag enables guarded stages; `--only <stage>` limits the selection.
 
 ### Reproducing the paper
 
@@ -87,12 +91,18 @@ The two halves have very different requirements:
 
 | | Needs an API key | Cost | Scripts |
 | --- | --- | --- | --- |
-| **Collecting the benchmark and ablations** | Yes | 27,300 calls for the main benchmark, plus the ablation suites (see [Ablation Suites](#ablation-suites)) | `Architectures/*.py`, `Miscellaneous Scripts/experiments/run_*_experiments.py`, `Miscellaneous Scripts/core-automation/run_baseline_models.py` |
-| **Everything analytical** | No | Free | `paper_pipeline/run_paper_pipeline.py` and everything it calls |
+| **Collecting the benchmark and ablations** | Yes | 27,300 calls for the main benchmark, plus the ablation suites (see [Ablation Suites](#ablation-suites)) | `src/llm_mcda/architectures/*.py`, `scripts/experiments/run_*_experiments.py`, `scripts/experiments/run_baseline_models.py` |
+| **Everything analytical** | No | Free | `scripts/paper_pipeline/run_paper_pipeline.py` and everything it calls |
 
-The per-run outputs for all four models are committed under the `Output Files */` folders, so every metric, table, figure, significance test, ablation summary, and sensitivity arm in the paper can be regenerated from a fresh clone with no key and no spending -- `pip install -r requirements.txt` followed by `python paper_pipeline/run_paper_pipeline.py`. Re-collecting the benchmark is only necessary to change the model set, the scenario data, or a prompt.
+Historical benchmark runs remain at their frozen `Output Files */`, `Analysis/`, and archive paths. Those paths are read-only evidence for the migration-updated command-line tools. The deterministic analysis entry point is `scripts/paper_pipeline/run_paper_pipeline.py`; it reads existing benchmark files and makes no API calls. Some manuscript or archive inputs are local-only and are not included in a public clone (see “Preserved results and local-only sources” below). Re-collecting the benchmark is only necessary to change the model set, the scenario data, or a prompt.
 
-Reference scores are likewise reproducible offline: running a calculator in `Ground Truth Calculators/` directly regenerates its `Ground Truth/ground_truth_*.xlsx` from the scenario workbooks. If you change a calculator or the scenario data, see the refresh-order rules in [CLAUDE.md](CLAUDE.md) -- `build_rag_index.py` always runs last.
+Reference scores are likewise reproducible offline: calculator CLIs now require an explicit safe `--output` file, such as `results/scratch/ground_truth_hvac.xlsx`; they cannot overwrite the frozen `workbooks/ground_truth/` inputs. If you change a calculator or the scenario data, see the refresh-order and freeze rules in [CLAUDE.md](CLAUDE.md) -- `scripts/collection/build_rag_index.py` always runs last when operating on an approved working copy.
+
+### Safe destinations for generated outputs
+
+Migration-updated run, analysis, validation, and legacy writer CLIs require `--output-dir PATH` or the `LLM_MCDA_RUN_OUTPUT_DIR` environment variable. Single-file writers use `--output PATH` (or the documented file option). If a required destination is missing or resolves under `Analysis/`, `archive/`, `paper/`, `Output Files*/`, or frozen scenario/ground-truth/older-run workbook paths, the command stops with an error before writing. Relative destinations resolve from the repository root. Existing non-frozen destinations are allowed so interrupted runs can resume; commands do not clear them automatically. The scenario workbook builder is an exception: it creates a fresh temporary output directory by default and accepts `--output-dir` to choose another safe location; `--in-place` is refused for the frozen repository scenario workbooks.
+
+The frozen historical trees remain useful as input evidence. They are not output defaults and should not be edited by analysis or validation commands. For the CLI-by-CLI options, see [Codebase Guide](docs/CODEBASE_GUIDE.md#safe-output-routing).
 
 ---
 
@@ -119,10 +129,10 @@ The LLM-parameterized reference scoring architecture dominates across all four m
 
 | Model | Architecture | Kendall's tau | Top-1 Acc | RMSE | MAE |
 | --- | --- | --- | --- | --- | --- |
-| **Gemini 3.5 Flash** | LLM-Parameterized Reference Scoring | **0.923** | **93.1%** | **0.101** | **0.048** |
+| **Gemini 3.8 Flash** | LLM-Parameterized Reference Scoring | **0.923** | **93.1%** | **0.101** | **0.048** |
 | | Example-Guided LLM Scoring | 0.310 | 48.7% | 0.231 | 0.158 |
 | | Direct LLM Scoring | 0.176 | 36.2% | 0.295 | 0.219 |
-| **DeepSeek V4 Flash** | LLM-Parameterized Reference Scoring | **0.897** | **90.8%** | **0.092** | **0.045** |
+| **DeepSeek V4 Flash 0731** | LLM-Parameterized Reference Scoring | **0.897** | **90.8%** | **0.092** | **0.045** |
 | | Example-Guided LLM Scoring | 0.307 | 53.5% | 0.237 | 0.168 |
 | | Direct LLM Scoring | 0.144 | 36.7% | 0.302 | 0.231 |
 | **GPT-OSS 20B** | LLM-Parameterized Reference Scoring | **0.897** | **91.7%** | **0.101** | **0.052** |
@@ -132,7 +142,7 @@ The LLM-parameterized reference scoring architecture dominates across all four m
 | | Example-Guided LLM Scoring | 0.208 | 46.6% | 0.261 | 0.194 |
 | | Direct LLM Scoring | 0.010 | 30.0% | 0.295 | 0.235 |
 
-Across models, the LLM-parameterized reference scoring architecture's tau spans only 0.043 despite a roughly 50-fold difference in input-token price between the cheapest and most expensive model, versus 0.166 for direct LLM scoring -- architecture design matters more than model choice.
+Across models, the LLM-parameterized reference scoring architecture's tau spans only 0.043 despite a roughly 21-fold difference in configured input-token price between the cheapest and most expensive model, versus 0.166 for direct LLM scoring -- architecture design matters more than model choice.
 
 ### By Decision Type (best/worst model per cell, 5-run mean)
 
@@ -151,128 +161,85 @@ HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square f
 - **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a scenario-weighted tau of 0.614, which outranks direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it. It collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. Separately, the RAG ablation's copy-only configuration (assigning the retrieved scenario's scores directly, no LLM call, leave-one-out on the 90-scenario RAG set) reaches tau = 0.001, indistinguishable from a random ranking.
 - **In the RAG ablation, exemplar scores matter more than exemplar content.** Removing the reference scores from retrieved exemplars degrades ranking far more than removing their hidden engineering parameters (R-value, SEER, GPM, etc.) -- scored exemplars anchor the LLM's output scale, they don't teach it new physics.
 - **Reversing alternative order in the prompt changed what two of four models extracted, but never changed which alternative any model ranked first** -- a null result at the ranking layer that only means something because the same perturbation is detectably present one layer up, at the LLM's parameter estimates.
-- **Model capability correlates weakly with architecture ranking.** The cheapest model (GPT-OSS 20B, $0.029/M input tokens) achieves comparable LLM-parameterized reference scoring performance to the most expensive (Gemini 3.5 Flash, $1.50/M). All four models run at their lowest reasoning tier, so this comparison is scoped to that regime, not to frontier or reasoning-enabled models.
+- **Model capability correlates weakly with architecture ranking.** The cheapest configured input price (GPT-OSS 20B, $0.018/M tokens) achieves comparable LLM-parameterized reference scoring performance to the highest (Gemini 3.8 Flash, $0.375/M). The model names, routes, provider pins, reasoning settings, and price labels below follow `MODEL_SPECS` in `src/llm_mcda/common/model_config.py`.
 - **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on the LLM-parameterized reference scoring architecture has a 12.0% per-scenario-run extraction failure rate (88.0% success), concentrated in HVAC scenarios where an extracted parameter falls outside its physical validation bounds. Cross-run recovery and per-run imputation both confirm the architecture ordering is unaffected.
 
 ### API Costs (per 5-run benchmark)
 
 | Architecture | Calls/run | Gemini | DeepSeek | GPT-OSS | Qwen |
 | --- | --- | --- | --- | --- | --- |
-| Direct LLM Scoring | 585 | ~$4.01 | ~$0.44 | ~$0.12 | ~$0.22 |
-| Example-Guided LLM Scoring | 585 | ~$5.12 | ~$0.18 | ~$0.12 | ~$0.21 |
-| LLM-Parameterized Reference Scoring | 195 | ~$1.40 | ~$0.06 | ~$0.03 | ~$0.06 |
+| Direct LLM Scoring | 585 | ~$2.41 | ~$0.07 | ~$0.07 | ~$0.22 |
+| Example-Guided LLM Scoring | 585 | ~$2.14 | ~$0.07 | ~$0.07 | ~$0.21 |
+| LLM-Parameterized Reference Scoring | 195 | ~$0.40 | ~$0.03 | ~$0.02 | ~$0.06 |
 
-Priced at OpenRouter list rates as of August 1, 2026. The LLM-parameterized reference scoring architecture costs 2.9--7.9x less than direct LLM scoring and 3.3--3.8x less than the example-guided architecture on the same model, from issuing one API call per scenario instead of three.
+Each value is the sum of `total_cost_usd` across the five run diagnostics for that model and architecture, rounded to cents. In these diagnostics, the LLM-parameterized reference scoring architecture cost about 2.5--6.0x less than direct scoring and 2.4--5.4x less than example-guided scoring for the same model.
 
 ---
 
 ### Imputation Robustness Test
 
-Per-run imputed robustness is computed via [paper_pipeline/generate_imputed_robustness_tables.py](paper_pipeline/generate_imputed_robustness_tables.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Output is written to [Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx](Analysis/MetricsSummary/metrics_summary_all_models_imputed_perrun.xlsx).
+Per-run imputed robustness is computed via [scripts/paper_pipeline/generate_imputed_robustness_tables.py](scripts/paper_pipeline/generate_imputed_robustness_tables.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Its workbook is written under the ignored local-only `local_manuscripts/Analysis/MetricsSummary/` tree; it does not write to frozen `Analysis/`.
 
 ---
 
 ## Model Set
 
-Set `MODEL_KEY` and `N_RUNS` in [model_config.py](model_config.py) to control model selection and output routing.
+Set `MODEL_KEY` and `N_RUNS` in [src/llm_mcda/common/model_config.py](src/llm_mcda/common/model_config.py) to control model selection and run counts. Supply `--output-dir` (or `LLM_MCDA_RUN_OUTPUT_DIR`) to each run command to choose a safe output location.
 
-| Key | Label | OpenRouter string | Reasoning effort | Output folder |
-| --- | --- | --- | --- | --- |
-| `gptoss` | GPT-OSS-20B | `openai/gpt-oss-20b:exacto` | low | `Output Files GPT-OSS 20B` |
-| `qwen` | Qwen 3.5 9B | `qwen/qwen3.5-9b:exacto` | none | `Output Files Qwen3.5 9B` |
-| `deepseek` | DeepSeek V4 Flash | `deepseek/deepseek-v4-flash:exacto` | none | `Output Files DeepSeek V4 Flash` |
-| `gemini` | Gemini 3.5 Flash | `google/gemini-3.5-flash:exacto` | minimal | `Output Files Gemini 3.5 Flash` |
+| Key | Label | OpenRouter route | Provider pin (`only`) | Reasoning effort | Historical results folder (read-only source) |
+| --- | --- | --- | --- | --- | --- |
+| `gptoss` | GPT-OSS 20B | `openai/gpt-oss-20b:floor` | `darkbloom/fp8` | low | `Output Files GPT-OSS 20B` |
+| `qwen` | Qwen 3.5 9B | `qwen/qwen3.5-9b:floor` | `venice/fp8` | none | `Output Files Qwen3.5 9B` |
+| `deepseek` | DeepSeek V4 Flash 0731 | `deepseek/deepseek-v4-flash-0731:floor` | `relace/fp4` | none | `Output Files DeepSeek V4 Flash 0731` |
+| `gemini` | Gemini 3.8 Flash | `google/gemini-3.8-flash:floor` | `google-ai-studio/flex` | minimal | `Output Files Gemini 3.8 Flash` |
 
-Model pricing (as of benchmark date): GPT-OSS $0.029/M in / $0.14/M out; Qwen $0.10/M / $0.15/M; DeepSeek $0.09/M / $0.18/M; Gemini $1.50/M / $9/M. All four are run at their lowest available reasoning tier; no reasoning-enabled or frontier-tier model is part of the reported benchmark.
+All four routes set `allow_fallbacks: false` and `require_parameters: true`; the listed provider pin is the only permitted provider. Configured prices in `MODEL_SPECS` are per million tokens: GPT-OSS input $0.018 / output $0.09; Qwen input $0.10 / output $0.15; DeepSeek input $0.13 / output $0.26; Gemini input $0.375 / output $1.875. The configured reasoning effort is listed per model.
 
 ---
 
 ## Repository Structure
 
-```
+```text
 LLM-MCDA-Paper/
-├── Architectures/
-│   ├── Direct_LLM_Scoring.py
-│   ├── Example-Guided_LLM_Scoring.py
-│   └── LLM-Parameterized_Reference_Scoring.py
-├── Ground Truth/
-│   ├── ground_truth_appliance.xlsx
-│   ├── ground_truth_hvac.xlsx
-│   └── ground_truth_shower.xlsx
-├── Ground Truth Calculators/
-│   ├── ApplianceGroundTruthCalculator.py
-│   ├── HVACGroundTruthCalculator.py
-│   └── ShowerGroundTruthCalculator.py
-├── Miscellaneous Scripts/
-│   ├── core-automation/
-│   │   ├── EntropyWeights.py
-│   │   ├── build_rag_index.py
-│   │   ├── evaluate_architecture_metrics.py
-│   │   ├── evaluate_baseline_metrics.py
-│   │   ├── evaluate_parameter_extraction.py
-│   │   ├── implied_weights.py
-│   │   ├── merec_weights.py
-│   │   ├── run_baseline_models.py
-│   │   ├── run_benchmarks.py
-│   │   └── sync_rag_ground_truth_scores.py
+├── src/llm_mcda/
+│   ├── architectures/
+│   ├── calculators/
+│   └── common/
+├── scripts/
+│   ├── collection/
+│   ├── analysis/
 │   ├── experiments/
-│   │   ├── run_hybrid_ablation_experiments.py
-│   │   ├── run_position_bias_control.py
-│   │   ├── run_prompt_ablation_experiments.py
-│   │   └── run_rag_ablation_experiments.py
-│   ├── legacy/
-│   │   ├── AggregatePromptAblations.py
-│   │   ├── CreateRepresentativeSample.py
-│   │   ├── aggregate_position_bias_results.py
-│   │   └── measure_rag_retrieval_distance.py
-│   └── validation/
-│       ├── SensitivityAnalysis.py
-│       ├── WeightDiagnostics.py
-│       ├── compare_retrieval_k_bootstrap_ci.py
-│       ├── compute_confidence_intervals.py
-│       ├── significance_testing.py
-│       ├── test_hybrid_ablation_significance.py
-│       └── test_prompt_ablation_significance.py
-├── paper_pipeline/
-│   ├── run_paper_pipeline.py
-│   ├── analyze_benchmark_failures.py
-│   ├── calculate_per_run_metrics.py
-│   ├── generate_paper_figures.py
-│   ├── generate_paper_results_numbers.py
-│   ├── generate_imputed_robustness_tables.py
-│   └── ... (see paper_pipeline/ for the full stage list)
-├── Scenario Files/
-│   ├── HVACScenarios.xlsx
-│   ├── ApplianceScenarios.xlsx
-│   ├── ShowerScenarios.xlsx
-│   ├── HVACRagScenarios.xlsx
-│   ├── ApplianceRAGScenarios.xlsx
-│   ├── ShowerRAGScenarios.xlsx
-│   ├── TestScenarios.xlsx
-│   └── build_consolidated_scenario_workbooks.py
-├── Scoring Logic and Documentation/
-│   └── method/
-├── Output Files GPT-OSS 20B/
-├── Output Files Qwen3.5 9B/
-├── Output Files DeepSeek V4 Flash/
-├── Output Files Gemini 3.5 Flash/
-├── Output Files/ (baselines)
-├── Analysis/
-├── paper/
-├── chroma_rag_db/
+│   ├── validation/
+│   ├── paper_pipeline/
+│   └── archive/legacy/
+├── workbooks/
+│   ├── scenarios/
+│   ├── ground_truth/
+│   ├── methodology/
+│   ├── older_runs/
+│   └── backups/
+├── data/scenarios/
+├── results/
+│   ├── current/
+│   ├── older_runs/
+│   ├── methodology/
+│   └── public_reports/
+├── Analysis/ and existing Output Files*/  (frozen benchmark and analysis artifacts)
+├── archive/                             (frozen archival run outputs)
+├── local_manuscripts/                   (ignored, local-only)
+├── local_documentation/                 (ignored, local-only)
 ├── tests/
 ├── docs/
-├── model_config.py
-├── sentinel_utils.py
-├── README.md
-├── CLAUDE.md
-├── LICENSE
-├── DATA_LICENSE
-├── CITATION.cff
-├── SECURITY.md
-├── .env.example
-└── requirements.txt
+├── model_config.py                      (compatibility shim)
+├── sentinel_utils.py                     (compatibility shim)
+└── pyproject.toml
 ```
+
+### Preserved results and local-only sources
+
+Existing run and output history stays at its recorded paths. This includes the 514 selected run paths, all 294 `Analysis/**` artifacts, the 23 derived paper outputs, and the 124 archived run outputs; the existing `Output Files*/`, `Analysis/`, and archive trees are frozen historical data, not active code locations. Curated reports and methodology outputs are organized under `results/` and `docs/methodology/`.
+
+Manuscript drafts, selected manuscript figures, and archival documents are local-only under the ignored `local_manuscripts/` and `local_documentation/` directories. The three archived Baselines workbooks are local-only under `archive/2026-09_pre_rerun/Output Files/Baselines/` and may be moved as needed. The legacy `build_consolidated_scenario_workbooks.py` expects `workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx`; that workbook is currently absent. The standalone scenario builder writes to a fresh temporary directory by default or to a caller-selected safe `--output-dir`. Its `--in-place` option is rejected when the masters are the frozen repository workbooks; use a separate safe input copy for a scratch rebuild. Local manuscript and archival lookups can be redirected with `LLM_MCDA_LOCAL_MANUSCRIPTS_DIR` and `LLM_MCDA_LOCAL_DOCUMENTATION_DIR`.
 
 ---
 
@@ -280,7 +247,7 @@ LLM-MCDA-Paper/
 
 The paper refers to these as A_D, A_E, and A_H respectively.
 
-Paper name to script: direct LLM scoring -> [Direct_LLM_Scoring.py](Architectures/Direct_LLM_Scoring.py); example-guided LLM scoring -> [Example-Guided_LLM_Scoring.py](Architectures/Example-Guided_LLM_Scoring.py); LLM-parameterized reference scoring -> [LLM-Parameterized_Reference_Scoring.py](Architectures/LLM-Parameterized_Reference_Scoring.py).
+Paper name to script: direct LLM scoring -> [Direct_LLM_Scoring.py](src/llm_mcda/architectures/Direct_LLM_Scoring.py); example-guided LLM scoring -> [Example-Guided_LLM_Scoring.py](src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py); LLM-parameterized reference scoring -> [LLM-Parameterized_Reference_Scoring.py](src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py).
 
 ### 1. Direct LLM Scoring (`Direct_LLM_Scoring.py`)
 
@@ -329,7 +296,7 @@ The reference calculators receive exact engineering values; architectures receiv
 | **Shower - Flow Rate** | low_flow / standard / high_flow | actual GPM from scenario | EPA WaterSense |
 | **Appliance - Age** | banded age label | scenario kWh/cycle (the calculator does not read age) | ENERGY STAR and DOE test procedures (cycles/year) |
 
-The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. Bands are computed by single-source helpers in `sentinel_utils.py` so the test-sheet label and the RAG-index embedding string stay byte-identical.
+The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. Bands are computed by single-source helpers in `src/llm_mcda/common/sentinel_utils.py` so the test-sheet label and the RAG-index embedding string stay byte-identical.
 
 ---
 
@@ -419,7 +386,7 @@ where eta = 0.92 (electric water-heater efficiency; the federal minimum in 10 CF
 
 ## Sensitivity Analysis
 
-[SensitivityAnalysis.py](Miscellaneous%20Scripts/validation/SensitivityAnalysis.py) still computes ten single-criterion `+/-0.05` perturbation scenarios plus an equal-weight scenario, but these are **not the reported robustness check in the paper**: they move the example-guided-minus-direct-LLM-scoring gap only within a narrow range across the four models, narrower than the entropy- and MEREC-derived weight vectors reach, so they cannot establish weight robustness on their own. They are retained here for completeness and are still exercised by the script.
+[SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) still computes ten single-criterion `+/-0.05` perturbation scenarios plus an equal-weight scenario, but these are **not the reported robustness check in the paper**: they move the example-guided-minus-direct-LLM-scoring gap only within a narrow range across the four models, narrower than the entropy- and MEREC-derived weight vectors reach, so they cannot establish weight robustness on their own. They are retained here for completeness and are still exercised by the script.
 
 | Scenario | w(EnergyCost) | w(Environmental) | w(Comfort) | w(Practicality) |
 | --- | --- | --- | --- | --- |
@@ -460,37 +427,38 @@ Four ablation suites, run on top of the main benchmark, test whether the reporte
 
 Three scripts independently validate the subjective MAVT weights against the reference score distributions. They are **validation only**: no architecture or calculator imports them or changes weights at runtime.
 
-- **[EntropyWeights.py](Miscellaneous Scripts/core-automation/EntropyWeights.py)** -- Shannon entropy weights overall and by decision type. The environmental criterion receives above-average entropy weight, independently supporting the 0.35 allocation.
-- **[merec_weights.py](Miscellaneous Scripts/core-automation/merec_weights.py)** -- Computes MEREC (Method based on Removal Effects of Criteria) weights per-scenario then averages them. MEREC is correlation-free and robust to nonlinearity, making it informative for comfort and practicality, which use nonlinear value functions.
-- **[implied_weights.py](Miscellaneous Scripts/core-automation/implied_weights.py)** -- Recovers implied weights from the reference ranking structure via constrained least squares on pairwise alternative comparisons. Collapses to single-criterion corner solutions for HVAC and Appliance, because those decision types' cost/environmental criteria have no within-scenario variance left to discriminate on once the dominant criterion is factored out -- a property of the calculator's structure, not evidence that those criteria are unimportant.
+- **[EntropyWeights.py](src/llm_mcda/common/weighting/EntropyWeights.py)** -- Shannon entropy weights overall and by decision type. The environmental criterion receives above-average entropy weight, independently supporting the 0.35 allocation.
+- **[merec_weights.py](src/llm_mcda/common/weighting/merec_weights.py)** -- Computes MEREC (Method based on Removal Effects of Criteria) weights per-scenario then averages them. MEREC is correlation-free and robust to nonlinearity, making it informative for comfort and practicality, which use nonlinear value functions.
+- **[implied_weights.py](src/llm_mcda/common/weighting/implied_weights.py)** -- Recovers implied weights from the reference ranking structure via constrained least squares on pairwise alternative comparisons. Collapses to single-criterion corner solutions for HVAC and Appliance, because those decision types' cost/environmental criteria have no within-scenario variance left to discriminate on once the dominant criterion is factored out -- a property of the calculator's structure, not evidence that those criteria are unimportant.
 
 ---
 
-## Miscellaneous Scripts
+## Analysis and Workflow Scripts
 
 | Script | Purpose |
 | --- | --- |
-| [build_rag_index.py](Miscellaneous Scripts/core-automation/build_rag_index.py) | Builds/refreshes the ChromaDB vector index from the RAG scenario files. Computes SHA-256 of source files and stores a schema version in collection metadata to detect when a rebuild is needed. Current schema version: 4. |
-| [evaluate_architecture_metrics.py](Miscellaneous Scripts/core-automation/evaluate_architecture_metrics.py) | Computes Top-1/2 accuracy, Kendall's tau, MAE, RMSE per architecture/model/decision-type. Aggregates multi-run results, filters sentinel 1928 failures, matches to reference. Outputs `metrics_summary_{MODEL_KEY}.xlsx`. |
-| [evaluate_baseline_metrics.py](Miscellaneous Scripts/core-automation/evaluate_baseline_metrics.py) | Same metric computation as above, applied to the non-LLM baseline outputs in `Output Files/Baselines/`. |
-| [run_baseline_models.py](Miscellaneous Scripts/core-automation/run_baseline_models.py) | Computes the non-LLM baselines used in the incremental-contribution table: Fixed-Default (calculator on constant parameters) and Nearest-Neighbor (k=3 retrieval from the RAG corpus, no LLM call; not reported in the paper). Outputs to `Output Files/Baselines/`. |
-| [run_rag_ablation_experiments.py](Miscellaneous Scripts/experiments/run_rag_ablation_experiments.py) | Runs the RAG retrieval/exemplar-content ablation configurations described above. Outputs summary tables and a Markdown report. |
-| [compare_retrieval_k_bootstrap_ci.py](Miscellaneous Scripts/validation/compare_retrieval_k_bootstrap_ci.py) | Percentile-bootstrap confidence intervals on the k=1-minus-k=3 Kendall's tau difference, per model, from the RAG ablation output. |
-| [measure_rag_retrieval_distance.py](Miscellaneous Scripts/legacy/measure_rag_retrieval_distance.py) | Computes nearest-neighbor vs. random-draw embedding distances between Test and RAG-corpus scenarios, used to characterize how tightly the retrieval index actually separates a good match from a random one. |
-| [run_prompt_ablation_experiments.py](Miscellaneous Scripts/experiments/run_prompt_ablation_experiments.py) | Runs the prompt-sensitivity ablation (no-anchors, chain-of-thought scaffold, 0--10 rescale) for direct LLM scoring and the example-guided architecture across all four models. |
-| [test_prompt_ablation_significance.py](Miscellaneous Scripts/validation/test_prompt_ablation_significance.py) / [AggregatePromptAblations.py](Miscellaneous Scripts/legacy/AggregatePromptAblations.py) | Holm-corrected Friedman/Wilcoxon significance testing and aggregation for the prompt ablation. |
-| [run_hybrid_ablation_experiments.py](Miscellaneous Scripts/experiments/run_hybrid_ablation_experiments.py) | Runs the parameter-provenance ablation (extracted / dataset-median parameters) for the LLM-parameterized reference scoring architecture. Re-derives from existing result files; no new API calls. |
-| [test_hybrid_ablation_significance.py](Miscellaneous Scripts/validation/test_hybrid_ablation_significance.py) | Significance testing for the parameter-provenance ablation. |
-| [run_position_bias_control.py](Miscellaneous Scripts/experiments/run_position_bias_control.py) / [aggregate_position_bias_results.py](Miscellaneous Scripts/legacy/aggregate_position_bias_results.py) | Runs and aggregates the alternative-ordering (position-bias) test, including the exact permutation test on the LLM-parameterized reference scoring architecture's extraction layer. |
-| [significance_testing.py](Miscellaneous Scripts/validation/significance_testing.py) / [compute_confidence_intervals.py](Miscellaneous Scripts/validation/compute_confidence_intervals.py) | Shared Holm-corrected Friedman/Wilcoxon and percentile-bootstrap CI utilities used across the ablation suites. |
-| [SensitivityAnalysis.py](Miscellaneous Scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). The paper reports only the baseline/equal/entropy/MEREC arms (see [Sensitivity Analysis](#sensitivity-analysis)); the +/-0.05 arms are still computed but not reported. Outputs `sensitivity_analysis_{MODEL_KEY}.xlsx`. |
-| [WeightDiagnostics.py](Miscellaneous Scripts/validation/WeightDiagnostics.py) | Diagnostic breakdown of within-scenario criterion dispersion and zero-variance rates by decision type, feeding the implied-weights corner-solution discussion. |
-| [EntropyWeights.py](Miscellaneous Scripts/core-automation/EntropyWeights.py) | Computes Shannon entropy weights from reference score distributions overall and by decision type. Outputs `entropy_weights.xlsx`. |
-| [merec_weights.py](Miscellaneous Scripts/core-automation/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Outputs `merec_weights_summary.xlsx`. |
-| [implied_weights.py](Miscellaneous Scripts/core-automation/implied_weights.py) | Recovers implied weights from reference ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Outputs `implied_weights_summary.xlsx`. |
-| [evaluate_parameter_extraction.py](Miscellaneous Scripts/core-automation/evaluate_parameter_extraction.py) | Evaluates the LLM-parameterized reference scoring architecture's parameter extraction accuracy vs. reference: numeric params (MAE/RMSE/percentiles), categorical params (accuracy), counterfactual top-1 sensitivity. |
-| [sync_rag_ground_truth_scores.py](Miscellaneous Scripts/core-automation/sync_rag_ground_truth_scores.py) | Syncs updated reference scores back into the RAG scenario workbooks after re-running a reference calculator. Matches on descriptor columns, time-aware for Appliance. Run after calculator updates, then re-run `build_rag_index.py`. |
-| [CreateRepresentativeSample.py](Miscellaneous Scripts/legacy/CreateRepresentativeSample.py) | Stratifies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation sampling. |
+| [build_rag_index.py](scripts/collection/build_rag_index.py) | Builds/refreshes the ChromaDB vector index from the RAG scenario files. Computes SHA-256 of source files and stores a schema version in collection metadata to detect when a rebuild is needed. Current schema version: 4. |
+| [build_scenario_workbooks.py](scripts/collection/scenarios/build_scenario_workbooks.py) | Rebuilds derived Test/RAG workbooks from the three standalone scenario masters and fixed RAG membership; audits the outputs, writes to a fresh temporary directory by default, and accepts `--output-dir`. Its `--in-place` option is refused for frozen repository scenario inputs. |
+| [evaluate_architecture_metrics.py](scripts/analysis/evaluate_architecture_metrics.py) | Computes Top-1/2 accuracy, Kendall's tau, MAE, RMSE per architecture/model/decision-type. Reads benchmark inputs and writes `metrics_summary_{MODEL_KEY}.xlsx` into required `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [evaluate_baseline_metrics.py](scripts/analysis/evaluate_baseline_metrics.py) | Applies the same metric computation to preserved baseline results; accepts an explicit CSV `--output` (default under `results/current/baselines/`). |
+| [run_baseline_models.py](scripts/experiments/run_baseline_models.py) | Computes the non-LLM baselines used in the incremental-contribution table: Fixed-Default and Nearest-Neighbor. Requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--list` previews baseline choices without writing. |
+| [run_rag_ablation_experiments.py](scripts/experiments/run_rag_ablation_experiments.py) | Runs the RAG retrieval/exemplar-content ablation configurations described above. Requires `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--output` can name a safe Markdown report path. |
+| [compare_retrieval_k_bootstrap_ci.py](scripts/validation/compare_retrieval_k_bootstrap_ci.py) | Percentile-bootstrap confidence intervals on the k=1-minus-k=3 Kendall's tau difference; writes to an explicit safe `--output` file or the directory in `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [measure_rag_retrieval_distance.py](scripts/archive/legacy/measure_rag_retrieval_distance.py) | Computes nearest-neighbor vs. random-draw embedding distances; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [run_prompt_ablation_experiments.py](scripts/experiments/run_prompt_ablation_experiments.py) | Runs the prompt-sensitivity ablation (no-anchors, chain-of-thought scaffold, 0--10 rescale) across models; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [test_prompt_ablation_significance.py](scripts/validation/test_prompt_ablation_significance.py) / [AggregatePromptAblations.py](scripts/archive/legacy/AggregatePromptAblations.py) | Holm-corrected Friedman/Wilcoxon significance testing and aggregation for the prompt ablation; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [run_hybrid_ablation_experiments.py](scripts/experiments/run_hybrid_ablation_experiments.py) | Runs the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`, with an optional `--output` report path. |
+| [test_hybrid_ablation_significance.py](scripts/validation/test_hybrid_ablation_significance.py) | Significance testing for the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [run_position_bias_control.py](scripts/experiments/run_position_bias_control.py) / [aggregate_position_bias_results.py](scripts/archive/legacy/aggregate_position_bias_results.py) | Runs and aggregates the alternative-ordering test; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [significance_testing.py](scripts/validation/significance_testing.py) / [compute_confidence_intervals.py](scripts/validation/compute_confidence_intervals.py) | Shared Holm-corrected Friedman/Wilcoxon and percentile-bootstrap CI utilities; the significance writer requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). Writes under `workbooks/methodology/sensitivity_analysis/`; its paper-pipeline stage remains guarded. |
+| [WeightDiagnostics.py](scripts/validation/WeightDiagnostics.py) | Diagnostic breakdown of within-scenario criterion dispersion and zero-variance rates by decision type, feeding the implied-weights corner-solution discussion. |
+| [EntropyWeights.py](src/llm_mcda/common/weighting/EntropyWeights.py) | Computes Shannon entropy weights from reference score distributions overall and by decision type. Writes under `workbooks/methodology/`. |
+| [merec_weights.py](src/llm_mcda/common/weighting/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Writes under `workbooks/methodology/`. |
+| [implied_weights.py](src/llm_mcda/common/weighting/implied_weights.py) | Recovers implied weights from reference ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Writes under `workbooks/methodology/scoring_logic/`. |
+| [evaluate_parameter_extraction.py](scripts/analysis/evaluate_parameter_extraction.py) | Evaluates extraction accuracy vs. reference; reads preserved benchmark files and requires a safe `--output` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [sync_rag_ground_truth_scores.py](scripts/collection/sync_rag_ground_truth_scores.py) | Validates frozen scenario/ground-truth inputs and, unless `--dry-run`, requires a separate safe `--output-dir` for refreshed workbook copies. |
+| [CreateRepresentativeSample.py](scripts/archive/legacy/CreateRepresentativeSample.py) | Stratifies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation sampling. |
 
 For full per-experiment methodology (exact prompt variants, permutation counts, run-count decisions), see [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md).
 
@@ -498,9 +466,11 @@ For full per-experiment methodology (exact prompt variants, permutation counts, 
 
 ## Documentation
 
-[Codebase Guide](docs/CODEBASE_GUIDE.md) | [Ablation Experiments](docs/EXPERIMENTS.md) | [Metrics Pipeline](docs/metrics_calculation_pipeline.md) | [XLSX Schema Map](XLSX_Schema_Map.md) | [Provenance Audit](docs/PROVENANCE_AUDIT_PROMPT.md)
+[Codebase Guide](docs/CODEBASE_GUIDE.md) | [Ablation Experiments](docs/EXPERIMENTS.md) | [Metrics Pipeline](docs/metrics_calculation_pipeline.md) | [XLSX Schema Map](XLSX_Schema_Map.md) | [Prompt Ablation Report](results/public_reports/prompt_ablation_results.md) | [RAG Ablation Report](results/public_reports/rag_ablation_results.md) | [Hybrid Ablation Report](results/public_reports/hybrid_ablation_results.md)
 
-[Notebook](Scoring%20Logic%20and%20Documentation/paper/Notebook.pdf) | [Evaluation Metrics](Scoring%20Logic%20and%20Documentation/method/Evaluation_Metric_Derivations.pdf) | [Budget Penalties](Scoring%20Logic%20and%20Documentation/method/Budget_Penalties.pdf) | [Reference Ranges](Scoring%20Logic%20and%20Documentation/method/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](Scoring%20Logic%20and%20Documentation/method/Calculator_Examples.pdf)
+Scenario provenance: derived Test and RAG data should remain traceable to its source workbooks.
+
+[Evaluation Metrics](docs/methodology/Evaluation_Metric_Derivations.pdf) | [Budget Penalties](docs/methodology/Budget_Penalties.pdf) | [Reference Ranges](docs/methodology/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](docs/methodology/Calculator_Examples.pdf)
 
 ---
 

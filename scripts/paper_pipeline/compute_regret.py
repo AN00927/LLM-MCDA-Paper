@@ -6,18 +6,15 @@ runs, per model x architecture (x decision type).
 Regret per scenario = reference MAVT value of the reference's top-ranked
 alternative minus reference MAVT value of the alternative the architecture
 ranks first (0 when the architecture's Top-1 matches the reference's). This is
-the D12(b) analysis in paper/pass5/D9_D12_REPORT.md, section 7; that report's
-Analysis/pass5/d12_analyses.py is the reference implementation this was
-checked against (see the verification note in Analysis/rerun_prep/INFRA_REPORT.md
-for the reproduction check against that report's section 7.2 table).
+the value lost when the architecture chooses a different top-ranked alternative.
 
 READ-ONLY on existing per-run output files. No API calls. Reuses the same
-harness paper_pipeline/calculate_per_run_metrics.py uses (load_architecture,
+harness scripts/paper_pipeline/calculate_per_run_metrics.py uses (load_architecture,
 match_scenarios, filter_failed_scenarios) rather than re-parsing run files.
 
 Usage:
-    python paper_pipeline/compute_regret.py
-    python paper_pipeline/compute_regret.py --output-dir Analysis/rerun_prep/infra
+    python scripts/paper_pipeline/compute_regret.py
+    python scripts/paper_pipeline/compute_regret.py --output-dir local_manuscripts/Analysis
 """
 import argparse
 import contextlib
@@ -29,11 +26,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-if str(PROJECT_ROOT / "paper_pipeline") not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT / "paper_pipeline"))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+if str(PROJECT_ROOT / "scripts" / "paper_pipeline") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "paper_pipeline"))
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
 warnings.filterwarnings("ignore")
 
 with contextlib.redirect_stdout(io.StringIO()):
@@ -48,7 +50,7 @@ ARCHS = {
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 EPS = 1e-9
 
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "Analysis"
+DEFAULT_OUTPUT_DIR = local_manuscript_path("Analysis")
 
 
 def load_runs(model_key, arch_stem):
@@ -75,7 +77,7 @@ def load_runs(model_key, arch_stem):
 def per_scenario_regret(clean_df):
     """One row per scenario: regret, whether the architecture's Top-1 hit the
     reference's, and the regret a uniformly-random pick would take on average
-    (same definition as Analysis/pass5/d12_analyses.py)."""
+    (using the same regret definition as the analysis pipeline)."""
     clean, _, _ = cprm.filter_failed_scenarios(clean_df)
     ok_sids = set(clean["arch_scenario_id"])
     rows = []
@@ -103,7 +105,7 @@ def per_scenario_regret(clean_df):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR),
-                    help="Where to write regret CSVs (default: Analysis/).")
+                    help="Where to write regret CSVs (default: local-only Analysis/).")
     args = ap.parse_args()
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

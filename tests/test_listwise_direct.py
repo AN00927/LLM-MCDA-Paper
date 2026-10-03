@@ -1,5 +1,5 @@
 """Offline tests for the listwise direct-ranking arm
-(Miscellaneous Scripts/experiments/run_listwise_direct_ranking.py).
+(scripts/experiments/run_listwise_direct_ranking.py).
 
 No network and no paid calls: requests.post is replaced by the harness Poster.
 """
@@ -14,10 +14,10 @@ import pandas as pd
 import pytest
 
 import arch_patch_harness as H
-import sentinel_utils as SU
-from model_config import CRITERION_WEIGHTS, MODEL_SPECS
+from llm_mcda.common import sentinel_utils as SU
+from llm_mcda.common.model_config import CRITERION_WEIGHTS, MODEL_SPECS
 
-EXP = H.REPO / "Miscellaneous Scripts" / "experiments"
+EXP = H.REPO / "scripts" / "experiments"
 
 
 def _load(path, alias):
@@ -184,7 +184,7 @@ def test_fatal_http_stops_and_writes_no_run_file(tmp_path, monkeypatch):
 
 def test_analyze_compares_with_pointwise_per_model(tmp_path, monkeypatch):
     monkeypatch.setattr(LW, "output_dir_for", lambda mk: tmp_path / mk)
-    monkeypatch.setattr(LW, "ANALYSIS_DIR", tmp_path / "analysis")
+    monkeypatch.setattr(LW, "OUTPUT_DIR", tmp_path / "analysis")
     rng = np.random.default_rng(3)
 
     def rows(n_runs, n, p_hit):

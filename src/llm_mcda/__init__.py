@@ -1,0 +1,1 @@
+"""LLM-MCDA application package."""

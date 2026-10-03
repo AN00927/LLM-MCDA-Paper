@@ -10,7 +10,7 @@ per-scenario difference in Kendall's tau:
 
 for each model, using the same bootstrap conventions
 as the prompt-ablation machinery (bootstrap_ci_per_config in
-Miscellaneous Scripts/run_rag_ablation_experiments.py):
+scripts/run_rag_ablation_experiments.py):
 
     - n_bootstrap = 10,000 resamples
     - base seed = 42, hashed together with the stratum key via
@@ -22,35 +22,46 @@ Miscellaneous Scripts/run_rag_ablation_experiments.py):
     - CI = percentile method, 2.5 / 97.5 percentiles
 
 A BCa interval (via scipy.stats.bootstrap, the method used by
-Miscellaneous Scripts/compute_confidence_intervals.py for the per-run metrics)
+scripts/validation/compute_confidence_intervals.py for the per-run metrics)
 is reported as a cross-check. The point estimate is the observed mean
 difference, which is the quantity the CI describes.
 
 Input : Analysis/RAG_Ablation/rag_ablation_results.xlsx (scenario-level rows)
-Output: Analysis/RAG_Ablation/k1_vs_k3_bootstrap_ci.xlsx (new file)
+Output: k1_vs_k3_bootstrap_ci.xlsx in a required safe --output path or the
+        directory supplied with LLM_MCDA_RUN_OUTPUT_DIR
 
 Zero API calls. Plain ASCII output only.
 """
 
+import argparse
+import os
 import sys
 from pathlib import Path
+
+# Direct script execution does not add src/ when the package is uninstalled.
+_SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
+if _SRC_ROOT.is_dir() and str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(Path(__file__).resolve().parent) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-EXPERIMENTS_DIR = PROJECT_ROOT / "Miscellaneous Scripts" / "experiments"
-if str(EXPERIMENTS_DIR) not in sys.path:
-    sys.path.insert(0, str(EXPERIMENTS_DIR))
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    repository_root,
+    require_safe_output_directory,
+    require_safe_output_path,
+)
+PROJECT_ROOT = repository_root(start=__file__)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Imported rather than re-implemented so the seed-derivation rule cannot drift
 # away from the harness this script says it mirrors. The import is cheap:
 # run_rag_ablation_experiments defers chromadb and sentence_transformers to
 # call time and makes no API calls at import.
-from run_rag_ablation_experiments import derive_bootstrap_seed
+from scripts.experiments.run_rag_ablation_experiments import derive_bootstrap_seed
 
 INPUT_XLSX = PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "rag_ablation_results.xlsx"
 OUTPUT_XLSX = PROJECT_ROOT / "Analysis" / "RAG_Ablation" / "k1_vs_k3_bootstrap_ci.xlsx"
@@ -161,10 +172,36 @@ def bca_ci(diffs: np.ndarray, stratum_key: str, n_bootstrap: int = N_BOOTSTRAP):
     return float(result.confidence_interval.low), float(result.confidence_interval.high)
 
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--output",
+        help=(f"Output workbook path (required unless {RUN_OUTPUT_DIR_ENV} is set; "
+              "the environment variable is treated as an output directory)."),
+    )
+    return parser.parse_args(argv)
+
+
+def main(output_path=None):
+    if output_path is not None:
+        output_path = require_safe_output_path(output_path, option="--output")
+    else:
+        run_output_dir = os.environ.get(RUN_OUTPUT_DIR_ENV)
+        if not run_output_dir:
+            output_path = require_safe_output_path(
+                None, option=f"--output or {RUN_OUTPUT_DIR_ENV}"
+            )
+        else:
+            output_dir = require_safe_output_directory(
+                run_output_dir, option=RUN_OUTPUT_DIR_ENV
+            )
+            output_path = require_safe_output_path(
+                output_dir / OUTPUT_XLSX.name, option=RUN_OUTPUT_DIR_ENV
+            )
+
     print("K1 vs K3 retrieval bootstrap CI (task C4a)")
     print(f"  Input : {INPUT_XLSX}")
-    print(f"  Output: {OUTPUT_XLSX}")
+    print(f"  Output: {output_path}")
     print(f"  Resamples: {N_BOOTSTRAP}, base seed: {RANDOM_SEED} (derived per model), "
           f"unit: paired per-scenario diff, method: percentile (BCa cross-check)")
     print()
@@ -199,7 +236,8 @@ def main():
         })
 
     out = pd.DataFrame(rows)
-    out.to_excel(OUTPUT_XLSX, index=False, sheet_name="k1_vs_k3")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    out.to_excel(output_path, index=False, sheet_name="k1_vs_k3")
 
     print("Model                 n  mean_tau_k1  mean_tau_k3  mean_diff  CI95 percentile    CI95 bca        contains_zero")
     print("-" * 110)
@@ -212,8 +250,8 @@ def main():
             f"{str(r['CI95_contains_zero'])}"
         )
     print()
-    print(f"Wrote {OUTPUT_XLSX}")
+    print(f"Wrote {output_path}")
 
 
 if __name__ == "__main__":
-    main()
+    main(parse_args().output)

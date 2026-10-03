@@ -3,7 +3,7 @@
 cluster_bootstrap_ci.py - task P1.1 of the EMS revision plan.
 
 Replaces the run-mean BCa intervals in
-`Miscellaneous Scripts/compute_confidence_intervals.py`.
+`scripts/analysis/compute_confidence_intervals.py`.
 
 WHY THE OLD INTERVALS ARE WRONG. That script resamples the FIVE per-run mean
 values for a cell and calls the result a 95% CI on the metric. Two problems:
@@ -37,8 +37,8 @@ Stage 1 writes a per-scenario long table, which P1.3 (S_int), P1.6 (S_disc) and
 P1.7 (stratified tests) all need and none of which currently exists.
 
 Usage:
-    python paper_pipeline/cluster_bootstrap_ci.py
-    python paper_pipeline/cluster_bootstrap_ci.py --reuse   (skip stage 1)
+    python scripts/paper_pipeline/cluster_bootstrap_ci.py
+    python scripts/paper_pipeline/cluster_bootstrap_ci.py --reuse   (skip stage 1)
 """
 
 import argparse
@@ -50,21 +50,26 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
 
-from model_config import MODEL_SPECS  # noqa: E402
-from sentinel_utils import _is_complete_run_file  # noqa: E402
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS  # noqa: E402
+from llm_mcda.common.sentinel_utils import _is_complete_run_file  # noqa: E402
 
-_cm_path = PROJECT_ROOT / "Miscellaneous Scripts" / "core-automation" / "evaluate_architecture_metrics.py"
+_cm_path = PROJECT_ROOT / "scripts" / "analysis" / "evaluate_architecture_metrics.py"
 _cm_spec = spec_from_file_location("CalculateMetrics", _cm_path)
 _cm = module_from_spec(_cm_spec)
 _cm_spec.loader.exec_module(_cm)
 
-OUT_DIR = PROJECT_ROOT / "Analysis"
+OUT_DIR = local_manuscript_path("Analysis")
 PER_SCENARIO_CSV = OUT_DIR / "per_scenario_metrics_all.csv"
 OUT_XLSX = OUT_DIR / "cluster_bootstrap_ci.xlsx"
-OUT_MD = OUT_DIR / "cluster_bootstrap_ci.md"
+OUT_MD = local_manuscript_path("Analysis", "cluster_bootstrap_ci.md")
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",
@@ -203,9 +208,9 @@ def build_per_scenario_table():
             print(f"  [OK] {model_key} / {ARCH_SHORT[arch_name]}: {len(files)} runs")
 
     df = pd.DataFrame(all_rows)
-    OUT_DIR.mkdir(exist_ok=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(PER_SCENARIO_CSV, index=False, encoding="utf-8")
-    print(f"\n  Wrote {PER_SCENARIO_CSV.relative_to(PROJECT_ROOT)}  ({len(df)} rows)")
+    print(f"\n  Wrote {PER_SCENARIO_CSV}  ({len(df)} rows)")
     return df
 
 
@@ -360,14 +365,14 @@ def main():
     print("\nStage 3 - paired architecture differences (same scenarios both arms)")
     paired = paired_bootstrap(df)
 
-    OUT_DIR.mkdir(exist_ok=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xl:
         res.to_excel(xl, sheet_name="cluster_ci", index=False)
         paired.to_excel(xl, sheet_name="paired_differences", index=False)
 
     md = ["# Scenario-level cluster bootstrap (P1.1)", "",
           "Replaces the run-mean BCa intervals in",
-          "`Miscellaneous Scripts/compute_confidence_intervals.py`, which resampled",
+          "`scripts/analysis/compute_confidence_intervals.py`, which resampled",
           "five per-run means and therefore measured seed variance only.", "",
           f"- Resampling unit: **scenario** (cluster); all runs of a drawn scenario travel together",
           f"- Resamples: **{N_BOOT}**, seed {SEED}, **percentile** intervals",
@@ -413,6 +418,7 @@ def main():
                       f"| {'yes' if r['excludes_zero'] else '**NO**'} |")
         md.append("")
 
+    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     OUT_MD.write_text("\n".join(md), encoding="utf-8")
 
     print("")
@@ -430,7 +436,7 @@ def main():
     print("")
     print(f"  Median cluster/run-level width ratio: {ratios.median():.1f}x "
           f"(range {ratios.min():.1f}-{ratios.max():.1f})")
-    print(f"  Wrote {OUT_XLSX.relative_to(PROJECT_ROOT)}")
+    print(f"  Wrote {OUT_XLSX}")
     print(f"  Wrote {OUT_MD.relative_to(PROJECT_ROOT)}")
 
 

@@ -1,4 +1,5 @@
 import os
+import argparse
 import sys
 import json
 import time
@@ -39,11 +40,22 @@ These sources were used to help build prompts:
 
 """
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# Allow direct execution from the repository without an installed package.
+SRC_ROOT = Path(__file__).resolve().parents[2]
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from llm_mcda.common.paths import (
+    RUN_OUTPUT_DIR_ENV,
+    UnsafeOutputPathError,
+    repository_root,
+    require_safe_output_directory,
+)
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from model_config import (
+from llm_mcda.common.model_config import (
     get_model_id,
     get_output_folder_for_model_id,
     get_reasoning_payload,
@@ -62,7 +74,7 @@ from model_config import (
     FAILED_API_EXHAUSTED,
     FAILED_UNKNOWN,
 )
-from sentinel_utils import (
+from llm_mcda.common.sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     apply_mavt_ranking,
@@ -98,7 +110,7 @@ ARCHITECTURE = "Direct_LLM_Scoring"
 # writes nothing.
 RAW_LOG = RawCallLog()
 
-TEST_SCENARIOS = PROJECT_ROOT / "Scenario Files" / "TestScenarios.xlsx"
+TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
 
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
@@ -872,7 +884,21 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     logging.info(f"Score statistics saved to {stats_path}")
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Run Direct LLM Scoring.")
+    parser.add_argument(
+        "--output-dir",
+        default=os.environ.get(RUN_OUTPUT_DIR_ENV),
+        help=f"Explicit safe output directory (or set {RUN_OUTPUT_DIR_ENV}); populated directories are allowed for resume.",
+    )
+    args, _unknown = parser.parse_known_args(argv)
+    try:
+        output_dir = require_safe_output_directory(
+            args.output_dir, option="--output-dir", root=PROJECT_ROOT
+        )
+    except UnsafeOutputPathError as exc:
+        parser.error(str(exc))
+
     if not os.getenv("OPENROUTER_API_KEY"):
         logging.error("OPENROUTER_API_KEY not found in .env file")
         return
@@ -905,7 +931,6 @@ def main():
         logging.error(f" Input validation error: {e}")
         return
 
-    output_dir = PROJECT_ROOT / get_output_folder_for_model_id(API_CONFIG["model"])
     output_dir.mkdir(parents=True, exist_ok=True)
     output_xlsx = output_dir / "Direct_LLM_Scoring_results.xlsx"
     output_diagnostics = output_dir / "Direct_LLM_Scoring_results_diagnostics.json"

@@ -4,26 +4,20 @@ compute_tie_rates.py -- per model x architecture (x decision type), the share
 of scenario-runs whose aggregate (weighted-sum) score ties across two or more
 alternatives before TIE_BREAK_PRIORITY is applied.
 
-This is the statistic behind the supplement's tie-rate table (S L203) and the
-D12(c) analysis in paper/pass5/D9_D12_REPORT.md. On current data, A_E should
-reproduce 17.3 / 5.8 / 12.7% for DeepSeek / GPT-OSS / Qwen (see that report,
-section 8.2, "Any tie (S1 figure)" column) -- this script's own docstring does
-not restate the numbers so it cannot drift from them silently; check the report
-itself when validating a rerun.
+This computes the scenario-run tie-rate statistic used in the manuscript.
 
 READ-ONLY on existing per-run output files. No API calls. Reuses the same
-harness paper_pipeline/calculate_per_run_metrics.py uses (load_architecture,
+harness scripts/paper_pipeline/calculate_per_run_metrics.py uses (load_architecture,
 match_scenarios, filter_failed_scenarios) rather than re-parsing run files, and
-the same tie/tie-break definitions as Analysis/pass5/d12_analyses.py (the
-reference implementation this was checked against): a weighted-score tie is
+the explicit tie/tie-break definition: a weighted-score tie is
 two or more alternatives within 1e-9 of the scenario's maximum weighted score,
 computed from model_config.CRITERION_WEIGHTS on the architecture's own
 criterion scores -- i.e. before sentinel_utils.apply_mavt_ranking's
 TIE_BREAK_PRIORITY tie-break is applied.
 
 Usage:
-    python paper_pipeline/compute_tie_rates.py
-    python paper_pipeline/compute_tie_rates.py --output-dir Analysis/rerun_prep/infra
+    python scripts/paper_pipeline/compute_tie_rates.py
+    python scripts/paper_pipeline/compute_tie_rates.py --output-dir local_manuscripts/Analysis
 """
 import argparse
 import contextlib
@@ -35,15 +29,20 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from llm_mcda.common.paths import repository_root
+PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-if str(PROJECT_ROOT / "paper_pipeline") not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT / "paper_pipeline"))
+SOURCE_ROOT = PROJECT_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+if str(PROJECT_ROOT / "scripts" / "paper_pipeline") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "paper_pipeline"))
+from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
 warnings.filterwarnings("ignore")
 
-from model_config import MODEL_SPECS, CRITERION_WEIGHTS, TIE_BREAK_PRIORITY  # noqa: E402
-from sentinel_utils import CRITERIA  # noqa: E402
+from llm_mcda.common.model_config import MODEL_SPECS, CRITERION_WEIGHTS, TIE_BREAK_PRIORITY  # noqa: E402
+from llm_mcda.common.sentinel_utils import CRITERIA  # noqa: E402
 
 with contextlib.redirect_stdout(io.StringIO()):
     import calculate_per_run_metrics as cprm  # noqa: E402
@@ -57,7 +56,7 @@ ARCHS = {
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 EPS = 1e-9
 
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "Analysis"
+DEFAULT_OUTPUT_DIR = local_manuscript_path("Analysis")
 
 
 def wsum(row, prefix="arch_"):
@@ -116,7 +115,7 @@ def per_scenario_tie_flags(clean_df):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR),
-                    help="Where to write tie_rates.csv (default: Analysis/).")
+                    help="Where to write tie_rates.csv (default: local-only Analysis/).")
     args = ap.parse_args()
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

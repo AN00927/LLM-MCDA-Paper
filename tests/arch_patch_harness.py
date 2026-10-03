@@ -1,7 +1,7 @@
 """Test harness for the installed architecture patch (2026-09 rerun).
 
-Ported from Analysis/rerun_prep/arch_new/tests/harness.py; it now drives the
-INSTALLED files: Architectures/*.py and the repo-root sentinel_utils.py.
+It drives the installed files under ``src/llm_mcda/architectures`` and checks
+the root compatibility shim for ``sentinel_utils``.
 
 No network, no paid calls:
   - OPENROUTER_API_KEY is forced to a dummy value before any module loads
@@ -12,33 +12,32 @@ No network, no paid calls:
 
 Pre-patch reference. A few tests compare the installed code against the code
 it replaced (tie rounding, A_H key override, the A_H historical-response and
-A_D/A_E synthetic regressions). That code is read, read-only, from git at
-PREPATCH_COMMIT (`git show <commit>:<path>`), the last commit before the
-install; the tests that need it skip if git or the commit is unavailable.
-Set ARCH_PREPATCH_DIR to a folder holding the three pre-patch architecture
-files to use a copy instead of git.
+A_D/A_E synthetic regressions). The three source snapshots are stored under
+``tests/fixtures/prepatch_architectures`` so the tests remain independent of
+rewritten Git commit IDs. Set ARCH_PREPATCH_DIR to use another fixture folder.
 """
 import copy
 import json
 import os
-import subprocess
 import sys
-import tempfile
 import types
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = Path(os.environ.get("ARCH_TEST_REPO") or HERE.parent)
-ARCH_DIR = REPO / "Architectures"
-PREPATCH_COMMIT = "19862aa"
+REPO = Path(os.environ.get("ARCH_TEST_REPO") or HERE.parent).resolve()
+SOURCE_ROOT = REPO / "src"
+ARCH_DIR = SOURCE_ROOT / "llm_mcda" / "architectures"
+PREPATCH_FIXTURE_DIR = HERE / "fixtures" / "prepatch_architectures"
+LEGACY_ARCH_DIR = REPO / "Architectures"
 
 os.environ["OPENROUTER_API_KEY"] = "test-dummy-key-no-network"
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.pop("RAG_TOP_K", None)
 
-while str(REPO) in sys.path:
-    sys.path.remove(str(REPO))
-sys.path.insert(0, str(REPO))
+for _path in (str(REPO), str(SOURCE_ROOT)):
+    while _path in sys.path:
+        sys.path.remove(_path)
+    sys.path.insert(0, _path)
 
 import requests  # noqa: E402
 
@@ -49,9 +48,15 @@ def _no_network(*args, **kwargs):
 
 requests.Session.request = _no_network
 
-import sentinel_utils  # noqa: E402
+from llm_mcda.common import model_config as _model_config  # noqa: E402
+from llm_mcda.common import sentinel_utils  # noqa: E402
+# Archived reference fixtures retain their pre-package flat imports.
+sys.modules["sentinel_utils"] = sentinel_utils
+sys.modules["model_config"] = _model_config
 
-assert Path(sentinel_utils.__file__).resolve().parent == REPO.resolve(), sentinel_utils.__file__
+assert Path(sentinel_utils.__file__).resolve() == (
+    REPO / "src" / "llm_mcda" / "common" / "sentinel_utils.py"
+).resolve(), sentinel_utils.__file__
 assert hasattr(sentinel_utils, "openrouter_chat"), "installed sentinel_utils lacks the patch"
 
 ARCH_FILES = {
@@ -61,11 +66,11 @@ ARCH_FILES = {
 }
 
 
-def load_module(path: Path, as_file: Path, name: str):
+def load_module(path: Path, as_file: Path, name: str, *, source_text: str | None = None):
     """Execute *path*'s source as a module whose __file__ is *as_file*."""
     mod = types.ModuleType(name)
     mod.__file__ = str(as_file)
-    code = compile(path.read_text(encoding="utf-8"), str(path), "exec")
+    code = compile(source_text if source_text is not None else path.read_text(encoding="utf-8"), str(path), "exec")
     sys.modules[name] = mod
     exec(code, mod.__dict__)
     return mod
@@ -77,41 +82,32 @@ def load_patched(key: str, tag: str = ""):
     return load_module(ARCH_DIR / fname, ARCH_DIR / fname, f"patched_{key}{tag}")
 
 
-_PREPATCH_CACHE = {}
-
-
 def prepatch_source(key: str):
     """Path to the pre-patch source of architecture *key*, or None."""
     fname = ARCH_FILES[key]
-    if os.environ.get("ARCH_PREPATCH_DIR"):
-        p = Path(os.environ["ARCH_PREPATCH_DIR"]) / fname
-        return p if p.exists() else None
-    if key in _PREPATCH_CACHE:
-        return _PREPATCH_CACHE[key]
-    try:
-        blob = subprocess.run(
-            ["git", "show", f"{PREPATCH_COMMIT}:Architectures/{fname}"],
-            cwd=str(REPO), capture_output=True, check=True).stdout
-    except Exception:
-        _PREPATCH_CACHE[key] = None
-        return None
-    d = Path(tempfile.mkdtemp(prefix="arch_prepatch_"))
-    p = d / fname
-    p.write_bytes(blob)
-    _PREPATCH_CACHE[key] = p
-    return p
+    fixture_dir = Path(os.environ.get("ARCH_PREPATCH_DIR") or PREPATCH_FIXTURE_DIR)
+    source = fixture_dir / fname
+    return source if source.is_file() else None
 
 
 def load_prepatch(key: str):
     """The architecture module as it was before the install, executed as if it
-    lived in Architectures/ (so PROJECT_ROOT resolves to the repo). It runs
+    lived in Architectures/ (so its legacy project-root logic resolves to the repo). It runs
     against the installed sentinel_utils, which only added names."""
     import pytest
     src = prepatch_source(key)
     if src is None:
-        pytest.skip(f"pre-patch source for {key} unavailable (git show {PREPATCH_COMMIT})")
+        pytest.skip(f"pre-patch source fixture for {key} is unavailable")
     fname = ARCH_FILES[key]
-    return load_module(src, ARCH_DIR / fname, f"prepatch_{key}")
+    # Keep the historical fixture bytes frozen; adapt only its relocated calculator path at runtime.
+    source_text = src.read_text(encoding="utf-8")
+    if key == "AH":
+        old_path = 'GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "Ground Truth Calculators"'
+        new_path = 'GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "src" / "llm_mcda" / "calculators"'
+        if source_text.count(old_path) != 1:
+            raise RuntimeError("Expected one legacy HVAC calculator path in frozen A_H fixture")
+        source_text = source_text.replace(old_path, new_path)
+    return load_module(src, LEGACY_ARCH_DIR / fname, f"prepatch_{key}", source_text=source_text)
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +193,7 @@ ALT_COLS = ["alternative_1", "alternative_2", "alternative_3"]
 def get_test_scenarios():
     """First Test scenario of each decision type, as (scenario_id, dict)."""
     from sentinel_utils import read_table_clean
-    df = read_table_clean(REPO / "Scenario Files" / "TestScenarios.xlsx", keep_str_cols=ALT_COLS)
+    df = read_table_clean(REPO / "workbooks" / "scenarios" / "TestScenarios.xlsx", keep_str_cols=ALT_COLS)
     out = {}
     for i, row in df.iterrows():
         dt = row["decision_type"]
