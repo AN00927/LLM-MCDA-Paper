@@ -46,6 +46,7 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 from llm_mcda.common.paths import local_manuscript_path  # noqa: E402
+from llm_mcda.common.stats_utils import holm_adjust  # noqa: E402
 _VALIDATION = PROJECT_ROOT / "scripts" / "validation"
 if str(_VALIDATION) not in sys.path:
     sys.path.insert(0, str(_VALIDATION))
@@ -59,23 +60,6 @@ OUT = local_manuscript_path("paper", "per_model_pvalues.csv")
 
 HEADLINE_METRICS = ["kendall_tau", "overall_mae", "top1_accuracy"]
 METRIC_LABEL = {"kendall_tau": "tau", "overall_mae": "MAE", "top1_accuracy": "Top-1"}
-
-
-def holm(pvals):
-    """Holm-Bonferroni adjusted p-values, order preserved, NaNs passed through."""
-    p = np.asarray(pvals, dtype=float)
-    out = np.full(p.shape, np.nan)
-    idx = np.where(np.isfinite(p))[0]
-    if len(idx) == 0:
-        return out
-    order = idx[np.argsort(p[idx], kind="mergesort")]
-    k = len(order)
-    running = 0.0
-    for i, j in enumerate(order):
-        adj = min(p[j] * (k - i), 1.0)
-        running = max(running, adj)   # enforce monotonicity
-        out[j] = running
-    return out
 
 
 def main():
@@ -113,10 +97,10 @@ def main():
                     "n_tied_pairs": (n - n_nonzero) if n else 0,
                 })
     fam = pd.DataFrame(family)
-    fam["p_holm_family"] = holm(fam["p_value"].values)
+    fam["p_holm_family"] = holm_adjust(fam["p_value"].values)
 
     sub = fam[fam["metric"].isin(HEADLINE_METRICS)].copy().reset_index(drop=True)
-    sub["p_holm_subset"] = holm(sub["p_value"].values)
+    sub["p_holm_subset"] = holm_adjust(sub["p_value"].values)
 
     # Direction: sign of the median paired difference (arch_a - arch_b).
     directions = []
