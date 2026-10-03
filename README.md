@@ -102,7 +102,7 @@ Reference scores are likewise reproducible offline: calculator CLIs now require 
 
 Migration-updated run, analysis, validation, and legacy writer CLIs require `--output-dir PATH` or the `LLM_MCDA_RUN_OUTPUT_DIR` environment variable. Single-file writers use `--output PATH` (or the documented file option). If a required destination is missing or resolves under `Analysis/`, `archive/`, `paper/`, `Output Files*/`, or frozen scenario/ground-truth/older-run workbook paths, the command stops with an error before writing. Relative destinations resolve from the repository root. Existing non-frozen destinations are allowed so interrupted runs can resume; commands do not clear them automatically. The scenario workbook builder is an exception: it creates a fresh temporary output directory by default and accepts `--output-dir` to choose another safe location; `--in-place` is refused for the frozen repository scenario workbooks.
 
-The frozen historical trees remain useful as input evidence. They are not output defaults and should not be edited by analysis or validation commands. For the CLI-by-CLI options, see [Codebase Guide](docs/CODEBASE_GUIDE.md#safe-output-routing).
+The frozen historical trees remain useful as input evidence. They are not output defaults and should not be edited by analysis or validation commands. The CLI-by-CLI option table is maintained in the author's local-only documentation tree.
 
 ---
 
@@ -220,16 +220,14 @@ LLM-MCDA-Paper/
 │   └── backups/
 ├── data/scenarios/
 ├── results/
-│   ├── current/
+│   ├── paper_outputs/
 │   ├── older_runs/
-│   ├── methodology/
-│   └── public_reports/
+│   └── methodology/
 ├── Analysis/ and existing Output Files*/  (frozen benchmark and analysis artifacts)
 ├── archive/                             (frozen archival run outputs)
 ├── local_manuscripts/                   (ignored, local-only)
 ├── local_documentation/                 (ignored, local-only)
 ├── tests/
-├── docs/
 ├── model_config.py                      (compatibility shim)
 ├── sentinel_utils.py                     (compatibility shim)
 └── pyproject.toml
@@ -237,7 +235,7 @@ LLM-MCDA-Paper/
 
 ### Preserved results and local-only sources
 
-Existing run and output history stays at its recorded paths. This includes the 514 selected run paths, all 294 `Analysis/**` artifacts, the 23 derived paper outputs, and the 124 archived run outputs; the existing `Output Files*/`, `Analysis/`, and archive trees are frozen historical data, not active code locations. Curated reports and methodology outputs are organized under `results/` and `docs/methodology/`.
+Existing run and output history stays at its recorded paths. This includes the 514 selected run paths, all 294 `Analysis/**` artifacts, the 23 derived paper outputs, and the 124 archived run outputs; the existing `Output Files*/`, `Analysis/`, and archive trees are frozen historical data, not active code locations. Curated analysis outputs are organized under `results/`; the derived manuscript tables and per-run metrics live in `results/paper_outputs/`.
 
 Manuscript drafts, selected manuscript figures, and archival documents are local-only under the ignored `local_manuscripts/` and `local_documentation/` directories. The three archived Baselines workbooks are local-only under `archive/2026-09_pre_rerun/Output Files/Baselines/` and may be moved as needed. The legacy `build_consolidated_scenario_workbooks.py` expects `workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx`; that workbook is currently absent. The standalone scenario builder writes to a fresh temporary directory by default or to a caller-selected safe `--output-dir`. Its `--in-place` option is rejected when the masters are the frozen repository workbooks; use a separate safe input copy for a scratch rebuild. Local manuscript and archival lookups can be redirected with `LLM_MCDA_LOCAL_MANUSCRIPTS_DIR` and `LLM_MCDA_LOCAL_DOCUMENTATION_DIR`.
 
@@ -414,7 +412,7 @@ Per the project's no-pooling-across-models convention, sensitivity results are r
 
 ## Ablation Suites
 
-Four ablation suites, run on top of the main benchmark, test whether the reported architecture ordering depends on design choices inside the architectures rather than on the architectures themselves. All four cover the same four models and use a Holm-corrected nonparametric protocol within each model (never pooled across models). Full methodology and results are in the paper (Sections 4.5 and 5.5) and `docs/EXPERIMENTS.md`.
+Four ablation suites, run on top of the main benchmark, test whether the reported architecture ordering depends on design choices inside the architectures rather than on the architectures themselves. All four cover the same four models and use a Holm-corrected nonparametric protocol within each model (never pooled across models). Full methodology and results are in the paper (Sections 4.5 and 5.5).
 
 - **Prompt-sensitivity ablation** (`run_prompt_ablation_experiments.py`, `test_prompt_ablation_significance.py`, `AggregatePromptAblations.py`) -- reruns direct LLM scoring and the example-guided architecture under three prompt perturbations (removing scoring anchors, adding a chain-of-thought scaffold, rescaling the 0--1 response range to 0--10) on the full 195-scenario test set. The architecture ordering survives every variant.
 - **RAG ablation** (`run_rag_ablation_experiments.py`, `compare_retrieval_k_bootstrap_ci.py`, `measure_rag_retrieval_distance.py`) -- runs on the 90-scenario RAG corpus under leave-one-out retrieval, varying retrieval depth (k=1, 3, 5), the embedding model, and what the retrieved exemplar exposes (scores, ranks, hidden engineering parameters). Removing exemplar scores hurts far more than removing hidden parameters.
@@ -444,33 +442,29 @@ Three scripts independently validate the subjective MAVT weights against the ref
 | [run_baseline_models.py](scripts/experiments/run_baseline_models.py) | Computes the non-LLM baselines used in the incremental-contribution table: Fixed-Default and Nearest-Neighbor. Requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--list` previews baseline choices without writing. |
 | [run_rag_ablation_experiments.py](scripts/experiments/run_rag_ablation_experiments.py) | Runs the RAG retrieval/exemplar-content ablation configurations described above. Requires `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--output` can name a safe Markdown report path. |
 | [compare_retrieval_k_bootstrap_ci.py](scripts/validation/compare_retrieval_k_bootstrap_ci.py) | Percentile-bootstrap confidence intervals on the k=1-minus-k=3 Kendall's tau difference; writes to an explicit safe `--output` file or the directory in `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [measure_rag_retrieval_distance.py](scripts/archive/legacy/measure_rag_retrieval_distance.py) | Computes nearest-neighbor vs. random-draw embedding distances; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [run_prompt_ablation_experiments.py](scripts/experiments/run_prompt_ablation_experiments.py) | Runs the prompt-sensitivity ablation (no-anchors, chain-of-thought scaffold, 0--10 rescale) across models; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [test_prompt_ablation_significance.py](scripts/validation/test_prompt_ablation_significance.py) / [AggregatePromptAblations.py](scripts/archive/legacy/AggregatePromptAblations.py) | Holm-corrected Friedman/Wilcoxon significance testing and aggregation for the prompt ablation; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [test_prompt_ablation_significance.py](scripts/validation/test_prompt_ablation_significance.py) / `AggregatePromptAblations.py` (author-side, not in this repo) | Holm-corrected Friedman/Wilcoxon significance testing and aggregation for the prompt ablation; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [run_hybrid_ablation_experiments.py](scripts/experiments/run_hybrid_ablation_experiments.py) | Runs the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`, with an optional `--output` report path. |
 | [test_hybrid_ablation_significance.py](scripts/validation/test_hybrid_ablation_significance.py) | Significance testing for the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [run_position_bias_control.py](scripts/experiments/run_position_bias_control.py) / [aggregate_position_bias_results.py](scripts/archive/legacy/aggregate_position_bias_results.py) | Runs and aggregates the alternative-ordering test; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
+| [run_position_bias_control.py](scripts/experiments/run_position_bias_control.py) / `aggregate_position_bias_results.py` (author-side, not in this repo) | Runs and aggregates the alternative-ordering test; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [significance_testing.py](scripts/validation/significance_testing.py) / [compute_confidence_intervals.py](scripts/validation/compute_confidence_intervals.py) | Shared Holm-corrected Friedman/Wilcoxon and percentile-bootstrap CI utilities; the significance writer requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). Writes under `workbooks/methodology/sensitivity_analysis/`; its paper-pipeline stage remains guarded. |
 | [WeightDiagnostics.py](scripts/validation/WeightDiagnostics.py) | Diagnostic breakdown of within-scenario criterion dispersion and zero-variance rates by decision type, feeding the implied-weights corner-solution discussion. |
 | [EntropyWeights.py](src/llm_mcda/common/weighting/EntropyWeights.py) | Computes Shannon entropy weights from reference score distributions overall and by decision type. Writes under `workbooks/methodology/`. |
 | [merec_weights.py](src/llm_mcda/common/weighting/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Writes under `workbooks/methodology/`. |
-| [implied_weights.py](src/llm_mcda/common/weighting/implied_weights.py) | Recovers implied weights from reference ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Writes under `workbooks/methodology/scoring_logic/`. |
+| [implied_weights.py](src/llm_mcda/common/weighting/implied_weights.py) | Recovers implied weights from reference ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Writes under `workbooks/methodology/`. |
 | [evaluate_parameter_extraction.py](scripts/analysis/evaluate_parameter_extraction.py) | Evaluates extraction accuracy vs. reference; reads preserved benchmark files and requires a safe `--output` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
 | [sync_rag_ground_truth_scores.py](scripts/collection/sync_rag_ground_truth_scores.py) | Validates frozen scenario/ground-truth inputs and, unless `--dry-run`, requires a separate safe `--output-dir` for refreshed workbook copies. |
-| [CreateRepresentativeSample.py](scripts/archive/legacy/CreateRepresentativeSample.py) | Stratifies by key physics-driving parameters (housing type, insulation, flow rate) within each decision type for representative ablation sampling. |
-
-For full per-experiment methodology (exact prompt variants, permutation counts, run-count decisions), see [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md).
 
 ---
 
 ## Documentation
 
-[Codebase Guide](docs/CODEBASE_GUIDE.md) | [Ablation Experiments](docs/EXPERIMENTS.md) | [Metrics Pipeline](docs/metrics_calculation_pipeline.md) | [XLSX Schema Map](XLSX_Schema_Map.md) | [Prompt Ablation Report](results/public_reports/prompt_ablation_results.md) | [RAG Ablation Report](results/public_reports/rag_ablation_results.md) | [Hybrid Ablation Report](results/public_reports/hybrid_ablation_results.md)
+[XLSX Schema Map](XLSX_Schema_Map.md)
+
+The codebase guide, per-experiment ablation methodology, metrics-pipeline walkthrough, calculator provenance ledger, and the methodology PDFs (evaluation-metric derivations, budget penalties, reference ranges, worked calculator examples) are author-side notes kept outside this repository.
 
 Scenario provenance: derived Test and RAG data should remain traceable to its source workbooks.
-
-[Evaluation Metrics](docs/methodology/Evaluation_Metric_Derivations.pdf) | [Budget Penalties](docs/methodology/Budget_Penalties.pdf) | [Reference Ranges](docs/methodology/Reference_Ranges_for_Value_Functions.pdf) | [Worked Calculator Examples](docs/methodology/Calculator_Examples.pdf)
 
 ---
 

@@ -23,11 +23,12 @@ Usage:
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-from llm_mcda.common.paths import repository_root
+from llm_mcda.common.paths import ALLOW_TRACKED_OUTPUT_WRITES_ENV, repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 SOURCE_ROOT = PROJECT_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
@@ -153,6 +154,10 @@ def main():
         for stage, label in guarded:
             print(f"  [{stage:<11}] {label}")
         print("Pass --allow-tracked-output-writes to run them after reviewing the destinations.\n")
+    elif guarded:
+        # Guarded stages write the tracked methodology artifacts. Propagate the
+        # opt-in to the step subprocesses so the path guard permits those writes.
+        os.environ[ALLOW_TRACKED_OUTPUT_WRITES_ENV] = "1"
 
     required_local = []
     if "numbers" in wanted:

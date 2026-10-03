@@ -46,6 +46,16 @@ criteria: `energy_cost`, `environmental`, `comfort`, `practicality`.
   `paper/`, `Output Files*/`, or frozen `workbooks/scenarios/`, `workbooks/ground_truth/`,
   and `workbooks/older_runs/` paths. Existing non-frozen destinations are allowed and
   are not automatically cleared.
+- **Tracked outputs are a second, softer tier.** `workbooks/methodology/` and
+  `results/methodology/` hold committed artifacts that the `weights` stage
+  legitimately regenerates, so they are writable but only on explicit opt-in:
+  either run through `run_paper_pipeline.py --allow-tracked-output-writes` (which
+  propagates the opt-in to its subprocesses) or set
+  `LLM_MCDA_ALLOW_TRACKED_OUTPUT_WRITES=1`. Invoking a weighting or diagnostics
+  script directly with one of those paths stops with an error. Do not add these
+  to the frozen list — freezing them would make the `weights` stage impossible
+  to run. Prefer a scratch `--output-dir` unless you intend to refresh the
+  committed copies.
 - Calculator CLIs require `--output FILE`. For example:
   `python src/llm_mcda/calculators/HVACGroundTruthCalculator.py --output results/scratch/ground_truth_hvac.xlsx`.
   Keep the generated workbook separate from the frozen canonical ground-truth workbook.

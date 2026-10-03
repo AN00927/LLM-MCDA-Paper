@@ -857,8 +857,11 @@ def run_wilcoxon(per_scenario_df):
     # Holm step-down with the running-maximum pass. Scaling each raw p by
     # (k - i) alone does not guarantee the adjusted values are monotone in the
     # raw ones, so without the running max a larger raw p can come out with a
-    # smaller adjusted p. Matches holm_correct() in
-    # run_rag_ablation_experiments.py and holm() in emit_per_model_pvalues.py.
+    # smaller adjusted p. Shared with emit_per_model_pvalues.py via
+    # holm_adjust() in llm_mcda.common.stats_utils. Note that holm_correct()
+    # in run_rag_ablation_experiments.py is a different routine: it applies
+    # the running max only to the significance flags, not to p_holm, so its
+    # adjusted p-values are not interchangeable with these.
     holm_df["p_holm"] = holm_adjust(holm_df["p_value"].values)
     holm_df["significant_holm"] = holm_df["p_holm"].apply(
         lambda p: p < alpha if pd.notna(p) else False

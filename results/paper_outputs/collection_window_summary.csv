@@ -1,0 +1,41 @@
+model,architecture,n_artifacts,n_runs,start_utc_iso,end_utc_iso,span_hours,time_sources,n_mtime_fallback,min_commit_utc_iso,max_commit_utc_iso
+deepseek,AD_listwise,10,5,2026-09-29T14:26:16+00:00,2026-09-29T14:31:09+00:00,0.08,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+deepseek,AH_order_reversed,12,6,2026-09-28T22:14:05+00:00,2026-09-30T02:44:35+00:00,28.51,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+deepseek,Direct_LLM_Scoring,15,5,2026-09-29T15:02:30+00:00,2026-09-29T16:27:52+00:00,1.42,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+deepseek,Direct_LLM_Scoring[position_bias_reversed],2,1,2026-09-29T00:02:37+00:00,2026-09-29T00:21:34+00:00,0.32,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+deepseek,Example-Guided_LLM_Scoring,15,5,2026-09-29T16:28:03+00:00,2026-09-29T17:56:04+00:00,1.47,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+deepseek,LLM-Parameterized_Reference_Scoring,15,5,2026-09-29T17:56:11+00:00,2026-09-29T18:30:41+00:00,0.58,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+deepseek,prompt_ablation:cell_cot_scaffold_AD,3,3,2026-09-29T04:52:20+00:00,2026-09-29T05:59:51+00:00,1.13,raw_jsonl:collected_utc,0,,
+deepseek,prompt_ablation:cell_cot_scaffold_AE,3,3,2026-09-29T08:01:26+00:00,2026-09-29T09:22:33+00:00,1.35,raw_jsonl:collected_utc,0,,
+deepseek,prompt_ablation:cell_no_anchors_AD,3,3,2026-09-29T02:04:40+00:00,2026-09-29T02:14:01+00:00,0.16,raw_jsonl:collected_utc,0,,
+deepseek,rag_ablation,1,1,2026-09-28T19:59:03+00:00,2026-09-28T20:40:34+00:00,0.69,raw_jsonl:collected_utc,0,,
+gemini,AD_listwise,10,5,2026-09-29T14:26:17+00:00,2026-09-29T14:44:49+00:00,0.31,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gemini,AH_order_reversed,12,6,2026-09-28T22:43:46+00:00,2026-09-30T02:48:27+00:00,28.08,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gemini,Direct_LLM_Scoring,15,5,2026-09-29T15:02:30+00:00,2026-09-29T17:04:21+00:00,2.03,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gemini,Direct_LLM_Scoring[position_bias_reversed],2,1,2026-09-29T00:21:34+00:00,2026-09-29T00:43:31+00:00,0.37,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gemini,Example-Guided_LLM_Scoring,15,5,2026-09-29T17:04:31+00:00,2026-09-29T18:52:53+00:00,1.81,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gemini,LLM-Parameterized_Reference_Scoring,15,5,2026-09-29T18:52:57+00:00,2026-09-29T19:14:50+00:00,0.36,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gemini,prompt_ablation:cell_cot_scaffold_AD,3,3,2026-09-29T05:59:55+00:00,2026-09-29T06:16:58+00:00,0.28,raw_jsonl:collected_utc,0,,
+gemini,prompt_ablation:cell_cot_scaffold_AE,3,3,2026-09-29T09:22:37+00:00,2026-09-29T09:40:47+00:00,0.3,raw_jsonl:collected_utc,0,,
+gemini,prompt_ablation:cell_no_anchors_AD,3,3,2026-09-29T02:14:03+00:00,2026-09-29T02:22:13+00:00,0.14,raw_jsonl:collected_utc,0,,
+gemini,rag_ablation,1,1,2026-09-28T20:00:02+00:00,2026-09-28T20:41:43+00:00,0.69,raw_jsonl:collected_utc,0,,
+gptoss,AD_listwise,10,5,2026-09-29T14:26:14+00:00,2026-09-29T15:01:33+00:00,0.59,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+gptoss,AH_order_reversed,12,6,2026-09-28T20:44:45+00:00,2026-09-30T02:33:55+00:00,29.82,raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+gptoss,Direct_LLM_Scoring,15,5,2026-09-29T15:02:28+00:00,2026-09-29T18:26:33+00:00,3.4,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+gptoss,Direct_LLM_Scoring[position_bias_reversed],2,1,2026-09-28T23:03:03+00:00,2026-09-28T23:51:58+00:00,0.82,raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+gptoss,Example-Guided_LLM_Scoring,15,5,2026-09-29T18:27:08+00:00,2026-09-29T21:47:14+00:00,3.34,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+gptoss,LLM-Parameterized_Reference_Scoring,15,5,2026-09-29T21:47:22+00:00,2026-09-29T22:43:34+00:00,0.94,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+gptoss,prompt_ablation:cell_cot_scaffold_AD,3,3,2026-09-29T02:22:18+00:00,2026-09-29T02:49:01+00:00,0.45,raw_jsonl:collected_utc,0,,
+gptoss,prompt_ablation:cell_cot_scaffold_AE,3,3,2026-09-29T06:17:03+00:00,2026-09-29T06:47:40+00:00,0.51,raw_jsonl:collected_utc,0,,
+gptoss,prompt_ablation:cell_no_anchors_AD,3,3,2026-09-29T01:38:45+00:00,2026-09-29T01:58:19+00:00,0.33,raw_jsonl:collected_utc,0,,
+gptoss,rag_ablation,1,1,2026-09-28T19:56:05+00:00,2026-09-28T20:37:36+00:00,0.69,raw_jsonl:collected_utc,0,,
+qwen,AD_listwise,10,5,2026-09-29T14:26:15+00:00,2026-09-29T14:29:44+00:00,0.06,raw_jsonl:collected_utc; xlsx:collected_utc,0,,
+qwen,AH_order_reversed,12,6,2026-09-28T21:53:23+00:00,2026-09-30T02:37:58+00:00,28.74,raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+qwen,Direct_LLM_Scoring,15,5,2026-09-29T15:02:29+00:00,2026-09-29T15:54:25+00:00,0.87,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+qwen,Direct_LLM_Scoring[position_bias_reversed],2,1,2026-09-28T23:51:59+00:00,2026-09-29T00:02:37+00:00,0.18,raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+qwen,Example-Guided_LLM_Scoring,15,5,2026-09-29T15:55:02+00:00,2026-09-29T16:49:03+00:00,0.9,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+qwen,LLM-Parameterized_Reference_Scoring,15,5,2026-09-29T16:49:08+00:00,2026-09-29T17:08:18+00:00,0.32,diagnostics_json:collected_utc_start/_end; raw_jsonl:collected_utc; xlsx:collected_utc,0,2026-09-27T21:06:59Z,2026-09-27T21:06:59Z
+qwen,prompt_ablation:cell_cot_scaffold_AD,3,3,2026-09-29T02:49:08+00:00,2026-09-29T04:52:15+00:00,2.05,raw_jsonl:collected_utc,0,,
+qwen,prompt_ablation:cell_cot_scaffold_AE,3,3,2026-09-29T06:47:49+00:00,2026-09-29T08:01:12+00:00,1.22,raw_jsonl:collected_utc,0,,
+qwen,prompt_ablation:cell_no_anchors_AD,3,3,2026-09-29T01:58:20+00:00,2026-09-29T02:04:39+00:00,0.11,raw_jsonl:collected_utc,0,,
+qwen,rag_ablation,1,1,2026-09-28T19:58:21+00:00,2026-09-28T20:38:21+00:00,0.67,raw_jsonl:collected_utc,0,,

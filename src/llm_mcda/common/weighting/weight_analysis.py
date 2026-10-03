@@ -94,7 +94,10 @@ IMPLIED_OUTPUT_NAME = "implied_weights_summary.xlsx"
 # Legacy default destinations (used only by the deprecated per-script shims so
 # that the existing pipeline invocation keeps writing where it always wrote).
 LEGACY_METHODOLOGY_DIR = PROJECT_ROOT / "workbooks" / "methodology"
-LEGACY_IMPLIED_DIR = PROJECT_ROOT / "workbooks" / "methodology" / "scoring_logic"
+# Implied weights used to land in a scoring_logic/ subfolder, with a second stale
+# copy under misc_scripts/. Both tracked copies were scrapped on 2026-10-03; the
+# workbook now regenerates flat beside the other methodology workbooks.
+LEGACY_IMPLIED_DIR = LEGACY_METHODOLOGY_DIR
 LEGACY_DIAG_CSV_DIR = PROJECT_ROOT / "results" / "methodology"
 
 

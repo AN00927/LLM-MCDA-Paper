@@ -140,7 +140,6 @@ Analysis/workstream_f_report.md
 !SECURITY.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
-!docs/*.md
 !Analysis/rerun_prep/*.md
 !Analysis/rerun_prep/**/*.md
 !Analysis/rerun_smoke/*.md
@@ -197,3 +196,11 @@ docs/TODO_EXECUTION_PLAN.md
 # Local-only scratch scripts under paper/pass6 (new copies live in scripts/ and src/).
 /paper/pass6/verify/compare_scenario_workbooks.py
 /paper/pass6/verify/value_review/solar_irradiance.py
+# --- Local-only trees (author decision 2026-10-03) --------------------------
+# These stay on disk but are never tracked, and their history was scrubbed with
+# git filter-repo. Derived data the pipeline still needs was relocated first:
+# paper/*.csv + paper/per_run_metrics/ -> results/paper_outputs/.
+# Anything re-added here must be a deliberate choice, not an accident.
+/docs/
+/paper/
+/scripts/archive/
