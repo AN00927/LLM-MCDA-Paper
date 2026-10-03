@@ -9,6 +9,7 @@ REPOSITORY_ROOT_ENV = "LLM_MCDA_REPO_ROOT"
 LOCAL_MANUSCRIPTS_ENV = "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR"
 LOCAL_DOCUMENTATION_ENV = "LLM_MCDA_LOCAL_DOCUMENTATION_DIR"
 RUN_OUTPUT_DIR_ENV = "LLM_MCDA_RUN_OUTPUT_DIR"
+ALLOW_TRACKED_OUTPUT_WRITES_ENV = "LLM_MCDA_ALLOW_TRACKED_OUTPUT_WRITES"
 
 
 _FROZEN_OUTPUT_PREFIXES = (
@@ -19,6 +20,22 @@ _FROZEN_OUTPUT_PREFIXES = (
     ("workbooks", "older_runs"),
     ("workbooks", "scenarios"),
 )
+
+# Tracked destinations that pipeline stages legitimately regenerate. Unlike the
+# frozen prefixes above these are not read-only inputs, so they are writable --
+# but only on explicit opt-in, so that running a weighting or diagnostics script
+# directly cannot silently overwrite a committed artifact. run_paper_pipeline.py
+# sets the opt-in env var when --allow-tracked-output-writes is passed.
+_TRACKED_OUTPUT_PREFIXES = (
+    ("workbooks", "methodology"),
+    ("results", "methodology"),
+)
+
+
+def _tracked_output_writes_allowed() -> bool:
+    return os.environ.get(ALLOW_TRACKED_OUTPUT_WRITES_ENV, "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
 
 
 class UnsafeOutputPathError(ValueError):
@@ -58,6 +75,17 @@ def _reject_frozen_output_destination(destination: Path, base: Path, *, option: 
             f"{option} resolves into frozen repository data ({shown}). Choose a "
             "scratch or run-specific destination outside Analysis/, archive/, paper/, "
             "Output Files*/, and frozen workbook inputs."
+        )
+
+    tracked = any(parts[: len(prefix)] == prefix for prefix in _TRACKED_OUTPUT_PREFIXES)
+    if tracked and not _tracked_output_writes_allowed():
+        shown = relative.as_posix()
+        raise UnsafeOutputPathError(
+            f"{option} resolves into tracked repository output ({shown}). These "
+            "artifacts are committed, so overwriting them is opt-in: set "
+            f"{ALLOW_TRACKED_OUTPUT_WRITES_ENV}=1, or run the stage through "
+            "run_paper_pipeline.py --allow-tracked-output-writes. To leave the "
+            "committed copies untouched, choose a scratch destination instead."
         )
 
 
