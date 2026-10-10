@@ -29,9 +29,8 @@ class ShowerGroundTruthCalculator:
 - Zhang et al. (2023). Buildings, 13(5), 1300.
 """
 
-    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Annual (2025)
-    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024). 0.19 is the bundled default-service
-    # rate (supply + delivery + riders) the paper derives from PA PUC (2025), not an EIA figure.
+    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Monthly (Feb 2026),
+    # Table 5.6.B: PA residential average 19.30 c/kWh for 2025 (17.77 c/kWh for 2024), rounded.
     ELECTRICITY_RATE_PA = 0.19
 
     # PA seasonal mains water temperatures: a linear fit, T_mains = 33.87 + 0.457 x T_out (F),

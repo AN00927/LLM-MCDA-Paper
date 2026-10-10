@@ -32,9 +32,8 @@ class HVACGroundTruthCalculator:
     EMISSIONS_PEAK_HOURS_PER_DAY = 16
     EMISSIONS_OFFPEAK_HOURS_PER_DAY = 8
 
-    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Annual (2025)
-    # (Table 2.10; PA residential avg 17.77 c/kWh in 2024). 0.19 is the bundled default-service
-    # rate (supply + delivery + riders) the paper derives from PA PUC (2025), not an EIA figure.
+    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Monthly (Feb 2026),
+    # Table 5.6.B: PA residential average 19.30 c/kWh for 2025 (17.77 c/kWh for 2024), rounded.
     ELECTRICITY_RATE_PA = 0.19
 
     # Residential infiltration rate (air changes/hour) for the air-change load method.
