@@ -1,199 +1,192 @@
 # LLM-MCDA: AI-Assisted Multi-Criteria Decision Analysis for Household Energy Optimization
 
 **Authors:** Ahaan Nigam; River Huang (Paul Scherrer Institut, Switzerland)
-**Institution:** Downingtown East High School
-**Target Journal:** Environmental Modelling & Software
 
 ---
 
-## Research Question
+## Overview
 
-**Proposition:** An LLM can occupy three positions in an MCDA workflow: it can score the alternatives, score them with retrieved worked examples, or supply the inputs of a deterministic calculator.
+This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) reference calculator, across **195 test scenarios** (70 HVAC, 65 Appliance, 60 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **90-scenario RAG corpus** (35 HVAC, 35 Appliance, 20 Shower) seeds the retrieval index used by the example-guided architecture.
 
-**Research question:** How accurately does each position reproduce a deterministic reference ranking?
-
----
-
-## Project Overview
-
-This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) reference calculator, across **195 test scenarios** (70 HVAC, 65 Appliance, 60 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **90-scenario RAG corpus** (35 HVAC, 35 Appliance, 20 Shower) seeds the retrieval index used by the example-guided architecture and never appears in evaluation.
-
-Four models are evaluated: Gemini 3.8 Flash, DeepSeek V4 Flash 0731, GPT-OSS 20B, and Qwen 3.5 9B, each run at its configured reasoning tier. Each architecture--model pair runs 5 trials over the 195-scenario test set: 585 calls/run for the two architectures that score one alternative per call, 195 calls/run for the one that extracts once per scenario. Across all three architectures and four models, the main benchmark totals 27,300 API calls.
-
-The three decision types were chosen for high behavioral plasticity and contribution to controllable residential energy/water use: HVAC (thermostat setpoints), Appliance (time-of-use scheduling), and Shower (duration).
+Four models are evaluated: Gemini 3.8 Flash, DeepSeek V4 Flash, GPT-OSS 20B, and Qwen3.5 9B, each run 5 trials per architecture. The main benchmark totals **27,300 API calls** across all architecture–model pairs.
 
 ---
 
 ## Setup
 
-Requires **Python 3.11 or newer**.
+Requires **Python 3.11+**.
 
 ```bash
 git clone https://github.com/AN00927/LLM-MCDA-Paper.git
 cd LLM-MCDA-Paper
-
-# Create and activate a virtual environment
 python -m venv .venv
-.venv\Scripts\activate        # Windows (PowerShell / cmd)
+.venv\Scripts\activate        # Windows
 source .venv/bin/activate     # macOS / Linux
-
 pip install -e .
 ```
 
-### API key
+### API Key
 
-The three architectures call models through [OpenRouter](https://openrouter.ai). Copy `.env.example` to `.env` at the repository root and fill in your key:
+Models are called through [OpenRouter](https://openrouter.ai). Copy `.env.example` to `.env` and fill in your key:
 
 ```
 OPENROUTER_API_KEY=your_key_here
 ```
 
-`.env` is gitignored and must never be committed.
+### Configuration
 
-### Selecting a model and run count
+Set `MODEL_KEY` and `N_RUNS` in [`model_config.py`](src/llm_mcda/common/model_config.py):
 
-Both live in [src/llm_mcda/common/model_config.py](src/llm_mcda/common/model_config.py):
+- `MODEL_KEY` — one of `gemini`, `deepseek`, `gptoss`, `qwen`
+- `N_RUNS` — number of repeated trials per architecture (default 5)
 
-- `MODEL_KEY` -- one of `gptoss`, `qwen`, `deepseek`, `gemini` (see [Model Set](#model-set)). It selects the model; choose output routing separately with `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`.
-- `N_RUNS` -- number of repeated trials per architecture (5 for the reported benchmark).
-
-### Running the benchmark
+### Running the Benchmark
 
 ```bash
-# Build the ChromaDB retrieval index first -- required by the example-guided architecture,
-# and it must be rebuilt after any change to the RAG scenario workbooks.
-python "scripts/collection/build_rag_index.py"
+# Build the ChromaDB retrieval index (required by example-guided architecture)
+python scripts/collection/build_rag_index.py
 
+# Run each architecture (set MODEL_KEY first, use a separate --output-dir per model/arch)
 python src/llm_mcda/architectures/Direct_LLM_Scoring.py --output-dir results/scratch/deepseek/direct
 python src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py --output-dir results/scratch/deepseek/example-guided
 python src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py --output-dir results/scratch/deepseek/parameterized
 ```
 
-Set `MODEL_KEY` in `model_config.py` to the model being collected, and use a separate output directory for each model/architecture combination. Runs are resume-aware: a per-run `*_results_run_NN.xlsx` that already exists and is readable is skipped, so an interrupted benchmark can be relaunched without repaying for completed runs. Each run also writes `*_results_diagnostics_run_NN.json` (token counts, latency, failure-type counters, UTC collection timestamp) and `*_results_run_NN_raw.jsonl` (one record per API call with the prompt, the raw model response, and per-call latency and token counts).
+Runs are resume-aware: completed per-run result files are skipped on relaunch.
 
-### Running the deterministic paper pipeline
+### Deterministic Analysis Pipeline
 
 ```bash
 python scripts/paper_pipeline/run_paper_pipeline.py
 ```
 
-This entry point makes **no API calls**. By default it skips the guarded `weights` and `sensitivity` stages, which can overwrite tracked or frozen outputs; the remaining selected stages run in dependency order. Use `--list` to preview stages and destinations. The `numbers` stage also needs local-only manuscript inputs. To run only the weights stage, use the explicit opt-in in a clean or disposable checkout after reviewing its destinations:
-
-```bash
-python scripts/paper_pipeline/run_paper_pipeline.py --allow-tracked-output-writes --only weights
-```
-
-The `--allow-tracked-output-writes` flag enables guarded stages; `--only <stage>` limits the selection.
-
-### Reproducing the paper
-
-The two halves have very different requirements:
-
-| | Needs an API key | Cost | Scripts |
-| --- | --- | --- | --- |
-| **Collecting the benchmark and ablations** | Yes | 27,300 calls for the main benchmark, plus the ablation suites (see [Ablation Suites](#ablation-suites)) | `src/llm_mcda/architectures/*.py`, `scripts/experiments/run_*_experiments.py`, `scripts/experiments/run_baseline_models.py` |
-| **Everything analytical** | No | Free | `scripts/paper_pipeline/run_paper_pipeline.py` and everything it calls |
-
-Historical benchmark runs remain at their frozen `Output Files */` and archive paths. Those paths are read-only evidence for the migration-updated command-line tools. The deterministic analysis entry point is `scripts/paper_pipeline/run_paper_pipeline.py`; it reads existing benchmark files and makes no API calls. Some manuscript or archive inputs are local-only and are not included in a public clone (see “Preserved results and local-only sources” below). Re-collecting the benchmark is only necessary to change the model set, the scenario data, or a prompt.
-
-Reference scores are likewise reproducible offline: calculator CLIs now require an explicit safe `--output` file, such as `results/scratch/ground_truth_hvac.xlsx`; they cannot overwrite the frozen `workbooks/ground_truth/` inputs. If you change a calculator or the scenario data, see the refresh-order and freeze rules in [CLAUDE.md](CLAUDE.md) -- `scripts/collection/build_rag_index.py` always runs last when operating on an approved working copy.
-
-### Safe destinations for generated outputs
-
-Migration-updated run, analysis, validation, and legacy writer CLIs require `--output-dir PATH` or the `LLM_MCDA_RUN_OUTPUT_DIR` environment variable. Single-file writers use `--output PATH` (or the documented file option). If a required destination is missing or resolves under `archive/`, `paper/`, `Output Files*/`, or frozen scenario/ground-truth/older-run workbook paths, the command stops with an error before writing. `Combined Metrics/` is not guarded, so pipeline stages write there directly; `workbooks/methodology/` and `results/methodology/` are writable only with `--allow-tracked-output-writes` or `LLM_MCDA_ALLOW_TRACKED_OUTPUT_WRITES=1`. Relative destinations resolve from the repository root. Existing non-frozen destinations are allowed so interrupted runs can resume; commands do not clear them automatically. The scenario workbook builder is an exception: it creates a fresh temporary output directory by default and accepts `--output-dir` to choose another safe location; `--in-place` is refused for the frozen repository scenario workbooks.
-
-The frozen historical trees remain useful as input evidence. They are not output defaults and should not be edited by analysis or validation commands. The CLI-by-CLI option table is maintained in the author's documentation under `docs/`, which is gitignored and not part of a public clone.
+Makes **no API calls**. Reads existing benchmark files and produces all analytical outputs. Use `--list` to preview stages.
 
 ---
 
-## MAVT Criterion Weights
+## Results
 
-Weights are constant across all decision types, architectures, and the reference calculator. Score differences reflect input and value-function fidelity, not a difference in how criteria are weighted per decision type.
-
-| Criterion | Weight | Justification |
-| --- | --- | --- |
-| Environmental Impact | 35% | VBN theory identifies environmental orientation as the most consistent normative driver of pro-environmental household behavior; entropy-based normalization independently assigns it above-average weight |
-| Energy Cost | 30% | Strongest independent predictor of consumer adoption; households underestimate energy use by roughly 2.8x on average (Attari et al., 2010) |
-| Comfort | 20% | Dominant driver of HVAC behavior even when it conflicts with energy savings; ASHRAE 55 provides a physically interpretable anchor |
-| Practicality | 15% | Constraint on feasibility and long-term adoption |
-
-A sensitivity analysis confirms the LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional across every weight vector tested. The example-guided architecture's advantage over direct LLM scoring holds under baseline, equal, and entropy-derived weights but narrows -- and reverses for one model -- under MEREC-derived weights, which load heavily onto Comfort rather than cost and emissions (see [Sensitivity Analysis](#sensitivity-analysis) below).
-
----
-
-## Results Summary
-
-The LLM-parameterized reference scoring architecture dominates across all four models (Kendall's tau 0.880--0.923, Top-1 89.7--93.1%). The example-guided architecture ranks second (tau 0.208--0.310). Direct LLM scoring ranks third, near-random on HVAC and Appliance (tau 0.010--0.176 overall).
+The LLM-parameterized reference scoring architecture dominates across all four models. The example-guided architecture ranks second. Direct LLM scoring ranks third, near-random on HVAC and Appliance.
 
 ### Overall Metrics (5-run mean, 195 scenarios)
 
-| Model | Architecture | Kendall's tau | Top-1 Acc | RMSE | MAE |
+| Model | Architecture | Kendall's τ | Top-1 Acc | RMSE | MAE |
 | --- | --- | --- | --- | --- | --- |
-| **Gemini 3.8 Flash** | LLM-Parameterized Reference Scoring | **0.923** | **93.1%** | **0.101** | **0.048** |
-| | Example-Guided LLM Scoring | 0.310 | 48.7% | 0.231 | 0.158 |
-| | Direct LLM Scoring | 0.176 | 36.2% | 0.295 | 0.219 |
-| **DeepSeek V4 Flash 0731** | LLM-Parameterized Reference Scoring | **0.897** | **90.8%** | **0.092** | **0.045** |
-| | Example-Guided LLM Scoring | 0.307 | 53.5% | 0.237 | 0.168 |
-| | Direct LLM Scoring | 0.144 | 36.7% | 0.302 | 0.231 |
-| **GPT-OSS 20B** | LLM-Parameterized Reference Scoring | **0.897** | **91.7%** | **0.101** | **0.052** |
-| | Example-Guided LLM Scoring | 0.272 | 47.4% | 0.242 | 0.169 |
-| | Direct LLM Scoring | 0.041 | 33.3% | 0.306 | 0.241 |
-| **Qwen 3.5 9B** | LLM-Parameterized Reference Scoring | **0.880** | **89.7%** | **0.162** | **0.072** |
-| | Example-Guided LLM Scoring | 0.208 | 46.6% | 0.261 | 0.194 |
-| | Direct LLM Scoring | 0.010 | 30.0% | 0.295 | 0.235 |
+| **Gemini 3.8 Flash** | LLM-Parameterized Reference Scoring | **0.891** | **90.2%** | **0.096** | **0.048** |
+| | Example-Guided LLM Scoring | 0.298 | 47.5% | 0.210 | 0.147 |
+| | Direct LLM Scoring | 0.179 | 39.8% | 0.276 | 0.207 |
+| **DeepSeek V4 Flash** | LLM-Parameterized Reference Scoring | **0.856** | **88.6%** | **0.114** | **0.055** |
+| | Example-Guided LLM Scoring | 0.253 | 48.3% | 0.240 | 0.170 |
+| | Direct LLM Scoring | 0.125 | 39.1% | 0.284 | 0.223 |
+| **GPT-OSS 20B** | LLM-Parameterized Reference Scoring | **0.805** | **82.5%** | **0.156** | **0.079** |
+| | Example-Guided LLM Scoring | 0.234 | 46.5% | 0.252 | 0.179 |
+| | Direct LLM Scoring | 0.032 | 34.1% | 0.312 | 0.246 |
+| **Qwen3.5 9B** | LLM-Parameterized Reference Scoring | **0.836** | **86.5%** | **0.162** | **0.074** |
+| | Example-Guided LLM Scoring | 0.147 | 43.9% | 0.266 | 0.199 |
+| | Direct LLM Scoring | 0.005 | 30.8% | 0.301 | 0.239 |
 
-Across models, the LLM-parameterized reference scoring architecture's tau spans only 0.043 despite a roughly 21-fold difference in configured input-token price between the cheapest and most expensive model, versus 0.166 for direct LLM scoring -- architecture design matters more than model choice.
+### By Decision Type (best/worst model, 5-run mean τ)
 
-### By Decision Type (best/worst model per cell, 5-run mean)
-
-| Decision Type | Direct LLM Scoring tau | Example-Guided LLM Scoring tau | LLM-Parameterized Reference Scoring tau |
+| Decision Type | Direct LLM Scoring | Example-Guided LLM Scoring | LLM-Parameterized Reference Scoring |
 | --- | --- | --- | --- |
-| HVAC | -0.102 (DeepSeek) to 0.135 (GPT-OSS) | -0.116 (Gemini) to 0.265 (GPT-OSS) | 0.881 (Qwen) to 0.977 (Gemini) |
-| Appliance | -0.147 (GPT-OSS) to 0.029 (DeepSeek) | -0.048 (GPT-OSS) to 0.417 (DeepSeek) | 0.906 (Qwen) to 0.975 (DeepSeek) |
-| Shower | 0.069 (Qwen) to 0.633 (Gemini) | 0.240 (Qwen) to 0.767 (Gemini) | 0.787 (GPT-OSS, tied with DeepSeek) to 0.851 (Qwen) |
-
-HVAC is the highest-dimensional task (insulation, SEER, age, occupancy, square footage, outdoor temperature) and shows the widest gap between the LLM-parameterized reference scoring and example-guided architectures. Shower shows the narrowest gap, because its three alternatives differ only in duration; it is also where LLM-parameterized reference scoring is weakest, because a flow-rate (GPM) error rescales every duration's cost and water use by the same factor, which changes how they trade off against comfort, and many shower scenarios sit close to that trade-off's break-even point.
+| HVAC | −0.200 (Gemini) to 0.091 (GPT-OSS) | −0.118 (Gemini) to 0.202 (GPT-OSS) | 0.657 (GPT-OSS) to 0.872 (Gemini) |
+| Appliance | −0.114 (GPT-OSS) to 0.110 (Gemini) | −0.073 (GPT-OSS) to 0.303 (Gemini) | 0.908 (Qwen) to 0.949 (GPT-OSS) |
+| Shower | 0.093 (Qwen) to 0.696 (Gemini) | 0.249 (Qwen) to 0.780 (Gemini) | 0.821 (GPT-OSS) to 0.856 (Gemini) |
 
 ### Key Findings
 
-- **Calculator access alone is not enough.** Running the same reference calculator on dataset-median parameters instead of LLM-extracted ones reaches only tau = 0.641 -- well above chance, but far below the LLM-parameterized reference scoring architecture's 0.880--0.923. LLM extraction itself accounts for 0.24--0.28 of the architecture's tau advantage; the calculator alone is not sufficient.
-- **Extraction errors mostly cancel in ranking, not in score error.** Because the LLM estimates scenario-level parameters that enter every alternative identically, an error shifts the whole choice set rather than reordering it, so ranking accuracy is far more robust to weak extraction than absolute score error is. The one consistent exception is shower flow rate (GPM). A GPM error scales every duration's cost and water use by one factor without reordering them, but it changes their weight against comfort, which GPM does not affect; shower winners often lead narrowly, so GPM carries the highest top-1 flip probability of any extracted parameter for every model (0.23-0.27 per run).
-- **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline (calculator run on constant, non-inferred parameters) reaches a scenario-weighted tau of 0.614, which outranks direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it. It collapses on Appliance (tau = 0.097), since a fixed run time can't track a household's actual schedule. Separately, the RAG ablation's copy-only configuration (assigning the retrieved scenario's scores directly, no LLM call, leave-one-out on the 90-scenario RAG set) reaches tau = 0.001, indistinguishable from a random ranking.
-- **In the RAG ablation, exemplar scores matter more than exemplar content.** Removing the reference scores from retrieved exemplars degrades ranking far more than removing their hidden engineering parameters (R-value, SEER, GPM, etc.) -- scored exemplars anchor the LLM's output scale, they don't teach it new physics.
-- **Reversing alternative order in the prompt changed what two of four models extracted, but never changed which alternative any model ranked first** -- a null result at the ranking layer that only means something because the same perturbation is detectably present one layer up, at the LLM's parameter estimates.
-- **Model capability correlates weakly with architecture ranking.** The cheapest configured input price (GPT-OSS 20B, $0.018/M tokens) achieves comparable LLM-parameterized reference scoring performance to the highest (Gemini 3.8 Flash, $0.375/M). The model names, routes, provider pins, reasoning settings, and price labels below follow `MODEL_SPECS` in `src/llm_mcda/common/model_config.py`.
-- **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on the LLM-parameterized reference scoring architecture has a 12.0% per-scenario-run extraction failure rate (88.0% success), concentrated in HVAC scenarios where an extracted parameter falls outside its physical validation bounds. Cross-run recovery and per-run imputation both confirm the architecture ordering is unaffected.
+- **Architecture design matters more than model choice.** The LLM-parameterized architecture's τ spans 0.086 across a ~21× difference in configured token price, versus 0.174 for direct LLM scoring.
+- **Calculator access alone is not enough.** Running the calculator on dataset-median parameters reaches only τ = 0.590 — well above chance, but far below the LLM-parameterized architecture's 0.805–0.891.
+- **A non-LLM baseline rules out "the benchmark just rewards calculator access."** A Fixed-Default baseline reaches τ = 0.580, outranking direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it.
+- **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on LLM-parameterized scoring has an 8.7% per-scenario-run extraction failure rate, concentrated in HVAC. Cross-run recovery confirms the architecture ordering is unaffected.
 
 ### API Costs (per 5-run benchmark)
 
 | Architecture | Calls/run | Gemini | DeepSeek | GPT-OSS | Qwen |
 | --- | --- | --- | --- | --- | --- |
-| Direct LLM Scoring | 585 | ~$2.41 | ~$0.07 | ~$0.07 | ~$0.22 |
-| Example-Guided LLM Scoring | 585 | ~$2.14 | ~$0.07 | ~$0.07 | ~$0.21 |
-| LLM-Parameterized Reference Scoring | 195 | ~$0.40 | ~$0.03 | ~$0.02 | ~$0.06 |
-
-Each value is the sum of `total_cost_usd` across the five run diagnostics for that model and architecture, rounded to cents. In these diagnostics, the LLM-parameterized reference scoring architecture cost about 2.5--6.0x less than direct scoring and 2.4--5.4x less than example-guided scoring for the same model.
+| Direct LLM Scoring | 585 | ~\$2.41 | ~\$0.07 | ~\$0.07 | ~\$0.22 |
+| Example-Guided LLM Scoring | 585 | ~\$2.14 | ~\$0.07 | ~\$0.07 | ~\$0.21 |
+| LLM-Parameterized Reference Scoring | 195 | ~\$0.40 | ~\$0.03 | ~\$0.02 | ~\$0.06 |
 
 ---
 
-### Imputation Robustness Test
+## Three Architectures
 
-Per-run imputed robustness is computed via [scripts/paper_pipeline/generate_imputed_robustness_tables.py](scripts/paper_pipeline/generate_imputed_robustness_tables.py), which evaluates each run independently after replacing sentinel 1928 scores with 0.5 (scale midpoint) before MAVT ranking and metric averaging. Its workbook is written to `Combined Metrics/metrics_summary_all_models_imputed_perrun.xlsx`.
+### 1. Direct LLM Scoring
+
+LLM scores all four criteria directly via calibrated system prompts with per-decision-type qualitative anchors. One API call per alternative (3 per scenario, 585 per run).
+
+→ [`Direct_LLM_Scoring.py`](src/llm_mcda/architectures/Direct_LLM_Scoring.py)
+
+### 2. Example-Guided LLM Scoring
+
+Retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios, sentence-transformers `all-MiniLM-L6-v2`, k=1) supplies one worked exemplar before the LLM scores each alternative. 3 calls per scenario, 585 per run.
+
+→ [`Example-Guided_LLM_Scoring.py`](src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py)
+
+### 3. LLM-Parameterized Reference Scoring
+
+A single LLM call extracts withheld engineering parameters (R-value, SEER, kWh/cycle, GPM, etc.) from the scenario description. The deterministic MAVT calculator then scores all three alternatives. 1 call per scenario, 195 per run.
+
+→ [`LLM-Parameterized_Reference_Scoring.py`](src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py)
 
 ---
 
 ## Model Set
 
-Set `MODEL_KEY` and `N_RUNS` in [src/llm_mcda/common/model_config.py](src/llm_mcda/common/model_config.py) to control model selection and run counts. Supply `--output-dir` (or `LLM_MCDA_RUN_OUTPUT_DIR`) to each run command to choose a safe output location.
+| Key | Display Label | OpenRouter Route | Provider Pin | Reasoning |
+| --- | --- | --- | --- | --- |
+| `gemini` | Gemini 3.8 Flash | `google/gemini-3.8-flash:floor` | `google-ai-studio/flex` | minimal |
+| `deepseek` | DeepSeek V4 Flash | `deepseek/deepseek-v4-flash-0731:floor` | `relace/fp4` | none |
+| `gptoss` | GPT-OSS 20B | `openai/gpt-oss-20b:floor` | `darkbloom/fp8` | low |
+| `qwen` | Qwen3.5 9B | `qwen/qwen3.5-9b:floor` | `venice/fp8` | none |
 
-| Key | Label | OpenRouter route | Provider pin (`only`) | Reasoning effort | Historical results folder (read-only source) |
-| --- | --- | --- | --- | --- | --- |
-| `gptoss` | GPT-OSS 20B | `openai/gpt-oss-20b:floor` | `darkbloom/fp8` | low | `Output Files GPT-OSS 20B` |
-| `qwen` | Qwen 3.5 9B | `qwen/qwen3.5-9b:floor` | `venice/fp8` | none | `Output Files Qwen3.5 9B` |
-| `deepseek` | DeepSeek V4 Flash 0731 | `deepseek/deepseek-v4-flash-0731:floor` | `relace/fp4` | none | `Output Files DeepSeek V4 Flash 0731` |
-| `gemini` | Gemini 3.8 Flash | `google/gemini-3.8-flash:floor` | `google-ai-studio/flex` | minimal | `Output Files Gemini 3.8 Flash` |
+All routes set `allow_fallbacks: false` and `require_parameters: true`.
 
-All four routes set `allow_fallbacks: false` and `require_parameters: true`; the listed provider pin is the only permitted provider. Configured prices in `MODEL_SPECS` are per million tokens: GPT-OSS input $0.018 / output $0.09; Qwen input $0.10 / output $0.15; DeepSeek input $0.13 / output $0.26; Gemini input $0.375 / output $1.875. The configured reasoning effort is listed per model.
+---
+
+## Scenario Corpus
+
+| Pool | HVAC | Appliance | Shower | Total |
+| --- | --- | --- | --- | --- |
+| Test set | 70 | 65 | 60 | **195** |
+| RAG corpus | 35 | 35 | 20 | **90** |
+
+The two pools are disjoint. RAG scenarios seed only the ChromaDB retrieval index and never appear in evaluation.
+
+---
+
+## MAVT Criterion Weights
+
+| Criterion | Weight |
+| --- | --- |
+| Environmental Impact | 35% |
+| Energy Cost | 30% |
+| Comfort | 20% |
+| Practicality | 15% |
+
+Weights are constant across all decision types, architectures, and the reference calculator.
+
+---
+
+## Ablation Suites
+
+Four ablation suites test whether the architecture ordering depends on design choices within the architectures:
+
+- **Prompt-sensitivity** — reruns direct and example-guided scoring under three prompt perturbations (no anchors, chain-of-thought scaffold, 0–10 rescale). Architecture ordering survives every variant.
+- **RAG ablation** — varies retrieval depth (k=1, 3, 5), embedding model, and exemplar content on the 90-scenario RAG corpus under leave-one-out. Removing exemplar scores hurts far more than removing hidden parameters.
+- **Parameter-provenance** — compares LLM-extracted parameters against a fixed dataset-median set. No new API calls.
+- **Alternative-ordering** — reverses alternative order in the prompt. Never changes which alternative any model ranked first.
+
+---
+
+## Ground Truth Calculators
+
+Each calculator takes a scenario with three alternatives and returns four 0–1 criterion scores plus raw physical quantities.
+
+- **HVAC** — ASHRAE-style thermal balance (conductive + infiltration + internal-gain + solar). SEER-to-EER via Building America conversion. Comfort uses ASHRAE 55 tent function.
+- **Appliance** — TOU-rate energy cost across six PA utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne). PJM marginal emissions factors (peak 1.041 / off-peak 0.976 lbs CO₂/kWh).
+- **Shower** — Mains temperature from NREL model, mixing fraction to 105 °F delivery. Environmental impact = gallons of water used.
 
 ---
 
@@ -202,277 +195,29 @@ All four routes set `allow_fallbacks: false` and `require_parameters: true`; the
 ```text
 LLM-MCDA-Paper/
 ├── src/llm_mcda/
-│   ├── architectures/
-│   ├── calculators/
-│   └── common/
+│   ├── architectures/          # Three architecture implementations
+│   ├── calculators/            # HVAC, Appliance, Shower reference calculators
+│   └── common/                 # Model config, weights, sentinel utils
 ├── scripts/
-│   ├── collection/
-│   ├── analysis/
-│   ├── experiments/
-│   ├── validation/
-│   ├── paper_pipeline/
-│   └── archive/legacy/
+│   ├── collection/             # RAG index builder, scenario workbook builder
+│   ├── analysis/               # Metric evaluation scripts
+│   ├── experiments/            # Ablation and baseline runners
+│   ├── validation/             # Significance testing, sensitivity, CIs
+│   └── paper_pipeline/         # Deterministic analysis entry point
 ├── workbooks/
-│   ├── scenarios/
-│   ├── ground_truth/
-│   ├── methodology/
-│   ├── older_runs/
-│   └── backups/
-├── data/scenarios/
-├── Combined Metrics/                    (cross-model artifacts; flat, plus logs/)
-├── Output Files <model>/                (four per-model folders; frozen benchmark outputs)
-├── results/
-│   ├── older_runs/
-│   └── methodology/
-├── archive/                             (frozen archival run outputs)
-├── docs/                                (gitignored author documentation)
-├── paper/                               (gitignored manuscript)
-├── model_config.py                      (compatibility shim)
-├── sentinel_utils.py                    (compatibility shim)
-└── pyproject.toml
+│   ├── scenarios/              # Scenario master workbooks
+│   └── ground_truth/           # Reference calculator outputs (frozen)
+├── Combined Metrics/           # Cross-model artifacts (metrics, significance, ablations)
+├── Output Files <model>/       # Four per-model folders (frozen benchmark outputs)
+├── archive/                    # Frozen archival run outputs
+├── data/scenarios/             # Scenario data files
+├── pyproject.toml
+├── XLSX_Schema_Map.md
+└── CLAUDE.md
 ```
-
-### Preserved results and local-only sources
-
-Existing run and output history stays at its recorded paths: the four per-model `Output Files*/` folders and the `archive/` tree are frozen historical data, not active code locations. Each model folder holds the three architectures' result files at its top level plus `position_bias/`, `hybrid_order_reversal/`, `listwise_direct/`, `prompt_ablation/`, `rag_ablation/`, `sensitivity/`, and `metrics/` subfolders. Every artifact that spans models (pooled metrics, bootstrap intervals, significance tests, ablation summaries, numbers of record, and their logs) lives in `Combined Metrics/`. Curated methodology outputs are organized under `results/`.
-
-The manuscript (`paper/`) and author documentation (`docs/`) are gitignored and are not part of a public clone. The three archived Baselines workbooks are local-only under `archive/2026-09_pre_rerun/Output Files/Baselines/` and may be moved as needed. The legacy `build_consolidated_scenario_workbooks.py` expects `workbooks/scenarios/ConsolidatedforSimaltaneousediting.xlsx`; that workbook is currently absent. The standalone scenario builder writes to a fresh temporary directory by default or to a caller-selected safe `--output-dir`. Its `--in-place` option is rejected when the masters are the frozen repository workbooks; use a separate safe input copy for a scratch rebuild.
-
----
-
-## Three Architectures
-
-The paper refers to these as A_D, A_E, and A_H respectively.
-
-Paper name to script: direct LLM scoring -> [Direct_LLM_Scoring.py](src/llm_mcda/architectures/Direct_LLM_Scoring.py); example-guided LLM scoring -> [Example-Guided_LLM_Scoring.py](src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py); LLM-parameterized reference scoring -> [LLM-Parameterized_Reference_Scoring.py](src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py).
-
-### 1. Direct LLM Scoring (`Direct_LLM_Scoring.py`)
-
-LLM scores all four criteria directly via calibrated system prompts with per-decision-type qualitative anchors (a good/moderate/poor description of each criterion, not numeric targets). Input is a natural-language scenario description with structured context fields. Outputs four 0--1 scores per alternative, then ranks by MAVT.
-
-- **API calls per scenario:** 3 (one per alternative, deliberately, so the model scores each alternative on an absolute scale rather than ranking them against each other)
-- **API calls per run (195 scenarios):** 585
-- **API calls per 5-run benchmark (4 models):** 11,700
-
-### 2. Example-Guided LLM Scoring (`Example-Guided_LLM_Scoring.py`)
-
-Retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios) supplies one worked exemplar -- its household-reported parameters, engineering parameters, and all four reference criterion scores plus MAVT rank -- before the LLM scores each alternative. Uses sentence-transformers (all-MiniLM-L6-v2) embeddings with k=1 retrieval by default (selected via ablation: k=1, 3, and 5 are statistically indistinguishable on ranking accuracy for three of four models, and k=1 minimizes token and API cost).
-
-- **API calls per scenario:** 3
-- **API calls per run (195 scenarios):** 585
-- **Vector DB:** ChromaDB (Euclidean/L2 distance, the library default) with sentence-transformers embeddings
-
-### 3. LLM-Parameterized Reference Scoring (`LLM-Parameterized_Reference_Scoring.py`)
-
-A single LLM call extracts the withheld engineering parameters (R-value, SEER, HVAC age, kWh/cycle, GPM, tank size, water-heater setpoint) from the natural-language scenario description. A deterministic MAVT calculator -- the same one that generated the reference -- then scores all three alternatives from those extracted values plus the parameters already known from the scenario sheet.
-
-- **API calls per scenario:** 1 (all three alternatives scored by the calculator from one extraction call)
-- **API calls per run (195 scenarios):** 195
-- **Extraction reliability varies by model:** Gemini, DeepSeek, and Qwen have near-zero extraction failures; GPT-OSS 20B has a 12.0% per-scenario-run failure rate, concentrated in HVAC, recovered almost entirely across the 5-run average
-
----
-
-## Scenario Corpus
-
-### Test vs. RAG Pools
-
-The 195 test scenarios and 90 RAG scenarios are disjoint: no test scenario shares an identical parameter signature with a retrieval-index entry. All three architectures and the reference calculator evaluate test scenarios. RAG scenarios seed only the ChromaDB retrieval index.
-
-| Pool | HVAC | Appliance | Shower | Total |
-| --- | --- | --- | --- | --- |
-| Test set | 70 | 65 | 60 | **195** |
-| RAG corpus | 35 | 35 | 20 | **90** |
-
-### Parameter Generalization
-
-The reference calculators receive exact engineering values; architectures receive homeowner-accessible labels or infer parameters from context (consistent with Attari et al., 2010, on what a homeowner can realistically report).
-
-| Parameter | LLM Label | Calculator Value | Source |
-| --- | --- | --- | --- |
-| **HVAC - Insulation** | Poor / Medium / Good | scenario R-value (tiers R-8-12 / R-13-18 / R-19-24) | CEC JA4.3; ENERGY STAR |
-| **Shower - Flow Rate** | low_flow / standard / high_flow | actual GPM from scenario | EPA WaterSense |
-| **Appliance - Age** | banded age label | scenario kWh/cycle (the calculator does not read age) | ENERGY STAR and DOE test procedures (cycles/year) |
-
-The LLM never directly sees SEER ratings, exact R-values, GPM values, kWh/cycle figures, or occupancy-context flags. Bands are computed by single-source helpers in `src/llm_mcda/common/sentinel_utils.py` so the test-sheet label and the RAG-index embedding string stay byte-identical.
-
----
-
-## MAVT Framework
-
-### Value Function
-
-```
-s_j = sum(w_i * v_i(x_ij))   for i in {energy_cost, environmental, comfort, practicality}
-```
-
-All four criterion scores are on a 0--1 scale before weighting. Energy cost and environmental impact use a linear value function; comfort and practicality use a logarithmic one (shape parameter alpha = 1.5 and 1.2 respectively) to capture diminishing marginal returns near an already-acceptable outcome.
-
-### Reference Ranges (5th-95th percentiles over the 285 test + RAG scenarios; HVAC environmental bounds convert the HVAC cost percentiles)
-
-| Criterion | HVAC | Appliance | Shower |
-| --- | --- | --- | --- |
-| Energy Cost ($) | $0.40 - $2.81 | $0.028 - $0.774 | $0.13 - $1.07 |
-| Environmental Impact | 2.05 - 15.40 lbs CO2 | 0.288 - 3.643 lbs CO2 | 6.0 - 45.0 gal water |
-| Comfort | 0.0 - 1.0 | 0.0 - 1.0 | 0.0 - 1.0 |
-| Practicality | 0.05 - 1.0 | 0.05 - 1.0 | 0.05 - 1.0 |
-
-Shower environmental impact is water volume (gallons), not CO2 -- chosen because it's the major environmental footprint of showering, but it means cross-type comparisons of environmental MAE should account for the unit difference. HVAC and Appliance environmental impact is lbs CO2 using PJM marginal emissions factors (peak 1.041 / off-peak 0.976 lbs CO2/kWh), not eGRID averages, to avoid collinearity with energy cost.
-
-### Budget Penalty
-
-A three-tier multiplicative budget penalty applies to the post-value-function energy-cost score, where `u = monthly_cost / budget`:
-
-| Utilization u | Penalty |
-| --- | --- |
-| u < 0.80 | 1.0 (no penalty) |
-| 0.80 <= u < 1.00 | Linear decay: 1 - 2.5(u - 0.80) |
-| u >= 1.00 | Exponential: 0.5 * e^{-3(u - 1.0)} (continuous, never 0) |
-
-Behavioral anchors: mental budget safety margins (Thaler 1999); linear self-control (Heath & Soll 1996); exponential loss aversion (Prelec & Loewenstein 1998).
-
----
-
-## Ground Truth Calculators
-
-Each calculator takes a scenario with three alternatives and returns four scores per alternative (Energy Cost, Environmental, Comfort, Practicality) on a 0--1 scale, plus raw physical quantities before value-function transformation.
-
-### Emissions Factors
-
-HVAC and Appliance environmental impact uses PJM marginal emissions factors (shifting a residential load displaces the generator at the margin, so marginal factors apply, not grid-average ones):
-
-| Period | Factor |
-| --- | --- |
-| Peak (7am-11pm) | 1.041 lbs CO2/kWh |
-| Off-peak | 0.976 lbs CO2/kWh |
-
-### HVAC Calculator
-
-Thermal load uses a four-component ASHRAE-style balance (conductive + infiltration + internal-gain + solar, with a housing-type envelope multiplier). Energy consumption over the 8-hour decision window:
-
-```
-E_kWh = (Q_load / (EER_eff * 1000)) * 8 hr * m_occ
-```
-
-In cooling mode, EER comes from rated SEER via the Building America House Simulation Protocols conversion (Hendron & Engebrecht 2010, Eq. 3, citing Wassmer 2003: `EER = -0.02*SEER^2 + 1.12*SEER`). In heating mode the calculator models an electric air-source heat pump and divides the load by the HSPF paired with the SEER (HSP Tables 4 and 32 up to SEER 14; NREL ResStock options at SEER 18 and 22) in place of EER. Occupancy modifier `m_occ` adjusts for occupancy (fully occupied = 1.0, overnight = 0.75, daytime unoccupied = `1 - 0.5*(h_away/24)`). Age/maintenance degradation enters only the practicality score (as a reliability factor), not the energy path.
-
-Comfort uses a tent function peaking at ASHRAE 55 optimal setpoints (76 F cooling, 71 F heating).
-
-### Appliance Calculator
-
-Per-cycle energy cost: `C = E_cyc * r(t, l)` where `r` is the TOU rate for one of six Pennsylvania utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne) resolved by location `l` and run-time `t`. The PJM emissions window (7am-11pm) applies regardless of the utility's own billing window, since emissions follow the regional grid rather than the bill.
-
-Comfort decays piecewise from delay and appliance type, with appliance-specific tolerance ceilings, plus a late-night noise penalty (rated dBA > 45 and run time 10pm-7am, scaled by housing type) and a household-size penalty. Practicality follows the same delay and timing-complexity structure.
-
-### Shower Calculator
-
-Mains inlet temperature is interpolated from outdoor temperature (48.5 F winter to 68.2 F summer, a linear fit to the NREL (Burch & Christensen) mains model on PA TMY3 weather). Hot-water mixing fraction targets a fixed 105 F delivery temperature:
-
-```
-f_hot = (T_target - T_inlet) / (T_heater - T_inlet),   T_target = 105 F
-```
-
-Shower energy:
-
-```
-E_kWh = (GPM * f_hot * 8.33 * (T_heater - T_inlet) * duration_min) / (3412 * eta)
-```
-
-where eta = 0.92 (electric water-heater efficiency; the federal minimum in 10 CFR 430.32(d) is 0.9307 - 0.0002 x V_r = 0.9207 for a 50-gal tank). Because `f_hot` and the temperature rise move inversely, energy depends on inlet temperature but not on heater setpoint, for any setpoint at or above the delivery target. Environmental impact = GPM * duration (gallons of water used). Comfort peaks near the REU2016 average duration with penalties for temperature adequacy (CDC Legionella/scald thresholds) and household contention. Practicality penalizes alternatives that exhaust available tank capacity, using a fixed 0.8 tank-availability factor.
-
----
-
-## Sensitivity Analysis
-
-[SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) still computes ten single-criterion `+/-0.05` perturbation scenarios plus an equal-weight scenario, but these are **not the reported robustness check in the paper**: they move the example-guided-minus-direct-LLM-scoring gap only within a narrow range across the four models, narrower than the entropy- and MEREC-derived weight vectors reach, so they cannot establish weight robustness on their own. They are retained here for completeness and are still exercised by the script.
-
-| Scenario | w(EnergyCost) | w(Environmental) | w(Comfort) | w(Practicality) |
-| --- | --- | --- | --- | --- |
-| Baseline | 0.3000 | 0.3500 | 0.2000 | 0.1500 |
-| Ene +0.05 | 0.3500 | 0.3333 | 0.1833 | 0.1333 |
-| Ene -0.05 | 0.2500 | 0.3667 | 0.2167 | 0.1667 |
-| Env +0.05 | 0.2833 | 0.4000 | 0.1833 | 0.1333 |
-| Env -0.05 | 0.3167 | 0.3000 | 0.2167 | 0.1667 |
-| Com +0.05 | 0.2833 | 0.3333 | 0.2500 | 0.1333 |
-| Com -0.05 | 0.3167 | 0.3667 | 0.1500 | 0.1667 |
-| Pra +0.05 | 0.2833 | 0.3333 | 0.1833 | 0.2000 |
-| Pra -0.05 | 0.3167 | 0.3667 | 0.2167 | 0.1000 |
-| Equal | 0.2500 | 0.2500 | 0.2500 | 0.2500 |
-
-### What the paper actually reports
-
-The reported sensitivity check reweights both the reference ranking and the architecture rankings under the baseline, equal, and the entropy- and MEREC-derived vectors (see [Objective Weight Validation Scripts](#objective-weight-validation-scripts) below), applied pooled and per decision type, per model (never pooled across models -- see the no-pooling convention in `CLAUDE.md`).
-
-- **The LLM-parameterized reference scoring architecture's advantage over the example-guided one is unconditional**: it holds in all 20 model x weight-vector cells tested, by a margin of at least 0.304 Kendall's tau.
-- **The example-guided architecture's advantage over direct LLM scoring is conditional, not invariant.** It survives the design (baseline), equal, and entropy vectors in all four models. MEREC weights -- which load heavily onto Comfort (0.656 for HVAC against the design's 0.200) rather than cost and emissions -- narrow the gap and reverse it for Gemini in one of the 20 cells: the MEREC HVAC vector (direct LLM scoring 0.676 vs. example-guided LLM scoring 0.600). The example-guided architecture's advantage should be read as conditional on a weighting that gives substantial mass to cost and emissions, which the design and entropy vectors do and MEREC does not.
-
-Per the project's no-pooling-across-models convention, sensitivity results are reported and should be read per model, not as a four-model mean.
-
----
-
-## Ablation Suites
-
-Four ablation suites, run on top of the main benchmark, test whether the reported architecture ordering depends on design choices inside the architectures rather than on the architectures themselves. All four cover the same four models and use a Holm-corrected nonparametric protocol within each model (never pooled across models). Full methodology and results are in the paper (Sections 4.5 and 5.5).
-
-- **Prompt-sensitivity ablation** (`run_prompt_ablation_experiments.py`, `test_prompt_ablation_significance.py`, `AggregatePromptAblations.py`) -- reruns direct LLM scoring and the example-guided architecture under three prompt perturbations (removing scoring anchors, adding a chain-of-thought scaffold, rescaling the 0--1 response range to 0--10) on the full 195-scenario test set. The architecture ordering survives every variant.
-- **RAG ablation** (`run_rag_ablation_experiments.py`, `compare_retrieval_k_bootstrap_ci.py`, `measure_rag_retrieval_distance.py`) -- runs on the 90-scenario RAG corpus under leave-one-out retrieval, varying retrieval depth (k=1, 3, 5), the embedding model, and what the retrieved exemplar exposes (scores, ranks, hidden engineering parameters). Removing exemplar scores hurts far more than removing hidden parameters.
-- **Parameter-provenance ablation** (`run_hybrid_ablation_experiments.py`, `test_hybrid_ablation_significance.py`) -- isolates how much of the LLM-parameterized reference scoring architecture's accuracy comes from LLM extraction versus the calculator alone, by comparing LLM-extracted parameters against a fixed dataset-median parameter set (floor) on the same 195 test scenarios. No new API calls; re-derives results from files already on disk.
-- **Alternative-ordering test** (`run_position_bias_control.py`, `aggregate_position_bias_results.py`) -- reverses the order alternatives are listed in the prompt/extraction call and re-scores all 195 test scenarios, using an exact permutation test for the LLM-parameterized reference scoring architecture's extraction layer. Tests whether the reported ranking is sensitive to positional framing rather than to the alternatives themselves.
-
----
-
-## Objective Weight Validation Scripts
-
-Three scripts independently validate the subjective MAVT weights against the reference score distributions. They are **validation only**: no architecture or calculator imports them or changes weights at runtime.
-
-- **[EntropyWeights.py](src/llm_mcda/common/weighting/EntropyWeights.py)** -- Shannon entropy weights overall and by decision type. The environmental criterion receives above-average entropy weight, independently supporting the 0.35 allocation.
-- **[merec_weights.py](src/llm_mcda/common/weighting/merec_weights.py)** -- Computes MEREC (Method based on Removal Effects of Criteria) weights per-scenario then averages them. MEREC is correlation-free and robust to nonlinearity, making it informative for comfort and practicality, which use nonlinear value functions.
-- **[implied_weights.py](src/llm_mcda/common/weighting/implied_weights.py)** -- Recovers implied weights from the reference ranking structure via constrained least squares on pairwise alternative comparisons. Collapses to single-criterion corner solutions for HVAC and Appliance, because those decision types' cost/environmental criteria have no within-scenario variance left to discriminate on once the dominant criterion is factored out -- a property of the calculator's structure, not evidence that those criteria are unimportant.
-
----
-
-## Analysis and Workflow Scripts
-
-| Script | Purpose |
-| --- | --- |
-| [build_rag_index.py](scripts/collection/build_rag_index.py) | Builds/refreshes the ChromaDB vector index from the RAG scenario files. Computes SHA-256 of source files and stores a schema version in collection metadata to detect when a rebuild is needed. Current schema version: 4. |
-| [build_scenario_workbooks.py](scripts/collection/scenarios/build_scenario_workbooks.py) | Rebuilds derived Test/RAG workbooks from the three standalone scenario masters and fixed RAG membership; audits the outputs, writes to a fresh temporary directory by default, and accepts `--output-dir`. Its `--in-place` option is refused for frozen repository scenario inputs. |
-| [evaluate_architecture_metrics.py](scripts/analysis/evaluate_architecture_metrics.py) | Computes Top-1/2 accuracy, Kendall's tau, MAE, RMSE per architecture/model/decision-type. Reads benchmark inputs and writes `metrics_summary_{MODEL_KEY}.xlsx` into required `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [evaluate_baseline_metrics.py](scripts/analysis/evaluate_baseline_metrics.py) | Applies the same metric computation to preserved baseline results; accepts an explicit CSV `--output`. |
-| [run_baseline_models.py](scripts/experiments/run_baseline_models.py) | Computes the non-LLM baselines used in the incremental-contribution table: Fixed-Default and Nearest-Neighbor. Requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--list` previews baseline choices without writing. |
-| [run_rag_ablation_experiments.py](scripts/experiments/run_rag_ablation_experiments.py) | Runs the RAG retrieval/exemplar-content ablation configurations described above. Requires `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`; `--output` can name a safe Markdown report path. |
-| [compare_retrieval_k_bootstrap_ci.py](scripts/validation/compare_retrieval_k_bootstrap_ci.py) | Percentile-bootstrap confidence intervals on the k=1-minus-k=3 Kendall's tau difference; writes to an explicit safe `--output` file or the directory in `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [run_prompt_ablation_experiments.py](scripts/experiments/run_prompt_ablation_experiments.py) | Runs the prompt-sensitivity ablation (no-anchors, chain-of-thought scaffold, 0--10 rescale) across models; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [test_prompt_ablation_significance.py](scripts/validation/test_prompt_ablation_significance.py) / `AggregatePromptAblations.py` (author-side, not in this repo) | Holm-corrected Friedman/Wilcoxon significance testing and aggregation for the prompt ablation; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [run_hybrid_ablation_experiments.py](scripts/experiments/run_hybrid_ablation_experiments.py) | Runs the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`, with an optional `--output` report path. |
-| [test_hybrid_ablation_significance.py](scripts/validation/test_hybrid_ablation_significance.py) | Significance testing for the parameter-provenance ablation; requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [run_position_bias_control.py](scripts/experiments/run_position_bias_control.py) / `aggregate_position_bias_results.py` (author-side, not in this repo) | Runs and aggregates the alternative-ordering test; writers require safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [significance_testing.py](scripts/validation/significance_testing.py) / [compute_confidence_intervals.py](scripts/validation/compute_confidence_intervals.py) | Shared Holm-corrected Friedman/Wilcoxon and percentile-bootstrap CI utilities; the significance writer requires safe `--output-dir` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [SensitivityAnalysis.py](scripts/validation/SensitivityAnalysis.py) | Per model, reruns ranking metrics across the baseline, the 8 +/-0.05 perturbation scenarios, equal weights, and the entropy- and MEREC-derived objective weight vectors (pooled and per decision type). Its default destination is `workbooks/methodology/sensitivity_analysis/`; its paper-pipeline stage remains guarded. The collected per-model workbooks are in each model folder's `sensitivity/` subfolder and the pooled table is `Combined Metrics/sensitivity_analysis_all.xlsx`. |
-| [WeightDiagnostics.py](scripts/validation/WeightDiagnostics.py) | Diagnostic breakdown of within-scenario criterion dispersion and zero-variance rates by decision type, feeding the implied-weights corner-solution discussion. |
-| [EntropyWeights.py](src/llm_mcda/common/weighting/EntropyWeights.py) | Computes Shannon entropy weights from reference score distributions overall and by decision type. Writes under `workbooks/methodology/`. |
-| [merec_weights.py](src/llm_mcda/common/weighting/merec_weights.py) | Computes MEREC objective weights per-scenario then averages (not pooled). Writes under `workbooks/methodology/`. |
-| [implied_weights.py](src/llm_mcda/common/weighting/implied_weights.py) | Recovers implied weights from reference ranking structure using pairwise constrained linear regression (w >= 0, sum(w) = 1). Writes under `workbooks/methodology/`. |
-| [evaluate_parameter_extraction.py](scripts/analysis/evaluate_parameter_extraction.py) | Evaluates extraction accuracy vs. reference; reads preserved benchmark files and requires a safe `--output` or `LLM_MCDA_RUN_OUTPUT_DIR`. |
-| [sync_rag_ground_truth_scores.py](scripts/collection/sync_rag_ground_truth_scores.py) | Validates frozen scenario/ground-truth inputs and, unless `--dry-run`, requires a separate safe `--output-dir` for refreshed workbook copies. |
-
----
-
-## Documentation
-
-[XLSX Schema Map](XLSX_Schema_Map.md)
-
-The codebase guide, per-experiment ablation methodology, metrics-pipeline walkthrough, calculator provenance ledger, and the methodology PDFs (evaluation-metric derivations, budget penalties, reference ranges, worked calculator examples) are author-side notes kept outside this repository.
-
-Scenario provenance: derived Test and RAG data should remain traceable to its source workbooks.
 
 ---
 
 ## License
 
-Code is released under the MIT License ([LICENSE](LICENSE)). The scenario workbooks, reference scores, and benchmark outputs are released under CC BY 4.0 ([DATA_LICENSE](DATA_LICENSE)).
-
----
-
-## Citation
-
-This project is being developed into a journal paper with **River Huang (Paul Scherrer Institut, Switzerland)**, targeting *Environmental Modelling & Software*.
+Code is released under the MIT License ([LICENSE](LICENSE)). Scenario workbooks, reference scores, and benchmark outputs are released under CC BY 4.0 ([DATA_LICENSE](DATA_LICENSE)).
