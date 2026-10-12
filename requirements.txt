@@ -1,4 +1,4 @@
-﻿# Requires Python 3.11+
+# Requires Python 3.11+
 chromadb==1.5.2
 matplotlib==3.11.0
 numpy==2.4.2
