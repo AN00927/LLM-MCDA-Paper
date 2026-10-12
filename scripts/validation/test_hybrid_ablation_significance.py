@@ -25,7 +25,7 @@ which are a different experiment with its own analysis in
 Pairing basis (the Methods protocol for every paired test in the paper): the
 `extracted` arm holds one row per scenario per shipped run. Before testing, each
 scenario's metric is averaged over all the runs; a failed scenario-run enters at
-the failure rule's chance-level values (S4, 2026-09-29: Top-1 wrong, tau 0, MAE
+the failure rule's chance-level values (Top-1 wrong, tau 0, MAE
 the uniform-guess error), so no scenario drops out. The test then pairs
 that per-scenario run mean with the scenario's dataset-median value. Feeding
 the multi-run rows straight into `posthoc_wilcoxon_holm` would be wrong: its
@@ -175,7 +175,7 @@ def main(args=None):
 
     rag = _load_rag_module()
     df = pd.read_excel(summary_xlsx, sheet_name="per_scenario")
-    # Failure rule (S4): failed scenario-runs are KEPT; the ablation already
+    # Failure rule: failed scenario-runs are KEPT; the ablation already
     # wrote their chance-level values. Only a scenario whose reference could
     # not be scored has NaN metrics, and the pivot drops it.
 

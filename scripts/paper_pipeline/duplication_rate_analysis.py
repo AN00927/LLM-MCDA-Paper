@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""C6: cost/environmental score-duplication rate analysis.
+"""Cost/environmental score-duplication rate analysis.
 
 For each model x architecture x decision type x run, computes the fraction of
 scored alternatives (sentinel rows excluded) where the architecture assigned
@@ -8,7 +8,7 @@ five-run mean and standard deviation per cell, writes per-run values plus
 summary to local-only `duplication_rates_all_runs.xlsx`, and renders the paper
 table snippet to local-only `duplication_table.tex`.
 
-The paper table covers A_D and A_E (matching task brief C6). A_H duplication
+The paper table covers A_D and A_E. A_H duplication
 rates are computed as auxiliary context (its criterion scores are calculator
 outputs) and written to the A_H_aux sheet only.
 """
@@ -30,7 +30,6 @@ from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
 from llm_mcda.common.model_config import get_display_label, get_output_folder  # noqa: E402
 
 N_RUNS = 5
-# Column order matches the task brief's run-01 example table.
 DECISION_TYPES = ["HVAC", "Shower", "Appliance"]
 
 MODEL_FOLDERS = [
@@ -38,9 +37,7 @@ MODEL_FOLDERS = [
     for model_key in ("gemini", "gptoss", "qwen", "deepseek")
 ]
 
-# C6's paper table lists A_D and A_E only.
 TABLE_ARCHS = ["Direct_LLM_Scoring", "Example-Guided_LLM_Scoring"]
-# A_H computed as auxiliary context, not part of the paper table.
 ALL_ARCHS = TABLE_ARCHS + ["LLM-Parameterized_Reference_Scoring"]
 
 ARCH_KEYS = {

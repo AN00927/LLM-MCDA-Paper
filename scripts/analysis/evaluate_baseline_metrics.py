@@ -119,7 +119,7 @@ def main(argv=None):
         merged, _ = _cm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, name)
         clean, n_failed, n_total = _cm.filter_failed_scenarios(merged)
 
-        # Failure rule (S4), the same as the LLM architectures: metrics are
+        # Failure rule, the same as the LLM architectures: metrics are
         # computed on the unfiltered frame, every matched scenario counted.
         per_type = {}
         for dt in DECISION_TYPES:

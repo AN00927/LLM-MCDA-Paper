@@ -1,7 +1,7 @@
 """Listwise direct ranking: an A_D arm that asks the LLM to rank the three
 alternatives in one call instead of scoring each one on four criteria.
 
-Why (author decision, 2026-09-27): the research question is about reproducing
+Why: the research question is about reproducing
 a ranking, and A_D sits near chance on Top-1. A reader from the LLM-as-judge
 literature will ask whether a model that scores badly can still rank well when
 asked to rank directly. This arm answers that. If listwise ranking does no
@@ -26,7 +26,7 @@ reference, so tau, Top-1 and Top-2 are computed exactly as for every other arm:
   - Failure-as-wrong: a failed or invalid ranking counts as a miss for Top-1
     and Top-2.
   - Kendall tau is 0 (chance) for a failed ranking, with every scenario in the
-    denominator (failure rule S4, 2026-09-29).
+    denominator (failure rule).
 The comparison arm is pointwise A_D, rebuilt from the main suite's five runs.
 
 API: the architectures' shared client, through the prompt ablation's
@@ -388,7 +388,7 @@ def load_listwise_runs(model_key: str) -> pd.DataFrame:
                                 reference.get(int(row["scenario_id"])))
         for k in ("kendall_tau", "top1", "top2", "failed", "pred_top1"):
             df.at[idx, k] = m[k]
-    # Failure rule (S4): runs written before 2026-09-29 stored NaN for a failed
+    # Failure rule: runs written before 2026-09-29 stored NaN for a failed
     # ranking's tau; it is the chance value 0, like every other arm.
     df.loc[df["failed"].astype(bool), "kendall_tau"] = PA.FAILED_SCENARIO_TAU
     return df

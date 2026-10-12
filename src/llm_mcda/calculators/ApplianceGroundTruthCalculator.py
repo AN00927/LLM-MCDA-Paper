@@ -21,38 +21,18 @@ if str(PROJECT_ROOT) not in sys.path:
 from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, SENTINEL_VALUE, has_sentinel_scores
 
 class ApplianceGroundTruthCalculator:
-    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx
-    # Emissions Report (April 2023). Marginal rates reflect emissions of the last
-    # generator dispatched
-    # Peak window: 7am-11pm on non-holiday weekdays (PJM's definition); every scenario is
-    # treated as a non-holiday weekday, so the window applies as coded.
-    EMISSIONS_FACTOR_PEAK = 1.041      # lbs CO2/kWh; PJM peak (1041 lbs/MWh)
-    EMISSIONS_FACTOR_OFFPEAK = 0.976   # lbs CO2/kWh; PJM off-peak (976 lbs/MWh)
-    EMISSIONS_PEAK_HOURS = (7, 23)     # 7am-11pm system-wide PJM
+    # PJM 2022 marginal emissions factors (lbs CO2/kWh); peak covers 7am-11pm weekdays.
+    EMISSIONS_FACTOR_PEAK = 1.041
+    EMISSIONS_FACTOR_OFFPEAK = 0.976
+    EMISSIONS_PEAK_HOURS = (7, 23)
 
-    # Utility TOU rate windows and rates ($/kWh), all for ONE common rate period:
-    # December 1, 2025 - May 31, 2026 (FirstEnergy's rider says "through May 30, 2026").
-    # Scenarios carry no date, so this one period (and its winter windows) applies to every
-    # scenario. Every utility is on the same basis, the full price to compare (generation +
-    # transmission): PECO TOU pricing option incl. transmission; PPL TOU generation + TSC
-    # (its PTC sheet); FirstEnergy PTCDefault (which includes the NITS transmission charge)
-    # x TOU multiplier; Duquesne residential PTC. No distribution charges are included.
-    # All scenarios are treated as non-holiday weekdays: the weekday windows below apply as coded.
-    # Windows are [start, end) in clock hours; a window with start > end wraps past midnight.
-    # FirstEnergy (WestPenn/Penelec/MetEd) TOU rate = PTCDefault x multiplier: Dec-2025
-    # residential PTCDefault (FE PA tariff Supplement No. 28, Sixth Revised Page 203) x TOU
-    # multipliers (FE PA tariff Supplement No. 20, PA PUC doc 1875621, First Revised Page 221).
-    # Recompute at each PTC reset (Jun 1 / Dec 1).
+    # PA utility TOU rate windows and rates ($/kWh).
     UTILITY_RATES = {
-        # PECO TOU Pricing Option, Rate R, Dec 1 2025 - May 31 2026, including the 0.787 c
-        # transmission charge (PECO Price to Compare sheet, updated 5/15/2026).
+        # PECO TOU pricing (Dec 2025-May 2026 rate period).
         # Peak 2-6pm Mon-Fri; super off-peak midnight-6am every day.
         "PECO":      {"peak_hours": (14, 18), "super_offpeak_hours": (0, 6),
                       "peak_rate": 0.32747, "offpeak_rate": 0.08382, "super_offpeak_rate": 0.06061},
-        # PPL GSC-1 TOU Program for Rate Schedules RS and RTS (PPL tariff Supplement No. 402,
-        # Twenty-Third Revised Page 19Z.5B, effective Dec 1 2025): winter on-peak 4-8pm Mon-Fri,
-        # GSC 10.643/8.644 c. Rates below are PPL's TOU "Price to Compare" (GSC + 3.343 c
-        # transmission service charge; PPL PTC sheet, Dec 1 2025 - May 31 2026).
+        # PPL GSC-1 TOU program (winter on-peak 4-8pm Mon-Fri).
         "PPL":       {"peak_hours": (16, 20),
                       "peak_rate": 0.13986, "offpeak_rate": 0.11987},
         "WestPenn":  {"peak_hours": (14, 21), "super_offpeak_hours": (23, 6),
@@ -64,19 +44,13 @@ class ApplianceGroundTruthCalculator:
         "MetEd":     {"peak_hours": (14, 21), "super_offpeak_hours": (23, 6),
                       "peak_rate": 0.12965 * 1.7060, "offpeak_rate": 0.12965 * 0.8397,
                       "super_offpeak_rate": 0.12965 * 0.6215},
-        # Duquesne Rate RS flat default: Dec 1 2025 residential PTC 13.75 c/kWh (PA PUC press
-        # release, 11/24/2025). No peak window; the optional non-default TOU (peak 3-9pm,
-        # PUC-approved 2025-04-10, Duquesne Light Company TOU (2026)) is not used.
+        # Duquesne Rate RS flat default (no peak window; optional TOU not used).
         "Duquesne":  {"peak_hours": None, "flat_rate": 0.1375},
     }
 
     # City-to-utility mapping (PA only; city name as it appears in scenario Location field).
-    # Checked against the tariff territory lists: FE PA Electric Pa. P.U.C. No. 1,
-    # "Description of Territory" (pp. 6-20) and PPL Electric Pa. P.U.C. No. 201, "Territory
-    # Covered by this Tariff" (pp. 4-4B). Stroudsburg is listed by both (PPL: "Stroudsburg
-    # (part)"), and Quakertown borough runs its own municipal electric system (outside
-    # every modeled utility); both are left on PPL. Chambersburg borough also has a
-    # municipal system; it is mapped to its host utility West Penn, which lists the borough.
+    # Checked against utility tariff territory lists. Edge cases: Stroudsburg and
+    # Chambersburg map to host utilities; Quakertown borough (municipal system) stays on PPL.
     CITY_TO_UTILITY = {
         "Philadelphia": "PECO", "Norristown": "PECO", "Pottstown": "PECO",
         "Phoenixville": "PECO", "West Chester": "PECO", "Exton": "PECO",
@@ -97,28 +71,14 @@ class ApplianceGroundTruthCalculator:
         "Pittsburgh": "Duquesne", "McKeesport": "Duquesne",
     }
 
-    # apply_value_function reference ranges for the two physical criteria: 5th-95th
-    # percentiles of the output raw_cost (4 dp) / raw_emissions (3 dp) values over all 300
-    # alternatives of the 100 master scenarios (65 test + 35 RAG pooled), numpy linear
-    # interpolation, np.round to 3 dp (the convention that reproduces the previous
-    # 0.025/0.71 and 0.288/3.643). Recompute whenever rates, windows or the city mapping change.
+    # Reference ranges (5th-95th pct over master scenarios; recompute if rates change).
     ENERGY_COST_BOUNDS = (0.028, 0.774)      # $/cycle; p5 0.0276, p95 0.7741 (was 0.025/0.71)
     ENVIRONMENTAL_BOUNDS = (0.288, 3.643)    # lbs CO2/cycle; p5 0.2884, p95 3.643 (unchanged)
 
-    NOISE_LIMIT_EVENING = 45     # dBA threshold after 10pm (EPA/WHO indoor night limit is 35 dBA;
-                                  # 45 dBA chosen so dishwashers (~45 dBA, Bellingham Electric (2026))
-                                  # are at-threshold and washers/dryers (74/65 dBA,
-                                  # Precision Appliance Leasing (2024) / Coolblue (2026))
-                                  # exceed it and receive the noise penalty)
-    # Dyer & Sarin (1979) (Oper. Res. 27(4):810-822)
+    NOISE_LIMIT_EVENING = 45  # Night noise threshold (dBA).
     VF_ENERGY_COST = "linear"
 
-    # Linear VF for environmental impact - physical units have linear marginal value.
-    # For MAVT framework justification, see Keeney & Raiffa (1976): Foundation for
-    # Multi-Attribute Value Theory axioms.
-    # Linear VF justification in this context: When environmental impacts are framed in
-    # absolute physical units (lbs CO2), a linear preference is a conservative modeling choice
-    # that treats equal changes in emissions as equally valuable reductions.
+    # Linear VF for environmental impact.
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
@@ -144,10 +104,10 @@ class ApplianceGroundTruthCalculator:
 
     def _cycles_per_month(self, appliance_type: str) -> int:
         cycles = {
-            'dishwasher': 18,         # 215 cycles/yr (U.S. EPA (2023) ENERGY STAR Dishwashers criteria)
-            'washer': 25,             # ~300 loads/yr (U.S. EPA (2026) ENERGY STAR Clothes Washers)
+            'dishwasher': 18,         # 215 cycles/yr
+            'washer': 25,             # ~300 loads/yr
             'washing_machine': 25,
-            'dryer': 24,              # 283 cycles/yr (U.S. DOE (2011) dryer test procedure)
+            'dryer': 24,              # 283 cycles/yr
         }
         return cycles.get(appliance_type.lower().strip(), 24)
 
@@ -216,19 +176,15 @@ class ApplianceGroundTruthCalculator:
         if delay_hours == 0:
             base_comfort = 10.0
         elif delay_hours <= 3:
-            base_comfort = 10.0 - (delay_hours / 3.0) * 2.0         # 10→8 over 3hr
+            base_comfort = 10.0 - (delay_hours / 3.0) * 2.0
         elif delay_hours <= 7:
-            base_comfort = 8.0 - ((delay_hours - 3.0) / 4.0) * 2.0  # 8→6 over 4hr
+            base_comfort = 8.0 - ((delay_hours - 3.0) / 4.0) * 2.0
         elif delay_hours <= 12:
-            base_comfort = 6.0 - ((delay_hours - 7.0) / 5.0) * 2.0  # 6→4 over 5hr
+            base_comfort = 6.0 - ((delay_hours - 7.0) / 5.0) * 2.0
         else:
-            base_comfort = 2.0   # Beyond acceptable (>12hr)
+            base_comfort = 2.0
 
         # Component 2: Noise disruption penalty
-        # Depends on: time of day + housing type + appliance noise level. Representative dBA:
-        # dishwasher ~45 (Bellingham Electric (2026)), washer ~74 (spin-cycle peak,
-        # Precision Appliance Leasing (2024)), dryer ~65 (Coolblue (2026)). Only the >45 threshold test
-        # below reads these, so washer/dryer trigger the penalty regardless of the exact value.
         if appliance_type.lower() == "dishwasher":
             appliance_noise = 45
         elif appliance_type.lower() == "washer" or "washing" in appliance_type.lower():
@@ -273,18 +229,17 @@ class ApplianceGroundTruthCalculator:
         if delay_hours == 0:
             base_practicality = 10.0
         elif delay_hours <= 2:
-            base_practicality = 10.0 - (delay_hours / 2.0) * 2.0          # 10→8 over 2hr
+            base_practicality = 10.0 - (delay_hours / 2.0) * 2.0
         elif delay_hours <= 4:
-            base_practicality = 8.0 - ((delay_hours - 2.0) / 2.0) * 1.5   # 8→6.5 over 2hr
+            base_practicality = 8.0 - ((delay_hours - 2.0) / 2.0) * 1.5
         elif delay_hours <= 8:
-            base_practicality = 6.5 - ((delay_hours - 4.0) / 4.0) * 2.0   # 6.5→4.5 over 4hr
+            base_practicality = 6.5 - ((delay_hours - 4.0) / 4.0) * 2.0
         elif delay_hours <= 12:
-            base_practicality = 4.5 - ((delay_hours - 8.0) / 4.0) * 1.5   # 4.5→3.0 over 4hr
+            base_practicality = 4.5 - ((delay_hours - 8.0) / 4.0) * 1.5
         else:
             base_practicality = 1.5   # Beyond typical adoption range
 
         # Component 2: Timing complexity (remembering to run at specific hour)
-        # Paetz et al.: "If low-price zones applied on brink of day, perceived as too early or too late"
         timing_penalty = 0.0
         if 0 <= run_time_hour < 6:    # Middle of night (midnight–6am)
             timing_penalty = 2.0
@@ -394,12 +349,7 @@ class ApplianceGroundTruthCalculator:
                 'decreasing': True
             },
             'environmental': {
-                # 5th-95th percentile of the actual scenario-set per-cycle emissions
-                # distribution (kWh/cycle x PJM marginal factor at run time; test + RAG
-                # pooled): see ENVIRONMENTAL_BOUNDS. Source: PJM 2022 CO2/SO2/NOx Emissions
-                # Report (April 2023). Marginal (not average) factors are the correct measure
-                # for behavioral time-shifting decisions because they reflect the
-                # generator actually displaced or added at the margin.
+                # 5th-95th percentile of scenario-set per-cycle emissions: see ENVIRONMENTAL_BOUNDS.
                 'min': self.ENVIRONMENTAL_BOUNDS[0],
                 'max': self.ENVIRONMENTAL_BOUNDS[1],
                 'decreasing': True
@@ -410,11 +360,7 @@ class ApplianceGroundTruthCalculator:
                 'decreasing': False
             },
             'practicality': {
-                # VF floor 0.05 sits below the raw practicality floor of 0.15 so the least
-                # practical-but-feasible option keeps a small positive utility instead of
-                # collapsing to exactly zero. Internal normalization choice (not a literature
-                # value): no feasible option is treated as absolutely infeasible
-                # (Keeney & Raiffa (1976) value-measurability convention).
+                # VF floor below the raw practicality floor keeps feasible options positive.
                 'min': 0.05,
                 'max': 1.0,
                 'decreasing': False
@@ -479,17 +425,15 @@ class ApplianceGroundTruthCalculator:
         utilization = monthly_cost / monthly_budget
 
         if utilization < 0.80:
-            # Mental budget safety margin (Thaler 1999)
+            # Under budget.
             return 1.0
 
         elif utilization < 1.0:
-            # Linear decline as budget limit approached (Heath & Soll 1996)
+            # Nearing limit.
             return 1.0 - 2.5 * (utilization - 0.80)
 
         else:
-            # Exponential loss aversion under budget violation (Prelec & Loewenstein 1998; Heutel 2017).
-            # Continuous for every u >= 1.0: the former drop to 0 at u = 1.5 is removed, so an
-            # over-budget option keeps a small, still-decreasing credit instead of a cliff.
+            # Over-budget decay (continuous, no cliff at u = 1.5).
             import math
             return 0.5 * math.exp(-3.0 * (utilization - 1.0))
 

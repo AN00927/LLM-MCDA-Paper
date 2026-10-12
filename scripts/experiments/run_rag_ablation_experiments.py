@@ -1038,7 +1038,7 @@ def scenario_metrics(predictions: List[Dict], scenario: Dict) -> Dict:
     gt_top1 = next((alt for alt in common if gt_by_alt[alt]["rank"] == 1), "")
     pred_top1 = next((alt for alt in rank_common if pred_by_alt[alt]["rank"] == 1), "")
     pred_top2 = {alt for alt in rank_common if pred_by_alt[alt]["rank"] <= 2}
-    # Accuracy rule (author decision, 2026-09-27): a scenario whose prediction
+    # Accuracy rule: a scenario whose prediction
     # failed or is unscored -- ANY alternative failed (API failure, truncation,
     # parse error, the copy-only 'unscored' fallback) or carries no valid rank --
     # counts as WRONG for Top-1 and Top-2, and stays in the denominator, which
@@ -1064,7 +1064,7 @@ def scenario_metrics(predictions: List[Dict], scenario: Dict) -> Dict:
     }
 
 
-# Failure rule (S4, author decisions 2026-09-29), the same one the main suite
+# Failure rule, the same one the main suite
 # applies (evaluate_architecture_metrics.FAILED_SCENARIO_*): a failed scenario
 # stays in every denominator; Top-1/Top-2 wrong (already so in scenario_metrics),
 # tau and rho 0 (chance), and the MAVT-score MAE/RMSE at the chance-level error
@@ -1116,7 +1116,7 @@ def summarize_rows(rows: List[Dict]) -> pd.DataFrame:
             "ablation_id": ablation_id,
             "ablation_label": ablation_label,
             "n_scenarios": int(group["source_scenario_id"].nunique()),
-            # Failed scenarios stay in every denominator (failure rule, S4):
+            # Failed scenarios stay in every denominator (failure rule):
             # wrong for Top-1/Top-2, chance level for tau, rho and MAE.
             "n_failed_scenarios": (int(group["scenario_failed"].astype(bool).sum())
                                    if "scenario_failed" in group else np.nan),

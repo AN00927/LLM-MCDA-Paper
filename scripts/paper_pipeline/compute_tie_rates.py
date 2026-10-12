@@ -84,8 +84,7 @@ def load_runs(model_key, arch_stem):
 def per_scenario_tie_flags(clean_df):
     """One row per scenario:
       any_tie  -- at least two alternatives share a weighted score ANYWHERE in
-                  the ranking (the S L203 / D9_D12_REPORT.md 8.2 "Any tie"
-                  figure). Two alternatives tying for 2nd/3rd place counts here
+                  the ranking. Two alternatives tying for 2nd/3rd place counts here
                   even though it cannot move Top-1.
       top_tie  -- the stricter, Top-1-relevant condition: two or more
                   alternatives share the TOP weighted score.
@@ -161,7 +160,6 @@ def main():
     agg.to_csv(summary_path, index=False)
     print(f"[OK] Wrote {summary_path} ({len(agg)} rows)")
 
-    # Quick sanity print for the S L203 cells named in D9_D12_REPORT.md.
     check = agg[(agg.arch == "A_E") & (agg.decision_type == "Overall") &
                (agg.model.isin(["deepseek", "gptoss", "qwen"]))]
     if len(check):

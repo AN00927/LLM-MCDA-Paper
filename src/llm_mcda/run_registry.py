@@ -1,9 +1,4 @@
-"""Load and verify the repository's immutable model/experiment run registry.
-
-The manifest is the only source of truth for selecting a current run. This
-module deliberately uses only the Python standard library so it can be imported
-by both analysis scripts and the architecture runners.
-"""
+"""Run registry loading and validation."""
 from __future__ import annotations
 
 import hashlib
@@ -108,7 +103,7 @@ def _validate_registry(registry: Any) -> None:
         if not _RUN_ID_RE.fullmatch(run_id):
             _fail(f"{where}.run_id", f"invalid run_id {run_id!r}")
         if run_id in by_id:
-            _fail(f"{where}.run_id", f"duplicate immutable run_id {run_id!r}")
+            _fail(f"{where}.run_id", f"duplicate run_id {run_id!r}")
         by_id[run_id] = run
 
         for field in ("model_key", "model_id"):
@@ -254,7 +249,7 @@ def load_registry(path: str | Path | None = None) -> dict[str, Any]:
 
 
 def current_run_id(model_key: str) -> str:
-    """Return the immutable run ID pinned as current for ``model_key``."""
+    """Return the run ID pinned as current for ``model_key``."""
     _require_string(model_key, "model_key", allow_unknown=False)
     registry = load_registry()
     if registry["current_run_status"] == "deferred":
@@ -267,7 +262,7 @@ def current_run_id(model_key: str) -> str:
 
 
 def get_run(run_id: str) -> dict[str, Any]:
-    """Return the run record for an exact immutable ``run_id``."""
+    """Return the run record for ``run_id``."""
     _require_string(run_id, "run_id", allow_unknown=False)
     for run in load_registry()["runs"]:
         if run["run_id"] == run_id:

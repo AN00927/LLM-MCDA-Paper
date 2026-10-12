@@ -13,34 +13,6 @@ import requests
 from dotenv import load_dotenv
 import pandas as pd
 
-"""ACROSS ALL THREE ARCHITECTURES
-These sources were used to help build prompts:
- Prompt engineering components and their citations:
-
- 1. Role prompting ("You are an expert in [domain]...")
- Shanahan, M., McDonell, K., & Reynolds, L. (2023).
- Role play with large language models. Nature, 623(7987), 493–498.
- https://doi.org/10.1038/s41586-023-06647-8
-
- 2. Structured output constraint ("return ONLY JSON")
- Wei, J., et al. (2022). Chain-of-thought prompting elicits reasoning in large language models.
- NeurIPS 2022. https://proceedings.neurips.cc/paper/2022/file/9d5609613524ecf4f15af0f7b31abca4-Paper-Conference.pdf
-
- 3. RAG context injection ("use retrieved examples as reference but score independently")
- Lewis, P., et al. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks.
- NeurIPS 2020. https://proceedings.neurips.cc/paper/2020/file/6b493230205f780e1bc26945df7481e5-Paper.pdf
-
- 4. LLM-Parameterized_Reference_Scoring parameter extraction ("extract parameters then compute")
- Khot, T., et al. (2023). Decomposed prompting: A modular approach for solving complex tasks.
- ICLR 2023. https://arxiv.org/abs/2210.02406
-
- 5. "Reasonably estimate if not apparent" (bias mitigation)
- Galaz, V., et al. (2021). Artificial intelligence, systemic risks, and sustainability.
- Technology in Society, 67, 101741. https://doi.org/10.1016/j.techsoc.2021.101741
-
-"""
-
-# Allow direct execution from the repository without an installed package.
 SRC_ROOT = Path(__file__).resolve().parents[2]
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
@@ -105,9 +77,7 @@ from llm_mcda.common.sentinel_utils import (
 
 ARCHITECTURE = "Direct_LLM_Scoring"
 
-# Raw per-call archive. Inert until run_test_set turns it on, so importing this
-# module and calling run_scenario directly (ablation / position-bias scripts)
-# writes nothing.
+# Raw call logger, started by runner.
 RAW_LOG = RawCallLog()
 
 TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
@@ -172,20 +142,7 @@ def _is_transient_http_status(status_code: int) -> bool:
     return status_code in TRANSIENT_HTTP_STATUS_CODES or status_code >= 520
 
 def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tuple[str, Dict]:
-    """Query openrouter.
-
-    Shared request policy across all three architectures (model_config):
-    MAX_RETRIES attempts, REQUEST_TIMEOUT-second socket timeout, exponential
-    backoff capped at MAX_RETRY_BACKOFF. latency_ms is the wall-clock round trip
-    of the *successful* HTTP request only (measured around requests.post),
-    excluding retry sleeps and local JSON parsing. The loop itself is
-    sentinel_utils.openrouter_chat, shared by all three architectures.
-
-    Returns (content, diagnostics). content is None when the call failed
-    (FAILED_API_EXHAUSTED / FAILED_API_BAD_REQUEST); a truncated call returns
-    its partial text with success False and failure_types [FAILED_TRUNCATED].
-    Raises OpenRouterFatalError on 401/402/403.
-    """
+    """Send chat completion request to OpenRouter with retries."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         raise ValueError("OPENROUTER_API_KEY not found in environment variables")
@@ -230,7 +187,7 @@ def query_openrouter(messages: List[Dict], max_retries: int = MAX_RETRIES) -> Tu
 
     diagnostics["failure_types"] = [call["failure_type"]]
     if call["truncated"]:
-        # Partial text goes to the raw log only; score_alternative never parses it.
+        # Partial text goes to the raw log only; score_alternative does not parse it.
         return call["content"], diagnostics
     return None, diagnostics
 
@@ -376,9 +333,7 @@ def _record_call(scenario: Dict, alternative: str, system_prompt: str, user_prom
 
 
 def _validate_scores(response, diagnostics: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    """Parse and range-check one scoring response (moved unchanged out of
-    score_alternative so the raw record can follow it; the truncation check is
-    new)."""
+    """Validate and parse 0-1 scores from model output."""
     logger.debug(f"=== SCORING RESPONSE for '{alternative}' ===")
     logger.debug(f"Raw response (first 1000 chars): {response[:1000] if response else 'None'}")
     logger.debug(f"Response length: {len(response) if response else 0} chars")
@@ -722,15 +677,7 @@ def run_test_set(test_path: str, output_path: str, output_diagnostics_path: str)
 
 def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                             base_diagnostics_path: str) -> None:
-    """Run the benchmark N_RUNS times and average the per-run xlsx outputs.
-
-    Resume-aware: a per-run xlsx that already exists, has size > 0, has no
-    leftover .tmp sibling, is a readable non-empty DataFrame and carries a
-    collected_utc column is treated as a completed run and skipped. Any other
-    state triggers a re-run, except a readable file WITHOUT collected_utc (a
-    pre-rerun output): then nothing runs until it is moved aside. Every skip,
-    start, finish and abort is appended to <base>_events.log.
-    """
+    """Run N_RUNS passes and aggregate."""
     base = Path(base_output_csv)
     base_diag = Path(base_diagnostics_path)
     events_log = base.with_name(f"{base.stem}_events.log")
@@ -743,9 +690,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         if run_file_state(base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}")) == "old_format"
     ]
     if old_format:
-        msg = (f"Refusing to run: {old_format} in {base.parent} have no collected_utc column "
-               f"(pre-rerun outputs). Move them aside; they are never resumed or overwritten.")
-        log_run_event(events_log, f"REFUSED {msg}")
+        msg = f"Found legacy run files missing collected_utc: {old_format}."
+        log_run_event(events_log, msg)
         raise RuntimeError(msg)
 
     for run_idx in range(1, N_RUNS + 1):
@@ -806,10 +752,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     CRITERIA_COLS = ["energy_cost", "environmental", "comfort", "practicality"]
     SENTINEL = SENTINEL_FLOAT
 
-    # Use pd.to_numeric (coerce) — handles string "1928" and malformed values
     for c in CRITERIA_COLS:
         combined[c] = pd.to_numeric(combined[c], errors="coerce")
-        # Treat exact sentinel float as a failed row
         combined.loc[combined[c] == SENTINEL, c] = np.nan
 
     GROUP_KEYS = ["scenario_id", "alternative"]
@@ -834,7 +778,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
     std_criteria = std_criteria.rename(columns={c: f"{c}_std" for c in CRITERIA_COLS})
     stats_df = avg.merge(std_criteria, on=GROUP_KEYS)
 
-    # When N=1, pandas std returns NaN — annotate clearly in the stats output
     if n_readable == 1:
         logging.warning(
             "Only 1 run aggregated — std columns will be NaN (undefined for N=1)."
@@ -844,7 +787,6 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
             if col in stats_df.columns:
                 stats_df[col] = "N/A (N=1)"
 
-    # Put 1928 back anywhere every run failed for that alternative
     for c in CRITERIA_COLS:
         avg[c] = avg[c].fillna(SENTINEL)
 
@@ -861,7 +803,7 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
                 avg.loc[valid_idx, "environmental"] * CRITERION_WEIGHTS["environmental"] +
                 avg.loc[valid_idx, "comfort"] * CRITERION_WEIGHTS["comfort"] +
                 avg.loc[valid_idx, "practicality"] * CRITERION_WEIGHTS["practicality"]
-            ).round(MAVT_ROUND_DECIMALS)  # exact ties reach TIE_BREAK_PRIORITY
+            ).round(MAVT_ROUND_DECIMALS)
             avg.loc[valid_idx, "weighted_score"] = ws
             sub = avg.loc[valid_idx].copy()
             sub["weighted_score"] = ws

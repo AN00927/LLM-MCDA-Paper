@@ -50,13 +50,7 @@ DEFAULT_SEED = 20260803
 # Set by main() after validating the caller's safe output root.
 OUTPUT_DIR = None
 
-# A_D only. A_E was dropped: its arm changes the same two-element "other
-# options" list A_D's does, and an earlier A_E run was invalidated when the
-# module's Chroma resources were never initialised, so retrieval silently
-# returned nothing and the arm measured exemplar removal instead of ordering.
-# The architecture whose prompt actually presents all three alternatives as a
-# numbered sequence is A_H, and that arm now lives in run_hybrid_ablation_experiments.py
-# where it can be compared against A_H's own run-to-run variation.
+# Position bias control for direct scoring (A_D).
 ARCHITECTURES = {
     "Direct_LLM_Scoring": PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py",
 }
@@ -386,7 +380,7 @@ def _metrics_for(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_ids):
     if merged.empty:
         return None, None
 
-    # Failure rule (S4): every matched scenario is in the denominator; a failed
+    # Failure rule: every matched scenario is in the denominator; a failed
     # one counts as wrong for Top-1/Top-2 and at chance for tau/rho.
     overall = mod.compute_ranking_metrics_inclusive(merged)
     overall["n_failed_scenarios"] = overall["n_failed"]
@@ -404,7 +398,7 @@ def _metrics_for(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_ids):
 
 def _top1_by_scenario(mod, gt_lookup, gt_id_lookup, arch_df, arch_name, sampled_ids):
     """Per-scenario top-1 correctness, keyed by scenario_id, for paired tests.
-    Failure rule (S4): a failed scenario is present and counted wrong (0)."""
+    Failure rule: a failed scenario is present and counted wrong (0)."""
     sub = arch_df[arch_df["scenario_id"].isin(sampled_ids)]
     merged, _ = mod.match_scenarios(gt_lookup, gt_id_lookup, sub, arch_name)
     if merged.empty:
@@ -423,7 +417,7 @@ def _decision_type_by_scenario(mod, gt_lookup, gt_id_lookup, arch_df, arch_name,
     merged, _ = mod.match_scenarios(gt_lookup, gt_id_lookup, sub, arch_name)
     if merged.empty:
         return {}
-    # Every matched scenario, failed ones included (failure rule S4), so the
+    # Every matched scenario, failed ones included (failure rule), so the
     # per-type McNemar tests see a failed scenario as a miss.
     return (
         merged.groupby("arch_scenario_id")["decision_type"].first().to_dict()
@@ -761,7 +755,7 @@ def main():
     parser.add_argument("command", choices=["run", "analyze"])
     # Defaults reproduce the paper's design with no flags: A_D reversed on all
     # 195 Test scenarios, one reversed run per model, for all four models
-    # (main text, "position" paragraph of the robustness checks; S2 McNemar
+    # (main text, "position" paragraph of the robustness checks; McNemar
     # table compares that one run against each model's five original runs).
     parser.add_argument("--model", "--models", dest="models", nargs="+",
                         choices=list(MODEL_SPECS.keys()),

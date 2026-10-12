@@ -9,10 +9,6 @@ Figures (select with --figure {boxplot,violin,variance,grouped_bars,all}):
   grouped_bars  matplotlib vector PDF written to
                 <local manuscripts>/paper/Images/OverallPerformanceByModel.pdf
                 (one-off figure with hardcoded data; not a pgfplots snippet)
-
-The legacy generate_boxplot_tex.py / generate_violin_plot_tex.py /
-generate_variance_plot_tex.py / generate_grouped_bars_figure.py scripts are
-thin shims that delegate here. Their CLIs and default outputs are unchanged.
 """
 
 import argparse
@@ -213,7 +209,6 @@ MODELS = [
     ("qwen", "Qwen"),
 ]
 
-# Use __PLACEHOLDER__ markers to avoid .format() / LaTeX brace collision
 BOX_MINIPAGE_TPL = r"""\begin{minipage}{0.24\textwidth}
 \centering
 \begin{tikzpicture}

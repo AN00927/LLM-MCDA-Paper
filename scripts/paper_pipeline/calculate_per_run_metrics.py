@@ -46,7 +46,7 @@ build_gt_id_lookup = _cm.build_gt_id_lookup
 match_scenarios = _cm.match_scenarios
 filter_failed_scenarios = _cm.filter_failed_scenarios
 compute_criterion_metrics = _cm.compute_criterion_metrics
-# Failure rule (S4): every matched scenario is in the denominator; see
+# Failure rule: every matched scenario is in the denominator; see
 # evaluate_architecture_metrics.FAILED_SCENARIO_* for the per-metric values.
 compute_ranking_metrics_inclusive = _cm.compute_ranking_metrics_inclusive
 compute_criterion_metrics_inclusive = _cm.compute_criterion_metrics_inclusive
@@ -162,7 +162,7 @@ def compute_per_run_metrics_for_model(model_key):
             if clean.empty:
                 print(f"    [WARN] {arch_name} run {run_num:02d}: all scenarios failed")
 
-            # Failure rule (S4): computed on the unfiltered frame, so a failed
+            # Failure rule: computed on the unfiltered frame, so a failed
             # scenario counts as wrong (Top-1/Top-2) and at chance (tau/rho) with
             # every matched scenario in the denominator. `n_scenarios` stays the
             # count of SCORED scenarios (n_scored); `n_total` is the denominator.

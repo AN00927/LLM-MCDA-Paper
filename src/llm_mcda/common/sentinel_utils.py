@@ -1,14 +1,4 @@
-"""Shared sentinel-filtering utilities for all MCDA architectures.
-
-The sentinel value 1928 marks a failed/invalid score.  All three of these
-are treated as sentinel regardless of how they arrive from xlsx/JSON:
-    - numeric int   1928
-    - numeric float 1928.0
-    - string        "1928"
-
-Non-numeric strings (e.g. "N/A", "error") coerce to NaN, which the callers
-should treat as a failure-safe missing value rather than a valid score.
-"""
+"""Shared sentinel filtering and scoring utilities."""
 
 import threading
 
@@ -36,14 +26,7 @@ FAILED_RAG_RETRIEVAL = "FAILED_RAG_RETRIEVAL"
 # from FAILED_API_EXHAUSTED so a bad parameter is not read as an outage.
 FAILED_API_BAD_REQUEST = "FAILED_API_BAD_REQUEST"
 
-# Output cap sent as max_tokens on every architecture call. Reasoning tokens
-# count against it on most providers. Chosen from the historical per-call
-# evidence in Combined Metrics/token_evidence.csv: no shipped-prompt
-# call on any model came near it (largest per-scenario SUM of three A_D calls:
-# 2,501; largest A_H call: 247; largest run-mean per call: 601), and it sits
-# inside every model's max output (gpt-oss 32,768; Gemini 65,536; the smallest
-# gpt-oss endpoint, SiliconFlow, caps at 8,192).
-MAX_OUTPUT_TOKENS = 8192
+MAX_OUTPUT_TOKENS = 8192  # Maximum response tokens.
 
 # Provider routing sent with every call when the model's MODEL_SPECS entry has
 # no "provider" key. require_parameters stops OpenRouter routing to an endpoint
@@ -507,13 +490,6 @@ def _body_problem(data):
 
 _TRUNCATION_NATIVE_REASONS = {"length", "max_tokens", "max_output_tokens"}
 
-# Calls in a row without a usable completion, across the whole process. Read
-# and written from every ThreadPoolExecutor worker in the prompt/RAG/hybrid
-# ablations, so every increment, reset and threshold check goes through
-# _consecutive_api_failures_lock (below) rather than the bare
-# read-modify-write `+= 1`, which is not atomic under the GIL across
-# bytecode boundaries and can under-count or double-trip the breaker with
-# several workers failing at once.
 _consecutive_api_failures = 0
 _consecutive_api_failures_lock = threading.Lock()
 
@@ -567,10 +543,6 @@ def openrouter_chat(payload: dict, headers: dict, *, endpoint: str, max_retries:
 
     def _count_failure_and_maybe_abort():
         global _consecutive_api_failures
-        # The increment and the threshold check happen under the same lock
-        # acquisition so two workers failing at once can't both read the
-        # pre-increment value: each sees its own post-increment count, and
-        # exactly one call trips the breaker at the configured threshold.
         with _consecutive_api_failures_lock:
             _consecutive_api_failures += 1
             count = _consecutive_api_failures
@@ -721,15 +693,7 @@ def merge_usage_totals(dst: dict, src: dict) -> None:
 
 
 def house_age_to_band_label(years) -> str:
-    """Canonical building-age range label for a numeric age in years.
-
-    5-year bands up to 20 years (1-5/6-10/11-15/16-20), then 10-year bands
-    (21-30, 31-40, ... 101-110, ...). Single source of truth shared by the
-    scenario rebuild, BuildRAG embedding, and RAG retrieval embedding so the
-    label can never drift between index and query sides.
-
-    Returns the input unchanged (as str) if it is non-numeric.
-    """
+    """Return building age band string for years."""
     try:
         y = int(round(float(years)))
     except (TypeError, ValueError):
@@ -747,16 +711,7 @@ def house_age_to_band_label(years) -> str:
 
 
 def appliance_age_to_band_label(years) -> str:
-    """Canonical appliance-age range label for a numeric age in years.
-
-    Finer 3-year bands through the first 12 years (1-3 / 4-6 / 7-9 / 10-12),
-    where appliance efficiency degrades fastest, then 5-year bands beyond that
-    (13-17, 18-22, 23-27, ...). Single source of truth shared by the
-    TestScenarios rebuild, BuildRAG embedding/metadata, and RAG retrieval
-    embedding so the label can never drift between index and query sides
-    (mirrors house_age_to_band_label). Returns the input unchanged (as str)
-    if it is non-numeric.
-    """
+    """Return appliance age band string for years."""
     try:
         y = int(round(float(years)))
     except (TypeError, ValueError):
@@ -771,12 +726,7 @@ def appliance_age_to_band_label(years) -> str:
 
 
 def gpm_to_flow_rate_label(gpm) -> str:
-    """Canonical showerhead flow-rate label for a numeric GPM value.
-
-    low_flow (<= 2.0) / standard (<= 3.0) / high_flow (> 3.0). Single source
-    of truth shared by the scenario rebuild, BuildRAG embedding, and RAG
-    retrieval embedding. Returns the input unchanged (as str) if non-numeric.
-    """
+    """Map gpm value to flow rate label."""
     try:
         val = float(gpm)
     except (TypeError, ValueError):
@@ -913,19 +863,7 @@ def find_file_in_paths(filename: str, search_dirs) -> str:
 
 
 def format_embedding_text(decision_type: str, fields) -> str:
-    """Build the similarity-embedding document for a scenario.
-
-    Single source of truth shared by BuildRAG (index side, reads RAG sheets) and
-    Eample-Guided_LLM_Scoring.py (query side, reads TestScenarios) so the embedded string
-    is byte-identical field-for-field on both sides — retrieval quality depends on
-    the query and index strings being produced by the *same* function.
-
-    Encodes only the score-driving homeowner-facing parameters (no free-text
-    location; Appliance keeps its question because it carries the baseline time).
-    *fields* may be a dict or a pandas Series (anything with .get).
-      - house_age is normalised to a band label (idempotent if already a label)
-      - flow_rate uses the stored label, falling back to a gpm-derived label
-    """
+    """Format scenario text for embedding."""
     def g(key, default="N/A"):
         v = fields.get(key, default)
         return default if v is None else v

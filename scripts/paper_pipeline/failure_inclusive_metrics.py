@@ -67,22 +67,7 @@ ARCH_SHORT = {
     "LLM-Parameterized_Reference_Scoring": "A_H",
 }
 
-# D2: each failure receives the chance value of its own metric.
-#
-# spearman_rho chance value (0.0): derived, not assumed. For n=3 items, Spearman's
-# rho against the fixed ground-truth ranking (1,2,3) over all 3! = 6 equally likely
-# permutations of the system's ranking:
-#   perm      d=(gt-sys)      sum(d^2)   rho = 1 - 6*sum(d^2)/(n(n^2-1)), n=3 -> /24
-#   (1,2,3)   (0,0,0)         0          1.0
-#   (1,3,2)   (0,-1,1)        2          0.5
-#   (2,1,3)   (-1,1,0)        2          0.5
-#   (2,3,1)   (-1,-1,2)       6          -0.5
-#   (3,1,2)   (2,-1,-1)       6          -0.5
-#   (3,2,1)   (2,0,-2)        8          -1.0
-# Mean over the 6 permutations = (1.0+0.5+0.5-0.5-0.5-1.0)/6 = 0.0. This matches the
-# general fact that Spearman's rho has expectation 0 under a uniformly random
-# permutation for any n > 1, confirmed here by direct enumeration for n=3 rather
-# than assumed from the general case.
+# Chance values for failed scenarios (rho = 0, tau = 0).
 CHANCE = {
     "kendall_tau": 0.0,        # expected tau of a random permutation of 3 items
     "spearman_rho": 0.0,       # see derivation above
@@ -211,7 +196,6 @@ def main():
                  "kendall_tau_delta"]].to_string(index=False)
           if len(moved) else "  none")
 
-    # Plan P1.2 explicitly asks for GPT-OSS A_H broken out by decision type.
     gpt = res[(res["model"] == "gptoss") & (res["architecture"] == "A_H")]
     print("")
     print("GPT-OSS A_H by decision type (the concentrated-failure cell):")

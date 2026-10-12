@@ -9,7 +9,7 @@ calculator cannot be built. That recommendation only survives if A_E beats the
 trivial non-LLM baselines a practitioner already has.
 
 TESTS (S7). Per model, a paired Wilcoxon signed-rank test on the 195 Test
-scenarios: A_E's per-scenario value (the mean over its runs, failure rule S4
+scenarios: A_E's per-scenario value (the mean over its runs, failure rule
 applied: a failed scenario-run is wrong for Top-1 and at tau 0) against the
 baseline's value on the same scenario, paired by the matched ground-truth
 scenario. Effect size: matched-pairs rank-biserial (positive = A_E higher).
@@ -18,7 +18,7 @@ Holm family: every test in this file, (number of models) x 2 baselines
 
 WHAT THIS REPORTS, per model and per decision type:
   * A_E on Kendall's tau and Top-1 (per-run mean, then mean across runs -- the
-    paper's estimator, per decision D6).
+    paper's estimator, per the estimator decision).
   * FixedDefault on the same two metrics. FixedDefault is deterministic and
     model-independent, so it is one column repeated against four models.
   * The single-criterion-argmax baseline per decision type: rank the three
@@ -344,7 +344,7 @@ def main():
 
     lines = []
     lines.append("# P1.5 - competitive baselines\n")
-    lines.append("Estimator: per-run mean, then mean across runs (aggregation A, decision D6).")
+    lines.append("Estimator: per-run mean, then mean across runs (aggregation A).")
     lines.append("FixedDefault and the single-criterion baselines are deterministic and")
     lines.append("model-independent; they are repeated against each model for comparison.\n")
 

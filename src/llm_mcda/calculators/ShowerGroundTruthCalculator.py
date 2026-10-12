@@ -20,97 +20,52 @@ if str(PROJECT_ROOT) not in sys.path:
 from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
 
 class ShowerGroundTruthCalculator:
-    """Key sources:
-- DeOreo et al. (2016). Average shower 7.8 min. (0.9 showers/person/day is our assumption.)
-- Burch & Christensen (2007). Mains temp model (our linear approximation to it).
-- Backman & Hoeschele (2013). Hot water distribution validation.
-- Rheem Manufacturing Company (2025). Electric Tank Water Heaters product specs.
-- CDC (2026). Monitoring Building Water: Legionella control guidance.
-- Zhang et al. (2023). Buildings, 13(5), 1300.
-"""
+    """Calculate shower ground-truth criterion scores."""
 
-    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Monthly (Feb 2026),
-    # Table 5.6.B: PA residential average 19.30 c/kWh for 2025 (17.77 c/kWh for 2024), rounded.
+    # PA residential electricity rate (EIA Electric Power Monthly, $/kWh).
     ELECTRICITY_RATE_PA = 0.19
 
-    # PA seasonal mains water temperatures: a linear fit, T_mains = 33.87 + 0.457 x T_out (F),
-    # to the Burch & Christensen (2007) mains model (OSTI 981988) in the form of Building
-    # America HSP (Hendron & Engebrecht 2010) Eq. 26 (offset 6 F, ratio 0.4 + 0.01(Tamb - 44),
-    # lag 35 - 1.0(Tamb - 44)), evaluated mid-month against the monthly mean outdoor
-    # temperature at six PA TMY3 stations (Allentown, Erie, Harrisburg, Philadelphia,
-    # Pittsburgh, Wilkes-Barre/Scranton; 72 station-months; RMSE 3.6 F). The anchors are the
-    # fit at 32 F and 75 F outdoor; shoulder-season inlet temperature is interpolated between
-    # them in determine_inlet_temp rather than stored as a third constant.
+    # PA seasonal mains water temperatures: linear fit evaluated against monthly
+    # mean outdoor temperature at six PA TMY3 stations (RMSE 3.6 F).
     INLET_TEMP_WINTER = 48.5  # F, outdoor <=32F
     INLET_TEMP_SUMMER = 68.2  # F, outdoor >=75F
 
-    # UEF 0.90-0.93 for 40-55 gal electric tank.
-    # Source: Rheem Manufacturing Company. (2025). Residential Tank Water Heaters
-    #         Product Specifications (electric models 40-55 gal). Midpoint: 0.92.
-    # Federal minimum: 10 CFR 430.32(d), 0.9307 - (0.0002 x Vr) = 0.9207 at 50 gal.
+    # Heater efficiency and temperature thresholds.
     ELECTRIC_HEATER_EFFICIENCY = 0.92
-    TARGET_SHOWER_TEMP = 105.0  # F, our delivery convention; Zhang et al. (2023) assume 89.6-104 F (32-40 C)
+    TARGET_SHOWER_TEMP = 105.0  # F delivery temperature
     WATER_DENSITY = 8.33  # lbs/gallon (standard)
     BTU_PER_KWH = 3412  # Conversion factor (standard)
 
-    # Duration comfort thresholds.
-    # Average 7.8 min from REU2016 (Water Research Foundation).
-    # Long-duration prevalence (33% >15 min) from The Harris Poll (2024).
+    # Duration comfort thresholds (7.8 min average; ~33% of showers exceed 15 min).
     COMFORT_DURATION_MIN = 5  # Rushed but viable
-    COMFORT_DURATION_OPTIMAL = 7.8  # REU2016 average of 7.8 min (moderate-weather anchor)
+    COMFORT_DURATION_OPTIMAL = 7.8  # field-average shower length (moderate-weather anchor)
     COMFORT_DURATION_MAX = 15  # Comfortable upper bound
 
-    # Cold-weather comfort shift: comfortable shower duration lengthens as outdoor
-    # temperature falls, so the comfort-optimal duration is shifted upward below a
-    # moderate reference outdoor temperature. The +10% per 6 C (10.8 F) elasticity is a
-    # MODELING ASSUMPTION, not a directly reported coefficient -- Wong et al. (2022) supports
-    # only the qualitative direction that colder conditions raise showering thermal demand.
-    # The shift is capped at the empirically observed winter/summer field-mean envelope
-    # of 11.6 vs 8.8 min (ratio ~1.318) from Ibanez-Rueda et al. (2023) (a southern-Spain
-    # sample, so a cross-population extrapolation). No shift applies at/above 77 F (= 25 C),
-    # the upper ASHRAE 55-2020 cooling comfort reference (ASHRAE 55-2020).
+    # Lengthen shower target in cold weather (capped).
     COMFORT_TEMP_REFERENCE_F = 77.0
     COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (6 C) drop (modeling assumption)
-    COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer envelope (Ibanez-Rueda et al. (2023))
+    COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer field-mean envelope
 
-    # Water-heater temp thresholds. CDC Legionella guidance (CDC (2026)): store above 140F;
-    # hot water in circulation should not fall below 120F. 110F and 130F are code-defined comfort/scald
-    # boundaries, NOT CDC setpoints.
-    HEATER_TEMP_MINIMUM = 110  # F, lukewarm boundary (within CDC Legionella growth range 77-113F, CDC (2026))
-    HEATER_TEMP_OPTIMAL = 120  # F, CDC circulation floor (CDC (2026)), used as the setpoint floor
-    HEATER_TEMP_SCALD_RISK = 130  # F, scald-risk threshold (~30s to a deep burn; Moritz & Henriques (1947))
-    HEATER_TEMP_LEGIONELLA_SAFE = 140  # F, CDC minimum storage temp (CDC (2026))
+    HEATER_TEMP_MINIMUM = 110
+    HEATER_TEMP_OPTIMAL = 120
+    HEATER_TEMP_SCALD_RISK = 130
+    HEATER_TEMP_LEGIONELLA_SAFE = 140
 
     # Comfort no-penalty band for the water-heater setpoint: [OPTIMAL, LEGIONELLA_SAFE]
-    # = 120-140F. water_heater_temp is a STORAGE temperature, so the band must be
-    # anchored to storage guidance, not to delivery thresholds. Below 120F the tank
-    # cannot deliver the 105F TARGET_SHOWER_TEMP with any mixing margin and sits inside
-    # the CDC Legionella amplification range (77-113F); above 140F (our assumption, not a CDC
-    # limit -- CDC recommends storing above 140F) adds standby loss and
-    # scald exposure with no comfort benefit, since delivery is fixed at 105F by the
-    # mixing fraction. The earlier band, [MINIMUM, SCALD_RISK] = 110-130F, applied
-    # delivery-oriented thresholds to a storage quantity and gave full comfort credit to
-    # a 110F storage setting.
+    # = 120-140F. Below 120F the tank cannot deliver 105F with any mixing margin;
+    # above 140F adds standby loss and scald exposure with no comfort benefit.
     COMFORT_HEATER_TEMP_MIN = HEATER_TEMP_OPTIMAL        # 120F
     COMFORT_HEATER_TEMP_MAX = HEATER_TEMP_LEGIONELLA_SAFE  # 140F
-    # Linear VF for energy cost - equal marginal utility across range
-    # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
-    # linear utility is appropriate" (Oper. Res. 27(4):810-822)
+    # Linear VF for energy cost.
     VF_ENERGY_COST = "linear"
 
-    # For MAVT framework justification, see Keeney & Raiffa (1976): Foundation for
-    # Multi-Attribute Value Theory axioms.
-    # Linear VF justification in this context: When environmental impacts are framed in
-    # absolute physical units (gallons), a linear preference is a conservative modeling choice
-    # that treats equal changes in water use as equally valuable reductions.
+    # Linear VF for environmental impact.
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
 
     def determine_inlet_temp(self, outdoor_temp: float) -> float:
-        # PA seasonal mains temps, linearly interpolated across the 32-75F outdoor band
-        # between the winter and summer anchors: a linear fit to Burch & Christensen (2007)
-        # / HSP Eq. 26 on PA TMY3 weather (see the constants above).
+        # PA seasonal mains temps, interpolated across the 32-75F outdoor band.
         if outdoor_temp <= 32:
             return float(self.INLET_TEMP_WINTER)
         elif outdoor_temp >= 75:
@@ -142,7 +97,6 @@ class ShowerGroundTruthCalculator:
     def calculate_hot_water_fraction(self, water_heater_temp: float, inlet_temp: float,
                                      target_temp: float) -> float:
         # Mixing-energy balance for hot/cold streams.
-        # Sources: Hendron & Burch (2008); Backman & Hoeschele (2013); Zhang et al. (2023).
         if water_heater_temp <= inlet_temp:
             return 0.0
         fraction = (target_temp - inlet_temp) / (water_heater_temp - inlet_temp)
@@ -158,14 +112,7 @@ class ShowerGroundTruthCalculator:
 
     def calculate_comfort_score(self, duration: float, water_heater_temp: float,
                                 occupants: int, outdoor_temp: float = COMFORT_TEMP_REFERENCE_F) -> float:
-        """Calculate comfort score.
-
-        The comfort-optimal duration (the peak of the curve) is shifted upward in
-        cold weather per the cold-weather elasticity documented on the class
-        constants: warmer outdoor temps keep the REU2016 7.8-min optimum, colder
-        temps raise it (capped at the observed winter envelope). Warm-weather
-        scoring is unchanged (multiplier == 1.0 at/above the reference temp).
-        """
+        """Calculate comfort score (optimum shifts upward in cold weather)."""
         cls = ShowerGroundTruthCalculator
         drop_f = max(0.0, cls.COMFORT_TEMP_REFERENCE_F - outdoor_temp)
         temp_multiplier = min(
@@ -175,10 +122,7 @@ class ShowerGroundTruthCalculator:
         optimal_duration = cls.COMFORT_DURATION_OPTIMAL * temp_multiplier  # <= ~10.3 min
 
         if duration <= 3.0:
-            # Below dermatologist minimum — severely rushed.
-            # Cubic ramp: 0.0 at 0 min → 4.0 at 3 min, with exponential penalization for
-            # very short durations. At 2min: ~1.2 (vs ~3.0 with prior linear ramp).
-            # Boundary at 3min = 4.0 is unchanged — no discontinuity with next segment.
+            # Below dermatologist minimum: severely rushed.
             base_comfort = 4.0 * (duration / 3.0) ** 3
         elif duration <= optimal_duration:
             # Ramp to the (temperature-adjusted) optimum: 4.0 at 3 min → 10.0 at optimal.
@@ -211,22 +155,19 @@ class ShowerGroundTruthCalculator:
                                      tank_size: float, gpm: float,
                                      water_heater_temp: float, outdoor_temp: float) -> float:
         if duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_MIN:
-            # Below dermatologist minimum - very low adoption
-            # REUS 2016: well below average, requires significant behavior change
+            # Below minimum: very low adoption.
             base_practicality = 2.0 + (duration - 3.0) * 0.5
         elif duration <= 8:
-            # Near REUS 2016 average (7.8 min) - high adoption zone
+            # Near average (7.8 min): high adoption zone.
             base_practicality = 3.0 + (duration - float(ShowerGroundTruthCalculator.COMFORT_DURATION_MIN)) * (4.0 / 3.0)
         elif duration <= 12:
             # Above average but within typical range - moderate adoption
             base_practicality = 7.0 + (duration - 8.0) * 0.5
         elif duration <= ShowerGroundTruthCalculator.COMFORT_DURATION_MAX:
-            # Declining-adoption tail approaching the COMFORT_DURATION_MAX upper bound
-            # (Harris Poll (2024) reports 33% of adults exceed 15 min; this band is just below that).
+            # Declining-adoption tail approaching the upper bound.
             base_practicality = 9.0 - (duration - 12.0) * (1.5 / 3.0)
         else:
-            # Harris Poll (2024): 33% self-report >15 min, but DeOreo et al. (2016) metered data implies a
-            # much lower true rate, so this tail is modeled conservatively.
+            # Long tail modeled conservatively (metered data implies lower true rates).
             base_practicality = max(1.5, 7.5 - (duration - float(ShowerGroundTruthCalculator.COMFORT_DURATION_MAX)) * 0.35)
 
         inlet_temp = self.determine_inlet_temp(outdoor_temp)
@@ -279,8 +220,6 @@ class ShowerGroundTruthCalculator:
                 # priced at the PA residential rate ($0.19/kWh). Dataset-percentile
                 # bounds (vs. a theoretical physics envelope) concentrate score
                 # sensitivity over the durations/flows households actually encounter.
-                # Sources: DeOreo et al. (2016); Burch & Christensen (2007) (PA seasonal
-                # inlet temps); EIA Electric Power Annual (2025) (PA residential rate).
                 'min': 0.13,
                 'max': 1.07,
                 'decreasing': True
@@ -301,11 +240,7 @@ class ShowerGroundTruthCalculator:
                 'decreasing': False
             },
             'practicality': {
-                # VF floor 0.05 sits below the raw practicality floor of 0.15 so the least
-                # practical-but-feasible option keeps a small positive utility instead of
-                # collapsing to exactly zero. Internal normalization choice (not a literature
-                # value): no feasible option is treated as absolutely infeasible
-                # (Keeney & Raiffa (1976) value-measurability convention).
+                # VF floor below the raw practicality floor keeps feasible options positive.
                 'min': 0.05,
                 'max': 1.0,
                 'decreasing': False
@@ -455,8 +390,6 @@ class ShowerGroundTruthCalculator:
                 monthly_cost = self.calculate_monthly_cost(
                     raw['energy_cost'],
                     occupants,
-                    # REU2016 (DeOreo et al. 2016) as reported by Gauley & Koeller (2017):
-                    # "people take an average of 0.69 showers per day"
                     showers_per_person_per_day=0.69
                 )
 

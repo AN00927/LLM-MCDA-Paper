@@ -114,7 +114,7 @@ PLACEHOLDER_ALT_RE = re.compile(
 
 # Secondary criterion priority used when weighted scores tie is imported from
 # model_config so the ground-truth calculators and this script break ties
-# identically (single source of truth).
+# identically.
 
 
 def _rank_with_deterministic_tiebreak(scores_df, weighted_col, tiebreak_cols, log_prefix=""):
@@ -239,27 +239,7 @@ def filter_failed_scenarios(merged_df):
     return clean_df, n_failed, n_total
 
 
-# ---------------------------------------------------------------------------
-# Failure rule (S4, author decisions 2026-09-29). One rule for the main suite,
-# every ablation and the baselines: a failed scenario (any sentinel score, or no
-# evaluable ranking) stays in EVERY denominator, at the value a chance-level
-# answer would get.
-#   Top-1, Top-2      counted wrong (0)
-#   Kendall tau, rho  0, the expected value for a uniformly random ordering
-#   MAE               the expected absolute error of a uniform-random score on
-#                     the 0-1 score scale, per criterion score with reference
-#                     value t:  E|U - t| = (t^2 + (1 - t)^2) / 2
-#                     (from the scenario's own ground-truth values, averaged
-#                     over the same alternatives x criteria as MAE itself)
-#   RMSE              the same principle for squared error:
-#                     E(U - t)^2 = (t^3 + (1 - t)^3) / 3
-# Scores and references are on the 0-1 scale (the prompts ask for 0-1; the
-# ground-truth value functions map to [0, 1]). FAILED_SCENARIO_MAE selects the
-# error rule: "chance" (the decision above) or None (failed scenarios left out
-# of MAE/RMSE, the pre-2026-09-29 behaviour, kept only for sensitivity runs).
-# Because the failed values of the ranking metrics are all 0, a mean over all
-# scenarios equals the mean over the scored ones times n_scored / n_total.
-# ---------------------------------------------------------------------------
+# Failure imputation values (chance level).
 FAILED_SCENARIO_TAU = 0.0
 FAILED_SCENARIO_RHO = 0.0
 FAILED_SCENARIO_TOP1 = 0.0
@@ -360,7 +340,6 @@ def failed_error_rows(merged_df, failed_sids, kind="abs", rule=_MODULE_RULE):
     return rows
 
 
-# Kept under the name the first S4 draft used.
 failed_mae_rows = failed_error_rows
 
 
@@ -756,8 +735,6 @@ def match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_name):
     print(f"    match_method_counts: {match_method_counts}")
 
     if n_matched < n_arch:
-        # B8: surface dropped scenarios as a warning so silent alt-normalization
-        # mismatches don't reduce ranking metrics to binary without anyone noticing.
         warnings.warn(
             f"[{arch_name}] Matched only {n_matched}/{n_arch} architecture scenarios "
             f"to ground truth. Dropped scenarios will not contribute to metrics — "
@@ -944,8 +921,6 @@ def compute_failure_rate(arch_df):
         for c in ["energy_cost", "environmental", "comfort", "practicality"]:
             col = c if c in g.columns else f"arch_{c}"
             if col in g.columns:
-                # D6: tolerant coercion catches stringified sentinel ("1928")
-                # and NaN-as-failed without raising on parse errors.
                 coerced = pd.to_numeric(g[col], errors="coerce")
                 if (coerced == FAIL_SENTINEL).any():
                     has_sentinel = True
@@ -1249,7 +1224,7 @@ def evaluate_all(config, include_baselines=False, model_key=None):
                   f"denominator (Top-1/Top-2 wrong, tau/rho 0; MAE rule "
                   f"{FAILED_SCENARIO_MAE!r})")
 
-        # Failure rule (S4): metrics are computed on the unfiltered frame. The
+        # Failure rule: metrics are computed on the unfiltered frame. The
         # mode label is kept for the workbook's column layout.
         for mode, merged_mode in [("filtered", merged.copy())]:
             if len(merged_mode) == 0:

@@ -159,7 +159,7 @@ def scenario_rows(clean, model, arch, run):
 
 def failed_rows(merged, clean, model, arch, run):
     """Rows for the scenario-runs filter_failed_scenarios removed, under the
-    failure rule (S4, evaluate_architecture_metrics.FAILED_SCENARIO_*):
+    failure rule (evaluate_architecture_metrics.FAILED_SCENARIO_*):
     Top-1/Top-2 wrong, tau/rho 0, MAE at the chance-level error."""
     failed = sorted(set(merged["arch_scenario_id"]) - set(clean["arch_scenario_id"]))
     errs = _cm.failed_scenario_errors(merged, failed)

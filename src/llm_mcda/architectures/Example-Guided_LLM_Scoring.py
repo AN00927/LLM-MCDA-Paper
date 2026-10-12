@@ -126,9 +126,7 @@ if DEBUG_API:
 CHROMA_DB_PATH = PROJECT_ROOT / 'chroma_rag_db'
 COLLECTION_NAME = 'mcda_scenarios'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-# Exemplars retrieved per call. The benchmark uses 1. RAG_TOP_K=<k> in the
-# environment collects a separate arm (e.g. k=3): its output files carry "_k<k>"
-# so the benchmark files are never resumed into or overwritten.
+# Default k=1; set RAG_TOP_K for k=3 ablations.
 DEFAULT_RETRIEVE_K = 1
 RETRIEVE_K = int(os.getenv("RAG_TOP_K", str(DEFAULT_RETRIEVE_K)))
 if RETRIEVE_K < 1:
@@ -288,11 +286,7 @@ def query_openrouter(messages: List[Dict], model: str = None,
 
 
 def build_system_prompt() -> str:
-    """Build system prompt.
-
-    Calibration anchors are intentionally omitted because RAG already
-    supplies scored in-context examples.
-    """
+    """Build system prompt for RAG scoring."""
     return """You are an expert household decision analyst specializing in Multi-Criteria Decision Analysis (MCDA).
     You consistently utilize all information given in the scenario context. Score alternatives on four criteria using the inclusive 0-1 scale (0.0 <= score <= 1.0):
 1. Energy Cost: Lower energy costs = higher score
@@ -331,11 +325,6 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K,
 
     query_embedding = embedding_model.encode(scenario_text).tolist()
 
-    # Pull matches from the database, filtered by decision type. Narrow the
-    # catch to the failure modes Chroma's query can realistically raise (bad
-    # embedding dim / malformed filter -> ValueError; backend/sqlite issues ->
-    # RuntimeError; missing keys in the result envelope -> KeyError) rather than
-    # masking unrelated bugs behind a bare Exception.
     try:
         results = chroma_collection.query(
             query_embeddings=[query_embedding],
@@ -357,7 +346,7 @@ def retrieve_similar_scenarios(scenario: Dict, k: int = RETRIEVE_K,
                 results['metadatas'][0],
                 distances
         ):
-            # Carry the full "show everything" metadata through; format_rag_context
+            # Carry the full metadata through; format_rag_context
             # renders the homeowner+engineering block and per-alt scores from it.
             retrieved.append({
                 'id': doc_id,
@@ -465,8 +454,7 @@ def format_rag_context(retrieved_scenarios: List[Dict]) -> str:
         context += "\n"
 
     if skipped_alts > 0:
-        logger.info(f"   WARNING: skipped {skipped_alts} retrieved alternative(s) with missing scores. "
-              f"Likely RAG metadata schema drift — re-run BuildRAG.")
+        logger.warning(f"Skipped {skipped_alts} retrieved alternatives with missing scores.")
 
     context += "Use these examples as reference, but score based on the specific scenario above.\n"    
     return context
@@ -524,18 +512,7 @@ def build_user_prompt_with_rag(scenario: Dict, alternative: str, rag_context: st
     return prompt
 
 def score_alternative_with_rag(scenario: Dict, alternative: str) -> Tuple[Dict, Dict]:
-    """Retrieve exemplars, build the RAG prompt, query the model, and parse +
-    validate the returned scores — all in one function (mirrors Direct_LLM_Scoring's
-    score_alternative).
-
-    retrieved/rag_context are locals here so the RAG diagnostics at the end
-    always reference real values (previously they were inlined into the prompt
-    call and the diagnostics referenced undefined names, crashing every call).
-
-    No exemplar -> FAILED_RAG_RETRIEVAL without an API call (scoring without
-    examples would be A_D, not A_E). Every call, and every retrieval failure,
-    gets one raw record written after validation, so it carries the outcome.
-    """
+    """Score alternative using retrieved exemplars."""
     global _consecutive_retrieval_failures
     retrieval_errors: List[str] = []
     retrieved = retrieve_similar_scenarios(scenario, k=RETRIEVE_K, error_out=retrieval_errors)
@@ -1087,9 +1064,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         if run_file_state(base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}")) == "old_format"
     ]
     if old_format:
-        msg = (f"Refusing to run: {old_format} in {base.parent} have no collected_utc column "
-               f"(pre-rerun outputs). Move them aside; they are never resumed or overwritten.")
-        log_run_event(events_log, f"REFUSED {msg}")
+        msg = f"Found legacy run files missing collected_utc: {old_format}."
+        log_run_event(events_log, msg)
         raise RuntimeError(msg)
 
     if chroma_collection is None or embedding_model is None:
@@ -1253,8 +1229,7 @@ def main(argv=None):
     logger.info(f"Temperature: {API_CONFIG['temperature']}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    # k appears in the file names only for a non-default arm, so the benchmark
-    # (k=1) file names are unchanged and a k=3 arm never touches them.
+    # File names include k only for non-default arms; benchmark (k=1) names stay unchanged.
     k_tag = "" if RETRIEVE_K == DEFAULT_RETRIEVE_K else f"_k{RETRIEVE_K}"
     logger.info(f"Retrieval k: {RETRIEVE_K}")
     output_csv = output_dir / f"Example-Guided_LLM_Scoring{k_tag}_results.xlsx"

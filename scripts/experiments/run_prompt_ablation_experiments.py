@@ -3,8 +3,8 @@
 Tests whether A_D's and A_E's poor rank recovery is an artifact of the specific
 prompt they ship with, rather than a property of direct LLM scoring. Variants:
 
-  control      -- the shipped prompt, unmodified. NOT collected by default
-                  (author decision 2026-09-27): its messages are byte-identical
+  control      -- the shipped prompt, unmodified. Not collected by default:
+                  its messages are byte-identical
                   to the main suite's (checked at startup by
                   _assert_control_is_main_suite), so the significance script
                   reads main-suite runs 1..N as the control cell instead of
@@ -15,7 +15,6 @@ prompt they ship with, rather than a property of direct LLM scoring. Variants:
                   A_D only (A_E ships without anchors).
   cot_scaffold -- an explicit reasoning scaffold before the JSON answer.
 
-The 0-10 response-scale variant was cut on 2026-09-27 (author decision).
 Every cell runs PROMPT_ABLATION_RUNS = 3 times by default, fixed in advance,
 with no top-up runs.
 
@@ -253,9 +252,7 @@ VARIANT_SPECS = OrderedDict([
 # suite (see module docstring).
 DEFAULT_VARIANTS = [v for v in VARIANT_SPECS if v != "control"]
 
-# Runs per cell, fixed in advance (author decision 2026-09-27). Deliberately not
-# N_RUNS: the main suite keeps 5 runs, and runs 1..PROMPT_ABLATION_RUNS of it are
-# the control cell.
+# Runs per cell fixed in advance.
 PROMPT_ABLATION_RUNS = 3
 
 NO_ANCHORS_AE_NOTE = (
@@ -272,7 +269,7 @@ ARCHITECTURES = OrderedDict([
 
 # ---------------------------------------------------------------------------
 # cot_scaffold max_tokens: raised per model from the pinned endpoint's own
-# limit (2026-09-27 author decision). Every other arm, and both architectures'
+# limit. Every other arm, and both architectures'
 # non-CoT cells, keep sentinel_utils.MAX_OUTPUT_TOKENS (8192) unchanged.
 # ---------------------------------------------------------------------------
 
@@ -497,8 +494,8 @@ def _assert_control_is_main_suite(architectures: List[str]) -> None:
     """Fail loudly unless this script's control messages equal the installed
     architectures' byte for byte, on the first test scenario of each decision
     type and every alternative. That equality is what lets the significance
-    script use main-suite runs as the control cell (author decision
-    2026-09-27); the other variants then differ from the main suite only in
+    script use main-suite runs as the control cell; the other variants then
+    differ from the main suite only in
     their system prompt."""
     scenarios = load_scenarios(None, 13)
     firsts = {}
@@ -1022,24 +1019,20 @@ def rescore_cell_rows(df: pd.DataFrame, reference: Dict[int, Dict]) -> pd.DataFr
     return df
 
 
-# Failure rule (S4, author decision 2026-09-29), the same as the main suite's
-# (evaluate_architecture_metrics.FAILED_SCENARIO_*): a failed or unscored
-# scenario is WRONG for Top-1/Top-2 and at chance (0) for Kendall tau, and it
-# stays in every denominator.
+# Failed scenarios stay in every denominator at chance values.
 FAILED_SCENARIO_TAU = 0.0
 
 
 def scenario_metrics(result: Dict, ref: Optional[Dict]) -> Dict:
     """Kendall tau / Top-1 / Top-2 against the reference ranking.
 
-    Accuracy rule (author decision, 2026-09-27; same rule the RAG ablation
-    already uses -- see run_rag_ablation_experiments.scenario_metrics): a
+    Accuracy rule: a
     scenario that failed or is unscored -- no reference ranking at all, any
     alternative scored the sentinel, or no alternative overlaps the reference
     -- counts as WRONG for Top-1 and Top-2 (0.0, never NaN), and stays in the
     denominator: callers average top1/top2 over every scenario in the cell,
-    not only the scored ones. Kendall tau follows the same failure rule (S4,
-    2026-09-29): a failed scenario gets FAILED_SCENARIO_TAU = 0 (chance) and
+    not only the scored ones. Kendall tau follows the same failure rule:
+    a failed scenario gets FAILED_SCENARIO_TAU = 0 (chance) and
     stays in the denominator. A scored scenario whose tau is undefined (fewer
     than two overlapping alternatives) is NaN here and 0 in summarize().
 
@@ -1257,13 +1250,13 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
     """Per-run means first, then mean +/- SD across runs, so the reported SD is
     the run-to-run SD the control gate is checked against.
 
-    Accuracy rule (author decision, 2026-09-27, mirroring the RAG ablation): a
+    Accuracy rule: a
     failed or unscored scenario counts as WRONG for top1_accuracy and
     top2_accuracy, so their denominator is every scenario in the cell
     (`g`/`len(g)`), not just the scored ones (`ok`/`len(ok)`). This falls out
     of scenario_metrics/_failed_record already writing 0.0 (never NaN) for a
     failed scenario's top1/top2, so `g["top1"].mean()` divides by n_scenarios
-    automatically. kendall_tau follows the same failure rule (S4): a failed
+    automatically. kendall_tau follows the same failure rule: a failed
     scenario counts at tau 0 (chance) and every scenario is in the denominator.
     """
     rows = []
@@ -1275,7 +1268,7 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
             "variant": variant, "architecture": arch, "model": model, "run": run,
             "n_scenarios": len(g), "n_scored": len(ok),
             "n_failed_scenarios": int(g["failed"].astype(bool).sum()),
-            # Failure rule (S4): every scenario in the denominator, a failed
+            # Failure rule: every scenario in the denominator, a failed
             # one at tau 0 (scenario_metrics / _failed_record write it).
             "kendall_tau": g["kendall_tau"].fillna(FAILED_SCENARIO_TAU).mean(),
             "top1_accuracy": g["top1"].mean(),
@@ -1462,7 +1455,7 @@ def main():
     df = pd.concat(all_parts, ignore_index=True)
     if "control" not in args.variants:
         # The control cell is the main suite's runs 1..--runs. It is collected
-        # last (author decision: main suite after every ablation), so it is
+        # last, so it is
         # often absent here; the significance script adds it when it exists.
         for arch in args.architectures:
             for model_key in args.models:

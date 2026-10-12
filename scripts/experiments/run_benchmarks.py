@@ -42,7 +42,7 @@ def run_architecture(architecture_name: str, output_dir: Path) -> None:
 
     Each architecture module reads API_CONFIG from model_config at import
     time, so no override is needed here — the shared model_config is the
-    single source of truth for model ID, temperature, and reasoning payload.
+    canonical record of model ID, temperature, and reasoning payload.
 
     Note: importing Example-Guided_LLM_Scoring triggers a SentenceTransformer
     load (all-MiniLM-L6-v2, ~90 MB).  On first run this downloads the model

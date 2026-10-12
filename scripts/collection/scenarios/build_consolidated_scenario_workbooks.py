@@ -34,7 +34,7 @@ for _candidate in Path(__file__).resolve().parents:
 else:
     raise RuntimeError("Cannot locate the repository src/llm_mcda package")
 
-# Single source of truth for the two derived labels (also used by BuildRAG /
+# Canonical source for the two derived labels (also used by BuildRAG /
 # Eample-Guided_LLM_Scoring.pycoring.py) so the band/flow buckets can never drift between the
 # scenario sheets and the RAG index. This is the only repo import rebuild makes.
 from llm_mcda.common.paths import (

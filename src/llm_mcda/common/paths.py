@@ -25,12 +25,6 @@ _FROZEN_OUTPUT_PREFIXES = (
 #: First path component of a per-model output folder ("Output Files <model>").
 _MODEL_OUTPUT_PREFIX = "output files"
 
-#: Collected run data, protected by FILENAME rather than by directory. Each of
-#: these is produced once by a paid collection run and cannot be regenerated
-#: deterministically, so it must stay protected wherever it sits -- while the
-#: derived artifacts in a model folder's subdirectories (metrics/, sensitivity/,
-#: position_bias/, ...) stay writable, because the pipeline regenerates them.
-#: Patterns are matched case-insensitively against the file name alone.
 _RAW_ARTIFACT_PATTERNS = (
     "*_results_run_[0-9][0-9].xlsx",
     "*_results_diagnostics_run_[0-9][0-9].json",
@@ -38,11 +32,6 @@ _RAW_ARTIFACT_PATTERNS = (
     "cell_*",
 )
 
-# Tracked destinations that pipeline stages legitimately regenerate. Unlike the
-# frozen prefixes above these are not read-only inputs, so they are writable --
-# but only on explicit opt-in, so that running a weighting or diagnostics script
-# directly cannot silently overwrite a committed artifact. run_paper_pipeline.py
-# sets the opt-in env var when --allow-tracked-output-writes is passed.
 _TRACKED_OUTPUT_PREFIXES = (
     ("workbooks", "methodology"),
     ("results", "methodology"),
@@ -90,10 +79,8 @@ def _reject_raw_artifact_overwrite(destination: Path, *, option: str) -> None:
     name = destination.name.casefold()
     if any(fnmatch.fnmatchcase(name, pattern) for pattern in _RAW_ARTIFACT_PATTERNS):
         raise UnsafeOutputPathError(
-            f"{option} would overwrite collected run data ({destination.name}). "
-            "That artifact came from a paid collection run and cannot be "
-            f"regenerated deterministically. Set {ALLOW_RAW_ARTIFACT_OVERWRITE_ENV}=1 "
-            "only if you intend to replace it; otherwise choose another destination."
+            f"{option} would overwrite {destination.name}; "
+            f"set {ALLOW_RAW_ARTIFACT_OVERWRITE_ENV}=1 to allow overwrite."
         )
 
 
@@ -150,11 +137,8 @@ def _reject_frozen_output_destination(
     if tracked and not _tracked_output_writes_allowed():
         shown = relative.as_posix()
         raise UnsafeOutputPathError(
-            f"{option} resolves into tracked repository output ({shown}). These "
-            "artifacts are committed, so overwriting them is opt-in: set "
-            f"{ALLOW_TRACKED_OUTPUT_WRITES_ENV}=1, or run the stage through "
-            "run_paper_pipeline.py --allow-tracked-output-writes. To leave the "
-            "committed copies untouched, choose a scratch destination instead."
+            f"{option} points to tracked output {shown}; "
+            f"set {ALLOW_TRACKED_OUTPUT_WRITES_ENV}=1 or use --allow-tracked-output-writes to allow overwrite."
         )
 
 
