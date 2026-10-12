@@ -23,53 +23,23 @@ from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean,
 
 
 class HVACGroundTruthCalculator:
-    # PJM marginal emissions factors (lbs CO2/kWh). Source: PJM 2022 CO2/SO2/NOx Emissions Report (April 2023).
-    # Marginal, not average, is what we want here because it tracks what actually gets shifted at the edge.
-    # Peak is 7am-11pm (16h) and off-peak is 11pm-7am (8h) per PJM, which defines the peak for
-    # non-holiday weekdays; every scenario is a non-holiday weekday, so the split applies as coded.
-    EMISSIONS_FACTOR_PEAK = 1.041     # PJM peak (1041 lbs/MWh)
-    EMISSIONS_FACTOR_OFFPEAK = 0.976  # PJM off-peak (976 lbs/MWh)
+    # PJM 2022 marginal emissions factors (lbs CO2/kWh); peak covers 7am-11pm.
+    EMISSIONS_FACTOR_PEAK = 1.041
+    EMISSIONS_FACTOR_OFFPEAK = 0.976
     EMISSIONS_PEAK_HOURS_PER_DAY = 16
     EMISSIONS_OFFPEAK_HOURS_PER_DAY = 8
 
-    # PA residential flat electricity rate, $/kWh. Source: EIA Electric Power Monthly (Feb 2026),
-    # Table 5.6.B: PA residential average 19.30 c/kWh for 2025 (17.77 c/kWh for 2024), rounded.
+    # PA residential electricity rate (EIA Electric Power Monthly, $/kWh).
     ELECTRICITY_RATE_PA = 0.19
 
-    # Residential infiltration rate (air changes/hour) for the air-change load method.
-    # Source: ACCA Manual J (2016) -- 0.35 ACH is the standard
-    # modern/average-construction default (also the ASHRAE Standard 62-1989 minimum of 0.35 ACH in living areas).
+    # Standard infiltration and internal-gain assumptions (ACCA Manual J; IECC 2018).
     AIR_CHANGES_PER_HOUR = 0.35
 
-    # Internal gains, sensible only (the load balance is sensible). Occupants: 220 Btu/h per
-    # person, the single-zone sensible gain in Building America House Simulation Protocols
-    # (Hendron & Engebrecht 2010) Table 44, citing ASHRAE (2009); the 164 Btu/h latent part is
-    # left out. Equipment and base gains: IECC 2018 Table R405.5.2(1) standard reference design,
-    # "Internal gains IGain, in units of Btu/day per dwelling unit, shall equal:
-    # 17,900 + 23.8 x CFA + 4,104 x Nbr", divided by 24 h. The occupant term above stands in
-    # for the 4,104 x Nbr bedroom term (scenarios carry household size, not bedrooms).
     OCCUPANT_SENSIBLE_GAIN_BTUH = 220
-    EQUIPMENT_GAIN_BTUH_PER_SQFT = 23.8 / 24     # 0.99 Btu/h per sqft
-    BASE_INTERNAL_GAIN_BTUH = 17900 / 24         # 745.8 Btu/h
+    EQUIPMENT_GAIN_BTUH_PER_SQFT = 23.8 / 24
+    BASE_INTERNAL_GAIN_BTUH = 17900 / 24
 
-    # Solar gain through glazing: q = A_glass x SHGC x IAC x I_avg (Btu/h).
-    # A_glass: IECC 2018 Table R405.5.2(1) standard reference design, "15 percent of the
-    #   conditioned floor area", "equally distributed to four cardinal compass orientations
-    #   (N, E, S & W)". For attached dwelling units the same table scales the area by
-    #   F = above-grade thermal boundary wall area / (that area + common wall area), "or 0.56,
-    #   whichever is greater". Scenarios carry no wall geometry, so F follows the exposure
-    #   the envelope multipliers already assume: Townhouse/Rowhouse (end unit, one of four
-    #   walls shared) F = 0.75; Apartment/Condo (mid unit, two of four walls shared, 0.5)
-    #   F = 0.56, the table's floor.
-    # SHGC 0.40: same table, "the SHGC shall be equal to 0.40" for climate zones without an
-    #   SHGC requirement (PA zones 4A and 5A). IAC: same table, "Interior shade fraction:
-    #   0.92-(0.21 x SHGC for the standard reference design)" = 0.836.
-    # I_avg: 24-h mean incident irradiance averaged over the four cardinal vertical faces,
-    #   Harrisburg Intl AP TMY3 (climate.onebuilding.org), isotropic sky, ground reflectance
-    #   0.2, over the TMY3 hours whose dry-bulb falls in the scenario outdoor range of each
-    #   mode (heat 5-62 F, AC 68-102 F). The 24-h mean matches the cost model, which bills
-    #   each 8 h period three times a day (calculate_monthly_cost). Script:
-    #   src/llm_mcda/calculators/solar_irradiance.py.
+    # Window solar gain defaults (IECC reference design; see CALCULATOR_PROVENANCE.md).
     GLAZING_FRACTION_OF_FLOOR = 0.15
     GLAZING_ATTACHED_FACTOR = {"Townhouse": 0.75, "Rowhouse": 0.75,
                                "Apartment": 0.56, "Condo": 0.56}
@@ -78,17 +48,8 @@ class HVACGroundTruthCalculator:
     SOLAR_IRRADIANCE_W_M2 = {'heat': 74.03, 'cool': 105.54}
     W_M2_PER_BTUH_FT2 = 3.15459
 
-    # Heat-pump heating efficiency paired with rated SEER, as (SEER, HSPF) anchors. HSPF is
-    # seasonal Btu of heat delivered per Wh of electricity (seasonal COP = HSPF / 3.412), so
-    # heating kWh = Btu / (HSPF x 1000), the same form as cooling kWh = Btu / (EER x 1000).
-    # SEER <= 14: Building America HSP (Hendron & Engebrecht 2010) Table 32 split heat pump
-    #   defaults (6.5/6.0, 8/6.6, 10/7.1, 14/8.0) and the Table 4 benchmark (13 SEER/7.7 HSPF).
-    #   Table 32: "Default efficiencies for equipment not listed
-    #   in the table may either be interpolated or estimated by referring to the original references."
-    # SEER > 14: NREL ResStock/BEopt ASHP options "ASHP, SEER 18, 9.3 HSPF" and
-    #   "ASHP, SEER 22, 10 HSPF" (resstock v3.2.0 resources/options_lookup.tsv).
+    # Heat-pump heating efficiency paired with rated SEER, as (SEER, HSPF) anchors.
     # Piecewise-linear between anchors; linear along the end segments outside 6.5-22.
-    # HSPF is a seasonal rating, so it does not vary with the scenario's outdoor temperature.
     HSPF_BY_SEER = ((6.5, 6.0), (8.0, 6.6), (10.0, 7.1), (13.0, 7.7), (14.0, 8.0),
                     (18.0, 9.3), (22.0, 10.0))
 
@@ -109,16 +70,10 @@ class HVACGroundTruthCalculator:
     WINTER_COMFORT_RANGE = (68, 74)
     WINTER_OPTIMAL = 71
 
-    # Linear VF for energy cost - equal marginal utility across range
-    # Dyer & Sarin (1979): "For monetary attributes with small stakes relative to wealth,
-    # linear utility is appropriate" (Oper. Res. 27(4):810-822)
+    # Linear VF for energy cost.
     VF_ENERGY_COST = "linear"
 
-    # Linear VF for environmental impact:
-    # - Keeney & Raiffa (1976): Foundation for Multi-Attribute Value Theory axioms.
-    # Linear VF justification in this context: When environmental impacts are framed in
-    # absolute physical units (lbs CO2), a linear preference is a conservative modeling choice
-    # that treats equal changes in emissions as equally valuable reductions.
+    # Linear VF for environmental impact.
     VF_ENVIRONMENTAL = "linear"
     VF_COMFORT = "logarithmic, a=1.5"
     VF_PRACTICALITY = "logarithmic, a=1.2"
@@ -158,8 +113,7 @@ class HVACGroundTruthCalculator:
                           + (square_footage * self.EQUIPMENT_GAIN_BTUH_PER_SQFT)
                           + self.BASE_INTERNAL_GAIN_BTUH)
 
-        # Solar gain per the constants above. Solar counts in both modes (author decision,
-        # 2026-09-27), at the mode's seasonal irradiance.
+        # Include solar gain in both heating and cooling.
         if mode not in self.HVAC_MODES:
             raise ValueError(f"HVAC mode must be 'heat' or 'cool', got {mode!r}")
         window_area = (square_footage * self.GLAZING_FRACTION_OF_FLOOR
@@ -168,10 +122,8 @@ class HVACGroundTruthCalculator:
                        * self.SOLAR_IRRADIANCE_W_M2[mode] / self.W_M2_PER_BTUH_FT2
                        if include_solar else 0.0)
 
-        # Infiltration sensible load via the air-change method (ACCA Manual J (2016)):
-        #   cfm = volume_ft3 * ACH / 60;  Q_sensible = 1.08 * cfm * deltaT
-        #   1.08 = rho*cp*60 = 0.075 lbm/ft3 * 0.24 BTU/(lbm F) * 60 min/hr
-        #   (ASHRAE Handbook of Fundamentals (2017) Ch.16)
+        # Infiltration sensible load via the air-change method.
+        # cfm = volume_ft3 * ACH / 60; Q_sensible = 1.08 * cfm * deltaT.
         infiltration_cfm = (square_footage * ceiling_height * self.AIR_CHANGES_PER_HOUR) / 60.0
         infiltration_load = 1.08 * infiltration_cfm * delta_t
 
@@ -217,8 +169,7 @@ class HVACGroundTruthCalculator:
         # degradation is NOT applied here -- it is modeled as a reliability factor in
         # calculate_practicality_score (item 3d). Keeping it out of the energy path means
         # the energy score reflects the setpoint choice, not the system's condition.
-        # Cooling: EER = -0.02 * SEER^2 + 1.12 * SEER  (Source: Building America House Simulation
-        # Protocols, Hendron & Engebrecht 2010, Eq. 3, citing Wassmer 2003).
+        # Cooling: EER = -0.02 * SEER^2 + 1.12 * SEER (Building America HSP Eq. 3).
         # Heating: the HSPF paired with the SEER (heating_hspf), a seasonal Btu/Wh rating.
         if mode == 'heat':
             efficiency_btu_per_wh = self.heating_hspf(seer)
@@ -269,15 +220,8 @@ class HVACGroundTruthCalculator:
                                 household_size: int, mode: str = None) -> float:
         # outdoor_temp is not used (the mode, not the weather, sets the optimum); it is kept
         # for signature compatibility. mode must be 'heat' or 'cool'.
-        # Tent comfort function around PMV-neutral indoor setpoints for mechanical HVAC.
-        # Optimal indoor 76F in AC mode and 71F in heat mode: the Building
-        # America HSP set points (optimum seasonal temperature per ASHRAE 55-2004), and the
-        # midpoints of the summer (73-79F, 0.5 clo) and winter (68-74F, 1.0 clo) comfort
-        # bands -- both for sedentary occupants. Score = 10 - |indoor - optimal|, clipped to
-        # [0,10]; the -1.0/F slope mirrors the rising PPD per F outside neutral in Fanger's
-        # PMV/PPD model. The adaptive method (de Dear & Brager (2002)) applies only to
-        # naturally conditioned spaces and is not used here.
-        # Sources: Hendron & Engebrecht (2010); ASHRAE 55-2020 (Sec 5.3.1 graphic zone); Fanger (1970); van Hoof (2008).
+        # Tent comfort function around PMV-neutral setpoints (76F cool, 71F heat).
+        # Score = 10 - |indoor - optimal|, clipped to [0,10].
         if mode not in self.HVAC_MODES:
             raise ValueError(f"HVAC mode must be 'heat' or 'cool', got {mode!r}")
         optimal = self.SUMMER_OPTIMAL if mode == 'cool' else self.WINTER_OPTIMAL
@@ -290,13 +234,7 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(1.0, comfort_score / 10.0))
 
     def _efficiency_degradation(self, hvac_age: int, maintenance_level: str = 'moderate') -> float:
-        """Fraction of HVAC efficiency lost to age + maintenance, from Building America HSP
-        (Hendron & Engebrecht 2010) Eq. 20, "EFF = (Base EFF) x (1-M)^age ... Age of equipment
-        in years, up to a maximum of 20 years": degradation = 1 - (1 - M)^min(age, 20).
-        M = 0.01 (annual professional maintenance) and 0.03 (seldom or never maintained) are
-        HSP Table 32's maintenance factors ('good' and 'poor'); 'moderate' = 0.02 is our
-        midpoint, and every scenario uses 'moderate'. Raises on a missing age rather than
-        defaulting to 0 (which would falsely score the system as pristine)."""
+        """Fraction of HVAC efficiency lost to age and maintenance (capped at 20 years)."""
         if hvac_age is None:
             raise ValueError("hvac_age is required to compute efficiency degradation")
         factors = {'good': 0.01, 'moderate': 0.02, 'poor': 0.03}
@@ -364,33 +302,22 @@ class HVACGroundTruthCalculator:
         utilization = monthly_cost / monthly_budget
 
         if utilization < 0.80:
-            # Mental budget safety margin (Thaler 1999)
+            # Under budget.
             return 1.0
 
         elif utilization < 1.0:
-            # Linear decline as budget limit approached (Heath & Soll 1996)
+            # Nearing limit.
             return 1.0 - 2.5 * (utilization - 0.80)
 
         else:
-            # Exponential loss aversion under budget violation (Prelec & Loewenstein 1998; Heutel 2017).
+            # Over-budget decay.
             # Continuous for every u >= 1.0: the former drop to 0 at u = 1.5 is removed, so an
             # over-budget option keeps a small, still-decreasing credit instead of a cliff.
             import math
             return 0.5 * math.exp(-3.0 * (utilization - 1.0))
 
     def emissions_factor_for_occupancy(self, occupancy_context: str) -> float:
-        """PJM marginal CO2 factor (lbs/kWh) implied by an HVAC occupancy context.
-        HVAC alternatives carry no explicit start_time, so run-time is inferred from the
-        occupancy pattern against the PJM peak (7am-11pm) / off-peak (11pm-7am) windows
-        (Source: PJM 2022 Emissions Report, April 2023):
-          - occupied_all_day: runs the full 24h -> peak/off-peak hour-weighted average.
-          - occupied_sleep:   home only at night, so run-time falls entirely in the 8h
-                              off-peak window -> off-peak factor (this is intended).
-          - unoccupied_<H>:   reduced run-time occurs across the H daytime away-hours,
-                              which fill the peak window first. H <= 16 -> all peak;
-                              H > 16 -> (16h peak + (H-16)h off) / H, a correct hour-
-                              weighted average over the H-hour run window.
-        """
+        """PJM marginal CO2 factor (lbs/kWh) implied by an HVAC occupancy context."""
         ctx = self.normalize_occupancy_context(occupancy_context)
         peak = self.EMISSIONS_FACTOR_PEAK
         off = self.EMISSIONS_FACTOR_OFFPEAK
@@ -453,25 +380,14 @@ class HVACGroundTruthCalculator:
                 # zero, or a setpoint the mode caps at zero load) collapse to $0 and are
                 # excluded from the percentile so the normalization floor is not degenerate;
                 # an Off/zero-load alternative still scores at the top of the [0,10] cost
-                # scale via the (x_max - x) normalization. p5 over the nonzero active set
-                # (301 of 315) = $0.400, p95 = $2.810. Endpoints remain consistent
-                # with residential HVAC studies (efficient: Huyen & Cetin (2019),
-                # Energies 12(1):188; degraded: Alves et al. (2016), EB 130:408).
+                # p5 over the nonzero active set = $0.400, p95 = $2.810.
                 'min': 0.40,
                 'max': 2.81,
                 'decreasing': True
             },
             'environmental': {
-                # Derived from the same active-set 5th-95th percentile cost envelope as
-                # energy_cost ($0.400-$2.810 at $0.19/kWh flat = 2.105-14.789 kWh), applied
-                # against PJM marginal emissions factors (0.976 off-peak, 1.041 peak) to
-                # keep cost and emissions physically consistent (these are not percentiles
-                # of the emissions distribution):
-                #   min = 2.105 kWh x 0.976 lbs/kWh = 2.05 lbs CO2  (best case: fully off-peak)
-                #   max = 14.789 kWh x 1.041 lbs/kWh = 15.40 lbs CO2 (worst case: fully peak)
-                # Source: PJM 2022 Emissions Report (April 2023).
-                # For HVAC, alternatives within one scenario share the same emission
-                # factor because they are evaluated at the same moment and differ by load.
+                # Derived from the active-set cost envelope at $0.19/kWh, applied
+                # against PJM marginal factors to keep cost and emissions consistent.
                 'min': 2.05,
                 'max': 15.40,
                 'decreasing': True
@@ -482,11 +398,7 @@ class HVACGroundTruthCalculator:
                 'decreasing': False
             },
             'practicality': {
-                # VF floor 0.05 sits below the raw practicality floor of 0.15 so the least
-                # practical-but-feasible option keeps a small positive utility instead of
-                # collapsing to exactly zero. Internal normalization choice (not a literature
-                # value): no feasible option is treated as absolutely infeasible
-                # (Keeney & Raiffa (1976) value-measurability convention).
+                # VF floor below the raw practicality floor keeps feasible options positive.
                 'min': 0.05,
                 'max': 1.0,
                 'decreasing': False
@@ -546,16 +458,7 @@ class HVACGroundTruthCalculator:
         return max(0.0, min(1.0, u_x))
 
     def _free_float_temp(self, outdoor_temp: float, ac_mode: bool) -> float:
-        # Indoor air a bare "Off" system drifts to when no explicit target is given. With
-        # the system off, solar + internal gains drive indoor ABOVE outdoor in AC
-        # mode (a closed, occupied house runs ~5F over outdoor on a daily mean), while in
-        # heat mode internal gains hold indoor ~10F above outdoor (HDD-65 balance-point
-        # floor). The +5F/+10F offsets are our modeling assumption, not tabulated by these
-        # sources: de Dear & Brager (2002) / ASHRAE 55-2020 (free-running adaptive
-        # model: indoor >= outdoor under heat); ACCA Manual J (2016) (solar + internal gains
-        # are additive); ASHRAE Handbook of Fundamentals (2017) (balance-point /
-        # internal-gain offset). Replaces an earlier unsourced +/-5F placeholder whose
-        # cooling-season sign was physically backwards.
+        # Free-float offsets are a modeling assumption (+5F cool, +10F heat).
         return outdoor_temp + 5 if ac_mode else outdoor_temp + 10
 
     def _inputs_valid(self, scenario: Dict) -> bool:

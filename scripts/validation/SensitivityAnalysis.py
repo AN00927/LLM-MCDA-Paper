@@ -65,7 +65,7 @@ def model_sensitivity_dir(model_key: str) -> Path:
 
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]
 
-# C1: value-function shape parameter sweep (ground-truth side only).
+# Value-function shape parameter sweep (ground-truth side only).
 # The calculators use "logarithmic, a=1.5" for comfort and "logarithmic,
 # a=1.2" for practicality; alpha = 1.0 is the linear value function.
 ALPHA_SWEEP_VALUES = [1.0, 1.2, 1.5, 2.0]
@@ -192,7 +192,7 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, obj
         if len(per_type) == len(DECISION_TYPES):
             scenarios.append((f"{method} per-type", per_type))
 
-    # C7: published per-decision-type vectors from tab:weight_comparison
+    # Published per-decision-type vectors from tab:weight_comparison
     # (paper_draft_working.tex), applied to their matching decision type only.
     # MEREC arms: each vector on its own decision type, baseline elsewhere.
     # Entropy arm: all three published vectors applied to their matching types.
@@ -280,7 +280,7 @@ def rerank_with_weights(merged_df: pd.DataFrame, weights) -> pd.DataFrame:
 
 
 def _failure_inclusive(m: dict, n_total) -> dict:
-    """Failure rule (S4, evaluate_architecture_metrics.FAILED_SCENARIO_*): a
+    """Failure rule (evaluate_architecture_metrics.FAILED_SCENARIO_*): a
     failed scenario stays in the denominator at 0 for tau, rho, Top-1 and
     Top-2, whatever the weights. The frames are sentinel-filtered, so the mean
     over all n_total scenarios is the scored mean times n_scored / n_total."""
@@ -353,7 +353,7 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
             filtered, n_failed, n_total = filter_failed_scenarios(merged)
             if n_failed:
                 print(f"  [{name}] {Path(src).name}: filtered {n_failed}/{n_total} failed scenarios.")
-            filtered.attrs["n_total"] = n_total  # failure rule (S4)
+            filtered.attrs["n_total"] = n_total  # failure rule
             frames.append(filtered)
         if not frames:
             print(f"  WARNING: No matched data for {name} - skipping.")
@@ -437,17 +437,7 @@ def run_sensitivity_analysis(model_key: str = MODEL_KEY) -> pd.DataFrame:
     print(f"\n  Architecture order ({param_name} > {rag_name} > {pure_name}) preserved in "
           f"{preserved}/{n_total_scen} scenarios")
 
-    # 5b. Between-architecture gaps.
-    #
-    # Absolute per-architecture tau is the wrong quantity to read off this
-    # analysis. Both the reference ranking and the architecture ranking are
-    # recomputed with the same perturbed vector, because a MAVT reference IS
-    # defined by its weights. A_H's criterion scores come from the same
-    # calculator that produced the reference, so the two sides move together
-    # and its near-invariance is structural rather than evidence about the
-    # weights. The gap between architectures is the quantity the robustness
-    # claim actually rests on, and A_E - A_D is the informative one because
-    # those scores are produced independently of the reference.
+    # Pairwise architecture gaps.
     print("\nBetween-architecture gaps (the weight-robustness evidence)")
     print(f"  {'Scenario':<22}{'A_E - A_D':>12}{'A_H - A_E':>12}{'sign held':>12}")
     print("  " + "-" * 58)
@@ -512,7 +502,7 @@ def _load_clean_merged(CONFIG: dict) -> tuple[dict, list]:
             filtered, n_failed, n_total = filter_failed_scenarios(merged)
             if n_failed:
                 print(f"  [{name}] Filtered {n_failed}/{n_total} failed scenarios.")
-            filtered.attrs["n_total"] = n_total  # failure rule (S4)
+            filtered.attrs["n_total"] = n_total  # failure rule
             frames.append(filtered)
         if not frames:
             print(f"  WARNING: No matched data for {name} - skipping.")
@@ -604,7 +594,7 @@ def run_alpha_sweep(model_key: str = MODEL_KEY) -> pd.DataFrame:
                 if n_failed:
                     print(f"  [{label} / {arch_name}] Filtered {n_failed}/{n_total} "
                           f"failed scenarios.")
-                filtered.attrs["n_total"] = n_total  # failure rule (S4)
+                filtered.attrs["n_total"] = n_total  # failure rule
                 frames.append(filtered)
             metrics = metrics_per_run_then_average(frames, baseline_weights)
             results.append({

@@ -345,9 +345,6 @@ def merec_scenario(matrix: np.ndarray) -> np.ndarray:
         mask = np.ones(m_crit, dtype=bool)
         mask[j] = False
         remaining = abs_log_norm[:, mask]        # shape (n_alt, m_crit-1)
-        # Canonical MEREC (Keshavarz-Ghorabaee et al. 2021, Eq. 5) keeps the SAME
-        # 1/m normalization as the overall score S_i (Eq. 3); the removal effect
-        # comes from dropping the j-th term, not from rescaling by (m-1).
         S_minus_j = np.log(1.0 + (1.0 / m_crit) * remaining.sum(axis=1))
         E[j] = np.abs(S_minus_j - S).sum()
 
@@ -447,12 +444,7 @@ def run_merec(output_dir: Path) -> Path:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / MEREC_OUTPUT_NAME
-    print("\nMEREC PER-SCENARIO OBJECTIVE WEIGHT ANALYSIS")
-    print("=" * 65)
-    print("Reference: Keshavarz-Ghorabaee et al. (2021)")
-    print("           Symmetry, 13(4), 525.")
-    print("           https://doi.org/10.3390/sym13040525")
-    print("=" * 65)
+    print("\nRunning MEREC objective weight analysis...")
     print("\nLoading ground truth data...")
 
     gt = load_ground_truth()

@@ -239,7 +239,7 @@ def sync_domain(
     # alternative/duration) uniquely identify a scenario-alternative and MUST
     # already agree between the two files, so they are the correct join key.
     # Only the SCORE_COLS are copied across; every other RAG column is preserved
-    # (writing the GT frame wholesale would drop RAG-only "show everything"
+    # (writing the GT frame wholesale would drop RAG-only
     # columns such as flow_rate / tank_size / water_heater_temp).
     def _signature(row) -> tuple:
         return tuple(_col_norm(c, row.get(c, "")) for c in descriptor_cols)

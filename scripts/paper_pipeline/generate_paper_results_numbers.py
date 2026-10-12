@@ -29,9 +29,6 @@ _ap.add_argument("--output", default=str(repository_path("Combined Metrics", "nu
 #                  the mean over runs)
 #   pooled         every scenario weighted equally (baselines: "Overall_pooled";
 #                  LLM rows: the per-run "Overall" value, then the mean over runs)
-# Author decision 2026-09-29: pooled (all 195 scenarios, each counted once) for
-# every row. Before that the baselines used pooled and the LLM rows
-# per_type_mean, so the deltas compared two different averages.
 TABLE7_BASES = ("per_type_mean", "pooled")
 _ap.add_argument("--table7-basis", choices=TABLE7_BASES, default="pooled",
                  help="Averaging basis of the IncrementalContribution rows (default "
@@ -417,7 +414,7 @@ def _recovered_per_run(model_key, arch="LLM-Parameterized_Reference_Scoring"):
                     n_recovered += 1
                     break
             else:
-                # Failed in every run: stays in, under the failure rule (S4).
+                # Failed in every run: stays in, under the failure rule.
                 parts.append(merged_r[merged_r["arch_scenario_id"] == sid])
         rec = pd.concat(parts, ignore_index=True)
         rk = _prm.compute_ranking_metrics_inclusive(rec)
@@ -454,14 +451,6 @@ for arch in LLM_ARCHS:
             if len(vals) > 0:
                 add("PerModel", arch, model, "Overall", nice,
                     np.mean(vals), np.std(vals, ddof=1))
-
-# ────────────────────────────────────────────────────────────────
-# ROBUSTNESS (Method A vs imputed): removed. This block used to write
-# RobustnessComparison rows that averaged all four models' runs per
-# architecture. The paper prints no such value (re-checked 2026-09-26; the
-# per-model imputed comparison comes from generate_imputed_robustness_tables.py)
-# and the project never pools a metric across models.
-# ────────────────────────────────────────────────────────────────
 
 df_out = pd.DataFrame(rows)
 OUT.parent.mkdir(parents=True, exist_ok=True)

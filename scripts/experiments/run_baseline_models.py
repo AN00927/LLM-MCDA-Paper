@@ -476,8 +476,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
     parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
                         choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
-    # k = 1 matches the benchmark A_E, which retrieves one exemplar (author decision
-    # 2026-09-27: k = 1 stays fixed), so the copy-only baseline shows what A_E's LLM
+    # k = 1 matches the benchmark A_E, which retrieves one exemplar,
+    # so the copy-only baseline shows what A_E's LLM
     # adds over copying the exemplar it retrieves. The RAG ablation's own copy-only
     # control keeps k = 3 there.
     parser.add_argument('--k', type=int, default=1, help='k for Nearest-Neighbor baseline (default 1, A_E\'s k)')

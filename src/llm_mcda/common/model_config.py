@@ -62,10 +62,6 @@ MODEL_SPECS = {
     "deepseek": {
         "label": "Input Price: $0.13/M, Output Price: $0.26/M",
         "openrouter_id": "deepseek/deepseek-v4-flash-0731:floor",
-        # The folder name keeps the build suffix (renaming it would break the
-        # git-pathspec timestamp walk in emit_collection_window.py); the display
-        # label is the short form the manuscript uses throughout, with the 0731
-        # build recorded in the OpenRouter id above and in Supplementary S1.
         "output_folder": "Output Files DeepSeek V4 Flash 0731",
         "display_label": "DeepSeek V4 Flash",
         "reasoning_effort": "none",
@@ -107,11 +103,7 @@ def get_output_folder(model_key: str = MODEL_KEY) -> str:
 
 
 def get_display_label(model_key: str = MODEL_KEY) -> str:
-    """Canonical human-readable model name for figures, tables and data columns.
-
-    Single source of truth: do not derive a label by stripping the
-    "Output Files " prefix off output_folder, and do not hard-code it.
-    """
+    """Return display name for model key."""
     resolved_key = _resolve_model_key(model_key)
     return MODEL_SPECS[resolved_key]["display_label"]
 

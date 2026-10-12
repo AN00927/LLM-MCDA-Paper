@@ -1,32 +1,5 @@
 #!/usr/bin/env python3
-"""
-run_paper_pipeline.py - Master pipeline for paper data generation.
-
-Runs every DETERMINISTIC analysis step that feeds the paper, in dependency
-order. Nothing here calls an LLM API: the architecture runners and the
-run_*_experiments.py ablation scripts are deliberately EXCLUDED because they
-cost money and must be launched by hand.
-
-COMPLETENESS IS THE POINT. The manuscript's availability statement claims every
-table, figure and statistical test can be regenerated from this repository, so
-any script producing a number the paper prints belongs in STEPS below. If you
-add such a script, add it here too, and keep it out of the guarded stages unless
-it writes a tracked or frozen path.
-
-The paper does NOT use \\input{} for any table. Every table in
-paper_draft_working.tex and supplementary_material.tex is literal LaTeX,
-hand-pasted after inspecting the outputs below. That is intentional - this
-pipeline refreshes the NUMBERS; a human re-pastes the tables. Consequently no
-step here writes into either .tex file, so running the pipeline can never
-clobber hand edits.
-
-Usage:
-    python scripts/paper_pipeline/run_paper_pipeline.py                # safe stages
-    python scripts/paper_pipeline/run_paper_pipeline.py --skip-metrics # skip per-run metrics
-    python scripts/paper_pipeline/run_paper_pipeline.py --only weights # list guarded stage
-    python scripts/paper_pipeline/run_paper_pipeline.py --list         # show stages
-    python scripts/paper_pipeline/run_paper_pipeline.py --allow-tracked-output-writes --only weights
-"""
+"""Run the deterministic analysis pipeline that generates paper numbers and tables."""
 
 import argparse
 import os
@@ -53,11 +26,8 @@ GUARDED_STAGES = {"weights", "sensitivity"}
 COMBINED = "Combined Metrics"
 PIPELINE_MODELS = ("deepseek", "gemini", "gptoss", "qwen")
 
-# (stage, label, argv-after-interpreter)
-# Order is load-bearing:
-#   weights  -> writes the tracked methodology workbooks under workbooks/methodology
-#   sensitivity reads those, so it MUST follow weights.
-#   metrics  -> writes local-only per-run metrics, read by the numbers stage.
+# Weights runs before sensitivity (methodology workbook dependency).
+# Metrics runs before numbers (per-run metrics dependency).
 STEPS = [
     ("weights", "MEREC objective weights",
      [f"{WEIGHTING}/merec_weights.py"]),
@@ -82,25 +52,16 @@ STEPS = [
      [f"{PIPELINE}/generate_paper_results_numbers.py"]),
     ("numbers", "Imputed-failure robustness tables",
      [f"{PIPELINE}/generate_imputed_robustness_tables.py"]),
-    # Must precede the failure analysis. analyze_benchmark_failures.py reads
-    # sentinel COUNTS from each run xlsx but failure-MODE attribution from that
-    # run's diagnostics JSON, and the A_E Shower re-collection left the two
-    # disagreeing. Read-only here: it reports drift without touching the source
-    # JSON, so a nonzero report means the failure-mode table needs attention.
+    # Reconciliation runs before failure analysis (diagnostics JSON dependency).
     ("numbers", "Re-collection diagnostics reconciliation (read-only check)",
      [f"{PIPELINE}/reconcile_recollection_diagnostics.py", "--dry-run"]),
     ("numbers", "Benchmark failure analysis",
      [f"{PIPELINE}/analyze_benchmark_failures.py"]),
     ("numbers", "Duplication rate analysis",
      [f"{PIPELINE}/duplication_rate_analysis.py"]),
-    # significance_testing.py requires an explicit destination (it is one of the
-    # migration-updated validation writers). Its artifacts span all four models,
-    # so they belong in Combined Metrics/ like the rest of this stage's outputs.
     ("numbers", "Significance testing",
      [f"{VALIDATION}/significance_testing.py", "--output-dir", COMBINED]),
-    # Order is load-bearing from here: significance_testing.py writes
-    # per_scenario_metrics_all.csv, which failure_inclusive_metrics.py and
-    # symmetric_gate_metrics.py both read.
+    # Significance testing runs before failure-inclusive metrics (per-scenario metrics dependency).
     ("numbers", "Run-level bootstrap confidence intervals",
      [f"{VALIDATION}/compute_confidence_intervals.py"]),
     ("numbers", "Cluster bootstrap CIs",
@@ -116,20 +77,11 @@ STEPS = [
     ("numbers", "Decision regret (A_D/A_E/A_H vs reference MAVT)",
      [f"{PIPELINE}/compute_regret.py"]),
 
-    # Baselines and dispersion. Both feed floats the paper prints but neither
-    # was reachable from this pipeline before: competitive_baselines.py carries
-    # the fixed-default and nearest-neighbour-copy comparisons, and
-    # compute_dispersion_diagnostics.py writes paper/dispersion_table.tex and
-    # paper/single_criterion_recovery.tex.
     ("numbers", "Competitive baselines (fixed default, nearest-neighbour copy)",
      [f"{PIPELINE}/competitive_baselines.py"]),
     ("numbers", "Score-dispersion and single-criterion recovery",
      [f"{PIPELINE}/compute_dispersion_diagnostics.py"]),
 
-    # Ablation significance. The main significance family above covers the
-    # A_D/A_E/A_H comparison only; these three cover the hybrid order-reversal,
-    # prompt and retrieval-depth arms, each of which the paper reports as
-    # surviving (or not surviving) Holm correction.
     ("numbers", "Hybrid ablation significance (order reversal)",
      [f"{VALIDATION}/test_hybrid_ablation_significance.py", "--output-dir", COMBINED]),
     ("numbers", "Prompt ablation significance",
@@ -138,26 +90,15 @@ STEPS = [
      [f"{VALIDATION}/compare_retrieval_k_bootstrap_ci.py",
       "--output", f"{COMBINED}/k1_vs_k3_bootstrap_ci.xlsx"]),
 
-    # Parameter-extraction accuracy, per model: the source of the extraction
-    # accuracy table and of the "probability an extraction error changes the
-    # top-ranked alternative" column. One model's report, so it belongs beside
-    # that model's other artifacts.
     *[("numbers", f"Parameter-extraction accuracy ({model})",
        [f"{ANALYSIS}/evaluate_parameter_extraction.py", "--model", model,
         "--output", f"{get_model_artifact_subdir(model, 'metrics')}"
                     "/LLM-Parameterized_Reference_Scoring_parameter_evaluation.md"])
       for model in PIPELINE_MODELS],
 
-    # Collection provenance. Nothing in the paper cites it today, but it is the
-    # only artifact that recovers each run's UTC collection window, which is
-    # what answers a provider-drift question without a fresh control arm.
     ("numbers", "Collection window provenance",
      [f"{PIPELINE}/emit_collection_window.py"]),
 
-    # One invocation covers boxplot, violin, variance AND grouped_bars. The
-    # three single-figure shims omitted grouped_bars, so the paper's overall
-    # performance-by-model figure (paper/Images/OverallPerformanceByModel.pdf)
-    # was never regenerated by this pipeline.
     ("figures", "pgfplots snippets and vector figures (all four)",
      [f"{PIPELINE}/generate_pgfplots.py", "--figure", "all"]),
     ("figures", "Paper figures",

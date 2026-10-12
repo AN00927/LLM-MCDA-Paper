@@ -19,35 +19,14 @@ Aggregation method:
     (calculate_per_run_metrics.py -> generate_paper_results_numbers.py), so the point
     estimate being significance-tested IS the number reported in results tables.
 
-Wilcoxon notes:
-    The normal approximation applies the tie correction to std_T:
-    std_T = sqrt([n(n+1)(2n+1) - 0.5*sum(t^3 - t)]/24) over the tie groups of
-    |d_i|. An earlier version omitted it, which inflated the variance and made
-    every test conservative; with three alternatives per scenario the
-    per-scenario Kendall tau takes only four distinct values, so ties in the
-    paired differences are the norm and the omission was not a small one.
-    The two-sided p-value uses stats.norm.sf, not 1 - stats.norm.cdf, which
-    underflowed to exactly 0.0 for |z| beyond about 8.3. Holm-Bonferroni
-    correction pools all 56 tests (2 architecture pairs x 7 metrics x 4
-    models) into a SINGLE family: one correction step across both pairwise
-    comparisons, not two separate 28-test families. run_wilcoxon() computes
-    rank/p_holm over the entire non-Stouffer subset of the results table in
-    one pass (no groupby on `comparison` before the Holm step), so this is
-    already the broadest defensible family scope for this test set: every
-    Wilcoxon test run in this script answers a variation of "does this
-    metric differ between adjacent architectures for this model," and all of
-    them compete for the same alpha budget. (An earlier version of this
-    docstring said "40 tests," which undercounted both the metric list
-    length, 7 not 5, and the fact that both architecture pairs share one
-    family rather than each having their own; the code was already correct,
-    only this comment was stale.)
-
 ICC is computed on per-run aggregate metrics (the per_run_metrics_all.csv
 file) because it is a variance decomposition, not a pairwise test.
 
 Run:
     python "scripts/validation/significance_testing.py" --output-dir results/scratch/significance
 """
+
+# Wilcoxon normal approximation with tie correction; Holm-Bonferroni over the full test family.
 
 import argparse
 import os
@@ -95,13 +74,8 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 ICC_INPUT_CSV = repository_path("Combined Metrics", "per_run_metrics_all.csv")
 OUTPUT_XLSX_NAME = "significance_tests.xlsx"
-# S2: the two cross-model pooled inferences (MixedLM with a random intercept for
-# model, and the Stouffer combination of the per-model Wilcoxon z) are NOT paper
-# results: the paper never pools across models, the four models share the same
-# 195 scenarios (so Stouffer's independence assumption fails), and a model
-# random effect over four groups is barely identified. They are written here,
-# outside paper/, for diagnosis only.
-POOLED_DIAGNOSTICS_XLSX_NAME = "significance_pooled_diagnostics_NOT_FOR_PAPER.xlsx"
+# Cross-model pooled diagnostics (not reported in main text).
+POOLED_DIAGNOSTICS_XLSX_NAME = "significance_pooled_diagnostics.xlsx"
 
 METRICS = [
     "kendall_tau",
@@ -416,7 +390,7 @@ def compute_scenario_metrics(matched_df):
 
 def failed_scenario_rows(matched_df, clean_df):
     """Per-scenario rows for the scenarios filter_failed_scenarios removed, under
-    the failure rule (S4, evaluate_architecture_metrics.FAILED_SCENARIO_*):
+    the failure rule (evaluate_architecture_metrics.FAILED_SCENARIO_*):
     Top-1/Top-2 wrong, tau/rho at chance, MAE and RMSE at the chance-level
     error of a uniform-random score (NaN when FAILED_SCENARIO_MAE is None, so
     the run mean skips them). Same columns as compute_scenario_metrics."""
@@ -502,7 +476,7 @@ def compute_per_scenario_metrics_from_raw():
                 if len(matched) == 0:
                     continue
                 clean, n_failed, n_total = filter_failed_scenarios(matched)
-                # Failure rule (S4): a failed scenario-run enters the run mean
+                # Failure rule: a failed scenario-run enters the run mean
                 # as wrong / chance instead of being dropped.
                 parts = [compute_scenario_metrics(clean) if len(clean) else pd.DataFrame(),
                          failed_scenario_rows(matched, clean)]
@@ -1049,7 +1023,7 @@ def main(output_dir=None):
     print("\n[3] Mixed-Model tests (pooled across models; NOT a paper result) ...")
     mm_df = run_mixed_model(per_scenario_df)
 
-    # --- Wilcoxon (per model); the Stouffer rows are split off (S2) ---
+    # --- Wilcoxon (per model); the Stouffer rows are split off ---
     print("\n[4] Per-Model Wilcoxon (per-scenario, n=195) ...")
     wil_all = run_wilcoxon(per_scenario_df)
     is_stouffer = wil_all["model"] == "Stouffer"

@@ -35,13 +35,7 @@ from llm_mcda.common.sentinel_utils import (
     appliance_age_to_band_label,
 )
 
-# Bump this any time the metadata field set OR the embedding string changes —
-# the source-file hash only catches RAG sheet edits, not changes to how we
-# embed/render them, so a code-only change must bump this to force a rebuild.
-# v3: "show everything" — full homeowner + engineering params and per-alt
-#     mavt/rank in metadata; embedding expanded (budget + age/flow labels).
-# v4: appliance_age banded (3-yr early / 5-yr later) in both the embedding and
-#     the display metadata, mirroring house_age.
+# Bump if metadata schema or embedding format changes.
 RAG_SCHEMA_VERSION = 4
 
 
@@ -109,14 +103,7 @@ def _meta_val(v):
 
 
 def build_scenario_metadata(decision_type: str, first_row, group) -> dict:
-    """Full "show everything" metadata for one scenario.
-
-    Stores every homeowner + engineering parameter the LLM may see (excluding the
-    literal raw_* physical quantities) plus, per alternative, the 4 criterion
-    scores AND the mavt aggregate + rank. house_age is stored as a band label so
-    the rendered exemplar mirrors the target-scenario block. Used only for display
-    at query time; embedding/similarity comes from format_scenario_text.
-    """
+    """Build metadata dict for scenario exemplar."""
     md = {
         'decision_type': decision_type,
         'scenario_id': f"{decision_type.lower()}_{first_row['scenario_id']}",

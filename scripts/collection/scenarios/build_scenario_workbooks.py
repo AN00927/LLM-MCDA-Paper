@@ -51,8 +51,7 @@ Safety.
     output that must not replace the scenario inputs.
   - The masters are never written.
 
-Refresh workflow (CLAUDE.md): edit masters -> this script -> GT calculators ->
-sync_rag_ground_truth_scores.py -> build_rag_index.py (always last).
+Rebuild workflow: edit masters -> rebuild workbooks -> run calculators -> sync RAG -> rebuild index.
 
 Usage:
     python "scripts/collection/scenarios/build_scenario_workbooks.py"                  # -> scratch dir
@@ -95,7 +94,7 @@ from llm_mcda.common.paths import (
 PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-# Single source of truth for the banded labels (also used by the RAG embedding).
+# Banded-label helpers (also used by the RAG embedding).
 from llm_mcda.common.sentinel_utils import (appliance_age_to_band_label, gpm_to_flow_rate_label,
                             house_age_to_band_label, is_sentinel)
 

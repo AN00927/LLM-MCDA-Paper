@@ -199,26 +199,20 @@ LLM_Parameterized_Reference_Scoring_FAILURE_COUNTER_KEYS = [
 ]
 
 
-# Numeric engineering parameters the calculators do arithmetic on, with the
-# physically admissible range each must fall in. A value outside the range (or
-# one that does not parse as a finite number) is an extraction failure that must
-# surface as the sentinel -- NEVER silently coerced to 0.0, which would fabricate
-# a perfect (zero-cost / zero-emission) score and corrupt the benchmark. The
-# string fields ('occupancy_context', 'appliance', 'baseline_time') are validated
-# separately by the calculators themselves and are not range-checked here.
+# Physical bounds for extracted parameters.
 LLM_Parameterized_Reference_Scoring_NUMERIC_PARAM_BOUNDS = {
     "HVAC": {
-        "r_value": (1.0, 60.0),      # whole-wall R; R-1..R-60 spans all residential assemblies
-        "seer": (6.0, 30.0),         # rated SEER of any fielded residential AC
-        "hvac_age": (0.0, 60.0),     # equipment age in years
+        "r_value": (1.0, 60.0),
+        "seer": (6.0, 30.0),
+        "hvac_age": (0.0, 60.0),
     },
     "Appliance": {
-        "kwh_per_cycle": (0.05, 10.0),  # per-cycle energy for dishwasher/washer/dryer
+        "kwh_per_cycle": (0.05, 10.0),
     },
     "Shower": {
-        "gpm": (0.5, 8.0),               # showerhead flow rate
-        "tank_size": (10.0, 120.0),      # nominal water-heater tank gallons
-        "water_heater_temp": (80.0, 160.0),  # setpoint deg F
+        "gpm": (0.5, 8.0),
+        "tank_size": (10.0, 120.0),
+        "water_heater_temp": (80.0, 160.0),
     },
 }
 
@@ -404,12 +398,7 @@ def query_openrouter(messages: List[Dict], model: str = None,
         diagnostics={**diagnostics, 'failure_type': call['failure_type']},
     )
 
-# Household-reported fields the LLM extraction prompt may see. Engineering-truth
-# keys (r_value, gpm, kwh_per_cycle, ...) must NEVER reach the prompt -- the LLM
-# is scored on estimating exactly those values (proxy/true-pair rule). Any key
-# outside this allowlist is a schema violation and must fail loudly instead of
-# being forwarded. 'question' is handled by its own skip below and is not a
-# member here.
+# Fields allowed in extraction prompt.
 EXTRACTION_SCENARIO_ALLOWLIST = frozenset({
     'decision_type', 'location', 'square_footage', 'insulation',
     'household_size', 'utility_budget', 'housing_type', 'outdoor_temp',
@@ -431,11 +420,7 @@ def format_scenario_for_extraction(scenario: Dict) -> str:
         if key == 'question':
             continue
         if key not in EXTRACTION_SCENARIO_ALLOWLIST:
-            raise ValueError(
-                f"ERROR: unexpected scenario key {key!r} is not in the "
-                f"extraction allowlist; refusing to forward it to the LLM "
-                f"(proxy/true-pair guard)."
-            )
+            raise ValueError(f"Unexpected scenario field: {key}.")
         if value is None:
             continue
         if isinstance(value, float) and pd.isna(value):
@@ -526,7 +511,7 @@ def extract_all_with_ai(scenario: Dict,
             response_text, api_diagnostics, extraction_diagnostics, expected_decision_type)
     except Exception as e:
         # A fault after a successful call (e.g. a malformed 'parameters' value)
-        # is an extraction failure, never an API one.
+        # is an extraction failure, not an API one.
         print(f"Extraction error: {e}")
         extraction_diagnostics['extraction_error'] = str(e)
         extraction_diagnostics['failure_types'] = [FAILED_EXTRACTION_EXCEPTION]
@@ -786,9 +771,6 @@ def run_scenario(scenario: Dict) -> Dict:
    
     print(f"Extracting decision type, parameters, and calculator...")
 
-    # The scenario sheet already knows the decision type; pass it so a
-    # mismatched extraction is rejected (wrong-calculator guard, T1-2) rather
-    # than silently scored by the wrong calculator.
     expected_decision_type = scenario.get('decision_type')
     if isinstance(expected_decision_type, str):
         expected_decision_type = expected_decision_type.strip() or None
@@ -1013,9 +995,6 @@ def run_test_set(test_path: str, output_path: str,
 
     for i, scenario in enumerate(scenarios):
         print(f"\n[{i + 1}/{len(scenarios)}] Processing: {scenario.get('question', 'N/A')[:60]}...")
-        # Row order is the scenario id. It is tracked here rather than put in the
-        # scenario dict because format_scenario_for_extraction rejects any key
-        # outside its allowlist (proxy/true-pair guard).
         RAW_LOG.set_scenario(i + 1)
 
         try:
@@ -1210,9 +1189,8 @@ def run_multi_and_aggregate(test_csv_path: str, base_output_csv: str,
         if run_file_state(base.with_name(f"{base.stem}_run_{i:02d}{base.suffix}")) == "old_format"
     ]
     if old_format:
-        msg = (f"Refusing to run: {old_format} in {base.parent} have no collected_utc column "
-               f"(pre-rerun outputs). Move them aside; they are never resumed or overwritten.")
-        log_run_event(events_log, f"REFUSED {msg}")
+        msg = f"Found legacy run files missing collected_utc: {old_format}."
+        log_run_event(events_log, msg)
         raise RuntimeError(msg)
 
     for run_idx in range(1, N_RUNS + 1):

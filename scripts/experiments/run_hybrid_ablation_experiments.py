@@ -64,9 +64,9 @@ order through the identical code path. It existed because the old shipped runs
 were collected days earlier and recorded no timestamps, so a reversed-vs-shipped
 gap could be an ordering effect or provider-side drift. The 2026-09 rerun
 collects every arm and the main suite in one timestamped window, so the control
-arm is no longer collected by default (author decision 2026-09-27): the
+arm is no longer collected by default: the
 reference group is the main suite's five A_H runs. The reversed arm has SIX runs
-(author decision 2026-09-29): with 5 against 5, every relabeling and its
+with 5 against 5, every relabeling and its
 complement give the same statistic, so the floor was 2/252 = 0.0079 and Holm
 over the 4 models x 2 statistics could never reach 0.05 (8 x 0.0079 = 0.063).
 With 6 reversed against 5 the test has C(11,5) = 462 relabelings, no
@@ -102,7 +102,7 @@ Passing --models with a subset OVERWRITES the analysis workbooks with only those
 models. The omitted models are not merged back in, so a partial run silently
 drops them from the shipped results. Narrow the set only when collecting.
 
-Failure rule (S4, 2026-09-29, the same as the main suite's): a scenario whose
+Failure rule, the same as the main suite's: a scenario whose
 extraction or scoring failed stays in the denominator at chance-level values --
 Top-1 wrong, Kendall tau 0, MAE the expected error of a uniform-random score
 (see failed_scenario_values). Per-arm scored counts are reported alongside.
@@ -178,8 +178,8 @@ ORDER_ARM_SUBDIR = "hybrid_order_reversal"
 ORDER_ARM_XLSX = "AH_extraction_order_{arm}_run_{run:02d}.xlsx"
 ORDER_ARM_JSONL = "AH_extraction_order_{arm}_run_{run:02d}_raw.jsonl"
 ORDER_ARMS = ("reversed", "control")
-# Arms collected when --order-arms is not given (author decision 2026-09-27: the
-# control arm is cut; see the module docstring).
+# Arms collected when --order-arms is not given.
+# Control arm is cut; see the module docstring.
 DEFAULT_ORDER_ARMS = ("reversed",)
 
 # Runs per order arm. The paper's design since 2026-09-29: each model's eleven
@@ -552,8 +552,7 @@ def collect_order_arm(model_key: str, run: int = 1, arm: str = "reversed") -> Pa
                 prompt_text = call.get("prompt", "")
                 rec = {
                     "scenario_id": sid,
-                    # Per-call UTC wall clock (CLAUDE.md: every run records a
-                    # collection timestamp) and the exact model id sent.
+                    # Per-call UTC wall clock and the exact model id sent.
                     "collected_utc": datetime.now(timezone.utc).isoformat(),
                     "model_key": model_key,
                     "model_id": mod.API_CONFIG["model"],
@@ -877,7 +876,7 @@ def scenario_metrics(arm_scored: List[Dict], ref_scored: List[Dict]) -> Optional
 # Driver
 # ---------------------------------------------------------------------------
 
-# Failure rule (S4, author decisions 2026-09-29), the same as the main suite's
+# Failure rule, the same as the main suite's
 # (evaluate_architecture_metrics.FAILED_SCENARIO_*): a failed scenario-run stays
 # in every denominator, Top-1 wrong (0), Kendall tau at chance (0), and MAE at
 # the chance-level error of a uniform-random score on the 0-1 scale,
@@ -1211,7 +1210,7 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
             for tag, by_sid in sources.items():
                 params = by_sid.get(sid)
                 signature[tag][sid] = _param_signature(params)
-                # Failure rule (S4): a failed scenario-run is a Top-1 miss in
+                # Failure rule: a failed scenario-run is a Top-1 miss in
                 # the McNemar counts. Choice and parameter agreement are not
                 # accuracy metrics; a failed run has no choice to compare.
                 if params is None:
@@ -1394,7 +1393,7 @@ def order_reversal_analysis(models: List[str]) -> Tuple[pd.DataFrame, pd.DataFra
 
 def _run_means(g: pd.DataFrame) -> pd.DataFrame:
     """One row per source run: that run's metrics over ALL its scenarios, a
-    failed scenario-run entering at the failure rule's values (S4)."""
+    failed scenario-run entering at the failure rule's values."""
     rows = []
     for tag, r in g.groupby(g["source_run"].fillna(""), sort=True):
         ok = r[~r["failed"].astype(bool)]
@@ -1439,7 +1438,7 @@ def like_for_like(df: pd.DataFrame) -> pd.DataFrame:
 
     For each run of the `extracted` arm, the dataset-median arm is averaged
     over the same scenarios as that run -- all of them, since a failed
-    scenario-run stays in at the failure rule's values (S4) -- and the gain is
+    scenario-run stays in at the failure rule's values -- and the gain is
     taken run by run, then averaged over runs."""
     rows = []
     for model, g in df.groupby("model", sort=False):

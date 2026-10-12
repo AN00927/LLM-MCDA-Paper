@@ -15,7 +15,7 @@ Design:
     effects, and pooling across architectures would compare A_D variants
     against A_E variants, which is not the question.
   - Scenario-level metrics are averaged over the runs first (3 per cell,
-    fixed in advance, author decision 2026-09-27), giving one value per
+    fixed in advance), giving one value per
     (variant, scenario). This matches the "Method A" aggregation used by
     `significance_testing.py` for the headline architecture results, so
     effect estimates are comparable across the paper.
@@ -105,11 +105,10 @@ OUTPUT_XLSX = repository_path("Combined Metrics", "prompt_ablation_significance.
 
 # Metrics tested. `top1` and `top2` are binary per scenario; Friedman on a
 # binary outcome is valid but low-powered, so they are reported alongside tau
-# rather than alone. Both follow the failure-as-wrong accuracy rule (author
-# decision, 2026-09-27, mirroring the RAG ablation): a failed or unscored
+# rather than alone. Both follow the failure-as-wrong accuracy rule: a failed or unscored
 # scenario's top1/top2 is 0.0 (never NaN), so it counts as wrong rather than
-# being dropped from the comparison. kendall_tau follows the same failure rule
-# (S4, 2026-09-29): a failed scenario is at chance, tau 0 (FAILED_SCENARIO_TAU),
+# being dropped from the comparison. kendall_tau follows the same failure rule:
+# a failed scenario is at chance, tau 0 (FAILED_SCENARIO_TAU),
 # and stays in the comparison.
 METRIC_COLS = ["kendall_tau", "top1", "top2"]
 FAILED_SCENARIO_TAU = 0.0
@@ -158,7 +157,7 @@ def add_main_suite_control(df: pd.DataFrame, pa=None) -> pd.DataFrame:
 def load_matrix() -> pd.DataFrame:
     """All per-scenario cell rows, failed scenarios included.
 
-    A failed scenario (`failed` True) is kept under the failure rule (S4):
+    A failed scenario (`failed` True) is kept under the failure rule:
     top1/top2 0.0 (wrong) and kendall_tau FAILED_SCENARIO_TAU = 0 (chance).
     Cells collected before 2026-09-29 stored NaN for a failed scenario's tau;
     it is set to the rule's value here, so no failed scenario drops out of a

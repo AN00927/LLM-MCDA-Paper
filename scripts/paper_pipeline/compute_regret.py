@@ -66,7 +66,7 @@ def load_runs(model_key, arch_stem):
         with contextlib.redirect_stdout(io.StringIO()):
             arch_df = cprm.load_architecture(p, arch_stem)
             merged, _ = cprm.match_scenarios(gt_lookup, gt_id_lookup, arch_df, arch_stem)
-        # Failure rule (S4): failed scenarios are kept. per_scenario_regret
+        # Failure rule: failed scenarios are kept. per_scenario_regret
         # charges them the uniform-random pick's expected regret and a Top-1 miss.
         full = merged.copy()
         full["gt_mavt_score"] = full["gt_mavt_score"].astype(float)
@@ -88,7 +88,7 @@ def per_scenario_regret(clean_df):
         best = gm[gt_top_idx]
         rand_regret = float(np.mean(best - gm))
         if sid not in ok_sids:
-            # Failure rule (S4): a failed scenario takes the chance-level value,
+            # Failure rule: a failed scenario takes the chance-level value,
             # the expected regret of a uniformly random pick, and a Top-1 miss.
             rows.append(dict(sid=sid, dt=dt, regret=rand_regret, rand_regret=rand_regret,
                              hit=0.0, failed=True))
@@ -151,7 +151,7 @@ def main():
     print(f"[OK] Wrote {summary_path} ({len(summary)} rows)")
 
     check = summary[summary.decision_type == "Overall"].pivot(index="model", columns="arch", values="mean_regret")
-    print("\nMean regret, Overall (compare to D9_D12_REPORT.md sec. 7.2):")
+    print("\nMean regret, Overall:")
     print(check.to_string())
 
 
