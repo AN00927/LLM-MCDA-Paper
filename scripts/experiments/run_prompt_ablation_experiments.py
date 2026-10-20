@@ -52,13 +52,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-# Bootstrap the checkout's src/ package before importing llm_mcda.
+# Bootstrap the checkout root before importing the shared modules.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -74,7 +74,7 @@ import requests
 from dotenv import load_dotenv
 from scipy.stats import kendalltau
 
-from llm_mcda.common.model_config import (
+from common.model_config import (
     MAX_RETRIES,
     MAX_RETRY_BACKOFF,
     MODEL_SPECS,
@@ -87,7 +87,7 @@ from llm_mcda.common.model_config import (
     _is_transient_http_status,
     get_reasoning_payload,
 )
-from llm_mcda.common.sentinel_utils import (
+from common.sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,
@@ -416,8 +416,8 @@ def _assert_control_matches_shipped() -> None:
     def norm(s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
 
-    ad_src = (PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py").read_text(encoding="utf-8")
-    ae_src = (PROJECT_ROOT / "src/llm_mcda/architectures" / "Example-Guided_LLM_Scoring.py").read_text(encoding="utf-8")
+    ad_src = (PROJECT_ROOT / "architectures" / "Direct_LLM_Scoring.py").read_text(encoding="utf-8")
+    ae_src = (PROJECT_ROOT / "architectures" / "Example-Guided_LLM_Scoring.py").read_text(encoding="utf-8")
 
     problems = []
     # Anchor on distinctive sentences rather than trying to re-parse the files.
@@ -463,7 +463,7 @@ def _capture_stub(*args, **kwargs):
 
 def _load_direct_module():
     import importlib.util
-    path = PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py"
+    path = PROJECT_ROOT / "architectures" / "Direct_LLM_Scoring.py"
     spec = importlib.util.spec_from_file_location("direct_llm_scoring_for_check", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -747,7 +747,7 @@ def _load_ae_module():
         if _ae_module is not None:
             return _ae_module
         import importlib.util
-        path = PROJECT_ROOT / "src/llm_mcda/architectures" / "Example-Guided_LLM_Scoring.py"
+        path = PROJECT_ROOT / "architectures" / "Example-Guided_LLM_Scoring.py"
         spec = importlib.util.spec_from_file_location("example_guided_llm_scoring", path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)

@@ -32,12 +32,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
-from llm_mcda.common.paths import repository_path
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
+from common.paths import repository_path
 
 IN_CSV = repository_path("Combined Metrics", "per_scenario_metrics_all.csv")
 OUT_XLSX = repository_path("Combined Metrics", "symmetric_gate_metrics.xlsx")

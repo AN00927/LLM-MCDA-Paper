@@ -34,10 +34,10 @@ import sys
 import warnings
 from pathlib import Path
 
-# Direct script execution does not add src/ when the package is uninstalled.
-_SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
-if _SRC_ROOT.is_dir() and str(_SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(_SRC_ROOT))
+# Direct script execution does not add the checkout root when the project is uninstalled.
+_IMPORT_ROOT = Path(__file__).resolve().parents[2]
+if _IMPORT_ROOT.is_dir() and str(_IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_IMPORT_ROOT))
 
 import numpy as np
 import pandas as pd
@@ -47,18 +47,18 @@ from statsmodels.regression.mixed_linear_model import MixedLM
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     repository_path,
     require_safe_output_directory,
 )
 
-from llm_mcda.common.stats_utils import holm_adjust
-from llm_mcda.common.sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
-from llm_mcda.common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
+from common.stats_utils import holm_adjust
+from common.sentinel_utils import read_table_clean, SENTINEL_VALUE, coerce_score, CRITERIA
+from common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY, MODEL_SPECS
 from scripts.analysis.evaluate_architecture_metrics import (
     filter_failed_scenarios,
     normalize_alternative,
@@ -832,7 +832,7 @@ def run_wilcoxon(per_scenario_df):
     # (k - i) alone does not guarantee the adjusted values are monotone in the
     # raw ones, so without the running max a larger raw p can come out with a
     # smaller adjusted p. Shared with emit_per_model_pvalues.py via
-    # holm_adjust() in llm_mcda.common.stats_utils. Note that holm_correct()
+    # holm_adjust() in common.stats_utils. Note that holm_correct()
     # in run_rag_ablation_experiments.py is a different routine: it applies
     # the running max only to the significance flags, not to p_holm, so its
     # adjusted p-values are not interchangeable with these.
@@ -1017,7 +1017,7 @@ def main(output_dir=None):
     icc_df_raw = load_icc_data()
     print(f"    Loaded {len(icc_df_raw)} Overall rows from per_run_metrics_all.csv")
     icc_df = run_icc(icc_df_raw)
-    print_table("ICC(2,1) Variance Decomposition", icc_df)
+    print_table("ICC(1,1) Variance Decomposition", icc_df)
 
     # --- Mixed-Model tests (pooled across models: diagnostic only, S2) ---
     print("\n[3] Mixed-Model tests (pooled across models; NOT a paper result) ...")

@@ -14,8 +14,11 @@ readme = "README.md"
 dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["llm_mcda*"]
+where = ["."]
+include = ["common*", "calculators*", "architectures*"]
+
+[tool.setuptools]
+py-modules = ["run_registry"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["."]

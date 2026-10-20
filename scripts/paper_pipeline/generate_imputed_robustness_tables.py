@@ -27,8 +27,9 @@ an average or a ranking.
 Zero API calls. Writes a local-only workbook under
 `Combined Metrics/`.
 
-Embedded verification: (a) checked against the local-only per-run CSV and the
-supplementary table tab:imputed_comparison.
+Embedded verification: (a) checked against the local-only per-run CSV. The
+supplement quotes the scored-only values in its failure-analysis subsection
+(e.g. GPT-OSS A_H tau 0.882); there is no longer a separate imputed table.
 """
 
 import sys
@@ -38,17 +39,17 @@ from importlib.util import spec_from_file_location, module_from_spec
 import numpy as np
 import pandas as pd
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import repository_path  # noqa: E402
+from common.paths import repository_path  # noqa: E402
 
-from llm_mcda.common.model_config import MODEL_SPECS, get_output_folder  # noqa: E402
-from llm_mcda.common.sentinel_utils import SENTINEL_VALUE, _is_complete_run_file  # noqa: E402
+from common.model_config import MODEL_SPECS, get_output_folder  # noqa: E402
+from common.sentinel_utils import SENTINEL_VALUE, _is_complete_run_file  # noqa: E402
 
 ARCH_STEMS = {
     "Direct_LLM_Scoring": "Direct_LLM_Scoring",
@@ -62,48 +63,6 @@ OUT_XLSX = repository_path("Combined Metrics", "metrics_summary_all_models_imput
 RANK_METRICS = ["kendall_tau", "spearman_rho", "top1_accuracy", "top2_accuracy"]
 CRIT_KEYS = ["energy_cost", "environmental", "comfort", "practicality"]
 TABLE_METRICS = ["kendall_tau", "overall_mae", "top1_accuracy"]
-
-# Supplementary table tab:imputed_comparison targets, per model.
-# Keyed (architecture, model, metric); values as printed in the table.
-SUPP_METHOD_A = {
-    ("Direct_LLM_Scoring", "gemini", "kendall_tau"): 0.176,
-    ("Direct_LLM_Scoring", "gemini", "overall_mae"): 0.219,
-    ("Direct_LLM_Scoring", "gemini", "top1_accuracy"): 0.362,
-    ("Direct_LLM_Scoring", "deepseek", "kendall_tau"): 0.144,
-    ("Direct_LLM_Scoring", "deepseek", "overall_mae"): 0.231,
-    ("Direct_LLM_Scoring", "deepseek", "top1_accuracy"): 0.367,
-    ("Direct_LLM_Scoring", "gptoss", "kendall_tau"): 0.041,
-    ("Direct_LLM_Scoring", "gptoss", "overall_mae"): 0.241,
-    ("Direct_LLM_Scoring", "gptoss", "top1_accuracy"): 0.333,
-    ("Direct_LLM_Scoring", "qwen", "kendall_tau"): 0.010,
-    ("Direct_LLM_Scoring", "qwen", "overall_mae"): 0.235,
-    ("Direct_LLM_Scoring", "qwen", "top1_accuracy"): 0.300,
-    ("Example-Guided_LLM_Scoring", "gemini", "kendall_tau"): 0.310,
-    ("Example-Guided_LLM_Scoring", "gemini", "overall_mae"): 0.158,
-    ("Example-Guided_LLM_Scoring", "gemini", "top1_accuracy"): 0.487,
-    ("Example-Guided_LLM_Scoring", "deepseek", "kendall_tau"): 0.307,
-    ("Example-Guided_LLM_Scoring", "deepseek", "overall_mae"): 0.168,
-    ("Example-Guided_LLM_Scoring", "deepseek", "top1_accuracy"): 0.535,
-    ("Example-Guided_LLM_Scoring", "gptoss", "kendall_tau"): 0.272,
-    ("Example-Guided_LLM_Scoring", "gptoss", "overall_mae"): 0.169,
-    ("Example-Guided_LLM_Scoring", "gptoss", "top1_accuracy"): 0.474,
-    ("Example-Guided_LLM_Scoring", "qwen", "kendall_tau"): 0.208,
-    ("Example-Guided_LLM_Scoring", "qwen", "overall_mae"): 0.194,
-    ("Example-Guided_LLM_Scoring", "qwen", "top1_accuracy"): 0.466,
-    ("LLM-Parameterized_Reference_Scoring", "gemini", "kendall_tau"): 0.923,
-    ("LLM-Parameterized_Reference_Scoring", "gemini", "overall_mae"): 0.048,
-    ("LLM-Parameterized_Reference_Scoring", "gemini", "top1_accuracy"): 0.931,
-    ("LLM-Parameterized_Reference_Scoring", "deepseek", "kendall_tau"): 0.897,
-    ("LLM-Parameterized_Reference_Scoring", "deepseek", "overall_mae"): 0.045,
-    ("LLM-Parameterized_Reference_Scoring", "deepseek", "top1_accuracy"): 0.908,
-    ("LLM-Parameterized_Reference_Scoring", "gptoss", "kendall_tau"): 0.897,
-    ("LLM-Parameterized_Reference_Scoring", "gptoss", "overall_mae"): 0.052,
-    ("LLM-Parameterized_Reference_Scoring", "gptoss", "top1_accuracy"): 0.917,
-    ("LLM-Parameterized_Reference_Scoring", "qwen", "kendall_tau"): 0.880,
-    ("LLM-Parameterized_Reference_Scoring", "qwen", "overall_mae"): 0.072,
-    ("LLM-Parameterized_Reference_Scoring", "qwen", "top1_accuracy"): 0.897,
-}
-
 
 def _load_modules():
     """Dynamically import CalculateMetrics and calculate_per_run_metrics
@@ -323,19 +282,6 @@ def main():
         print(f"  (a) max |per-run diff| vs local-only per-run metrics (failure-free runs only): {max_diff_a:.6f} "
               f"({n_cmp_a} values compared)")
 
-    # (a) per-model vs supplementary table Method A
-    print("  (a) per-model vs supplementary tab:imputed_comparison 'Method A':")
-    ok_a = True
-    for (arch, mk, m), target in SUPP_METHOD_A.items():
-        vals = [r["value"] for r in variant_a_long if r["architecture"] == arch
-                and r["model"] == mk and r["metric"] == m]
-        got = float(np.mean(vals)) if vals else np.nan
-        flag = "OK" if abs(got - target) <= 0.0006 else "MISMATCH"
-        ok_a = ok_a and flag == "OK"
-        print(f"      {arch} {mk:9s} {m:16s} got={got:.4f} target={target:.4f} {flag}")
-
-
-
     # (c) full-set coverage
     cov_ok = True
     for r in [x for x in detail_rows if x["variant"] == "ImputedPerRun"]:
@@ -364,8 +310,7 @@ def main():
     _LABEL = {"MethodA": "ScoredOnly_sensitivity"}
 
     # No four-model "pooled" sheet: the project never averages a metric across
-    # models (a pool can hide a per-model reversal), and the paper prints only
-    # the per-model comparison (tab:imputed_comparison).
+    # models (a pool can hide a per-model reversal).
 
     detail_cols = ["variant", "model", "architecture", "run", "n_scenarios",
                    "n_imputed_scenarios", "n_imputed_cells", "n_failed", "n_total"] \
@@ -411,8 +356,7 @@ def main():
         print(f"      {mk}: AD={vals['AD']:.4f} AE={vals['AE']:.4f} AH={vals['AH']:.4f} "
               f"{'holds' if ok else 'BREAKS'}")
 
-    print("\nVerification summary: (a) matches pipeline CSV + supp table:",
-          ok_a and max_diff_a < 0.0015)
+    print("\nVerification summary: (a) matches pipeline CSV:", max_diff_a < 0.0015)
     print("Done.")
 
 

@@ -38,15 +38,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# Make the checkout's src layout importable when this script is run directly.
+# Make the checkout root importable when this script is run directly.
 for _candidate in Path(__file__).resolve().parents:
-    if (_candidate / "src" / "llm_mcda").is_dir():
-        sys.path.insert(0, str(_candidate / "src"))
+    if (_candidate / "common").is_dir():
+        sys.path.insert(0, str(_candidate))
         break
 else:
-    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+    raise RuntimeError("Cannot locate the repository root (common/ package)")
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_path,
@@ -55,7 +55,7 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.sentinel_utils import CRITERIA
+from common.sentinel_utils import CRITERIA
 from scripts.analysis import evaluate_architecture_metrics as _cm
 
 CURRENT_BASELINE_DIR = PROJECT_ROOT / "workbooks/current_runs/baselines"

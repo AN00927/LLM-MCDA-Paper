@@ -60,7 +60,9 @@ MODEL_SPECS = {
         },
     },
     "deepseek": {
-        "label": "Input Price: $0.13/M, Output Price: $0.26/M",
+        # Rate charged on relace/fp4 during the Sept 2026 runs, fitted exactly from the
+        # per-call usage.cost of 6,825 calls; the live price has since changed.
+        "label": "Input Price: $0.018/M, Output Price: $0.32/M",
         "openrouter_id": "deepseek/deepseek-v4-flash-0731:floor",
         "output_folder": "Output Files DeepSeek V4 Flash 0731",
         "display_label": "DeepSeek V4 Flash",

@@ -21,20 +21,20 @@ from collections import defaultdict
 
 warnings.filterwarnings("default")
 _BOOTSTRAP_ROOT = Path(__file__).resolve().parents[2]
-for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+for _import_root in (_BOOTSTRAP_ROOT,):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     require_safe_output_directory,
 )
 
-from llm_mcda.common.model_config import (
+from common.model_config import (
     get_output_folder,
     MODEL_KEY,
     MODEL_SPECS,
@@ -54,8 +54,8 @@ from llm_mcda.common.model_config import (
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
-from llm_mcda.common.sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
-from llm_mcda.common.sentinel_utils import MAVT_ROUND_DECIMALS, gpm_to_flow_rate_label
+from common.sentinel_utils import _atomic_write_xlsx, read_table_clean, SENTINEL_VALUE, SENTINEL_FLOAT, CRITERIA, is_sentinel
+from common.sentinel_utils import MAVT_ROUND_DECIMALS, gpm_to_flow_rate_label
 
 _COMMON_STR_COLS = [
     'question', 'location', 'alternative',

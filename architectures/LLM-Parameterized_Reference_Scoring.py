@@ -13,11 +13,11 @@ from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 # Allow direct execution from the repository without an installed package.
-SRC_ROOT = Path(__file__).resolve().parents[2]
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
+IMPORT_ROOT = Path(__file__).resolve().parents[1]
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -27,7 +27,7 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.model_config import (
+from common.model_config import (
     CRITERION_WEIGHTS,
     TIE_BREAK_PRIORITY,
     get_model_id,
@@ -52,7 +52,7 @@ from llm_mcda.common.model_config import (
     FAILED_GROUND_TRUTH_CALCULATION_EXCEPTION,
     FAILED_GROUND_TRUTH_MISSING_KEY,
 )
-from llm_mcda.common.sentinel_utils import (
+from common.sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     add_call_usage,
@@ -85,7 +85,7 @@ ARCHITECTURE = "LLM-Parameterized_Reference_Scoring"
 RAW_LOG = RawCallLog()
 
 TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"
-GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "src/llm_mcda/calculators"
+GROUND_TRUTH_CALCULATORS_DIR = PROJECT_ROOT / "calculators"
 
 def _load_calculator_class(module_filename: str, class_name: str):
     module_path = GROUND_TRUTH_CALCULATORS_DIR / module_filename

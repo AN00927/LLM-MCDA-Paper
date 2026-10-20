@@ -35,7 +35,7 @@ OPENROUTER_API_KEY=your_key_here
 
 ### Configuration
 
-Set `MODEL_KEY` and `N_RUNS` in [`model_config.py`](src/llm_mcda/common/model_config.py):
+Set `MODEL_KEY` and `N_RUNS` in [`model_config.py`](common/model_config.py):
 
 - `MODEL_KEY` — one of `gemini`, `deepseek`, `gptoss`, `qwen`
 - `N_RUNS` — number of repeated trials per architecture (default 5)
@@ -47,9 +47,9 @@ Set `MODEL_KEY` and `N_RUNS` in [`model_config.py`](src/llm_mcda/common/model_co
 python scripts/collection/build_rag_index.py
 
 # Run each architecture (set MODEL_KEY first, use a separate --output-dir per model/arch)
-python src/llm_mcda/architectures/Direct_LLM_Scoring.py --output-dir results/scratch/deepseek/direct
-python src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py --output-dir results/scratch/deepseek/example-guided
-python src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py --output-dir results/scratch/deepseek/parameterized
+python architectures/Direct_LLM_Scoring.py --output-dir results/scratch/deepseek/direct
+python architectures/Example-Guided_LLM_Scoring.py --output-dir results/scratch/deepseek/example-guided
+python architectures/LLM-Parameterized_Reference_Scoring.py --output-dir results/scratch/deepseek/parameterized
 ```
 
 Runs are resume-aware: completed per-run result files are skipped on relaunch.
@@ -116,19 +116,19 @@ The LLM-parameterized reference scoring architecture dominates across all four m
 
 LLM scores all four criteria directly via calibrated system prompts with per-decision-type qualitative anchors. One API call per alternative (3 per scenario, 585 per run).
 
-→ [`Direct_LLM_Scoring.py`](src/llm_mcda/architectures/Direct_LLM_Scoring.py)
+→ [`Direct_LLM_Scoring.py`](architectures/Direct_LLM_Scoring.py)
 
 ### 2. Example-Guided LLM Scoring
 
 Retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios, sentence-transformers `all-MiniLM-L6-v2`, k=1) supplies one worked exemplar before the LLM scores each alternative. 3 calls per scenario, 585 per run.
 
-→ [`Example-Guided_LLM_Scoring.py`](src/llm_mcda/architectures/Example-Guided_LLM_Scoring.py)
+→ [`Example-Guided_LLM_Scoring.py`](architectures/Example-Guided_LLM_Scoring.py)
 
 ### 3. LLM-Parameterized Reference Scoring
 
 A single LLM call extracts withheld engineering parameters (R-value, SEER, kWh/cycle, GPM, etc.) from the scenario description. The deterministic MAVT calculator then scores all three alternatives. 1 call per scenario, 195 per run.
 
-→ [`LLM-Parameterized_Reference_Scoring.py`](src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py)
+→ [`LLM-Parameterized_Reference_Scoring.py`](architectures/LLM-Parameterized_Reference_Scoring.py)
 
 ---
 
@@ -194,10 +194,10 @@ Each calculator takes a scenario with three alternatives and returns four 0–1 
 
 ```text
 LLM-MCDA-Paper/
-├── src/llm_mcda/
-│   ├── architectures/          # Three architecture implementations
-│   ├── calculators/            # HVAC, Appliance, Shower reference calculators
-│   └── common/                 # Model config, weights, sentinel utils
+├── architectures/          # Three architecture implementations
+├── calculators/            # HVAC, Appliance, Shower reference calculators
+├── common/                 # Model config, weights, sentinel utils
+├── run_registry.py
 ├── scripts/
 │   ├── collection/             # RAG index builder, scenario workbook builder
 │   ├── analysis/               # Metric evaluation scripts

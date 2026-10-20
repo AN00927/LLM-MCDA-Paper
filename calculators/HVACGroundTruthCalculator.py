@@ -8,7 +8,7 @@ import re
 from typing import Dict, List, Tuple
 from pathlib import Path
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_path,
@@ -19,27 +19,27 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores, SENTINEL_VALUE
+from common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores, SENTINEL_VALUE
 
 
 class HVACGroundTruthCalculator:
-    # PJM 2022 marginal emissions factors (lbs CO2/kWh); peak covers 7am-11pm.
+    # PJM 2022 marginal emissions factors (lbs CO2/kWh); peak covers 7am-11pm non-holiday weekdays (all scenarios modelled as qualifying weekdays).
     EMISSIONS_FACTOR_PEAK = 1.041
     EMISSIONS_FACTOR_OFFPEAK = 0.976
     EMISSIONS_PEAK_HOURS_PER_DAY = 16
     EMISSIONS_OFFPEAK_HOURS_PER_DAY = 8
 
-    # PA residential electricity rate (EIA Electric Power Monthly, $/kWh).
+    # PA residential electricity rate (EIA Electric Power Monthly, $/kWh). EPM Feb 2026 Table 5.6.B YTD Dec 2025: PA 19.30 c/kWh, used as $0.19.
     ELECTRICITY_RATE_PA = 0.19
 
-    # Standard infiltration and internal-gain assumptions (ACCA Manual J; IECC 2018).
+    # Infiltration and internal-gain assumptions (IECC 2018; 0.35 ACH is the ASHRAE 62-1989 ventilation requirement per Persily 2015, applied as infiltration).
     AIR_CHANGES_PER_HOUR = 0.35
 
     OCCUPANT_SENSIBLE_GAIN_BTUH = 220
-    EQUIPMENT_GAIN_BTUH_PER_SQFT = 23.8 / 24
-    BASE_INTERNAL_GAIN_BTUH = 17900 / 24
+    EQUIPMENT_GAIN_BTUH_PER_SQFT = 23.8 / 24  # IECC R405 IGain floor-area coeff (daily); /24 hourly; bedroom term replaced by occupant term
+    BASE_INTERNAL_GAIN_BTUH = 17900 / 24  # IECC R405 IGain constant (daily); /24 hourly
 
-    # Window solar gain defaults (IECC reference design; see CALCULATOR_PROVENANCE.md).
+    # Window solar gain defaults (IECC reference design).
     GLAZING_FRACTION_OF_FLOOR = 0.15
     GLAZING_ATTACHED_FACTOR = {"Townhouse": 0.75, "Rowhouse": 0.75,
                                "Apartment": 0.56, "Condo": 0.56}
@@ -65,9 +65,9 @@ class HVACGroundTruthCalculator:
     # optimum seasonal temperature for human comfort as defined in ASHRAE Standard 55-2004 ...
     # Set point for cooling: 76F ... Set point for heating: 71F". Each optimum is the
     # midpoint of its comfort range (AC mode: SUMMER_*, heat mode: WINTER_*).
-    SUMMER_COMFORT_RANGE = (73, 79)
+    SUMMER_COMFORT_RANGE = (73, 79)  # unused - retained for documentation (optimum +/-3 F, not read by code)
     SUMMER_OPTIMAL = 76
-    WINTER_COMFORT_RANGE = (68, 74)
+    WINTER_COMFORT_RANGE = (68, 74)  # unused - retained for documentation (optimum +/-3 F, not read by code)
     WINTER_OPTIMAL = 71
 
     # Linear VF for energy cost.
@@ -75,8 +75,8 @@ class HVACGroundTruthCalculator:
 
     # Linear VF for environmental impact.
     VF_ENVIRONMENTAL = "linear"
-    VF_COMFORT = "logarithmic, a=1.5"
-    VF_PRACTICALITY = "logarithmic, a=1.2"
+    VF_COMFORT = "logarithmic, a=1.5"  # author-selected curvature, no external source
+    VF_PRACTICALITY = "logarithmic, a=1.2"  # author-selected curvature, no external source
     def calculate_net_heat_gain(self, outdoor_temp: float, indoor_temp: float,
                                 square_footage: int, r_value: int, household_size: int = 3,
                                 ceiling_height: float = 8.0,
@@ -88,10 +88,11 @@ class HVACGroundTruthCalculator:
         loses heat and needs heating."""
         delta_t = outdoor_temp - indoor_temp
 
-        # Adjust by housing type. Our multipliers, set by exposure (not a Manual J table):
-        # - Single-family (2-story typical): 1.7 (includes roof, walls, floor exposures)
-        # - Apartment (mid-unit typical): 1.2 (shared walls reduce exposure)
-        # - Townhouse (end-unit typical): 1.5 (one or two shared walls)
+        # Adjust by housing type. Our multipliers, an exposure proxy (not a Manual J table):
+        # - Single-family: 1.7 (roof, walls and floor exposed); also the default for an unlisted type
+        # - Apartment/Condo: 1.2 (shared walls reduce exposure; likely overstates a mid-floor
+        #   unit with neighbors above and below, so read it as an upper-bound exposure)
+        # - Townhouse/Rowhouse: 1.5 (one or two shared walls)
         housing_multipliers = {
             "Single-family": 1.7,
             "Apartment": 1.2,

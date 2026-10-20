@@ -10,15 +10,15 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-# Make the checkout's src layout importable when this script is run directly.
+# Make the checkout root importable when this script is run directly.
 for _candidate in Path(__file__).resolve().parents:
-    if (_candidate / "src" / "llm_mcda").is_dir():
-        sys.path.insert(0, str(_candidate / "src"))
+    if (_candidate / "common").is_dir():
+        sys.path.insert(0, str(_candidate))
         break
 else:
-    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+    raise RuntimeError("Cannot locate the repository root (common/ package)")
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -26,8 +26,8 @@ from llm_mcda.common.paths import (
     require_safe_output_path,
 )
 PROJECT_ROOT = repository_root(start=__file__)
-from llm_mcda.common.model_config import MODEL_KEY, get_output_folder
-from llm_mcda.common.sentinel_utils import (read_table_clean, SENTINEL_FLOAT, SENTINEL_VALUE, CRITERIA, is_sentinel,
+from common.model_config import MODEL_KEY, get_output_folder
+from common.sentinel_utils import (read_table_clean, SENTINEL_FLOAT, SENTINEL_VALUE, CRITERIA, is_sentinel,
                             apply_mavt_ranking, _is_complete_run_file)
 
 SENTINEL = SENTINEL_FLOAT
@@ -61,7 +61,7 @@ def _load_calculator(decision_type: str):
         "Shower": ("ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"),
     }
     filename, class_name = module_names[decision_type]
-    module_path = PROJECT_ROOT / "src/llm_mcda/calculators" / filename
+    module_path = PROJECT_ROOT / "calculators" / filename
     spec = importlib.util.spec_from_file_location(class_name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Unable to load calculator module {module_path}")

@@ -18,6 +18,7 @@ STATIONS = {
     "philadelphia": "USA_PA_Philadelphia.Intl.AP.724080_TMY3",
     "pittsburgh": "USA_PA_Pittsburgh.Intl.AP.725200_TMY3",
 }
+# Ground albedo: assumed. 0.2 is a common bare-ground value; no primary source found.
 RHO_GROUND = 0.2
 W_M2_PER_BTUH_FT2 = 3.15459
 HEAT_RANGE_F = (5.0, 62.0)     # heat-mode scenario outdoor range (HVACScenarios.xlsx)
@@ -47,8 +48,9 @@ def read_epw(path: Path):
     loc = lines[0].split(",")
     lat, lon, tz = float(loc[6]), float(loc[7]), float(loc[8])
     design = lines[1].split(",")
-    # 2025 ASHRAE design conditions block: Heating fields after 'Heating':
-    # coldest month, 99.6% DB, 99% DB, ...
+    # 2025 ASHRAE design conditions block (in each TMY3 EPW header). HSP p. 49 allows
+    # TMY3 or ASHRAE 2009 99% values; the 2009 values are not in the file.
+    # Heating fields after 'Heating': coldest month, 99.6% DB, 99% DB, ...
     i = design.index("Heating")
     heat_db99_c = float(design[i + 3])
     rows = [l.split(",") for l in lines[8:] if l.strip()]
@@ -64,11 +66,13 @@ def read_epw(path: Path):
 def sun_position(d):
     """Solar altitude and azimuth (deg; azimuth clockwise from north) at mid-hour."""
     doy = np.array([sum(DAYS_IN_MONTH[:m - 1]) + dd for m, dd in zip(d["month"], d["day"])])
+    # Spencer (1971), Search 2(5), p. 172. First EoT constant is 0.0000075 per the
+    # erratum noted in pvlib (the original print shows 0.000075).
     g = 2 * math.pi * (doy - 1) / 365.0
     decl = (0.006918 - 0.399912 * np.cos(g) + 0.070257 * np.sin(g)
             - 0.006758 * np.cos(2 * g) + 0.000907 * np.sin(2 * g)
             - 0.002697 * np.cos(3 * g) + 0.00148 * np.sin(3 * g))
-    eot_min = 229.18 * (0.000075 + 0.001868 * np.cos(g) - 0.032077 * np.sin(g)
+    eot_min = 229.18 * (0.0000075 + 0.001868 * np.cos(g) - 0.032077 * np.sin(g)
                         - 0.014615 * np.cos(2 * g) - 0.040849 * np.sin(2 * g))
     lst = d["hour"] - 0.5
     solar_time = lst + (4.0 * (d["lon"] - 15.0 * d["tz"]) + eot_min) / 60.0
@@ -88,6 +92,8 @@ def vertical_irradiance(d):
     out = {}
     for k, psi in ORIENT.items():
         cos_inc = np.cos(np.radians(alt)) * np.cos(np.radians(az - psi))
+        # Vertical tilt: sky-diffuse view factor (1 + cos 90)/2 = 0.5 and ground view
+        # factor (1 - cos 90)/2 = 0.5 (isotropic model, as in pvlib; cf. D&B Eq. 2.15.1).
         beam = np.where(up, d["dni"] * np.clip(cos_inc, 0, None), 0.0)
         out[k] = beam + d["dhi"] * 0.5 + d["ghi"] * RHO_GROUND * 0.5
     out["avg4"] = (out["N"] + out["E"] + out["S"] + out["W"]) / 4.0
@@ -194,13 +200,17 @@ def main():
         print("S vertical kWh/m2/day (TMY3, this model):", r["S_vertical_kwh_m2_day"])
         print("GHI kWh/m2/day (TMY3):", r["GHI_kwh_m2_day"])
         if st in power:
-            pj = json.load(open(power[st]))["properties"]["parameter"]
+            # POWER climatology: SI_TILTED_AVG_VERTICAL is the equator-facing vertical,
+            # ALLSKY_SFC_SW_DWN is GHI. Both in kW-hr/m^2/day.
+            doc = json.load(open(power[st]))
+            pj = doc["properties"]["parameter"]
+            period = doc["header"]["range"]
             months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP",
                       "OCT", "NOV", "DEC"]
             pv = [pj["SI_TILTED_AVG_VERTICAL"][m] for m in months]
             pg = [pj["ALLSKY_SFC_SW_DWN"][m] for m in months]
-            print("S vertical kWh/m2/day (NASA POWER 2001-2020):", pv)
-            print("GHI kWh/m2/day (NASA POWER 2001-2020):", pg)
+            print(f"S vertical kWh/m2/day (NASA POWER, {period}):", pv)
+            print(f"GHI kWh/m2/day (NASA POWER, {period}):", pg)
             print(f"annual S-vertical: TMY3 {np.mean(r['S_vertical_kwh_m2_day']):.3f} vs POWER "
                   f"{pj['SI_TILTED_AVG_VERTICAL']['ANN']:.3f}; GHI: TMY3 "
                   f"{np.mean(r['GHI_kwh_m2_day']):.3f} vs POWER {pj['ALLSKY_SFC_SW_DWN']['ANN']:.3f}")

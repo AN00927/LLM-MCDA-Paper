@@ -14,11 +14,11 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
+IMPORT_ROOT = Path(__file__).resolve().parents[2]
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -28,13 +28,13 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
-from llm_mcda.common.sentinel_utils import (read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking,
+from common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
+from common.sentinel_utils import (read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking,
                             MAVT_ROUND_DECIMALS)
 
-from llm_mcda.calculators.HVACGroundTruthCalculator import HVACGroundTruthCalculator
-from llm_mcda.calculators.ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
-from llm_mcda.calculators.ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
+from calculators.HVACGroundTruthCalculator import HVACGroundTruthCalculator
+from calculators.ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
+from calculators.ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
 
 from scripts.experiments.run_rag_ablation_experiments import (
     nearest_neighbor_prediction,

@@ -18,7 +18,7 @@ RAG_FILES = {
     }
 }
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
 CHROMA_DB_PATH = PROJECT_ROOT / "chroma_rag_db"
@@ -27,7 +27,7 @@ EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from llm_mcda.common.sentinel_utils import (
+from common.sentinel_utils import (
     read_table_clean,
     format_embedding_text,
     house_age_to_band_label,

@@ -126,13 +126,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-# Bootstrap the checkout's src/ package before importing llm_mcda.
+# Bootstrap the checkout root before importing the shared modules.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -146,9 +146,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binomtest, kendalltau
 
-from llm_mcda.common import model_config
-from llm_mcda.common.model_config import MODEL_SPECS, CRITERION_WEIGHTS
-from llm_mcda.common.sentinel_utils import (
+from common import model_config
+from common.model_config import MODEL_SPECS, CRITERION_WEIGHTS
+from common.sentinel_utils import (
     CRITERIA,
     SENTINEL_FLOAT,
     _atomic_write_xlsx,
@@ -161,7 +161,7 @@ from llm_mcda.common.sentinel_utils import (
 
 SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
 TEST_SCENARIOS = SCENARIO_DIR / "TestScenarios.xlsx"
-AH_ARCHITECTURE = PROJECT_ROOT / "src/llm_mcda/architectures" / "LLM-Parameterized_Reference_Scoring.py"
+AH_ARCHITECTURE = PROJECT_ROOT / "architectures" / "LLM-Parameterized_Reference_Scoring.py"
 
 ALT_COLS = ["alternative_1", "alternative_2", "alternative_3"]
 
@@ -198,7 +198,7 @@ OUTPUT_DIR: Optional[Path] = None
 
 # Hidden engineering parameters the LLM is asked to estimate, by decision type.
 # Must stay in lockstep with the extraction prompt in
-# src/llm_mcda/architectures/LLM-Parameterized_Reference_Scoring.py.
+# architectures/LLM-Parameterized_Reference_Scoring.py.
 HIDDEN_PARAMS = {
     "HVAC": {
         "numeric": ["r_value", "seer", "hvac_age"],
@@ -263,7 +263,7 @@ def _load_calculator(decision_type: str):
         "Shower": ("ShowerGroundTruthCalculator.py", "ShowerGroundTruthCalculator"),
     }
     filename, class_name = names[decision_type]
-    path = PROJECT_ROOT / "src/llm_mcda/calculators" / filename
+    path = PROJECT_ROOT / "calculators" / filename
     spec = importlib.util.spec_from_file_location(class_name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

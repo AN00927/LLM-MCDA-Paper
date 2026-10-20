@@ -14,7 +14,7 @@ Attribution 4.0 International License (CC BY 4.0). This covers:
                                     from.
   - `workbooks/ground_truth/*.xlsx` -- the physics MAVT ground-truth scores
                                     produced by the calculators in
-                                    `src/llm_mcda/calculators/`.
+                                    `calculators/`.
   - `Output Files*/**/*.xlsx`    -- per-run and aggregated benchmark results
     `Output Files*/**/*.json`       and run diagnostics for each model and
     `Output Files*/**/*.jsonl`      architecture, including archived raw model

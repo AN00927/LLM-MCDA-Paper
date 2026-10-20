@@ -60,16 +60,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-# Bootstrap the checkout's src/ package before importing llm_mcda.
+# Bootstrap the checkout root before importing the shared modules.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
 import numpy as np
 import pandas as pd
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -79,8 +79,8 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.model_config import CRITERION_WEIGHTS, MODEL_SPECS, N_RUNS
-from llm_mcda.common.sentinel_utils import (
+from common.model_config import CRITERION_WEIGHTS, MODEL_SPECS, N_RUNS
+from common.sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,

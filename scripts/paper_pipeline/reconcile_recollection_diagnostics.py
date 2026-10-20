@@ -35,13 +35,13 @@ from pathlib import Path
 
 import pandas as pd
 
-# Bootstrap the checkout's src/ package before importing llm_mcda.
+# Bootstrap the checkout root before importing the shared modules.
 _BOOTSTRAP_ROOT = Path(__file__).resolve().parents[2]
-for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+for _import_root in (_BOOTSTRAP_ROOT,):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -51,8 +51,8 @@ from llm_mcda.common.paths import (
 PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
-from llm_mcda.common.model_config import get_output_folder  # noqa: E402
+from common.sentinel_utils import is_sentinel  # noqa: E402
+from common.model_config import get_output_folder  # noqa: E402
 
 ARCH = "Example-Guided_LLM_Scoring"
 CRIT = ["energy_cost", "environmental", "comfort", "practicality"]

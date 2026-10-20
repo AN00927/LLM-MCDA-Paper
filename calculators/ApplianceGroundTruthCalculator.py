@@ -7,7 +7,7 @@ import numpy as np
 from typing import Dict, List, Tuple
 from pathlib import Path
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_path,
@@ -18,7 +18,7 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, SENTINEL_VALUE, has_sentinel_scores
+from common.sentinel_utils import apply_mavt_ranking, read_table_clean, SENTINEL_VALUE, has_sentinel_scores
 
 class ApplianceGroundTruthCalculator:
     # PJM 2022 marginal emissions factors (lbs CO2/kWh); peak covers 7am-11pm weekdays.
@@ -71,11 +71,14 @@ class ApplianceGroundTruthCalculator:
         "Pittsburgh": "Duquesne", "McKeesport": "Duquesne",
     }
 
-    # Reference ranges (5th-95th pct over master scenarios; recompute if rates change).
+    # Reference ranges: 5th-95th percentiles of the published reference outputs of the
+    # 100 master scenarios (300 alternative-level values, rounded as written to the
+    # ground-truth workbook); recompute if rates change.
     ENERGY_COST_BOUNDS = (0.028, 0.774)      # $/cycle; p5 0.0276, p95 0.7741 (was 0.025/0.71)
-    ENVIRONMENTAL_BOUNDS = (0.288, 3.643)    # lbs CO2/cycle; p5 0.2884, p95 3.643 (unchanged)
+    ENVIRONMENTAL_BOUNDS = (0.288, 3.643)    # lbs CO2/cycle; p5 0.2884 of the rounded outputs, p95 3.643
 
-    NOISE_LIMIT_EVENING = 45  # Night noise threshold (dBA).
+    NOISE_LIMIT_EVENING = 45  # Night noise threshold (dBA). Only a rating ABOVE it is penalized,
+                              # so a 45 dBA dishwasher meets the limit by design.
     VF_ENERGY_COST = "linear"
 
     # Linear VF for environmental impact.
@@ -105,11 +108,11 @@ class ApplianceGroundTruthCalculator:
     def _cycles_per_month(self, appliance_type: str) -> int:
         cycles = {
             'dishwasher': 18,         # 215 cycles/yr
-            'washer': 25,             # ~300 loads/yr
+            'washer': 25,             # 295/yr per App. J2 (~300/yr ENERGY STAR); 295/12~=24.6->25
             'washing_machine': 25,
             'dryer': 24,              # 283 cycles/yr
         }
-        return cycles.get(appliance_type.lower().strip(), 24)
+        return cycles[appliance_type.lower().strip()]
 
     def _normalize_city(self, location: str) -> str:
         """Strip ', PA' / state suffix and whitespace from a Location string."""
@@ -129,16 +132,14 @@ class ApplianceGroundTruthCalculator:
             return start <= hour < end
         return hour >= start or hour < end
 
-    def determine_rate_period(self, run_time_hour: int, location: str = None) -> str:
+    def determine_rate_period(self, run_time_hour: int, location: str) -> str:
         """Determine rate period using the utility's TOU windows for `location`.
 
         Returns "peak", "super_offpeak", "offpeak", or "flat" (no TOU window).
+        An unmapped or missing location raises instead of assuming any utility's window.
         """
-        if location is None:
-            rates = {"peak_hours": (14, 18)}
-        else:
-            utility = self._utility_for_location(location)
-            rates = self.UTILITY_RATES[utility]
+        utility = self._utility_for_location(location)
+        rates = self.UTILITY_RATES[utility]
 
         if rates["peak_hours"] is None:
             return "flat"
@@ -192,7 +193,7 @@ class ApplianceGroundTruthCalculator:
         elif appliance_type.lower() == "dryer":
             appliance_noise = 65
         else:
-            appliance_noise = 50
+            raise ValueError(f"Unknown appliance type: {appliance_type!r}")
 
         noise_penalty = 0.0
         # Late night running (10pm–7am)
@@ -263,6 +264,7 @@ class ApplianceGroundTruthCalculator:
         # Daytime floor: running appliances during business hours carries a minimum practicality
         # of 0.4 (always a socially acceptable option). Only applies when delay is within the
         # appliance-specific acceptable window — prevents large-delay wrap-bug rescues.
+        # (0-10 scale; below the 0.15 final clamp, so currently inactive)
         DAYTIME_START = 7
         DAYTIME_END = 22
         if DAYTIME_START <= run_time_hour < DAYTIME_END and delay_hours <= max_delay:
@@ -437,7 +439,8 @@ class ApplianceGroundTruthCalculator:
             import math
             return 0.5 * math.exp(-3.0 * (utilization - 1.0))
 
-    def calculate_monthly_cost(self, per_cycle_cost: float, cycles_per_month: int = 30) -> float:
+    def calculate_monthly_cost(self, per_cycle_cost: float, cycles_per_month: int) -> float:
+        """cycles_per_month comes from _cycles_per_month (18/25/24); there is no default."""
         return per_cycle_cost * cycles_per_month
 
     def calculate_scenario_scores(self, scenario: Dict) -> Dict:

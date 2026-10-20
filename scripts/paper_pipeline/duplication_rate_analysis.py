@@ -18,16 +18,16 @@ import sys
 import numpy as np
 import pandas as pd
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-SOURCE_ROOT = os.path.join(PROJECT_ROOT, "src")
-if SOURCE_ROOT not in sys.path:
-    sys.path.insert(0, SOURCE_ROOT)
-from llm_mcda.common.paths import repository_path  # noqa: E402
-from llm_mcda.common.sentinel_utils import is_sentinel  # noqa: E402
-from llm_mcda.common.model_config import get_display_label, get_output_folder  # noqa: E402
+IMPORT_ROOT = PROJECT_ROOT
+if IMPORT_ROOT not in sys.path:
+    sys.path.insert(0, IMPORT_ROOT)
+from common.paths import repository_path  # noqa: E402
+from common.sentinel_utils import is_sentinel  # noqa: E402
+from common.model_config import get_display_label, get_output_folder  # noqa: E402
 
 N_RUNS = 5
 DECISION_TYPES = ["HVAC", "Shower", "Appliance"]

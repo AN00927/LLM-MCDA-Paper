@@ -26,7 +26,7 @@ MAVT ranking uses, so floating-point noise cannot split a tie.
 import math
 from typing import Sequence
 
-from llm_mcda.common.sentinel_utils import MAVT_ROUND_DECIMALS
+from common.sentinel_utils import MAVT_ROUND_DECIMALS
 
 
 def _clean(values: Sequence) -> list:

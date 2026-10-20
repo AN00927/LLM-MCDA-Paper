@@ -38,16 +38,16 @@ import os
 import sys
 from pathlib import Path
 
-# Direct script execution does not add src/ when the package is uninstalled.
-_SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
-if _SRC_ROOT.is_dir() and str(_SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(_SRC_ROOT))
+# Direct script execution does not add the checkout root when the project is uninstalled.
+_IMPORT_ROOT = Path(__file__).resolve().parents[2]
+if _IMPORT_ROOT.is_dir() and str(_IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_IMPORT_ROOT))
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     repository_path,
     repository_root,

@@ -12,16 +12,16 @@ import numpy as np
 import sys
 from pathlib import Path
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 sys.path.insert(0, str(PROJECT_ROOT))
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import repository_path  # noqa: E402
-from llm_mcda.common.model_config import MODEL_SPECS
-from llm_mcda.common.sentinel_utils import SENTINEL_VALUE
+from common.paths import repository_path  # noqa: E402
+from common.model_config import MODEL_SPECS
+from common.sentinel_utils import SENTINEL_VALUE
 
 FAILURE_CSV = repository_path("Combined Metrics", "failure_analysis.csv")
 FAILURE_TEX = repository_path("paper", "failure_analysis_tables.tex")

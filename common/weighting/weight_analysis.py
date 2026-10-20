@@ -11,7 +11,7 @@ Each method keeps its own numerical code path exactly as in the original script
 plumbing is shared (constants with identical values).
 
 CLI:
-    python -m llm_mcda.common.weighting.weight_analysis \
+    python -m common.weighting.weight_analysis \
         --method merec|entropy|implied|diagnostics|all --output-dir DIR [--scope full|test]
 
 Output files (all written flat into --output-dir):
@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_directory,
@@ -44,7 +44,7 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.sentinel_utils import (  # noqa: E402
+from common.sentinel_utils import (  # noqa: E402
     _atomic_write_xlsx,
     find_file_in_paths,
     read_table_clean,
@@ -752,8 +752,8 @@ def run_implied(output_dir: Path) -> Path:
 # DIAGNOSTICS  (from scripts/validation/WeightDiagnostics.py)
 # ===========================================================================
 
-from llm_mcda.common.model_config import CRITERIA as DIAG_CRITERIA  # noqa: E402
-from llm_mcda.common.model_config import CRITERION_WEIGHTS  # noqa: E402
+from common.model_config import CRITERIA as DIAG_CRITERIA  # noqa: E402
+from common.model_config import CRITERION_WEIGHTS  # noqa: E402
 
 GT_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 TEST_SCENARIOS = PROJECT_ROOT / "workbooks/scenarios" / "TestScenarios.xlsx"

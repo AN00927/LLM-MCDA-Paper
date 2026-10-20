@@ -6,11 +6,11 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-SRC_ROOT = Path(__file__).resolve().parents[2] / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
+IMPORT_ROOT = Path(__file__).resolve().parents[2]
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.model_config import MODEL_KEY, get_model_id
+from common.model_config import MODEL_KEY, get_model_id
 
 ARCHITECTURES = (
     "Example-Guided_LLM_Scoring",
@@ -53,9 +53,9 @@ def run_architecture(architecture_name: str, output_dir: Path) -> None:
     from importlib.util import module_from_spec, spec_from_file_location
 
     architecture_path = (
-        PROJECT_ROOT / "src" / "llm_mcda" / "architectures" / f"{architecture_name}.py"
+        PROJECT_ROOT / "architectures" / f"{architecture_name}.py"
     )
-    module_name = f"llm_mcda.architectures.{architecture_name}"
+    module_name = f"architectures.{architecture_name}"
     spec = spec_from_file_location(module_name, architecture_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Unable to load architecture module {architecture_path}")

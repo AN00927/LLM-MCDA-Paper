@@ -7,18 +7,18 @@ import subprocess
 import sys
 from pathlib import Path
 
-from llm_mcda.common.paths import ALLOW_TRACKED_OUTPUT_WRITES_ENV, repository_root
+from common.paths import ALLOW_TRACKED_OUTPUT_WRITES_ENV, repository_root
 PROJECT_ROOT = repository_root(start=__file__)
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
-from llm_mcda.common.paths import repository_path
-from llm_mcda.common.model_config import get_model_artifact_subdir
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
+from common.paths import repository_path
+from common.model_config import get_model_artifact_subdir
 SCRIPTS = "scripts"
 PIPELINE = f"{SCRIPTS}/paper_pipeline"
 VALIDATION = f"{SCRIPTS}/validation"
 ANALYSIS = f"{SCRIPTS}/analysis"
-WEIGHTING = "src/llm_mcda/common/weighting"
+WEIGHTING = "common/weighting"
 GUARDED_STAGES = {"weights", "sensitivity"}
 
 # Cross-model destination for every artifact this pipeline generates. Not

@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 _BOOTSTRAP_ROOT = Path(__file__).resolve().parents[2]
-for _import_root in (_BOOTSTRAP_ROOT / "src", _BOOTSTRAP_ROOT):
+for _import_root in (_BOOTSTRAP_ROOT,):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -32,7 +32,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import numpy as np
 import pandas as pd
 
-from llm_mcda.common.model_config import (
+from common.model_config import (
     CRITERION_WEIGHTS,
     MAX_RETRIES,
     MAX_RETRY_BACKOFF,
@@ -45,7 +45,7 @@ from llm_mcda.common.model_config import (
     MODEL_SPECS,
 )
 
-from llm_mcda.common.sentinel_utils import (
+from common.sentinel_utils import (
     CRITERIA,
     FAILED_API_BAD_REQUEST,
     FAILED_TRUNCATED,

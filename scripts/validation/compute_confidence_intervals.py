@@ -47,10 +47,10 @@ from scipy import stats
 # Configuration
 # ---------------------------------------------------------------------------
 
-from llm_mcda.common.paths import repository_root
+from common.paths import repository_root
 PROJECT_ROOT = repository_root(start=__file__)
 
-from llm_mcda.common.paths import repository_path
+from common.paths import repository_path
 
 INPUT_CSV = repository_path("Combined Metrics", "per_run_metrics_all.csv")
 OUTPUT_XLSX = repository_path("Combined Metrics", "bootstrap_confidence_intervals.xlsx")

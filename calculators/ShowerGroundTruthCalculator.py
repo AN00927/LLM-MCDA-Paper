@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 import pandas as pd
 from pathlib import Path
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_path,
@@ -17,12 +17,12 @@ GROUND_TRUTH_DIR = PROJECT_ROOT / "workbooks/ground_truth"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from llm_mcda.common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
+from common.sentinel_utils import apply_mavt_ranking, read_table_clean, has_sentinel_scores
 
 class ShowerGroundTruthCalculator:
     """Calculate shower ground-truth criterion scores."""
 
-    # PA residential electricity rate (EIA Electric Power Monthly, $/kWh).
+    # PA residential electricity rate (EIA Electric Power Monthly, $/kWh). EPM Feb 2026 Table 5.6.B YTD Dec 2025: PA 19.30 c/kWh, used as $0.19.
     ELECTRICITY_RATE_PA = 0.19
 
     # PA seasonal mains water temperatures: linear fit evaluated against monthly
@@ -31,25 +31,25 @@ class ShowerGroundTruthCalculator:
     INLET_TEMP_SUMMER = 68.2  # F, outdoor >=75F
 
     # Heater efficiency and temperature thresholds.
-    ELECTRIC_HEATER_EFFICIENCY = 0.92
+    ELECTRIC_HEATER_EFFICIENCY = 0.92  # 10 CFR 430.32(d)(1) pre-2029-05-06 minimum, 50-gal Medium draw (0.9207)
     TARGET_SHOWER_TEMP = 105.0  # F delivery temperature
-    WATER_DENSITY = 8.33  # lbs/gallon (standard)
+    WATER_DENSITY = 8.33  # lbs/gallon nominal (~8.34 at 60 F, ~8.33 at 68 F)
     BTU_PER_KWH = 3412  # Conversion factor (standard)
 
     # Duration comfort thresholds (7.8 min average; ~33% of showers exceed 15 min).
     COMFORT_DURATION_MIN = 5  # Rushed but viable
     COMFORT_DURATION_OPTIMAL = 7.8  # field-average shower length (moderate-weather anchor)
-    COMFORT_DURATION_MAX = 15  # Comfortable upper bound
+    COMFORT_DURATION_MAX = 15  # ceiling assumption informed by Harris prevalence split (66% <=15 min)
 
     # Lengthen shower target in cold weather (capped).
     COMFORT_TEMP_REFERENCE_F = 77.0
     COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (6 C) drop (modeling assumption)
-    COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer field-mean envelope
+    COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer field-mean envelope (winter 11.6 / summer 8.8, cross-population)
 
-    HEATER_TEMP_MINIMUM = 110
-    HEATER_TEMP_OPTIMAL = 120
-    HEATER_TEMP_SCALD_RISK = 130
-    HEATER_TEMP_LEGIONELLA_SAFE = 140
+    HEATER_TEMP_MINIMUM = 110  # unused - retained for context (see provenance)
+    HEATER_TEMP_OPTIMAL = 120  # CDC circulation floor (see provenance)
+    HEATER_TEMP_SCALD_RISK = 130  # unused - retained for context; citation not verified (see provenance)
+    HEATER_TEMP_LEGIONELLA_SAFE = 140  # CDC storage recommendation (see provenance)
 
     # Comfort no-penalty band for the water-heater setpoint: [OPTIMAL, LEGIONELLA_SAFE]
     # = 120-140F. Below 120F the tank cannot deliver 105F with any mixing margin;

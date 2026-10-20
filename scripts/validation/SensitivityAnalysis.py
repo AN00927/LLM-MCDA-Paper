@@ -7,15 +7,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# Make the checkout's src layout importable when this script is run directly.
+# Make the checkout root importable when this script is run directly.
 for _candidate in Path(__file__).resolve().parents:
-    if (_candidate / "src" / "llm_mcda").is_dir():
-        sys.path.insert(0, str(_candidate / "src"))
+    if (_candidate / "common").is_dir():
+        sys.path.insert(0, str(_candidate))
         break
 else:
-    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+    raise RuntimeError("Cannot locate the repository root (common/ package)")
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_directory,
@@ -27,14 +27,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 
-from llm_mcda.common.model_config import (
+from common.model_config import (
     CRITERION_WEIGHTS,
     MODEL_KEY,
     MODEL_SPECS,
     TIE_BREAK_PRIORITY,
     get_model_artifact_subdir,
 )
-from llm_mcda.common.sentinel_utils import _atomic_write_xlsx
+from common.sentinel_utils import _atomic_write_xlsx
 from scripts.analysis.evaluate_architecture_metrics import (
     CRITERIA,
     _build_config,
@@ -193,7 +193,7 @@ def generate_weight_scenarios(baseline: dict[str, float]) -> list[tuple[str, obj
             scenarios.append((f"{method} per-type", per_type))
 
     # Published per-decision-type vectors from tab:weight_comparison
-    # (paper_draft_working.tex), applied to their matching decision type only.
+    # (paper/supplementary.tex, "Entropy and MEREC Weight Vectors"), applied to their matching decision type only.
     # MEREC arms: each vector on its own decision type, baseline elsewhere.
     # Entropy arm: all three published vectors applied to their matching types.
     # Rounding in the table makes the entropy rows sum to 0.999-1.001, so each

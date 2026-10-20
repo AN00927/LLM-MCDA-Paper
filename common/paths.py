@@ -209,7 +209,7 @@ def repository_root(start: str | Path | None = None) -> Path:
     if origin.is_file() or origin.suffix:
         origin = origin.parent
     for candidate in (origin, *origin.parents):
-        has_package = (candidate / "src" / "llm_mcda").is_dir()
+        has_package = (candidate / "common" / "paths.py").is_file()
         has_metadata = (candidate / "requirements.txt").is_file() and (
             (candidate / ".gitattributes").is_file() or has_package
         )

@@ -7,7 +7,7 @@ Run this after re-running any workbooks/ground_truth Calculator to propagate upd
 scores into the RAG corpus (then re-run build_rag_index.py to rebuild ChromaDB).
 
 Workflow:
-    1. python "src/llm_mcda/calculators/<Domain>GroundTruthCalculator.py"
+    1. python "calculators/<Domain>GroundTruthCalculator.py"
     2. python "scripts/collection/sync_rag_ground_truth_scores.py"
     3. python "scripts/collection/build_rag_index.py"
 
@@ -28,7 +28,7 @@ from pathlib import Path
 import pandas as pd
 
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_directory,

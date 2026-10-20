@@ -1,25 +1,25 @@
 """Deprecated shim: MEREC weights now lives in weight_analysis.
 
-Use `python -m llm_mcda.common.weighting.weight_analysis --method merec --output-dir DIR`.
+Use `python -m common.weighting.weight_analysis --method merec --output-dir DIR`.
 Running this file directly keeps its legacy behavior (same default destination).
 """
 import sys
 import warnings
 from pathlib import Path
 
-# Make the checkout's src layout importable when this script is run directly.
+# Make the checkout root importable when this script is run directly.
 for _candidate in Path(__file__).resolve().parents:
-    if (_candidate / "src" / "llm_mcda").is_dir():
-        if str(_candidate / "src") not in sys.path:
-            sys.path.insert(0, str(_candidate / "src"))
+    if (_candidate / "common").is_dir():
+        if str(_candidate) not in sys.path:
+            sys.path.insert(0, str(_candidate))
         break
 
-from llm_mcda.common.weighting import weight_analysis as _impl
+from common.weighting import weight_analysis as _impl
 
 
 def main():
     warnings.warn(
-        "merec_weights.py is deprecated; use llm_mcda.common.weighting.weight_analysis --method merec",
+        "merec_weights.py is deprecated; use common.weighting.weight_analysis --method merec",
         DeprecationWarning,
         stacklevel=2,
     )

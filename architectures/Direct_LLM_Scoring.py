@@ -13,11 +13,11 @@ import requests
 from dotenv import load_dotenv
 import pandas as pd
 
-SRC_ROOT = Path(__file__).resolve().parents[2]
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
+IMPORT_ROOT = Path(__file__).resolve().parents[1]
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -27,7 +27,7 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common.model_config import (
+from common.model_config import (
     get_model_id,
     get_output_folder_for_model_id,
     get_reasoning_payload,
@@ -46,7 +46,7 @@ from llm_mcda.common.model_config import (
     FAILED_API_EXHAUSTED,
     FAILED_UNKNOWN,
 )
-from llm_mcda.common.sentinel_utils import (
+from common.sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     apply_mavt_ranking,

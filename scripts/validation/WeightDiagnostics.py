@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deprecated shim: weight diagnostics now live in weight_analysis.
 
-Use `python -m llm_mcda.common.weighting.weight_analysis --method diagnostics
+Use `python -m common.weighting.weight_analysis --method diagnostics
 --output-dir DIR [--scope full|test]`. Running this file directly keeps its
 legacy behavior and CLI (`--scope`, same default destinations).
 """
@@ -10,16 +10,16 @@ import sys
 import warnings
 from pathlib import Path
 
-# Make the checkout's src layout importable when this script is run directly.
+# Make the checkout root importable when this script is run directly.
 for _candidate in Path(__file__).resolve().parents:
-    if (_candidate / "src" / "llm_mcda").is_dir():
-        sys.path.insert(0, str(_candidate / "src"))
+    if (_candidate / "common").is_dir():
+        sys.path.insert(0, str(_candidate))
         break
 else:
-    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+    raise RuntimeError("Cannot locate the repository root (common/ package)")
 
-from llm_mcda.common.paths import UnsafeOutputPathError
-from llm_mcda.common.weighting import weight_analysis as _impl
+from common.paths import UnsafeOutputPathError
+from common.weighting import weight_analysis as _impl
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
     args = parser.parse_args()
     warnings.warn(
         "WeightDiagnostics.py is deprecated; use "
-        "llm_mcda.common.weighting.weight_analysis --method diagnostics",
+        "common.weighting.weight_analysis --method diagnostics",
         DeprecationWarning,
         stacklevel=2,
     )

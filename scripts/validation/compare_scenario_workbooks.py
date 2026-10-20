@@ -21,15 +21,15 @@ from pathlib import Path
 
 import openpyxl
 
-# Make the checkout's src layout importable when this script is run directly.
+# Make the checkout root importable when this script is run directly.
 for _candidate in Path(__file__).resolve().parents:
-    if (_candidate / "src" / "llm_mcda").is_dir():
-        sys.path.insert(0, str(_candidate / "src"))
+    if (_candidate / "common").is_dir():
+        sys.path.insert(0, str(_candidate))
         break
 else:
-    raise RuntimeError("Cannot locate the repository src/llm_mcda package")
+    raise RuntimeError("Cannot locate the repository root (common/ package)")
 
-from llm_mcda.common.paths import (
+from common.paths import (
     UnsafeOutputPathError,
     repository_root,
     require_safe_output_path,

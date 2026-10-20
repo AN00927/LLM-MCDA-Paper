@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
-from .common.paths import repository_root
+from common.paths import repository_root
 
 SCHEMA_VERSION = "1.1"
 _UNKNOWN = "unknown"

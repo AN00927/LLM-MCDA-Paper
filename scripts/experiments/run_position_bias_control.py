@@ -7,17 +7,17 @@ from datetime import datetime, timezone
 from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 
-# Bootstrap the checkout's src/ package before importing llm_mcda.
+# Bootstrap the checkout root before importing the shared modules.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_ROOT = PROJECT_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+IMPORT_ROOT = PROJECT_ROOT
+if str(IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(IMPORT_ROOT))
 
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-from llm_mcda.common.paths import (
+from common.paths import (
     RUN_OUTPUT_DIR_ENV,
     UnsafeOutputPathError,
     repository_root,
@@ -27,9 +27,9 @@ PROJECT_ROOT = repository_root(start=__file__)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from llm_mcda.common import model_config
-from llm_mcda.common.model_config import CRITERIA, MODEL_SPECS, get_output_folder
-from llm_mcda.common.sentinel_utils import (
+from common import model_config
+from common.model_config import CRITERIA, MODEL_SPECS, get_output_folder
+from common.sentinel_utils import (
     _atomic_write_json,
     _atomic_write_xlsx,
     _is_complete_run_file,
@@ -52,7 +52,7 @@ OUTPUT_DIR = None
 
 # Position bias control for direct scoring (A_D).
 ARCHITECTURES = {
-    "Direct_LLM_Scoring": PROJECT_ROOT / "src/llm_mcda/architectures" / "Direct_LLM_Scoring.py",
+    "Direct_LLM_Scoring": PROJECT_ROOT / "architectures" / "Direct_LLM_Scoring.py",
 }
 
 RESULT_COLUMNS = [

@@ -73,10 +73,8 @@ PAPERRULES.txt
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 !Combined Metrics/*.md
-!docs/**/*.md
 
 *.pdf
-!docs/methodology/*.pdf
 
 !results/
 !results/**/*.md
@@ -84,18 +82,8 @@ PAPERRULES.txt
 /paper/
 /scripts/archive/
 
-# Internal AI review artifacts & handoffs (do not track publicly)
-docs/writeragent_*
-docs/pass0*
-docs/pass0/
-docs/PROVENANCE_AUDIT_PROMPT.md
-docs/lop/
-docs/lop.md
-docs/PA_GHG_Inventory_2026.pdf
-docs/writeragent_handoff_2026-10-08.md
-docs/writeragent_report_main_2026-10-08.md
-docs/writeragent_report_supplement_2026-10-08.md
-docs/pass0_handoff_2026-10-10.md
+# Internal documentation (do not track publicly)
+/docs/
 
 #specific ignores
 archive/2026-09_pre_rerun/Output Files/Baselines/baseline_oracle.xlsx
