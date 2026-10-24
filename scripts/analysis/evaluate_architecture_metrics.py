@@ -1407,7 +1407,7 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument('--include-baselines', action='store_true',
-                        help='Include 4 non-LLM baselines (Random, Uniform, FixedDefault, NearestNeighbor)')
+                        help='Include 3 non-LLM baselines (Random, Uniform, NearestNeighbor)')
     args = parser.parse_args()
 
     try:

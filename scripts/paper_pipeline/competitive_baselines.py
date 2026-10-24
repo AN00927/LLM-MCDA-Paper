@@ -2,35 +2,35 @@
 """
 competitive_baselines.py - task P1.5 of the EMS revision plan.
 
-QUESTION. Does A_E beat a fixed default, and does it beat copying the ranking
-of the one exemplar it retrieves (the NearestNeighbor copy baseline, k = 1)?
-The manuscript recommends A_E as the practical option for domains where a
-calculator cannot be built. That recommendation only survives if A_E beats the
-trivial non-LLM baselines a practitioner already has.
+QUESTION. Does A_E beat copying the ranking of the one exemplar it retrieves
+(the NearestNeighbor copy baseline, k = 1)? The manuscript recommends A_E as
+the practical option for domains where a calculator cannot be built. That
+recommendation only survives if A_E beats the trivial non-LLM baseline a
+practitioner already has.
 
 TESTS (S7). Per model, a paired Wilcoxon signed-rank test on the 195 Test
 scenarios: A_E's per-scenario value (the mean over its runs, failure rule
 applied: a failed scenario-run is wrong for Top-1 and at tau 0) against the
 baseline's value on the same scenario, paired by the matched ground-truth
 scenario. Effect size: matched-pairs rank-biserial (positive = A_E higher).
-Holm family: every test in this file, (number of models) x 2 baselines
-(FixedDefault, NearestNeighbor) x 2 metrics (tau, Top-1) = 16 with four models.
+Holm family: every test in this file, (number of models) x 1 baseline
+(NearestNeighbor) x 2 metrics (tau, Top-1) = 8 with four models.
 
 WHAT THIS REPORTS, per model and per decision type:
   * A_E on Kendall's tau and Top-1 (per-run mean, then mean across runs -- the
     paper's estimator, per the estimator decision).
-  * FixedDefault on the same two metrics. FixedDefault is deterministic and
-    model-independent, so it is one column repeated against four models.
+  * NearestNeighbor on the same two metrics. NearestNeighbor is deterministic
+    and model-independent, so it is one column repeated against four models.
   * The single-criterion-argmax baseline per decision type: rank the three
     alternatives by ONE ground-truth criterion and score that ranking against
     the reference MAVT ranking. Also model-independent.
 
-NULL RESULTS ARE REPORTED STRAIGHT. If A_E loses to a fixed default on a
+NULL RESULTS ARE REPORTED STRAIGHT. If A_E loses to the copy baseline on a
 decision type, that is the finding.
 
 SOURCES
   A_E:            local-only per-run metrics CSV
-  FixedDefault:   results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv
+  NearestNeighbor: results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv
                   (preserved output of scripts/analysis/evaluate_baseline_metrics.py)
   Single-crit:    workbooks/ground_truth/ground_truth_*.xlsx, restricted to the 195 Test
                   scenarios by matching against a shipped run file, so the
@@ -78,8 +78,7 @@ _cm_spec.loader.exec_module(_cm)
 PER_RUN_CSV = repository_path("Combined Metrics", "per_run_metrics_all.csv")
 BASELINE_DIR = PROJECT_ROOT / "workbooks" / "older_runs" / "unclassified_legacy" / "Baselines"
 BASELINE_CSV = PROJECT_ROOT / "results" / "older_runs" / "unclassified_legacy" / "Baselines" / "baseline_metrics.csv"
-BASELINE_FILES = {"FixedDefault": "baseline_fixeddefault.xlsx",
-                  "NearestNeighbor": "baseline_nearestneighbor.xlsx"}
+BASELINE_FILES = {"NearestNeighbor": "baseline_nearestneighbor.xlsx"}
 TEST_METRICS = {"kendall_tau": "tau", "top1": "Top-1"}
 OUT_XLSX = repository_path("Combined Metrics", "competitive_baselines.xlsx")
 OUT_MD = repository_path("Combined Metrics", "competitive_baselines.md")
@@ -111,10 +110,10 @@ def ae_by_type():
 
 
 # ---------------------------------------------------------------------------
-# FixedDefault
+# NearestNeighbor
 # ---------------------------------------------------------------------------
 
-def baseline_by_type(name="FixedDefault", prefix="FD"):
+def baseline_by_type(name="NearestNeighbor", prefix="NN"):
     df = pd.read_csv(BASELINE_CSV)
     df = df[df["baseline"] == name]
     piv = df.pivot_table(index="decision_type", columns="metric",
@@ -129,10 +128,6 @@ def baseline_by_type(name="FixedDefault", prefix="FD"):
             f"{prefix}_top1": float(piv.loc[dt, "top1_accuracy"]),
         })
     return pd.DataFrame(out)
-
-
-def fixeddefault_by_type():
-    return baseline_by_type("FixedDefault", "FD")
 
 
 # ---------------------------------------------------------------------------
@@ -302,20 +297,15 @@ def main():
     print("=" * 64)
 
     ae = ae_by_type()
-    fd = fixeddefault_by_type()
     nn = baseline_by_type("NearestNeighbor", "NN")
     print(f"  A_E cells: {len(ae)}")
-    print(f"  FixedDefault rows: {len(fd)}")
+    print(f"  NearestNeighbor rows: {len(nn)}")
 
     ref = test_reference_table()
     sc = single_criterion_baseline(ref)
     print(f"  Single-criterion rows: {len(sc)}")
 
-    head = ae.merge(fd, on="decision_type", how="left").merge(nn, on="decision_type", how="left")
-    head["d_tau"] = head["AE_tau"] - head["FD_tau"]
-    head["d_top1"] = head["AE_top1"] - head["FD_top1"]
-    head["AE_beats_FD_tau"] = head["d_tau"] > 0
-    head["AE_beats_FD_top1"] = head["d_top1"] > 0
+    head = ae.merge(nn, on="decision_type", how="left")
     head["d_tau_NN"] = head["AE_tau"] - head["NN_tau"]
     head["d_top1_NN"] = head["AE_top1"] - head["NN_top1"]
     head["AE_beats_NN_tau"] = head["d_tau_NN"] > 0
@@ -336,7 +326,7 @@ def main():
 
     OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(OUT_XLSX, engine="openpyxl") as xw:
-        head.to_excel(xw, sheet_name="AE_vs_FixedDefault", index=False)
+        head.to_excel(xw, sheet_name="AE_vs_NearestNeighbor", index=False)
         sc.to_excel(xw, sheet_name="SingleCriterionArgmax", index=False)
         best.to_excel(xw, sheet_name="BestSingleCriterion", index=False)
         tests.to_excel(xw, sheet_name="PairedTests_AE_vs_baselines", index=False)
@@ -345,24 +335,9 @@ def main():
     lines = []
     lines.append("# P1.5 - competitive baselines\n")
     lines.append("Estimator: per-run mean, then mean across runs (aggregation A).")
-    lines.append("FixedDefault and the single-criterion baselines are deterministic and")
+    lines.append("NearestNeighbor and the single-criterion baselines are deterministic and")
     lines.append("model-independent; they are repeated against each model for comparison.\n")
 
-    lines.append("## A_E vs FixedDefault, per model and decision type\n")
-    lines.append("| Model | Decision type | A_E tau | FD tau | d tau | A_E Top-1 | FD Top-1 | d Top-1 |")
-    lines.append("|---|---|---|---|---|---|---|---|")
-    for _, r in head.iterrows():
-        lines.append("| %s | %s | %.4f | %.4f | %+.4f | %.4f | %.4f | %+.4f |" % (
-            r["model"], r["decision_type"], r["AE_tau"], r["FD_tau"], r["d_tau"],
-            r["AE_top1"], r["FD_top1"], r["d_top1"]))
-
-    n_cells = len(head)
-    win_tau = int(head["AE_beats_FD_tau"].sum())
-    win_t1 = int(head["AE_beats_FD_top1"].sum())
-    lines.append("")
-    lines.append("**A_E beats FixedDefault in %d of %d cells on tau and %d of %d on Top-1.**"
-                 % (win_tau, n_cells, win_t1, n_cells))
-    lines.append("")
     lines.append("## A_E vs the NearestNeighbor copy baseline (k = 1), per model and decision type\n")
     lines.append("| Model | Decision type | A_E tau | NN tau | d tau | A_E Top-1 | NN Top-1 | d Top-1 |")
     lines.append("|---|---|---|---|---|---|---|---|")
@@ -371,7 +346,7 @@ def main():
             r["model"], r["decision_type"], r["AE_tau"], r["NN_tau"], r["d_tau_NN"],
             r["AE_top1"], r["NN_top1"], r["d_top1_NN"]))
     lines.append("")
-    lines.append("## Paired Wilcoxon, A_E vs each baseline (per model; Holm over all %d tests)\n"
+    lines.append("## Paired Wilcoxon, A_E vs the NearestNeighbor copy baseline (per model; Holm over all %d tests)\n"
                  % len(tests))
     lines.append("| Model | Baseline | Metric | A_E | Baseline | diff | n pairs | n non-zero | p | p Holm | rank-biserial |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|")

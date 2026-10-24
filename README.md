@@ -97,7 +97,7 @@ The LLM-parameterized reference scoring architecture dominates across all four m
 
 - **Cross-architecture performance stability.** The LLM-parameterized architecture's τ spans 0.086 across a ~21× difference in configured token price, versus 0.174 for direct LLM scoring.
 - **Reference calculator with fixed parameters.** Running the calculator on dataset-median parameters reaches only τ = 0.590 — well above chance, but far below the LLM-parameterized architecture's 0.805–0.891.
-- **Non-LLM baseline comparison.** A Fixed-Default baseline reaches τ = 0.580, outranking direct and example-guided LLM scoring for every model; only LLM-parameterized reference scoring clears it.
+- **Non-LLM baseline comparison.** A nearest-neighbor copy baseline (k = 1) reaches τ = 0.374, above direct and example-guided LLM scoring for every model (τ 0.005–0.298); only LLM-parameterized reference scoring clears the dataset-median calculator's τ = 0.590.
 - **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on LLM-parameterized scoring has an 8.7% per-scenario-run extraction failure rate, concentrated in HVAC. Cross-run recovery confirms the architecture ordering is unaffected.
 
 ### API Costs (per 5-run benchmark)

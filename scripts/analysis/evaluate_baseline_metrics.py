@@ -63,7 +63,6 @@ LEGACY_BASELINE_DIR = PROJECT_ROOT / "workbooks/older_runs/unclassified_legacy/B
 DEFAULT_OUT_CSV = PROJECT_ROOT / "results/current/baselines/baseline_metrics.csv"
 
 BASELINES = {
-    "FixedDefault": "baseline_fixeddefault.xlsx",
     "NearestNeighbor": "baseline_nearestneighbor.xlsx",
 }
 DECISION_TYPES = ["HVAC", "Appliance", "Shower"]

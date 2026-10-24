@@ -77,7 +77,7 @@ STEPS = [
     ("numbers", "Decision regret (A_D/A_E/A_H vs reference MAVT)",
      [f"{PIPELINE}/compute_regret.py"]),
 
-    ("numbers", "Competitive baselines (fixed default, nearest-neighbour copy)",
+    ("numbers", "Competitive baselines (A_E vs nearest-neighbour copy)",
      [f"{PIPELINE}/competitive_baselines.py"]),
     ("numbers", "Score-dispersion and single-criterion recovery",
      [f"{PIPELINE}/compute_dispersion_diagnostics.py"]),

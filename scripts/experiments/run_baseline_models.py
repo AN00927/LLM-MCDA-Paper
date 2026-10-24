@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 run_baseline_models.py - Non-LLM Baselines
-Computes four baselines for MCDA architecture comparison.
+Computes three baselines for MCDA architecture comparison: random, uniform and nearest-neighbor copy.
 """
 import argparse
 import os
@@ -32,10 +32,6 @@ from common.model_config import CRITERION_WEIGHTS, TIE_BREAK_PRIORITY
 from common.sentinel_utils import (read_table_clean, SENTINEL_VALUE, has_sentinel_scores, apply_mavt_ranking,
                             MAVT_ROUND_DECIMALS)
 
-from calculators.HVACGroundTruthCalculator import HVACGroundTruthCalculator
-from calculators.ApplianceGroundTruthCalculator import ApplianceGroundTruthCalculator
-from calculators.ShowerGroundTruthCalculator import ShowerGroundTruthCalculator
-
 from scripts.experiments.run_rag_ablation_experiments import (
     nearest_neighbor_prediction,
     NN_FALLBACKS,
@@ -47,28 +43,6 @@ from scripts.experiments.run_rag_ablation_experiments import (
 )
 
 warnings.filterwarnings("default")
-
-HVAC_DEFAULT_R_VALUE = 15
-HVAC_DEFAULT_SEER = 13
-HVAC_DEFAULT_HVAC_AGE = 13
-HVAC_DEFAULT_OCCUPANCY_CONTEXT = "occupied_all_day"
-
-# Dryer 2.27 kWh/cycle = the DOE test load (8.45 lb, 10 CFR 430 Subpart B Appendix D1 sec. 2.7.1) over the
-# 2015 federal minimum CEF for a standard vented electric dryer (3.73 lb/kWh, 10 CFR 430.32(h)).
-APPLIANCE_DEFAULT_KWH_PER_CYCLE = {
-    "Washer": 0.55, "Dryer": 2.27, "Dishwasher": 1.00,
-    "washing_machine": 0.55, "dryer": 2.27, "dishwasher": 1.00,
-}
-APPLIANCE_DEFAULT_KWH_FALLBACK = 1.00
-APPLIANCE_DEFAULT_BASELINE_TIME = "7pm"
-APPLIANCE_DEFAULT_AGE_YEARS = 11
-
-SHOWER_DEFAULT_GPM = 2.5
-# 40 gal: within the RECS 2020 Pennsylvania median water-heater size band (31-49 gal) and
-# the master-sheet mode.
-SHOWER_DEFAULT_TANK_SIZE = 40
-SHOWER_DEFAULT_WATER_HEATER_TEMP = 120
-SHOWER_DEFAULT_OUTDOOR_TEMP = 51.8
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -124,219 +98,9 @@ def normalize_alternative(alt, decision_type):
         except ValueError: return alt
     return alt
 
-_RETRIEVAL_APPLIANCE_MODE = None
-
-
-def retrieval_set_appliance_mode():
-    """Appliance type the Fixed-Default baseline assigns to every Appliance
-    scenario: the mode over the retrieval (RAG) scenarios, the same rule and the
-    same helper as the dataset-median condition in
-    run_hybrid_ablation_experiments.compute_defaults(). Computed once, then
-    cached."""
-    global _RETRIEVAL_APPLIANCE_MODE
-    if _RETRIEVAL_APPLIANCE_MODE is None:
-        from scripts.experiments.run_hybrid_ablation_experiments import compute_defaults
-        _RETRIEVAL_APPLIANCE_MODE = compute_defaults()["Appliance"]["appliance"]
-    return _RETRIEVAL_APPLIANCE_MODE
-
-
-def build_scenario_from_test(row, decision_type):
-    """Build a scenario dict from TestScenarios row for the GT calculators.
-
-    Homeowner-reported fields (location, household size, budget, housing type,
-    floor area, outdoor temperature, the appliance-age band) come from the row.
-    Every hidden engineering parameter is a fixed constant, identical for every
-    scenario of a type; nothing is read from the question text."""
-    scenario = {
-        'question': str(row.get('question', '')).strip(),
-        'location': str(row.get('location', '')).strip(),
-        'household_size': int(float(row.get('household_size', 2))),
-        'utility_budget': float(row.get('utility_budget', 0)),
-        'housing_type': str(row.get('housing_type', 'Single-family')),
-    }
-    if decision_type == "HVAC":
-        scenario.update({
-            'square_footage': int(float(row.get('square_footage', 2000))),
-            'outdoor_temp': float(row.get('outdoor_temp', 50)),
-            'hvac_age': HVAC_DEFAULT_HVAC_AGE,
-            'r_value': HVAC_DEFAULT_R_VALUE,
-            'seer': HVAC_DEFAULT_SEER,
-            'occupancy_context': HVAC_DEFAULT_OCCUPANCY_CONTEXT,
-            'electricity_rate': HVACGroundTruthCalculator.ELECTRICITY_RATE_PA,
-            'alternative_1': str(row.get('alternative_1', '')),
-            'alternative_2': str(row.get('alternative_2', '')),
-            'alternative_3': str(row.get('alternative_3', '')),
-        })
-    elif decision_type == "Appliance":
-        # The appliance type is a hidden parameter, so the baseline does not
-        # read it from the question (it used to, with a keyword parser). Every
-        # Appliance scenario gets the retrieval-set mode, the same constant the
-        # dataset-median condition uses.
-        app_type = retrieval_set_appliance_mode()
-
-        # Parse appliance_age which might be a string band like "7-9 years" or a float/int
-        raw_age = row.get('appliance_age')
-        try:
-            appliance_age_val = int(float(raw_age))
-        except (ValueError, TypeError):
-            import re
-            m = re.search(r'(\d+)', str(raw_age))
-            if m:
-                appliance_age_val = int(m.group(1))
-            else:
-                appliance_age_val = APPLIANCE_DEFAULT_AGE_YEARS
-
-        scenario.update({
-            'appliance': app_type,
-            # The fixed kWh/cycle default for the assigned appliance type.
-            'kwh_per_cycle': float(APPLIANCE_DEFAULT_KWH_PER_CYCLE.get(
-                app_type, APPLIANCE_DEFAULT_KWH_FALLBACK)),
-            'appliance_age': appliance_age_val,
-            'baseline_time': APPLIANCE_DEFAULT_BASELINE_TIME,
-            'alternative_1': str(row.get('alternative_1', '')),
-            'alternative_2': str(row.get('alternative_2', '')),
-            'alternative_3': str(row.get('alternative_3', '')),
-        })
-    elif decision_type == "Shower":
-        scenario.update({
-            'gpm': float(SHOWER_DEFAULT_GPM),
-            'tank_size': float(SHOWER_DEFAULT_TANK_SIZE),
-            'water_heater_temp': float(SHOWER_DEFAULT_WATER_HEATER_TEMP),
-            'outdoor_temp': float(row.get('outdoor_temp', SHOWER_DEFAULT_OUTDOOR_TEMP)),
-            'alternative_1': str(row.get('alternative_1', '')),
-            'alternative_2': str(row.get('alternative_2', '')),
-            'alternative_3': str(row.get('alternative_3', '')),
-        })
-    
-    alternatives = []
-    for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
-        alt_val = str(row.get(alt_col, '')).strip()
-        if pd.isna(row.get(alt_col)) or alt_val == '' or alt_val.lower() == 'nan':
-            continue
-        alternatives.append(float(alt_val) if decision_type == "Shower" else alt_val)
-    scenario['alternatives'] = alternatives
-    return scenario
-
-
-def run_calculator_on_scenarios(decision_type, scenarios, calculator_class, id_offset=0):
-    """Run a GT calculator on a list of scenarios and return results DataFrame."""
-    calculator = calculator_class()
-    all_results = []
-    for idx, scenario in enumerate(scenarios, start=id_offset):
-        try:
-            raw_scores = calculator.calculate_scenario_scores(scenario)
-
-            if decision_type == "Shower":
-                scores = {}
-                for alt_data in raw_scores["alternatives"]:
-                    key = str(alt_data["alternative"])
-                    tv  = alt_data["transformed_values"]
-                    scores[key] = {
-                        "energy_cost_score":   tv["energy_cost"],
-                        "environmental_score": tv["environmental"],
-                        "comfort_score":       tv["comfort"],
-                        "practicality_score":  tv["practicality"],
-                        "duration_min":        int(alt_data["duration"]),
-                    }
-            else:
-                scores = raw_scores
-            # ──────────────────────────────────────────────────────────────────
-
-            alts_for_ranking = [
-                {
-                    "alternative":  alt,
-                    "energy_cost":  scores[alt]["energy_cost_score"],
-                    "environmental":scores[alt]["environmental_score"],
-                    "comfort":      scores[alt]["comfort_score"],
-                    "practicality": scores[alt]["practicality_score"],
-                }
-                for alt in scores
-            ]
-            ranking_result = apply_mavt_ranking(alts_for_ranking)
-            for alt_idx, (alt, alt_scores) in enumerate(scores.items()):
-                result_row = {
-                    'scenario_id': idx,
-                    'question': scenario['question'],
-                    'location': scenario['location'],
-                    'decision_type': decision_type,
-                    'alternative': alt,
-                    'energy_cost_score': alt_scores['energy_cost_score'],
-                    'environmental_score': alt_scores['environmental_score'],
-                    'comfort_score': alt_scores['comfort_score'],
-                    'practicality_score': alt_scores['practicality_score'],
-                    'mavt_score': ranking_result["weighted_scores"][alt_idx],
-                    'rank': ranking_result["ranks"][alt_idx],
-                }
-                if decision_type == "HVAC":
-                    result_row.update({
-                        'square_footage': scenario['square_footage'],
-                        'insulation': scenario.get('insulation', ''),
-                        'outdoor_temp': scenario['outdoor_temp'],
-                        'house_age': scenario.get('house_age', ''),
-                        'housing_type': scenario['housing_type'],
-                    })
-                elif decision_type == "Appliance":
-                    result_row.update({
-                        'appliance': scenario['appliance'],
-                        'appliance_age': scenario['appliance_age'],
-                        'housing_type': scenario['housing_type'],
-                        'household_size': scenario['household_size'],
-                        'kwh_per_cycle': scenario['kwh_per_cycle'],
-                    })
-                elif decision_type == "Shower":
-                    result_row.update({
-                        'household_size': scenario['household_size'],
-                        'gpm': scenario['gpm'],
-                        'utility_budget': scenario['utility_budget'],
-                        'housing_type': scenario['housing_type'],
-                        'outdoor_temp': scenario['outdoor_temp'],
-                        'duration_min': alt_scores.get('duration_min', 0),
-                    })
-                all_results.append(result_row)
-        except Exception as e:
-            print(f"ERROR processing {decision_type} scenario {idx}: {e}")
-            # Emit sentinel rows for all alternatives
-            for alt_col in ['alternative_1', 'alternative_2', 'alternative_3']:
-                if alt_col in scenario:
-                    alt_val = scenario[alt_col]
-                    if alt_val:
-                        all_results.append({
-                            'scenario_id': idx,
-                            'question': scenario['question'],
-                            'location': scenario['location'],
-                            'decision_type': decision_type,
-                            'alternative': alt_val,
-                            'energy_cost_score': SENTINEL_VALUE,
-                            'environmental_score': SENTINEL_VALUE,
-                            'comfort_score': SENTINEL_VALUE,
-                            'practicality_score': SENTINEL_VALUE,
-                            'mavt_score': SENTINEL_VALUE,
-                            'rank': SENTINEL_VALUE,
-                        })
-            continue
-    results_df = pd.DataFrame(all_results)
-    return results_df
-
 # =============================================================================
 # BASELINES
 # =============================================================================
-def run_fixed_default_baseline(test_df):
-    scenarios = {"HVAC": [], "Appliance": [], "Shower": []}
-    for _, row in test_df.iterrows():
-        scenarios[row['decision_type']].append(build_scenario_from_test(row, row['decision_type']))
-    
-    results = []
-    offset = 0
-    if scenarios["HVAC"]:
-        results.append(run_calculator_on_scenarios("HVAC", scenarios["HVAC"], HVACGroundTruthCalculator, id_offset=offset))
-        offset += len(scenarios["HVAC"])
-    if scenarios["Appliance"]:
-        results.append(run_calculator_on_scenarios("Appliance", scenarios["Appliance"], ApplianceGroundTruthCalculator, id_offset=offset))
-        offset += len(scenarios["Appliance"])
-    if scenarios["Shower"]:
-        results.append(run_calculator_on_scenarios("Shower", scenarios["Shower"], ShowerGroundTruthCalculator, id_offset=offset))
-    return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
-
 def run_nearest_neighbor_baseline(test_df, k=1, fallback="tie"):
     groups_by_type = load_source_groups()
     from scripts.experiments.run_rag_ablation_experiments import DEFAULT_EMBEDDING_MODEL
@@ -460,22 +224,20 @@ def run_uniform_baseline(test_df):
     return pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
 
 def run_all_baselines(test_df, baselines=None, k=1, nn_fallback="tie"):
-    if baselines is None: baselines = ['random', 'uniform', 'fixed_default', 'nearest_neighbor']
+    if baselines is None: baselines = ['random', 'uniform', 'nearest_neighbor']
     results = {}
     if 'random' in baselines:
         print("Running Random baseline..."); results['Random'] = run_random_baseline(test_df)
     if 'uniform' in baselines:
         print("Running Uniform baseline..."); results['Uniform'] = run_uniform_baseline(test_df)
-    if 'fixed_default' in baselines:
-        print("Running Fixed-Default baseline..."); results['FixedDefault'] = run_fixed_default_baseline(test_df)
     if 'nearest_neighbor' in baselines:
         print("Running Nearest-Neighbor baseline..."); results['NearestNeighbor'] = run_nearest_neighbor_baseline(test_df, k=k, fallback=nn_fallback)
     return results
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Run non-LLM baselines for MCDA architecture comparison")
-    parser.add_argument('--baselines', nargs='+', default=['fixed_default', 'nearest_neighbor'],
-                        choices=['fixed_default', 'nearest_neighbor', 'all'], help='Which baselines to run')
+    parser.add_argument('--baselines', nargs='+', default=['nearest_neighbor'],
+                        choices=['nearest_neighbor', 'all'], help='Which baselines to run')
     # k = 1 matches the benchmark A_E, which retrieves one exemplar,
     # so the copy-only baseline shows what A_E's LLM
     # adds over copying the exemplar it retrieves. The RAG ablation's own copy-only
@@ -496,7 +258,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.list:
-        print("Available --baselines choices: fixed_default, nearest_neighbor, all")
+        print("Available --baselines choices: nearest_neighbor, all")
         return
 
     try:
@@ -508,7 +270,7 @@ def main(argv=None):
     except UnsafeOutputPathError as exc:
         parser.error(str(exc))
     
-    baselines = ['fixed_default', 'nearest_neighbor'] if args.baselines == ['all'] else args.baselines
+    baselines = ['nearest_neighbor'] if args.baselines == ['all'] else args.baselines
     
     test_path = SCENARIO_DIR / "TestScenarios.xlsx"
     test_df = read_table_clean(test_path)

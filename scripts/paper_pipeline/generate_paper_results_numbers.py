@@ -243,13 +243,14 @@ for _, r in rag.iterrows():
 
 # ────────────────────────────────────────────────────────────────
 # INCREMENTAL CONTRIBUTION TABLE
-# Baselines (FixedDefault, NearestNeighbor) are deterministic;
-# computed by run_baseline_models.py + evaluate_architecture_metrics.py --include-baselines.
+# The dataset-median condition and the NearestNeighbor copy baseline are
+# deterministic. The median numbers come from hybrid_ablation_summary.xlsx
+# (arm "default_params"); NearestNeighbor comes from the preserved baseline
+# metrics CSV. Every delta is relative to the dataset median.
 # LLM rows computed from per-run CSVs as per-type arithmetic means.
 # ────────────────────────────────────────────────────────────────
 
-# FixedDefault and NearestNeighbor are deterministic. Their metric snapshot is
-# preserved at results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv.
+# NearestNeighbor is deterministic. Its metric snapshot is preserved at results/older_runs/unclassified_legacy/Baselines/baseline_metrics.csv.
 # Baseline regeneration is a separate operation and is not part of the safe
 # paper pipeline.
 #
@@ -274,16 +275,38 @@ def _baseline_metric(name, metric):
     return float(sel.iloc[0])
 
 
+def _dataset_median_metrics():
+    """Dataset-median condition (retrieval-set median hidden parameters, no
+    inference) from hybrid_ablation_summary.xlsx. The condition does not depend
+    on the model, so the four per-model rows must agree."""
+    path = repository_path("Combined Metrics", "hybrid_ablation_summary.xlsx")
+    if not path.is_file():
+        raise FileNotFoundError(f"{path} not found; run the hybrid ablation summary first.")
+    if TABLE7_BASIS == "pooled":
+        df = pd.read_excel(path, sheet_name="summary")
+    else:
+        df = pd.read_excel(path, sheet_name="summary_by_type")
+    df = df[df["arm"] == "default_params"]
+    vals = {}
+    for col, key in (("top1_accuracy", "Top-1"), ("kendall_tau", "kendall_tau")):
+        per_model = df.groupby("model")[col].apply(
+            (lambda g: g.mean()) if TABLE7_BASIS == "per_type_mean" else (lambda g: g.iloc[0]))
+        if per_model.nunique() != 1 and (per_model.max() - per_model.min()) > 1e-9:
+            raise ValueError(f"dataset-median {col} differs across models: {per_model.to_dict()}")
+        vals[key] = float(per_model.iloc[0])
+    return vals
+
+
 baseline_data = {
-    name: {
-        "Top-1": _baseline_metric(name, "top1_accuracy"),
-        "kendall_tau": _baseline_metric(name, "kendall_tau"),
-    }
-    for name in ("FixedDefault", "NearestNeighbor")
+    "DatasetMedian": _dataset_median_metrics(),
+    "NearestNeighbor": {
+        "Top-1": _baseline_metric("NearestNeighbor", "top1_accuracy"),
+        "kendall_tau": _baseline_metric("NearestNeighbor", "kendall_tau"),
+    },
 }
 for name, vals in baseline_data.items():
     for met, val in vals.items():
-        delta = val - baseline_data["FixedDefault"][met]
+        delta = val - baseline_data["DatasetMedian"][met]
         # model_or_pooled carries the basis label, not a model pool: the
         # baselines are model-independent.
         if met == "kendall_tau":
