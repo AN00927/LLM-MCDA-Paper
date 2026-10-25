@@ -1,0 +1,37 @@
+architecture,model,quantity,unit,mean_error
+Direct_LLM_Scoring,DeepSeek,Energy Cost,USD per alternative,0.3020067418803419
+Direct_LLM_Scoring,GPT-OSS,Energy Cost,USD per alternative,0.347486611965812
+Direct_LLM_Scoring,Gemini,Energy Cost,USD per alternative,0.33594124444444445
+Direct_LLM_Scoring,Qwen,Energy Cost,USD per alternative,0.35919339589743593
+Example-Guided_LLM_Scoring,DeepSeek,Energy Cost,USD per alternative,0.25494575849572654
+Example-Guided_LLM_Scoring,GPT-OSS,Energy Cost,USD per alternative,0.26899474871794876
+Example-Guided_LLM_Scoring,Gemini,Energy Cost,USD per alternative,0.24587409914529915
+Example-Guided_LLM_Scoring,Qwen,Energy Cost,USD per alternative,0.28481781880341883
+LLM-Parameterized_Reference_Scoring,DeepSeek,Energy Cost,USD per alternative,0.1280108499145299
+LLM-Parameterized_Reference_Scoring,GPT-OSS,Energy Cost,USD per alternative,0.17280038153846156
+LLM-Parameterized_Reference_Scoring,Gemini,Energy Cost,USD per alternative,0.09023370940170941
+LLM-Parameterized_Reference_Scoring,Qwen,Energy Cost,USD per alternative,0.1610662358974359
+Direct_LLM_Scoring,DeepSeek,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,2.076658864197531
+Direct_LLM_Scoring,GPT-OSS,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,2.406676049382716
+Direct_LLM_Scoring,Gemini,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,2.323494666666667
+Direct_LLM_Scoring,Qwen,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,2.357960664197531
+Example-Guided_LLM_Scoring,DeepSeek,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,1.5255786367901234
+Example-Guided_LLM_Scoring,GPT-OSS,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,1.7902992345679012
+Example-Guided_LLM_Scoring,Gemini,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,1.616838864197531
+Example-Guided_LLM_Scoring,Qwen,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,1.719449901234568
+LLM-Parameterized_Reference_Scoring,DeepSeek,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,0.9074172098765433
+LLM-Parameterized_Reference_Scoring,GPT-OSS,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,1.245079390123457
+LLM-Parameterized_Reference_Scoring,Gemini,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,0.6202191851851853
+LLM-Parameterized_Reference_Scoring,Qwen,"Environmental Impact (Thermostat, Appliance)",lb CO2 per alternative,1.2919153827160494
+Direct_LLM_Scoring,DeepSeek,Environmental Impact (Shower),gallons per alternative,6.9056
+Direct_LLM_Scoring,GPT-OSS,Environmental Impact (Shower),gallons per alternative,9.311900000000001
+Direct_LLM_Scoring,Gemini,Environmental Impact (Shower),gallons per alternative,4.9036
+Direct_LLM_Scoring,Qwen,Environmental Impact (Shower),gallons per alternative,7.9937
+Example-Guided_LLM_Scoring,DeepSeek,Environmental Impact (Shower),gallons per alternative,5.710466666666667
+Example-Guided_LLM_Scoring,GPT-OSS,Environmental Impact (Shower),gallons per alternative,4.573833333333333
+Example-Guided_LLM_Scoring,Gemini,Environmental Impact (Shower),gallons per alternative,4.136166666666667
+Example-Guided_LLM_Scoring,Qwen,Environmental Impact (Shower),gallons per alternative,6.982733333333333
+LLM-Parameterized_Reference_Scoring,DeepSeek,Environmental Impact (Shower),gallons per alternative,2.6762666666666663
+LLM-Parameterized_Reference_Scoring,GPT-OSS,Environmental Impact (Shower),gallons per alternative,2.9459646666666663
+LLM-Parameterized_Reference_Scoring,Gemini,Environmental Impact (Shower),gallons per alternative,2.6433333333333326
+LLM-Parameterized_Reference_Scoring,Qwen,Environmental Impact (Shower),gallons per alternative,2.0696

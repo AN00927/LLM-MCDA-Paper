@@ -77,10 +77,12 @@ STEPS = [
     ("numbers", "Decision regret (A_D/A_E/A_H vs reference MAVT)",
      [f"{PIPELINE}/compute_regret.py"]),
 
-    ("numbers", "Competitive baselines (A_E vs nearest-neighbour copy)",
+    ("numbers", "Competitive baselines (A_E vs nearest-neighbour baseline)",
      [f"{PIPELINE}/competitive_baselines.py"]),
     ("numbers", "Score-dispersion and single-criterion recovery",
      [f"{PIPELINE}/compute_dispersion_diagnostics.py"]),
+    ("numbers", "Score rescaling, within-criterion order and physical-unit error",
+     [f"{PIPELINE}/compute_score_spread_diagnostics.py"]),
 
     ("numbers", "Hybrid ablation significance (order reversal)",
      [f"{VALIDATION}/test_hybrid_ablation_significance.py", "--output-dir", COMBINED]),
