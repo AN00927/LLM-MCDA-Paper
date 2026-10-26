@@ -1,222 +1,445 @@
-# LLM-MCDA: AI-Assisted Multi-Criteria Decision Analysis for Household Energy Optimization
+# LLM-MCDA
 
-**Authors:** Ahaan Nigam; River Huang (Paul Scherrer Institut, Switzerland)
+**Benchmarking LLM integration strategies for MCDA-assisted household energy decision support**
 
----
+[![CI](https://github.com/AN00927/LLM-MCDA-Paper/actions/workflows/test.yml/badge.svg)](https://github.com/AN00927/LLM-MCDA-Paper/actions/workflows/test.yml)
 
-## Overview
+This repository contains the code, scenario workbooks, deterministic reference
+calculators, collected model outputs, statistical analyses, and LaTeX source for
+the study by Ahaan Nigam and River Huang. The study evaluates where a large
+language model (LLM) should be placed in a multi-criteria decision analysis
+(MCDA) workflow for routine household energy decisions.
 
-This project benchmarks three LLM-MCDA architectures for household energy decision-making against a physics-based Multi-Attribute Value Theory (MAVT) reference calculator, across **195 test scenarios** (70 HVAC, 65 Appliance, 60 Shower). Each scenario presents three alternatives scored on four criteria. A disjoint **90-scenario RAG corpus** (35 HVAC, 35 Appliance, 20 Shower) seeds the retrieval index used by the example-guided architecture.
+The manuscript source is [`paper/Main.tex`](paper/Main.tex). The repository
+snapshot includes the per-run outputs used by the paper, so the reported
+analysis can be reproduced without an API key. Re-collecting model responses
+requires an OpenRouter account and incurs provider charges.
 
-Four models are evaluated: Gemini 3.8 Flash, DeepSeek V4 Flash, GPT-OSS 20B, and Qwen3.5 9B, each run 5 trials per architecture. The main benchmark totals **27,300 API calls** across all architecture–model pairs.
+## Main result
 
----
+Three architectures are evaluated against a deterministic, physics-based
+multi-attribute value theory (MAVT) reference:
 
-## Setup
+1. **Direct LLM Scoring (`A_D`)**: the model assigns four criterion scores to
+   each alternative.
+2. **Example-Guided LLM Scoring (`A_E`)**: the model scores each alternative
+   after receiving one retrieved, solved example from a disjoint corpus.
+3. **LLM-Parameterized Reference Scoring (`A_H`)**: the model extracts withheld
+   engineering parameters; deterministic calculators produce the criterion
+   scores and MAVT ranking.
 
-Requires **Python 3.11+**.
+Across 195 evaluation scenarios, four models, and five runs per
+architecture/model cell, `A_H` is the only architecture that consistently
+exceeds the non-LLM dataset-median baseline. The five-run mean Kendall rank
+correlations (`tau`) are:
+
+| Model | `A_D` | `A_E` | `A_H` |
+|---|---:|---:|---:|
+| Gemini 3.8 Flash | 0.179 | 0.298 | **0.891** |
+| DeepSeek V4 Flash | 0.125 | 0.253 | **0.856** |
+| GPT-OSS 20B | 0.032 | 0.234 | **0.805** |
+| Qwen3.5 9B | 0.005 | 0.147 | **0.836** |
+
+These are five-run means over the 195 test scenarios; failed scenarios count
+as incorrect. The deterministic calculator with dataset-median withheld
+parameters reaches `tau = 0.590`, and a nearest-neighbor reuse baseline
+(`k = 1`) reaches `tau = 0.374`. Thus, in this benchmark, extracting inputs
+for a calculator is more accurate and less expensive than asking the model to
+score alternatives directly.
+
+The result is a benchmark finding, not a claim that the architecture is
+universally optimal. The reference calculators, normative weights, Pennsylvania
+tariffs and emissions factors, scenario construction, and model prompts define
+the scope of the comparison. Limitations and planned extensions are summarized
+in [Limitations and interpretation](#limitations-and-interpretation).
+
+## Study design
+
+### Evaluation corpus
+
+The evaluation set contains **195** scenarios:
+
+| Decision type | Test scenarios | Retrieval scenarios | Total scenarios |
+|---|---:|---:|---:|
+| Thermostat / HVAC | 70 | 35 | 105 |
+| Appliance scheduling | 65 | 35 | 100 |
+| Shower duration | 60 | 20 | 80 |
+| **Total** | **195** | **90** | **285** |
+
+The 90 retrieval scenarios are disjoint from the 195 test scenarios. They are
+used only to build the ChromaDB index for `A_E` and to calculate the
+dataset-median and nearest-neighbor baselines. Every test scenario presents
+three alternatives. Each alternative is evaluated on:
+
+- **Environmental Impact** — 35%;
+- **Energy Cost** — 30%;
+- **Comfort** — 20%; and
+- **Practicality** — 15%.
+
+The weights are fixed across decision types, architectures and models.
+Environmental Impact and Energy Cost use linear value functions. Comfort uses a
+logarithmic value function with `alpha = 1.5`; Practicality uses a logarithmic
+value function with `alpha = 1.2`. Raw quantities are normalized to `[0, 1]`
+against fixed domain bounds and clipped outside those bounds.
+
+### Reference calculators
+
+The reference ranking is the additive MAVT score
+
+```text
+aggregate(alternative) =
+    0.35 * environmental
+  + 0.30 * energy_cost
+  + 0.20 * comfort
+  + 0.15 * practicality
+```
+
+The calculators are deterministic and return criterion scores, aggregate
+scores, ranks, and raw physical quantities:
+
+- **HVAC**: conductive, infiltration, internal-gain and solar heat balance;
+  SEER-to-EER conversion; and an ASHRAE-55-style thermal comfort function.
+- **Appliance**: time-of-use electricity costs for six Pennsylvania utilities
+  (PECO, PPL, West Penn, Penelec, Met-Ed and Duquesne) and PJM marginal
+  emissions factors of **1.041 lb CO2/kWh during peak** and
+  **0.976 lb CO2/kWh off peak**.
+- **Shower**: mains-water temperature from the NREL-based model, mixing to a
+  **105 deg F** delivery temperature, electric-resistance water heating, and
+  water use as the environmental-impact quantity.
+
+The detailed equations, bounds, constants and source citations are in
+[`paper/Main.tex`](paper/Main.tex) and the calculator implementations under
+[`calculators/`](calculators/).
+
+### Models and API routing
+
+The benchmark uses one fixed OpenRouter route and provider pin per model.
+Fallbacks are disabled and required parameters are enforced.
+
+| Configuration key | Model | OpenRouter model ID | Provider pin | Reasoning setting |
+|---|---|---|---|---|
+| `gemini` | Gemini 3.8 Flash | `google/gemini-3.8-flash:floor` | `google-ai-studio/flex` | `minimal` |
+| `deepseek` | DeepSeek V4 Flash | `deepseek/deepseek-v4-flash-0731:floor` | `relace/fp4` | `none` |
+| `gptoss` | GPT-OSS 20B | `openai/gpt-oss-20b:floor` | `darkbloom/fp8` | `low` |
+| `qwen` | Qwen3.5 9B | `qwen/qwen3.5-9b:floor` | `venice/fp8` | `none` |
+
+The default configuration is `MODEL_KEY=gemini`, `N_RUNS=5`, and
+`TEMPERATURE=0.3`. Model configuration, retry policy and criterion weights are
+defined in [`common/model_config.py`](common/model_config.py). Provider prices
+can change; the costs below are the recorded benchmark costs, not a current
+price guarantee.
+
+### API-call budget and recorded cost
+
+Each five-run model/architecture cell contains:
+
+- `A_D`: 3 calls per scenario, **585 calls per run** and **2,925 calls per
+  five-run cell**;
+- `A_E`: 3 calls per scenario, **585 calls per run** and **2,925 calls per
+  five-run cell**; and
+- `A_H`: 1 call per scenario, **195 calls per run** and **975 calls per
+  five-run cell**.
+
+The complete benchmark therefore contains **27,300 API calls**:
+`4 models x 5 runs x (585 + 585 + 195) calls`.
+
+Recorded cost and token use are reported **per run** over all 195 test
+scenarios. Tokens include prompts and completions.
+
+| Architecture | Gemini cost / tokens | DeepSeek cost / tokens | GPT-OSS cost / tokens | Qwen cost / tokens |
+|---|---:|---:|---:|---:|
+| `A_D` | $0.4812 / 569.7k | $0.0140 / 397.1k | $0.0145 / 492.2k | $0.0435 / 423.7k |
+| `A_E` | $0.4284 / 531.8k | $0.0136 / 385.7k | $0.0143 / 479.7k | $0.0419 / 407.8k |
+| `A_H` | **$0.0800 / 121.7k** | **$0.0056 / 103.0k** | **$0.0039 / 123.0k** | **$0.0119 / 112.4k** |
+
+Multiply the cost columns by five for the corresponding five-run cell:
+approximately `$2.4060`, `$2.1420`, `$0.4000`, `$0.0280`, `$0.0725`,
+`$0.0195`, `$0.2175`, `$0.2095`, `$0.0595`, respectively, in table order.
+
+## Reproducibility
+
+### Requirements
+
+- Python **3.11 or newer**;
+- a fresh virtual environment is recommended;
+- an OpenRouter API key only for collecting new model responses;
+- no GPU is required for the deterministic analysis. The `A_E` index uses
+  `sentence-transformers` and PyTorch; CPU execution is supported.
+
+The pinned dependencies are listed in [`requirements.txt`](requirements.txt)
+and installed by the package metadata in [`pyproject.toml`](pyproject.toml).
+
+### Installation
+
+From the repository root:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+On macOS or Linux:
 
 ```bash
-git clone https://github.com/AN00927/LLM-MCDA-Paper.git
-cd LLM-MCDA-Paper
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-source .venv/bin/activate     # macOS / Linux
-pip install -e .
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
 ```
 
-### API Key
+### API credentials
 
-Models are called through [OpenRouter](https://openrouter.ai). Copy `.env.example` to `.env` and fill in your key:
+Copy [`.env.example`](.env.example) to `.env` and set:
 
-```
+```text
 OPENROUTER_API_KEY=your_key_here
 ```
 
-### Configuration
+The key is loaded locally and must not be committed. `DEBUG_API` is an
+optional setting that echoes raw HTTP payloads to stderr; leave it unset unless
+debugging a provider integration.
 
-Set `MODEL_KEY` and `N_RUNS` in [`model_config.py`](common/model_config.py):
+### Rebuild the retrieval index
 
-- `MODEL_KEY` — one of `gemini`, `deepseek`, `gptoss`, `qwen`
-- `N_RUNS` — number of repeated trials per architecture (default 5)
+`A_E` requires a ChromaDB collection built from the 90 retrieval scenarios:
 
-### Running the Benchmark
-
-```bash
-# Build the ChromaDB retrieval index (required by example-guided architecture)
-python scripts/collection/build_rag_index.py
-
-# Run each architecture (set MODEL_KEY first, use a separate --output-dir per model/arch)
-python architectures/Direct_LLM_Scoring.py --output-dir results/scratch/deepseek/direct
-python architectures/Example-Guided_LLM_Scoring.py --output-dir results/scratch/deepseek/example-guided
-python architectures/LLM-Parameterized_Reference_Scoring.py --output-dir results/scratch/deepseek/parameterized
+```powershell
+python scripts\collection\build_rag_index.py
 ```
 
-Runs are resume-aware: completed per-run result files are skipped on relaunch.
+The builder records a schema version and hashes its three source workbooks.
+Rebuild the index whenever those inputs change. The retrieval configuration in
+the main benchmark is `sentence-transformers/all-MiniLM-L6-v2` with
+`k = 1`, restricted to the same decision type as the query.
 
-### Deterministic Analysis Pipeline
+### Run a new benchmark
 
-```bash
-python scripts/paper_pipeline/run_paper_pipeline.py
+Set the model for each process. Use a new, explicit scratch directory for each
+model/architecture combination:
+
+```powershell
+$env:MODEL_KEY = "gemini"
+python architectures\Direct_LLM_Scoring.py --output-dir results\scratch\gemini\direct
+python architectures\Example-Guided_LLM_Scoring.py --output-dir results\scratch\gemini\example-guided
+python architectures\LLM-Parameterized_Reference_Scoring.py --output-dir results\scratch\gemini\parameterized
 ```
 
-Makes **no API calls**. Reads existing benchmark files and produces all analytical outputs. Use `--list` to preview stages.
+Valid `MODEL_KEY` values are `gemini`, `deepseek`, `gptoss` and `qwen`.
+Repeat the three commands for each model. The runners are resume-aware:
+completed run files are skipped on relaunch. They validate model outputs,
+record diagnostics and fail explicitly rather than silently treating malformed
+responses as valid scores.
 
----
+The runners require `--output-dir` because collected benchmark data and frozen
+paper inputs are protected from accidental overwrites. See
+[`common/paths.py`](common/paths.py) for the output policy. Do not write new
+raw runs directly into the frozen `Output Files ...` roots.
 
-## Results
+### Reproduce the analysis without an API key
 
-The LLM-parameterized reference scoring architecture dominates across all four models. The example-guided architecture ranks second. Direct LLM scoring ranks third, near-random on HVAC and Appliance.
+The paper analysis consumes the tracked benchmark outputs and writes derived
+artifacts to the appropriate results directories:
 
-### Overall Metrics (5-run mean, 195 scenarios)
+```powershell
+python -m scripts.paper_pipeline.run_paper_pipeline
+```
 
-| Model | Architecture | Kendall's τ | Top-1 Acc | RMSE | MAE |
-| --- | --- | --- | --- | --- | --- |
-| **Gemini 3.8 Flash** | LLM-Parameterized Reference Scoring | **0.891** | **90.2%** | **0.096** | **0.048** |
-| | Example-Guided LLM Scoring | 0.298 | 47.5% | 0.210 | 0.147 |
-| | Direct LLM Scoring | 0.179 | 39.8% | 0.276 | 0.207 |
-| **DeepSeek V4 Flash** | LLM-Parameterized Reference Scoring | **0.856** | **88.6%** | **0.114** | **0.055** |
-| | Example-Guided LLM Scoring | 0.253 | 48.3% | 0.240 | 0.170 |
-| | Direct LLM Scoring | 0.125 | 39.1% | 0.284 | 0.223 |
-| **GPT-OSS 20B** | LLM-Parameterized Reference Scoring | **0.805** | **82.5%** | **0.156** | **0.079** |
-| | Example-Guided LLM Scoring | 0.234 | 46.5% | 0.252 | 0.179 |
-| | Direct LLM Scoring | 0.032 | 34.1% | 0.312 | 0.246 |
-| **Qwen3.5 9B** | LLM-Parameterized Reference Scoring | **0.836** | **86.5%** | **0.162** | **0.074** |
-| | Example-Guided LLM Scoring | 0.147 | 43.9% | 0.266 | 0.199 |
-| | Direct LLM Scoring | 0.005 | 30.8% | 0.301 | 0.239 |
+To inspect available stages before running:
 
-### By Decision Type (best/worst model, 5-run mean τ)
+```powershell
+python -m scripts.paper_pipeline.run_paper_pipeline --list
+```
 
-| Decision Type | Direct LLM Scoring | Example-Guided LLM Scoring | LLM-Parameterized Reference Scoring |
-| --- | --- | --- | --- |
-| HVAC | −0.200 (Gemini) to 0.091 (GPT-OSS) | −0.118 (Gemini) to 0.202 (GPT-OSS) | 0.657 (GPT-OSS) to 0.872 (Gemini) |
-| Appliance | −0.114 (GPT-OSS) to 0.110 (Gemini) | −0.073 (GPT-OSS) to 0.303 (Gemini) | 0.908 (Qwen) to 0.949 (GPT-OSS) |
-| Shower | 0.093 (Qwen) to 0.696 (Gemini) | 0.249 (Qwen) to 0.780 (Gemini) | 0.821 (GPT-OSS) to 0.856 (Gemini) |
+The pipeline covers the deterministic metrics, confidence intervals, baseline
+comparisons, prompt/listwise/RAG/ordering ablations, sensitivity analyses and
+statistical comparisons. It makes no model API calls. The committed
+[`Combined Metrics/`](Combined%20Metrics/) directory contains the cross-model
+artifacts used by the manuscript.
 
-### Key Findings
+### Tests and continuous integration
 
-- **Cross-architecture performance stability.** The LLM-parameterized architecture's τ spans 0.086 across a ~21× difference in configured token price, versus 0.174 for direct LLM scoring.
-- **Reference calculator with fixed parameters.** Running the calculator on dataset-median parameters reaches only τ = 0.590 — well above chance, but far below the LLM-parameterized architecture's 0.805–0.891.
-- **Non-LLM baseline comparison.** A nearest-neighbor copy baseline (k = 1) reaches τ = 0.374, above direct and example-guided LLM scoring for every model (τ 0.005–0.298); only LLM-parameterized reference scoring clears the dataset-median calculator's τ = 0.590.
-- **Failure rates are near-zero** across all architectures and models, with one exception: GPT-OSS 20B on LLM-parameterized scoring has an 8.7% per-scenario-run extraction failure rate, concentrated in HVAC. Cross-run recovery confirms the architecture ordering is unaffected.
+Run the unit and offline pipeline checks:
 
-### API Costs (per 5-run benchmark)
+```powershell
+python -m pytest -v
+```
 
-| Architecture | Calls/run | Gemini | DeepSeek | GPT-OSS | Qwen |
-| --- | --- | --- | --- | --- | --- |
-| Direct LLM Scoring | 585 | ~\$2.41 | ~\$0.07 | ~\$0.07 | ~\$0.22 |
-| Example-Guided LLM Scoring | 585 | ~\$2.14 | ~\$0.07 | ~\$0.07 | ~\$0.21 |
-| LLM-Parameterized Reference Scoring | 195 | ~\$0.40 | ~\$0.03 | ~\$0.02 | ~\$0.06 |
+GitHub Actions runs the same test suite on Ubuntu with Python 3.12 and also
+checks the deterministic weights stage in a clean checkout. See
+[`.github/workflows/test.yml`](.github/workflows/test.yml).
 
----
+### Manuscript
 
-## Three Architectures
+The manuscript and supplementary source are in [`paper/`](paper/). With a
+working LaTeX installation, compile the main manuscript from that directory
+using the project’s existing bibliography and class files. The generated
+auxiliary files and PDFs are build products; the reproducibility-critical
+inputs are the `.tex`, `.bib`, `.sty`, `.cls`, `.bst`, workbook and result
+files tracked by the repository.
 
-### 1. Direct LLM Scoring
+## Reported results
 
-LLM scores all four criteria directly via calibrated system prompts with per-decision-type qualitative anchors. One API call per alternative (3 per scenario, 585 per run).
+### Overall accuracy
 
-→ [`Direct_LLM_Scoring.py`](architectures/Direct_LLM_Scoring.py)
+The complete five-run mean table is:
 
-### 2. Example-Guided LLM Scoring
+| Model | Architecture | Kendall's `tau` | Top-1 accuracy | RMSE | MAE |
+|---|---|---:|---:|---:|---:|
+| Gemini 3.8 Flash | `A_H` | **0.891** | **90.2%** | 0.096 | 0.048 |
+|  | `A_E` | 0.298 | 47.5% | 0.210 | 0.147 |
+|  | `A_D` | 0.179 | 39.8% | 0.276 | 0.207 |
+| DeepSeek V4 Flash | `A_H` | **0.856** | **88.6%** | 0.114 | 0.055 |
+|  | `A_E` | 0.253 | 48.3% | 0.240 | 0.170 |
+|  | `A_D` | 0.125 | 39.1% | 0.284 | 0.223 |
+| GPT-OSS 20B | `A_H` | **0.805** | **82.5%** | 0.156 | 0.079 |
+|  | `A_E` | 0.234 | 46.5% | 0.252 | 0.179 |
+|  | `A_D` | 0.032 | 34.1% | 0.312 | 0.246 |
+| Qwen3.5 9B | `A_H` | **0.836** | **86.5%** | 0.162 | 0.074 |
+|  | `A_E` | 0.147 | 43.9% | 0.266 | 0.199 |
+|  | `A_D` | 0.005 | 30.8% | 0.301 | 0.239 |
 
-Retrieval from a ChromaDB vector index (90 pre-scored RAG scenarios, sentence-transformers `all-MiniLM-L6-v2`, k=1) supplies one worked exemplar before the LLM scores each alternative. 3 calls per scenario, 585 per run.
+### Decision-type range
 
-→ [`Example-Guided_LLM_Scoring.py`](architectures/Example-Guided_LLM_Scoring.py)
+The best-to-worst model ranges in Kendall's `tau` are:
 
-### 3. LLM-Parameterized Reference Scoring
+| Decision type | `A_D` | `A_E` | `A_H` |
+|---|---:|---:|---:|
+| Thermostat | -0.200 to 0.091 | -0.118 to 0.202 | 0.657 to 0.872 |
+| Appliance | -0.114 to 0.110 | -0.073 to 0.303 | 0.908 to 0.949 |
+| Shower | 0.093 to 0.696 | 0.249 to 0.780 | 0.821 to 0.856 |
 
-A single LLM call extracts withheld engineering parameters (R-value, SEER, kWh/cycle, GPM, etc.) from the scenario description. The deterministic MAVT calculator then scores all three alternatives. 1 call per scenario, 195 per run.
+### Baselines and robustness
 
-→ [`LLM-Parameterized_Reference_Scoring.py`](architectures/LLM-Parameterized_Reference_Scoring.py)
+- Dataset-median calculator: `tau = 0.590`, Top-1 `70.3%`.
+- Nearest-neighbor reuse (`k = 1`): `tau = 0.374`, Top-1 `64.6%`.
+- `A_H` improves over the median by `0.215` to `0.302` in `tau` and by
+  12 to 20 percentage points in Top-1 accuracy.
+- The `A_H` range across models is only `0.086`; the corresponding ranges are
+  `0.174` for `A_D` and `0.151` for `A_E`.
+- Retrieval depth `k = 1, 3, 5`, an alternative embedding, removal of hidden
+  parameters, random exemplars and removal of reference scores were tested in
+  leave-one-out RAG ablations. The architecture ordering remains intact,
+  although the quality and number of retrieved solved cases matter.
+- Prompt perturbations, listwise scoring, alternative-order reversal, value
+  function curvature (`alpha` from `1.0` to `2.0`) and three alternative
+  weight vectors were also evaluated. The principal `A_H > A_E > A_D`
+  ordering is robust, with one reported Gemini/MEREC Thermostat exception
+  between `A_D` and `A_E`.
 
----
+### Failure accounting
 
-## Model Set
+Across five runs, `A_H` produced 87 failed scenario-runs, compared with 11 for
+`A_D` and 1 for `A_E`. GPT-OSS produced 85 of the 87 `A_H` failures, including
+82 on Thermostat; DeepSeek produced the other 2. These failures were primarily
+out-of-bounds extracted parameters and are counted as wrong in the headline
+metrics. Replacing failed GPT-OSS scenarios with successful observations from a
+different run raises its `A_H` result from `tau = 0.805` to `0.864` and Top-1
+from `82.5%` to `88.5%`. A production implementation should retry rejected
+extractions and expose uncertainty rather than silently fall back.
 
-| Key | Display Label | OpenRouter Route | Provider Pin | Reasoning |
-| --- | --- | --- | --- | --- |
-| `gemini` | Gemini 3.8 Flash | `google/gemini-3.8-flash:floor` | `google-ai-studio/flex` | minimal |
-| `deepseek` | DeepSeek V4 Flash | `deepseek/deepseek-v4-flash-0731:floor` | `relace/fp4` | none |
-| `gptoss` | GPT-OSS 20B | `openai/gpt-oss-20b:floor` | `darkbloom/fp8` | low |
-| `qwen` | Qwen3.5 9B | `qwen/qwen3.5-9b:floor` | `venice/fp8` | none |
+## Interpretation and limitations
 
-All routes set `allow_fallbacks: false` and `require_parameters: true`.
+The benchmark supports a narrow engineering conclusion: deterministic tools
+control score ranges, units and arithmetic, while the LLM is used for
+natural-language parameter extraction. Direct scoring allows the model to
+implicitly change the realized influence of criteria by choosing score spreads;
+retrieved examples improve direct scoring but do not reliably correct those
+spreads. The result should not be read as evidence that LLMs can replace
+household preference elicitation or physical modeling.
 
----
+Important limitations are:
 
-## Scenario Corpus
+1. `A_H` is evaluated against the same calculators it calls, so independent
+   reference implementations and expert scoring are needed to rule out
+   shared-model inflation.
+2. Several constants are modeling choices, including the linear mains-water
+   interpolation, 0.35 air changes per hour, 80% usable water-heater capacity,
+   occupancy-setback multipliers, and 8-hour/6-hour appliance delay ceilings.
+   Changing usable capacity to 70% or 100% changes the reference winner in
+   3 of 80 Shower scenarios.
+3. The normative household uses fixed 35/30/20/15 weights, all-electric
+   heating assumptions, a 105 deg F shower target, and comfort/practicality
+   curves that are not elicited from individual households. Humidity, gas
+   heating, atypical schedules and nonstandard preferences are not represented.
+4. The scenario design spans prescribed parameter ranges and categorical
+   combinations but does not reproduce the joint distribution of real homes.
+   Every scenario has three alternatives; larger choice sets may reduce error
+   cancellation.
+5. Results use Pennsylvania tariffs and PJM emissions factors. Transfer to
+   other grids, tariffs, climates, household types or non-energy decisions is
+   untested.
+6. API model versions, provider routing and prices can change. Re-collection
+   after a route change is a new benchmark run and should record the complete
+   route, prompt, parameters, raw response and cost metadata.
 
-| Pool | HVAC | Appliance | Shower | Total |
-| --- | --- | --- | --- | --- |
-| Test set | 70 | 65 | 60 | **195** |
-| RAG corpus | 35 | 35 | 20 | **90** |
+## Repository structure
 
-The two pools are disjoint. RAG scenarios seed only the ChromaDB retrieval index and never appear in evaluation.
-
----
-
-## MAVT Criterion Weights
-
-| Criterion | Weight |
-| --- | --- |
-| Environmental Impact | 35% |
-| Energy Cost | 30% |
-| Comfort | 20% |
-| Practicality | 15% |
-
-Weights are constant across all decision types, architectures, and the reference calculator.
-
----
-
-## Ablation Suites
-
-Four ablation suites test whether the architecture ordering depends on design choices within the architectures:
-
-- **Prompt-sensitivity** — reruns direct and example-guided scoring under three prompt perturbations (no anchors, chain-of-thought scaffold, 0–10 rescale). Architecture ordering survives every variant.
-- **RAG ablation** — varies retrieval depth (k=1, 3, 5), embedding model, and exemplar content on the 90-scenario RAG corpus under leave-one-out. Removing exemplar scores hurts far more than removing hidden parameters.
-- **Parameter-provenance** — compares LLM-extracted parameters against a fixed dataset-median set. No new API calls.
-- **Alternative-ordering** — reverses alternative order in the prompt. Never changes which alternative any model ranked first.
-
----
-
-## Ground Truth Calculators
-
-Each calculator takes a scenario with three alternatives and returns four 0–1 criterion scores plus raw physical quantities.
-
-- **HVAC** — ASHRAE-style thermal balance (conductive + infiltration + internal-gain + solar). SEER-to-EER via Building America conversion. Comfort uses ASHRAE 55 tent function.
-- **Appliance** — TOU-rate energy cost across six PA utilities (PECO, PPL, West Penn, Penelec, MetEd, Duquesne). PJM marginal emissions factors (peak 1.041 / off-peak 0.976 lbs CO₂/kWh).
-- **Shower** — Mains temperature from NREL model, mixing fraction to 105 °F delivery. Environmental impact = gallons of water used.
-
----
-
-## Repository Structure
+The following roadmap preserves the separation between source code, frozen
+inputs, collected outputs, derived analyses and manuscript materials:
 
 ```text
 LLM-MCDA-Paper/
-├── architectures/          # Three architecture implementations
-├── calculators/            # HVAC, Appliance, Shower reference calculators
-├── common/                 # Model config, weights, sentinel utils
-├── run_registry.py
-├── scripts/
-│   ├── collection/             # RAG index builder, scenario workbook builder
-│   ├── analysis/               # Metric evaluation scripts
-│   ├── experiments/            # Ablation and baseline runners
-│   ├── validation/             # Significance testing, sensitivity, CIs
-│   └── paper_pipeline/         # Deterministic analysis entry point
+├── architectures/                 # The three LLM integration runners
+│   ├── Direct_LLM_Scoring.py
+│   ├── Example-Guided_LLM_Scoring.py
+│   └── LLM-Parameterized_Reference_Scoring.py
+├── calculators/                   # Deterministic HVAC, appliance, shower models
+├── common/                        # Paths, model config, MAVT and API utilities
+├── data/                          # Scenario and supporting data files
 ├── workbooks/
-│   ├── scenarios/              # Scenario master workbooks
-│   └── ground_truth/           # Reference calculator outputs (frozen)
-├── Combined Metrics/           # Cross-model artifacts (metrics, significance, ablations)
-├── Output Files <model>/       # Four per-model folders (frozen benchmark outputs)
-├── archive/                    # Frozen archival run outputs
-├── data/scenarios/             # Scenario data files
-├── pyproject.toml
-└── XLSX_Schema_Map.md
+│   ├── scenarios/                 # Test and disjoint RAG scenario workbooks
+│   ├── ground_truth/              # Frozen calculator outputs
+│   └── methodology/              # Methodology and weighting inputs
+├── Output Files <model>/          # Frozen per-model collected outputs
+├── Combined Metrics/              # Cross-model metrics, CIs and comparisons
+├── archive/                       # Earlier frozen runs and archival artifacts
+├── results/                       # Scratch and generated analysis destinations
+├── scripts/
+│   ├── collection/                # Workbook and ChromaDB preparation
+│   ├── analysis/                  # Metric and diagnostic calculations
+│   ├── experiments/               # Baselines and robustness experiments
+│   ├── validation/                # CIs, significance and sensitivity checks
+│   └── paper_pipeline/            # Deterministic paper-analysis entry point
+├── tests/                         # Unit and offline regression tests
+├── paper/                         # Main manuscript, supplementary material and bibliography
+├── run_registry.py                # Run metadata and artifact registration
+├── pyproject.toml                 # Package metadata and pytest configuration
+├── requirements.txt               # Pinned Python dependencies
+├── CITATION.cff                   # Machine-readable citation metadata
+├── LICENSE                        # MIT license for software and manuscript source
+└── DATA_LICENSE                   # CC BY 4.0 license for benchmark data and outputs
 ```
 
----
+Generated files such as Python caches, LaTeX auxiliary files and local virtual
+environments are not research inputs. Do not commit API keys, unreviewed raw
+responses, or new artifacts into frozen directories.
 
-## License
+## Data, software and citation
 
-Code is released under the MIT License ([LICENSE](LICENSE)). Scenario workbooks, reference scores, and benchmark outputs are released under CC BY 4.0 ([DATA_LICENSE](DATA_LICENSE)).
+Software and LaTeX source are released under the [MIT License](LICENSE).
+Scenario workbooks, reference scores, collected benchmark outputs and derived
+metrics are released under [CC BY 4.0](DATA_LICENSE). Third-party source data
+and standards remain subject to their own terms; consult the data license for
+the precise scope.
+
+If you use the benchmark, code or data, cite [`CITATION.cff`](CITATION.cff):
+
+```bibtex
+@dataset{nigam2026llmmcda,
+  author       = {Nigam, Ahaan and Huang, River},
+  title        = {LLM-MCDA: AI-Assisted Multi-Criteria Decision Analysis
+                  for Household Energy Optimization},
+  year         = {2026},
+  publisher    = {GitHub},
+  url          = {https://github.com/AN00927/LLM-MCDA-Paper}
+}
+```
+
+## Contact
+
+For questions about the benchmark or manuscript, contact
+[Ahaan Nigam](mailto:ishaannigam27@gmail.com). Please include the commit,
+model route, architecture, scenario pool, and analysis command when reporting
+a reproducibility issue.

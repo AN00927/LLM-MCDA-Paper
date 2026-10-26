@@ -91,3 +91,7 @@ archive/2026-09_pre_rerun/Output Files/Baselines/baseline_random_aggregated.xlsx
 archive/2026-09_pre_rerun/Output Files/Baselines/baseline_uniform.xlsx
 
 Combined Metrics/significance_pooled_diagnostics_NOT_FOR_PAPER.xlsx
+scratch/cropped_figure.png
+scratch/rendered_test_clean.png
+scratch/rendered_test.png
+scratch/test_plot.tex
