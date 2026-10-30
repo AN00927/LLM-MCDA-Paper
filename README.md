@@ -160,34 +160,61 @@ approximately `$2.4060`, `$2.1420`, `$0.4000`, `$0.0280`, `$0.0725`,
 
 ### Requirements
 
-- Python **3.11 or newer**;
-- a fresh virtual environment is recommended;
+- Python **3.11 or newer** (the minimum declared in `pyproject.toml`);
+- a project-local virtual environment (`.venv`) is recommended;
 - an OpenRouter API key only for collecting new model responses;
 - no GPU is required for the deterministic analysis. The `A_E` index uses
   `sentence-transformers` and PyTorch; CPU execution is supported.
 
+Tested Python versions: continuous integration runs Python 3.12 on Ubuntu, and
+the author's local development environment is CPython 3.14.10 on Windows. Other
+versions from 3.11 upward are expected to work but are not routinely tested.
+
 The pinned dependencies are listed in [`requirements.txt`](requirements.txt)
 and installed by the package metadata in [`pyproject.toml`](pyproject.toml).
+Keep the pinned numerical and machine-learning packages (`numpy`, `pandas`,
+`scipy`, `scikit-learn`, `statsmodels`, `torch`, `sentence-transformers`,
+`chromadb`, `matplotlib`) when reproducing the published results; newer
+releases have not been checked against the reported numbers.
 
 ### Installation
 
-From the repository root:
+From the repository root, the recommended setup uses
+[uv](https://docs.astral.sh/uv/) to create a project-local `.venv`:
+
+```bash
+uv venv --python 3.14 .venv
+uv pip install --python .venv -r requirements.txt
+uv pip install --python .venv -e .
+```
+
+Use `--python 3.12` (or any other 3.11+ interpreter) to match a different
+version. Without uv, use the standard library instead.
+
+On Windows (PowerShell):
 
 ```powershell
 py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e .
+.\.venv\Scripts\python -m pip install --upgrade pip
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m pip install -e .
 ```
 
 On macOS or Linux:
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e .
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -e .
 ```
+
+The commands below are written as `python ...`. Either activate the
+environment first (`.\.venv\Scripts\Activate.ps1` on Windows,
+`source .venv/bin/activate` on macOS or Linux) or call the environment's
+interpreter directly: `.\.venv\Scripts\python` on Windows and
+`.venv/bin/python` on macOS or Linux. On Windows the system interpreter is
+`python` or `py`, not `python3`.
 
 ### API credentials
 
@@ -260,10 +287,14 @@ artifacts used by the manuscript.
 
 ### Tests and continuous integration
 
-Run the unit and offline pipeline checks:
+Run the unit and offline pipeline checks from the repository root:
 
 ```powershell
-python -m pytest -v
+.\.venv\Scripts\python -m pytest -v
+```
+
+```bash
+.venv/bin/python -m pytest -v
 ```
 
 GitHub Actions runs the same test suite on Ubuntu with Python 3.12 and also
