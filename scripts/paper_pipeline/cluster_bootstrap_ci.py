@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-cluster_bootstrap_ci.py - task P1.1 of the EMS revision plan.
+cluster_bootstrap_ci.py - scenario-level cluster bootstrap confidence intervals.
 
-Replaces the run-mean BCa intervals in
-`scripts/analysis/compute_confidence_intervals.py`.
+Complements the run-mean BCa intervals in
+`scripts/validation/compute_confidence_intervals.py`.
 
-WHY THE OLD INTERVALS ARE WRONG. That script resamples the FIVE per-run mean
+WHY RUN-LEVEL INTERVALS ARE NOT ENOUGH. That script resamples the FIVE per-run mean
 values for a cell and calls the result a 95% CI on the metric. Two problems:
 n=5 is far too small for BCa's bias/acceleration corrections to mean anything,
 and -- more importantly -- resampling runs captures only seed/sampling variance
@@ -23,8 +23,8 @@ within-scenario correlation across runs.
 The bootstrap statistic is computed exactly the way the paper computes its point
 estimate -- per-run mean over the resampled scenarios, then averaged across runs
 -- so this changes the resampling unit and nothing else. Comparing the two
-interval widths is therefore a clean measurement of how much uncertainty the old
-method was hiding.
+interval widths is therefore a clean measurement of how much uncertainty the
+run-level method hides.
 
 Intervals are PERCENTILE intervals. BCa's acceleration constant is estimated
 from a jackknife, and the natural jackknife unit here is the scenario cluster;
@@ -33,8 +33,8 @@ clustered resamples are the standard, defensible choice and do not invite a
 second methodological argument. The method is stated in the output so the paper
 can state it too.
 
-Stage 1 writes a per-scenario long table, which P1.3 (S_int), P1.6 (S_disc) and
-P1.7 (stratified tests) all need and none of which currently exists.
+Stage 1 writes a per-scenario long table (`per_scenario_metrics_all.csv`) that
+the symmetric-gate and failure-inclusive scripts also consume.
 
 Usage:
     python scripts/paper_pipeline/cluster_bootstrap_ci.py
@@ -370,9 +370,9 @@ def main():
         res.to_excel(xl, sheet_name="cluster_ci", index=False)
         paired.to_excel(xl, sheet_name="paired_differences", index=False)
 
-    md = ["# Scenario-level cluster bootstrap (P1.1)", "",
-          "Replaces the run-mean BCa intervals in",
-          "`scripts/analysis/compute_confidence_intervals.py`, which resampled",
+    md = ["# Scenario-level cluster bootstrap", "",
+          "Complements the run-mean BCa intervals in",
+          "`scripts/validation/compute_confidence_intervals.py`, which resampled",
           "five per-run means and therefore measured seed variance only.", "",
           f"- Resampling unit: **scenario** (cluster); all runs of a drawn scenario travel together",
           f"- Resamples: **{N_BOOT}**, seed {SEED}, **percentile** intervals",

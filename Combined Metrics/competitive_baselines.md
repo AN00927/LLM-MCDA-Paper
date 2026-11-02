@@ -1,4 +1,4 @@
-# P1.5 - competitive baselines
+# Competitive baselines
 
 Estimator: per-run mean, then mean across runs (aggregation A).
 NearestNeighbor and the single-criterion baselines are deterministic and

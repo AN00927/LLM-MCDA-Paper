@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Deprecated shim: weight diagnostics now live in weight_analysis.
+"""Compatibility entry point: the weight-diagnostics logic lives in weight_analysis.
 
 Use `python -m common.weighting.weight_analysis --method diagnostics
---output-dir DIR [--scope full|test]`. Running this file directly keeps its
-legacy behavior and CLI (`--scope`, same default destinations).
+--output-dir DIR [--scope full|test]`.
+`scripts/paper_pipeline/run_paper_pipeline.py` (and CI) invoke this file by path, so
+it is kept; running it directly keeps its legacy behavior and CLI (`--scope`, same
+default destinations).
 """
 import argparse
 import sys

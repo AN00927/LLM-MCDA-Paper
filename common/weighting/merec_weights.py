@@ -1,7 +1,8 @@
-"""Deprecated shim: MEREC weights now lives in weight_analysis.
+"""Compatibility entry point: the MEREC-weights logic lives in weight_analysis.
 
 Use `python -m common.weighting.weight_analysis --method merec --output-dir DIR`.
-Running this file directly keeps its legacy behavior (same default destination).
+`scripts/paper_pipeline/run_paper_pipeline.py` (and CI) invoke this file by path, so
+it is kept; running it directly keeps its legacy behavior (same default destination).
 """
 import sys
 import warnings

@@ -1,7 +1,3 @@
-# COMMIT MESSAGE GUIDANCE (informational; no repository hooks are installed)
-# Keep commit attribution to human contributors. The former hook/setup/policy paths
-# are absent from this repository, so this file does not claim local enforcement.
-
 # Python
 .venv/
 __pycache__/
@@ -68,6 +64,7 @@ PAPERRULES.txt
 
 *.md
 !README.md
+!AGENTS.md
 !XLSX_Schema_Map.md
 !SECURITY.md
 !CONTRIBUTING.md

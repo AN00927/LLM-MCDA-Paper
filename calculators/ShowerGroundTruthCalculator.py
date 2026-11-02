@@ -46,10 +46,8 @@ class ShowerGroundTruthCalculator:
     COMFORT_TEMP_ELASTICITY_PER_F = 0.10 / 10.8  # +10% per 10.8 F (6 C) drop (modeling assumption)
     COMFORT_TEMP_MAX_MULTIPLIER = 11.6 / 8.8     # ~1.318x winter/summer field-mean envelope (winter 11.6 / summer 8.8, cross-population)
 
-    HEATER_TEMP_MINIMUM = 110  # unused - retained for context (see provenance)
-    HEATER_TEMP_OPTIMAL = 120  # CDC circulation floor (see provenance)
-    HEATER_TEMP_SCALD_RISK = 130  # unused - retained for context; citation not verified (see provenance)
-    HEATER_TEMP_LEGIONELLA_SAFE = 140  # CDC storage recommendation (see provenance)
+    HEATER_TEMP_OPTIMAL = 120  # CDC circulation floor
+    HEATER_TEMP_LEGIONELLA_SAFE = 140  # CDC storage recommendation
 
     # Comfort no-penalty band for the water-heater setpoint: [OPTIMAL, LEGIONELLA_SAFE]
     # = 120-140F. Below 120F the tank cannot deliver 105F with any mixing margin;

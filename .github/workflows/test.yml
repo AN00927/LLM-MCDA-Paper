@@ -33,3 +33,8 @@ jobs:
       - name: Verify deterministic weights stage in clean checkout
         run: |
           python scripts/paper_pipeline/run_paper_pipeline.py --allow-tracked-output-writes --only weights
+
+      - name: Smoke-test offline analysis scripts
+        run: |
+          python scripts/paper_pipeline/symmetric_gate_metrics.py
+          python scripts/paper_pipeline/failure_inclusive_metrics.py
