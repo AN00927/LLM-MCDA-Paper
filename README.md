@@ -5,15 +5,16 @@
 [![CI](https://github.com/AN00927/LLM-MCDA-Paper/actions/workflows/test.yml/badge.svg)](https://github.com/AN00927/LLM-MCDA-Paper/actions/workflows/test.yml)
 
 This repository contains the code, scenario workbooks, deterministic reference
-calculators, collected model outputs, statistical analyses, and LaTeX source for
+calculators, collected model outputs and statistical analyses for
 the study by Ahaan Nigam and River Huang. The study evaluates where a large
 language model (LLM) should be placed in a multi-criteria decision analysis
 (MCDA) workflow for routine household energy decisions.
 
-The manuscript source is [`paper/Main.tex`](paper/Main.tex). The repository
-snapshot includes the per-run outputs used by the paper, so the reported
-analysis can be reproduced without an API key. Re-collecting model responses
-requires an OpenRouter account and incurs provider charges.
+The manuscript source is maintained outside this repository (`/paper/` is
+git-ignored; see [Manuscript](#manuscript)). The repository snapshot includes the
+per-run outputs used by the paper, so the reported analysis can be reproduced
+without an API key. Re-collecting model responses requires an OpenRouter account
+and incurs provider charges.
 
 ## Main result
 
@@ -107,9 +108,10 @@ scores, ranks, and raw physical quantities:
   **105 deg F** delivery temperature, electric-resistance water heating, and
   water use as the environmental-impact quantity.
 
-The detailed equations, bounds, constants and source citations are in
-[`paper/Main.tex`](paper/Main.tex) and the calculator implementations under
-[`calculators/`](calculators/).
+The detailed equations, bounds, constants and source citations are in the
+manuscript and in the calculator implementations under
+[`calculators/`](calculators/), where each constant carries a source or
+modeling-assumption comment.
 
 ### Models and API routing
 
@@ -152,9 +154,13 @@ scenarios. Tokens include prompts and completions.
 | `A_E` | $0.4284 / 531.8k | $0.0136 / 385.7k | $0.0143 / 479.7k | $0.0419 / 407.8k |
 | `A_H` | **$0.0800 / 121.7k** | **$0.0056 / 103.0k** | **$0.0039 / 123.0k** | **$0.0119 / 112.4k** |
 
-Multiply the cost columns by five for the corresponding five-run cell:
-approximately `$2.4060`, `$2.1420`, `$0.4000`, `$0.0280`, `$0.0725`,
-`$0.0195`, `$0.2175`, `$0.2095`, `$0.0595`, respectively, in table order.
+Five-run cell cost (the per-run cost above multiplied by five):
+
+| Architecture | Gemini | DeepSeek | GPT-OSS | Qwen |
+|---|---:|---:|---:|---:|
+| `A_D` | $2.4060 | $0.0700 | $0.0725 | $0.2175 |
+| `A_E` | $2.1420 | $0.0680 | $0.0715 | $0.2095 |
+| `A_H` | $0.4000 | $0.0280 | $0.0195 | $0.0595 |
 
 ## Reproducibility
 
@@ -166,8 +172,11 @@ approximately `$2.4060`, `$2.1420`, `$0.4000`, `$0.0280`, `$0.0725`,
 - no GPU is required for the deterministic analysis. The `A_E` index uses
   `sentence-transformers` and PyTorch; CPU execution is supported.
 
-Tested Python versions: continuous integration runs Python 3.12 on Ubuntu, and
-the author's local development environment is CPython 3.14.10 on Windows. Other
+Tested Python versions: continuous integration runs Python 3.12 on Ubuntu, so
+**3.12 is the recommended interpreter**. The author's local development
+environment is CPython 3.14.10 on Windows. Not every pinned dependency declares
+3.14 support (at the pinned versions, `sentence-transformers` and `statsmodels`
+list classifiers only up to 3.13), so prefer 3.12 for a fresh install. Other
 versions from 3.11 upward are expected to work but are not routinely tested.
 
 The pinned dependencies are listed in [`requirements.txt`](requirements.txt)
@@ -183,12 +192,12 @@ From the repository root, the recommended setup uses
 [uv](https://docs.astral.sh/uv/) to create a project-local `.venv`:
 
 ```bash
-uv venv --python 3.14 .venv
+uv venv --python 3.12 .venv
 uv pip install --python .venv -r requirements.txt
 uv pip install --python .venv -e .
 ```
 
-Use `--python 3.12` (or any other 3.11+ interpreter) to match a different
+Use a different `--python` value (any 3.11+ interpreter) to match another
 version. Without uv, use the standard library instead.
 
 On Windows (PowerShell):
@@ -216,6 +225,21 @@ interpreter directly: `.\.venv\Scripts\python` on Windows and
 `.venv/bin/python` on macOS or Linux. On Windows the system interpreter is
 `python` or `py`, not `python3`.
 
+### Large files (Git LFS)
+
+The raw model responses (`*_raw.jsonl`, 185 files, plus two archived
+workbooks) are stored with [Git LFS](https://git-lfs.com/). After cloning, run:
+
+```bash
+git lfs install
+git lfs pull
+```
+
+Without this step those files are small text pointers rather than data.
+Stages and scripts that parse raw responses need the real files; the workbooks,
+diagnostics JSON and metric tables used by most of the analysis are ordinary
+tracked files.
+
 ### API credentials
 
 Copy [`.env.example`](.env.example) to `.env` and set:
@@ -232,9 +256,11 @@ debugging a provider integration.
 
 `A_E` requires a ChromaDB collection built from the 90 retrieval scenarios:
 
-```powershell
-python scripts\collection\build_rag_index.py
+```bash
+python scripts/collection/build_rag_index.py
 ```
+
+On Windows (PowerShell): `python scripts\collection\build_rag_index.py`.
 
 The builder records a schema version and hashes its three source workbooks.
 Rebuild the index whenever those inputs change. The retrieval configuration in
@@ -246,12 +272,15 @@ the main benchmark is `sentence-transformers/all-MiniLM-L6-v2` with
 Set the model for each process. Use a new, explicit scratch directory for each
 model/architecture combination:
 
-```powershell
-$env:MODEL_KEY = "gemini"
-python architectures\Direct_LLM_Scoring.py --output-dir results\scratch\gemini\direct
-python architectures\Example-Guided_LLM_Scoring.py --output-dir results\scratch\gemini\example-guided
-python architectures\LLM-Parameterized_Reference_Scoring.py --output-dir results\scratch\gemini\parameterized
+```bash
+export MODEL_KEY=gemini
+python architectures/Direct_LLM_Scoring.py --output-dir results/scratch/gemini/direct
+python architectures/Example-Guided_LLM_Scoring.py --output-dir results/scratch/gemini/example-guided
+python architectures/LLM-Parameterized_Reference_Scoring.py --output-dir results/scratch/gemini/parameterized
 ```
+
+On Windows (PowerShell), set the model with `$env:MODEL_KEY = "gemini"` and use
+backslash paths (`architectures\Direct_LLM_Scoring.py`).
 
 Valid `MODEL_KEY` values are `gemini`, `deepseek`, `gptoss` and `qwen`.
 Repeat the three commands for each model. The runners are resume-aware:
@@ -269,15 +298,19 @@ raw runs directly into the frozen `Output Files ...` roots.
 The paper analysis consumes the tracked benchmark outputs and writes derived
 artifacts to the appropriate results directories:
 
-```powershell
+```bash
 python -m scripts.paper_pipeline.run_paper_pipeline
 ```
 
 To inspect available stages before running:
 
-```powershell
+```bash
 python -m scripts.paper_pipeline.run_paper_pipeline --list
 ```
+
+The `weights` and `sensitivity` stages can overwrite tracked methodology
+artifacts, so they are skipped unless you pass `--allow-tracked-output-writes`.
+The same commands work in PowerShell.
 
 The pipeline covers the deterministic metrics, confidence intervals, baseline
 comparisons, prompt/listwise/RAG/ordering ablations, sensitivity analyses and
@@ -287,28 +320,43 @@ artifacts used by the manuscript.
 
 ### Tests and continuous integration
 
-Run the unit and offline pipeline checks from the repository root:
-
-```powershell
-.\.venv\Scripts\python -m pytest -v
-```
+Run the unit and offline regression tests from the repository root:
 
 ```bash
 .venv/bin/python -m pytest -v
 ```
 
-GitHub Actions runs the same test suite on Ubuntu with Python 3.12 and also
-checks the deterministic weights stage in a clean checkout. See
+On Windows: `.\.venv\Scripts\python -m pytest -v`.
+
+The suite (`tests/`) checks:
+
+- that `requirements.txt` is a valid, BOM-free requirements file;
+- that each deterministic calculator (HVAC, appliance, shower) regenerates the
+  frozen ground-truth workbook in `workbooks/ground_truth/` from its scenario
+  workbook, so any change to a calculator constant or formula that moves the
+  reference scores fails the test;
+- the shower mains-water temperature model and energy scaling;
+- the fixed 35/30/20/15 criterion weights, MAVT aggregation and ranking;
+- the per-scenario Kendall's `tau` and Top-1/Top-2 computations; and
+- the feature-stratified scenario sampler used by the RAG ablations.
+
+GitHub Actions runs the same test suite on Ubuntu with Python 3.12, checks the
+deterministic weights stage in a clean checkout, and smoke-tests two offline
+analysis scripts (`symmetric_gate_metrics.py` and
+`failure_inclusive_metrics.py`). The full paper pipeline and the model-calling
+runners are not run in CI. See
 [`.github/workflows/test.yml`](.github/workflows/test.yml).
 
 ### Manuscript
 
-The manuscript and supplementary source are in [`paper/`](paper/). With a
-working LaTeX installation, compile the main manuscript from that directory
-using the project’s existing bibliography and class files. The generated
-auxiliary files and PDFs are build products; the reproducibility-critical
-inputs are the `.tex`, `.bib`, `.sty`, `.cls`, `.bst`, workbook and result
-files tracked by the repository.
+The manuscript and supplementary LaTeX source are maintained outside this
+repository: `/paper/` is listed in `.gitignore`, so the `.tex`, `.bib` and
+class files are not tracked here. The paper pipeline writes generated LaTeX
+snippets and figures into a local `paper/` directory, which is likewise not
+tracked. Everything the manuscript reports can be regenerated from the tracked
+workbooks, outputs and scripts; the committed
+[`Combined Metrics/`](Combined%20Metrics/) directory holds the cross-model
+tables.
 
 ## Reported results
 
@@ -433,13 +481,14 @@ LLM-MCDA-Paper/
 │   ├── experiments/               # Baselines and robustness experiments
 │   ├── validation/                # CIs, significance and sensitivity checks
 │   └── paper_pipeline/            # Deterministic paper-analysis entry point
-├── tests/                         # Unit and offline regression tests
-├── paper/                         # Main manuscript, supplementary material and bibliography
+├── tests/                         # Unit tests and calculator regression tests
+├── AGENTS.md                      # Contributor and coding-agent conventions (commit attribution)
+├── paper/                         # Git-ignored: manuscript source and pipeline-generated LaTeX/figures (not tracked)
 ├── run_registry.py                # Run metadata and artifact registration
 ├── pyproject.toml                 # Package metadata and pytest configuration
 ├── requirements.txt               # Pinned Python dependencies
 ├── CITATION.cff                   # Machine-readable citation metadata
-├── LICENSE                        # MIT license for software and manuscript source
+├── LICENSE                        # MIT license for software
 └── DATA_LICENSE                   # CC BY 4.0 license for benchmark data and outputs
 ```
 
@@ -449,13 +498,15 @@ responses, or new artifacts into frozen directories.
 
 ## Data, software and citation
 
-Software and LaTeX source are released under the [MIT License](LICENSE).
+Software is released under the [MIT License](LICENSE).
 Scenario workbooks, reference scores, collected benchmark outputs and derived
 metrics are released under [CC BY 4.0](DATA_LICENSE). Third-party source data
 and standards remain subject to their own terms; consult the data license for
 the precise scope.
 
-If you use the benchmark, code or data, cite [`CITATION.cff`](CITATION.cff):
+If you use the benchmark, code or data, cite [`CITATION.cff`](CITATION.cff). The
+entry below describes this repository as a dataset; cite the manuscript as
+well once it is published:
 
 ```bibtex
 @dataset{nigam2026llmmcda,

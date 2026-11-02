@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-symmetric_gate_metrics.py - task P1.3 of the EMS revision plan.
+symmetric_gate_metrics.py - metrics on the scenarios every architecture completed.
 
-S_int: the scenarios every architecture actually completed. The paper currently
-compares architectures on denominators that differ between them -- if A_H skips
-23 HVAC scenarios per run and A_D skips none, the two numbers are not measured
-over the same population, and the comparison inherits whatever makes those 23
-scenarios hard. Restricting all three arms to their common scenarios removes
-that confound.
+S_int: the scenarios every architecture actually completed. The headline
+metrics compare architectures on denominators that can differ between them --
+if A_H fails some HVAC scenarios in a run and A_D fails none, the two numbers
+are not measured over the same population, and the comparison inherits
+whatever makes those scenarios hard. Restricting all three arms to their common
+scenarios removes that confound.
 
 Two gates, because strictness is a real choice and the difference is worth
 seeing:
@@ -16,8 +16,7 @@ seeing:
   loose   scored by all three architectures in at least ONE run each
           (this is the S_ok_union gate; it is what cross-run recovery buys you)
 
-Per plan D4 this is a ROBUSTNESS CHECK for the supplement, not a headline
-replacement. Report N alongside every number.
+This is a ROBUSTNESS CHECK for the supplement, not a headline replacement. Report N alongside every number.
 
 Input:  local-first per_scenario_metrics_all.csv (falls back to the repository Analysis copy)
 Output: local-only workbook and Markdown report copy
@@ -66,7 +65,7 @@ def gates_for_model(mdf):
 
 
 def metrics_on(mdf, ids, scope):
-    """Per-run mean over `ids`, then mean across runs (the D6 estimator)."""
+    """Per-run mean over `ids`, then mean across runs (the paper's estimator)."""
     sub = mdf[mdf["scenario_id"].isin(ids)]
     if scope != "Overall":
         sub = sub[sub["decision_type"] == scope]
@@ -146,13 +145,13 @@ def main():
             flag = "" if oa == os_ else "   <-- ORDER CHANGES"
             print(f"  {model:9s} {metric:14s} all: {oa}   strict: {os_}{flag}")
 
-    md = ["# Symmetric-gate metrics, S_int (P1.3)", "",
+    md = ["# Symmetric-gate metrics, S_int", "",
           "Every architecture restricted to the scenarios all three completed, so the",
           "arms are compared over one population rather than three.", "",
           "- `S_int_strict` -- scored by all three architectures in **every** run",
           "- `S_int_loose` -- scored by all three in **at least one** run each",
           "",
-          "Per plan D4 this is a supplement robustness check, not a headline",
+          "This is a supplement robustness check, not a headline",
           "replacement. N is reported with every number.", "",
           "## Gate sizes", "",
           "| Model | Strict | Loose | of |", "|---|---|---|---|"]

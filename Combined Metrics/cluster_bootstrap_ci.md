@@ -1,7 +1,7 @@
-# Scenario-level cluster bootstrap (P1.1)
+# Scenario-level cluster bootstrap
 
-Replaces the run-mean BCa intervals in
-`scripts/analysis/compute_confidence_intervals.py`, which resampled
+Complements the run-mean BCa intervals in
+`scripts/validation/compute_confidence_intervals.py`, which resampled
 five per-run means and therefore measured seed variance only.
 
 - Resampling unit: **scenario** (cluster); all runs of a drawn scenario travel together

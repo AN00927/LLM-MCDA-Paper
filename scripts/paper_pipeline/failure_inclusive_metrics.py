@@ -1,39 +1,36 @@
 #!/usr/bin/env python3
 """
-failure_inclusive_metrics.py - task P1.2 of the EMS revision plan.
+failure_inclusive_metrics.py - failure-inclusive sensitivity analysis.
 
-WHY THIS IS NOT THE EXISTING SCRIPT (M4 was optimistic).
 `generate_imputed_robustness_tables.py` imputes **0.5 at the criterion-score
-level** and then re-runs MAVT aggregation and ranking. That is a different
-operation from what D2 specifies, not a different parameter of the same
-operation:
+level** and then re-runs MAVT aggregation and ranking. This script does
+something different: it imputes at the METRIC level.
 
   - 0.5-score imputation produces a CONCRETE ranking for the failed scenario.
     That ranking can be right by luck, and 0.5 across all four criteria is a
     highly structured guess, not a random one. It therefore understates what a
     failure costs.
-  - D2 imputes at the METRIC level, giving each failed scenario the chance value
-    of the metric in question: tau -> 0, Top-1 -> 1/3, Top-2 -> 2/3. That is the
+  - Metric-level imputation gives each failed scenario the chance value of the
+    metric in question: tau -> 0, Top-1 -> 1/3, Top-2 -> 2/3. That is the
     expected score of a system that produced nothing usable, which is what an
     availability-inclusive number is supposed to mean.
 
 Changing `impute_value=0.5` to anything else does not turn one into the other.
 
-DENOMINATOR (plan D1): this PAIRS with the conditional number, it does not
+DENOMINATOR: the inclusive number PAIRS with the conditional number; it does not
 replace it. Every row reports both:
-    S_ok   conditional on successful extraction  (what the paper prints today)
+    S_ok   conditional on successful extraction
     S_all  all 195 scenarios, failures at chance (availability-inclusive)
 
-STATUS AFTER THE S4 FIX (2026-09-30): this script is a SENSITIVITY analysis. The
-paper's headline metrics now apply the failure rule (a failed scenario stays in
-the denominator: Top-1 and Top-2 = 0, tau = rho = 0, chance-level MAE). The
-columns here are therefore:
-    *_conditional  scored-only (sensitivity; the old headline)
-    *_inclusive    metric-level chance imputation D2 (Top-1 1/3, Top-2 2/3;
+STATUS: this script is a SENSITIVITY analysis. The paper's headline metrics apply
+the failure rule (a failed scenario stays in the denominator: Top-1 and Top-2 = 0,
+tau = rho = 0, chance-level MAE). The columns here are therefore:
+    *_conditional  scored-only (sensitivity)
+    *_inclusive    metric-level chance imputation (Top-1 1/3, Top-2 2/3;
                    sensitivity, NOT the headline)
-    *_headline     the S4 rule (failed = 0), equal to per_run_metrics_all.csv
-Rows flagged failed == True in the input are the S4 rule rows; they are removed
-before the scored-only and D2 columns are computed.
+    *_headline     the failure rule (failed = 0), equal to per_run_metrics_all.csv
+Rows flagged failed == True in the input are the failure-rule rows; they are
+removed before the scored-only and chance-imputation columns are computed.
 
 Input:  local-first per_scenario_metrics_all.csv (falls back to the repository Analysis copy)
 Output: local-only workbook and Markdown report copy
@@ -182,7 +179,7 @@ def main():
         res.to_excel(xl, sheet_name="failure_inclusive", index=False)
 
     overall = res[res["scope"] == "Overall"]
-    print("OVERALL (sensitivity: scored-only vs D2 chance imputation; headline = S4 rule)")
+    print("OVERALL (sensitivity: scored-only vs chance imputation; headline = failure rule)")
     print(overall[["model", "architecture", "mean_failed_per_run",
                    "kendall_tau_conditional", "kendall_tau_inclusive", "kendall_tau_delta",
                    "top1_accuracy_conditional", "top1_accuracy_inclusive",
@@ -217,20 +214,20 @@ def main():
             flag = "" if oc == oi else "   <-- ORDER CHANGES"
             print(f"  {model:9s} {metric:14s} cond: {oc}   incl: {oi}{flag}")
 
-    md = ["# Failure-inclusive metrics (P1.2), sensitivity analysis", "",
-          "**Not the headline.** The paper's headline applies the S4 failure rule",
+    md = ["# Failure-inclusive metrics, sensitivity analysis", "",
+          "**Not the headline.** The paper's headline applies the failure rule",
           "(failed = Top-1 wrong, tau 0, chance MAE, all scenarios in the denominator);",
           "the `*_headline` columns of the xlsx hold it. `S_ok` below is scored-only",
-          "(sensitivity) and `S_all` is D2 chance imputation (Top-1 1/3), also a",
+          "(sensitivity) and `S_all` is chance imputation (Top-1 1/3), also a",
           "sensitivity row.", "",
-          "D2 convention: each failed scenario receives the **chance value of its own",
+          "Convention: each failed scenario receives the **chance value of its own",
           "metric** -- tau 0, rho 0, Top-1 1/3, Top-2 2/3 (rho's chance value is",
           "derived by direct enumeration over all 6 permutations of 3 items in the",
           "script's `CHANCE` comment, not assumed). This is imputation at the metric",
           "level, not the 0.5-at-criterion-score level used by",
           "`generate_imputed_robustness_tables.py`; the two are different operations,",
           "not two settings of one operation.", "",
-          "D1: the inclusive number **pairs with** the conditional number. Neither",
+          "The inclusive number **pairs with** the conditional number. Neither",
           "replaces the other.", "",
           "**Coverage gap:** MAE/RMSE are NOT reported here under any chance",
           "convention. Error metrics have no principled chance value the way rank",

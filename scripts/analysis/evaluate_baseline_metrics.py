@@ -20,7 +20,7 @@ same rules as the LLM architectures.
 
 Both pooled and per-decision-type-arithmetic-mean aggregates are emitted,
 because the manuscript's baseline rows and its LLM rows have historically used
-different ones (see paper/REVISION_NUMBERS.md).
+different ones.
 
 Output: results/current/baselines/baseline_metrics.csv
         columns: baseline, decision_type, metric, value, n_scenarios

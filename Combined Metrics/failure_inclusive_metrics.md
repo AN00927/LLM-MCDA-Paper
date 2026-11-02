@@ -1,12 +1,12 @@
-# Failure-inclusive metrics (P1.2), sensitivity analysis
+# Failure-inclusive metrics, sensitivity analysis
 
-**Not the headline.** The paper's headline applies the S4 failure rule
+**Not the headline.** The paper's headline applies the failure rule
 (failed = Top-1 wrong, tau 0, chance MAE, all scenarios in the denominator);
 the `*_headline` columns of the xlsx hold it. `S_ok` below is scored-only
-(sensitivity) and `S_all` is D2 chance imputation (Top-1 1/3), also a
+(sensitivity) and `S_all` is chance imputation (Top-1 1/3), also a
 sensitivity row.
 
-D2 convention: each failed scenario receives the **chance value of its own
+Convention: each failed scenario receives the **chance value of its own
 metric** -- tau 0, rho 0, Top-1 1/3, Top-2 2/3 (rho's chance value is
 derived by direct enumeration over all 6 permutations of 3 items in the
 script's `CHANCE` comment, not assumed). This is imputation at the metric
@@ -14,7 +14,7 @@ level, not the 0.5-at-criterion-score level used by
 `generate_imputed_robustness_tables.py`; the two are different operations,
 not two settings of one operation.
 
-D1: the inclusive number **pairs with** the conditional number. Neither
+The inclusive number **pairs with** the conditional number. Neither
 replaces the other.
 
 **Coverage gap:** MAE/RMSE are NOT reported here under any chance

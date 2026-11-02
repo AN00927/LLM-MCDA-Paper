@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-compute_dispersion_diagnostics.py -- score-dispersion evidence for the EMS revision.
+compute_dispersion_diagnostics.py -- score-dispersion diagnostics.
 
 Motivation
 ----------
-The manuscript attributes A_D's ranking failure to "central-tendency bias" --
+A natural hypothesis for A_D's ranking failure is "central-tendency bias" --
 scores clustering near 0.5. The shipped run data does not support that: A_D
 *over*-separates relative to the physics reference. This script produces the
 measurements that settle the mechanism, all from files already on disk (no API
@@ -21,7 +21,7 @@ via the shared filter in evaluate_architecture_metrics)
      the ground truth.
   3. Within-scenario range and sd of each individual criterion, per decision
      type, per (model, architecture) and for the ground truth.
-  4. (A2) Single-criterion top-1 recovery: the share of scenarios in which the
+  4. Single-criterion top-1 recovery: the share of scenarios in which the
      ground-truth top-ranked alternative is also the argmax of one criterion
      considered alone. Reported for the 195 Test scenarios and for the full
      285-scenario ground-truth corpus.

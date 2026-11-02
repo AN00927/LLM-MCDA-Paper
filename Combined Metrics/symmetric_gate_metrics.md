@@ -1,4 +1,4 @@
-# Symmetric-gate metrics, S_int (P1.3)
+# Symmetric-gate metrics, S_int
 
 Every architecture restricted to the scenarios all three completed, so the
 arms are compared over one population rather than three.
@@ -6,7 +6,7 @@ arms are compared over one population rather than three.
 - `S_int_strict` -- scored by all three architectures in **every** run
 - `S_int_loose` -- scored by all three in **at least one** run each
 
-Per plan D4 this is a supplement robustness check, not a headline
+This is a supplement robustness check, not a headline
 replacement. N is reported with every number.
 
 ## Gate sizes

@@ -2,8 +2,8 @@ Data License -- Creative Commons Attribution 4.0 International (CC BY 4.0)
 
 Copyright (c) 2026 Ahaan Nigam
 
-The SOFTWARE in this repository (all `.py` source and the LaTeX sources under
-`paper/`) is licensed under the MIT License; see LICENSE.
+The SOFTWARE in this repository (all `.py` source) is licensed under the MIT
+License; see LICENSE.
 
 The DATA in this repository is licensed separately, under the Creative Commons
 Attribution 4.0 International License (CC BY 4.0). This covers:

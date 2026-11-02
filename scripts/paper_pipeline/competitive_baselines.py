@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-competitive_baselines.py - task P1.5 of the EMS revision plan.
+competitive_baselines.py - competitive non-LLM baselines for A_E.
 
 QUESTION. Does A_E beat copying the ranking of the one exemplar it retrieves
-(the NearestNeighbor copy baseline, k = 1)? The manuscript recommends A_E as
-the practical option for domains where a calculator cannot be built. That
-recommendation only survives if A_E beats the trivial non-LLM baseline a
-practitioner already has.
+(the NearestNeighbor copy baseline, k = 1)? A_E is the practical option for
+domains where a calculator cannot be built, but only if it beats the trivial
+non-LLM baseline a practitioner already has.
 
-TESTS (S7). Per model, a paired Wilcoxon signed-rank test on the 195 Test
+TESTS. Per model, a paired Wilcoxon signed-rank test on the 195 Test
 scenarios: A_E's per-scenario value (the mean over its runs, failure rule
 applied: a failed scenario-run is wrong for Top-1 and at tau 0) against the
 baseline's value on the same scenario, paired by the matched ground-truth
@@ -18,7 +17,7 @@ Holm family: every test in this file, (number of models) x 1 baseline
 
 WHAT THIS REPORTS, per model and per decision type:
   * A_E on Kendall's tau and Top-1 (per-run mean, then mean across runs -- the
-    paper's estimator, per the estimator decision).
+    paper's estimator).
   * NearestNeighbor on the same two metrics. NearestNeighbor is deterministic
     and model-independent, so it is one column repeated against four models.
   * The single-criterion-argmax baseline per decision type: rank the three
@@ -131,7 +130,7 @@ def baseline_by_type(name="NearestNeighbor", prefix="NN"):
 
 
 # ---------------------------------------------------------------------------
-# Paired tests: A_E vs each baseline, per model (S7)
+# Paired tests: A_E vs each baseline, per model
 # ---------------------------------------------------------------------------
 
 def _per_scenario(merged):
@@ -293,7 +292,7 @@ def main():
             "LLM_MCDA_LOCAL_MANUSCRIPTS_DIR."
         )
     warnings.filterwarnings("ignore")
-    print("P1.5 competitive baselines")
+    print("Competitive baselines")
     print("=" * 64)
 
     ae = ae_by_type()
@@ -333,7 +332,7 @@ def main():
     print(f"  Wrote {OUT_XLSX}")
 
     lines = []
-    lines.append("# P1.5 - competitive baselines\n")
+    lines.append("# Competitive baselines\n")
     lines.append("Estimator: per-run mean, then mean across runs (aggregation A).")
     lines.append("NearestNeighbor and the single-criterion baselines are deterministic and")
     lines.append("model-independent; they are repeated against each model for comparison.\n")

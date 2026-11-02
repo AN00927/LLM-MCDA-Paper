@@ -20,8 +20,8 @@ from common.model_config import get_model_artifact_subdir  # noqa: E402
 
 _ap = argparse.ArgumentParser(description="Generate numbers_master.csv from raw data sources.")
 _ap.add_argument("--output", default=str(repository_path("Combined Metrics", "numbers_master.csv")),
-                 help="CSV to write (default: local_manuscripts/paper/numbers_master.csv)")
-# Averaging basis of the IncrementalContribution table (S6). Every row, the two
+                 help="CSV to write (default: Combined Metrics/numbers_master.csv)")
+# Averaging basis of the IncrementalContribution table. Every row, the two
 # baselines and the LLM rows alike, uses the same one:
 #   per_type_mean  unweighted mean of the HVAC / Appliance / Shower means
 #                  (baselines: baseline_metrics.csv "Overall_per_type_mean";

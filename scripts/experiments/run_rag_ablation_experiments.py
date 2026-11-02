@@ -64,7 +64,7 @@ from common.sentinel_utils import (
     read_table_clean,
 )
 
-from scripts.archive.legacy.CreateRepresentativeSample import (
+from scripts.experiments.representative_sample import (
     stratified_sample_by_features as stratified_sample,
 )
 SCENARIO_DIR = PROJECT_ROOT / "workbooks/scenarios"
@@ -1202,7 +1202,7 @@ def cliff_delta(x, y):
 
 def matched_pairs_rank_biserial(x, y):
     """Matched-pairs rank-biserial correlation, the effect size that belongs to
-    the Wilcoxon signed-rank test (S3): (sum of positive ranks - sum of
+    the Wilcoxon signed-rank test: (sum of positive ranks - sum of
     negative ranks) / total rank sum, over the non-zero paired differences,
     ranked by |d| with midranks. In [-1, 1]; positive means x > y. Returns
     (r, n_nonzero); r is 0.0 when every difference is zero.
